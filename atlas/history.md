@@ -26,6 +26,7 @@ flowchart TD
 - If authored changes are selected for history, they use this same internal path.
 - Edge clients normally use current information. Historical transfer happens only on request and must not congest the live path.
 - Source identity and original measurement time remain distinguishable from receipt time.
+- A late report with an older position is retained in history and does not replace the newer current position.
 
 ## Open
 
