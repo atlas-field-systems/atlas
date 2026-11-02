@@ -1,41 +1,44 @@
 # Using Atlas
 
-## Story
+An operator application shows field information and lets a person request work.
+Core holds the shared picture and the requests. A gateway carries traffic across
+the field link. The Asset runtime controls its equipment and reports what happened.
 
-I use an operator application to see field information and request work. An Asset
-with adequate IP connectivity speaks to Core directly. A gateway translates other
-field transports. The Asset runtime performs the physical action.
-
-## Flow
+## The usual field path
 
 ```mermaid
 flowchart TD
-    U[Operator application] <--> S[SDK or public API]
-    S <--> C[Core]
-    C <-->|Adequate IP connectivity| A[Asset runtime and equipment]
-    C <--> G[Gateway when needed]
-    G <-->|Field transport| A
-    P[Informational Plugin] <--> C
+    U[Operator application] <-->|IP| C[Core]
+    C <-->|IP| G[Gateway]
+    G <-->|FLRC, LoRa, or both| A[Physical Asset runtime and equipment]
+    D[Direct-IP Asset, often digital] <-->|IP| C
+    P[Informational Plugin] <-->|IP| C
 ```
 
-## Responsibilities
+The direct-IP path is available. Most physical Assets use the gateway path.
+Applications and gateways can use an SDK or the public API where appropriate.
+The diagram shows responsibilities, not wire messages or a required network topology.
 
-| Part | Owns |
+## What the parts do
+
+| Part | Responsibility |
 | --- | --- |
 | Operator application | Human interaction and presentation |
-| SDK | Client requests, response handling, and optional live picture |
-| Protocol | Shared meanings and exact exchanges |
-| Core | Accepted records, current state, history, and public operations |
-| Gateway, when needed | Translation and forwarding across the field link |
-| Asset runtime | Physical execution, local execution state, and its evidence |
+| Protocol and SDK | Shared contracts and client access |
+| Core | Shared state, retained evidence, and requests for work |
+| Gateway | Translation and forwarding across the field link |
+| Asset runtime | Equipment control, local execution, and reports of its effects |
 | Plugin | Acquiring, analyzing, and publishing information |
 
-The [first flight](first-flight.md) deliberately uses a gateway; other Assets need not.
-The selected SDK direction is HTTP by default with opt-in in-memory Full
-synchronization. History is requested explicitly rather than downloaded with live state.
+## The four pillars
 
-Reconnection preserves identity and reconciles existing work. It does not authorize
-repeating an uncertain physical action. Local persistence and recovery details belong
-to each runtime and need explicit contracts where components depend on them.
+Entities describe Assets, their Observations, shared Tracks, and authored Geofeatures.
+Tasks describe requested work and reported outcomes.
+Objects hold files and their metadata.
+Plugins bring information into Atlas, such as aircraft data or research about an area.
+Their current intended role does not include controlling Assets.
 
-[Charter home](README.md)
+The [subsystem planning docs](https://github.com/atlas-field-systems/atlas-core/tree/main/docs)
+define behavior within those pillars. Authentication and administration support them.
+
+[First flight](first-flight.md) follows one complete use of these parts.

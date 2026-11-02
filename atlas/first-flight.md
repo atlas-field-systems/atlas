@@ -1,42 +1,40 @@
 # First flight
 
-## Story
-
-The drone powers on, connects to Atlas through a gateway, and identifies itself.
-I request Takeoff, then Move To a location, then Land, and see its reported outcomes.
+The drone powers on and connects to Atlas through a gateway.
+The operator requests Takeoff, then Move To a location, then Land.
+The operator sees what the drone reports doing.
 
 This is the selected first workflow. Takeoff and Land are planned capabilities,
 not claims about the current implementation.
 
-## Flow
+## Follow the work and its evidence
 
 ```mermaid
 sequenceDiagram
     participant Drone
     participant Gateway
     participant Core
-    actor Operator
-    Drone->>Gateway: Identify and report
+    participant App as Operator application
+    Drone->>Gateway: Report identity and state
     Gateway->>Core: Forward the report
-    Operator->>Core: Request Takeoff
-    Core->>Gateway: Make the request available
-    Gateway->>Drone: Deliver the request
-    Drone-->>Core: Report execution through the gateway
-    Operator->>Core: Request Move To after Takeoff succeeds
-    Drone-->>Core: Report movement and outcome through the gateway
-    Operator->>Core: Request Land after Move To succeeds
-    Drone-->>Core: Report landing outcome through the gateway
+    Core-->>App: Show the reported state
+    App->>Core: Request Takeoff
+    Note over Drone,Core: The drone obtains requested work through the gateway
+    Drone-->>Gateway: Report what happened
+    Gateway-->>Core: Forward the report
+    Core-->>App: Show the reported outcome
+    Note over Drone,App: Repeat for Move To after Takeoff succeeds, then Land after Move To succeeds
 ```
 
-## What the story must make visible
+Core retains the requests and reported evidence. The Asset runtime performs the
+physical action. A request reaching Core does not prove that the drone received
+or executed it.
 
-- Connection keeps the Asset identity; received telemetry and two-way contact are distinct.
-- Atlas retains requests. The Asset supplies evidence of actual execution.
-- Ordinary telemetry supplies current state and three-dimensional history without a second reporting API.
-- Losing a link or reply does not authorize repeating uncertain work.
+After the flight, the operator wants the run's operational history in a ZIP before
+Reset clears it. The [run lifecycle plan](https://github.com/atlas-field-systems/atlas-core/blob/main/docs/support/operations.md)
+defines that behavior and marks the detailed Reset procedure as a proposal.
 
-After the flight, the [Reset story](operations.md) covers producing its archive.
-Preloaded queues, camera concurrency, and Plugin jobs are separate stories; this
-first sequence does not select their mechanisms.
+This example explains one flight. Task scheduling, radio exchanges, and recovery
+rules belong in their owning subsystem documentation.
 
 [Charter home](README.md)

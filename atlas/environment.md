@@ -1,33 +1,44 @@
 # Operating environment
 
-## Story
+Atlas connects operators to physical and digital Assets. Its normal field path
+crosses a gateway and a radio link.
 
-I use Atlas for a flight lasting a few hours. Assets with adequate IP connectivity
-can reach Core directly; other field links use a gateway. Links can disappear and
-return while Atlas retains the run's records.
+## IP mainly connects the supporting systems
 
-## Selected direction
+IP primarily connects Core, gateways, and operator interfaces.
+Most physical Assets use FLRC, LoRa, or both beyond the gateway.
+Direct-IP Assets are possible, especially purely digital Assets.
 
-- This is currently a short-run testing system. Keeping records until Reset is acceptable.
-- Valid API keys have equal public-API permissions during this phase. Participants are trusted; a Plugin's intended role is not a credential restriction.
-- Five seconds and one hour of disconnection use the same movement-request lifetime policy.
-- Software updates may require Reset. Interrupted uploads may restart from zero. Core recovery may remain manual.
-- Sensor-reference and uncertainty extensions remain deferred initially.
+Field links can disappear and return. Bandwidth is a design constraint, not an
+assumption of continuous IP connectivity to every Asset.
+The operator has described LoRa throughput as roughly single-digit kilobits per
+second, with uncertainty. That is an expectation, not a fixed Protocol budget.
 
-## Read a gateway-connected field link correctly
+## Core is a deliberate dependency
 
-```mermaid
-flowchart LR
-    A[Asset] --> G[Gateway] --> C[Core receives a report]
-    C --> R[Return path through gateway] --> A
-```
+The current direction accepts dependence on Core for Atlas communications to keep
+the system simpler. Offline authorization of new work is not a current requirement.
+Core dependence does not imply that Core or every field link is always reachable.
+Component docs own outage behavior.
 
-A received report, the age of its measurements, and proven two-way contact are
-different facts. Buffered telemetry must not imply current command reachability.
+## Hosting is flexible
 
-## Open
+Core usually runs on an internet-hosted server. It can also run on a computer with
+the field team, alongside a gateway. Nearby operators need local access when that
+field computer loses internet.
 
-Contact proof, clock assumptions, and acceptable round-trip delays need a field-path
-story. Behavior when the gateway is reachable but Core is not also needs a decision.
+The deployment chooses how to expose Core. Cloudflare Tunnel is one example used
+by the owner. It is not a built-in requirement for Atlas.
 
-[Charter home](README.md)
+## Current use keeps some demands modest
+
+The immediate use is trusted testing and flights lasting a few hours.
+This makes keeping a run's records until Reset acceptable. That duration describes
+current use, not a permanent limit on Atlas.
+
+Edge Assets normally need current information. Interfaces and fusion may need
+history. Historical transfers must respect the live field traffic.
+Observations can come from radios, cameras, radar, and external data services.
+Accepting that variety of evidence is a separate problem from processing it.
+
+[Using Atlas](using-atlas.md) shows the responsibilities around these links.

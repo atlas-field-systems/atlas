@@ -1,18 +1,20 @@
 # Working on the Atlas charter
 
 Read [README](README.md), [the charter](CHARTER.md), and the affected story first.
-This repository contains product documentation, not implementation.
+This repository explains Atlas's purpose, operating environment, and how its parts
+fit together.
 
 ## Ownership
 
-Follow the [document ownership](CHARTER.md#document-ownership) order. Put product
-behavior here, exact shared contracts in Protocol, and mechanisms in their owning
-components. Link to the authoritative definition instead of copying it.
+Follow [document ownership](CHARTER.md#document-ownership). Keep subsystem behavior,
+failure rules, and implementation plans with the owning system. Link to those docs
+from the charter instead of importing them. Keep examples here focused on complete
+uses of Atlas and the responsibilities of its parts.
 
 Component repositories must point their agent instructions and overview here.
-A pending proposal is not an approved contract. If stories and implementation
-contracts disagree, identify the mismatch; do not silently adopt old behavior or
-claim the new behavior is implemented.
+A pending proposal is not an approved contract. If subsystem docs conflict with the
+operating context, identify the mismatch and resolve it explicitly with the owner.
+Do not silently adopt old behavior or claim intended behavior is implemented.
 
 ## Changes
 

@@ -1,45 +1,45 @@
 # The Atlas charter
 
 Atlas helps operators understand field systems, request work, and retain evidence.
+Read the [operating environment](environment.md) before designing a subsystem.
 
-## Keep the product understandable
+## Keep Atlas understandable
 
 The owner must be able to read the docs whenever they change.
-Use short stories and visible flows.
-Consequential restrictions belong in a story before implementation adopts them.
-
-## Scope
-
-Core does not implement vehicle flight control, radio transport, map rendering,
-or operator applications. Separate projects provide them.
+Use short user stories and visible data flows to expose mismatches with intended use.
+Put a consequential restriction in its owning system's story before adopting it.
 
 ## Keep the systems replaceable
 
-Entities, Tasks, Objects, and Plugins are four replaceable pillars. Each has a
-small interface and private data ownership. Plugin-published information belongs
-to Entities and Objects. Invocation metadata needs a selected story. No job
-platform is assumed. Authentication and administration support the pillars.
-Separate databases and deployments are optional.
+Entities, Tasks, Objects, and Plugins are four replaceable pillars.
+Keep their interfaces small enough to rebuild one pillar without rebuilding Atlas.
+Authentication and administration support the pillars.
+
+Core retains the shared picture and requests for work. Separate projects provide
+vehicle control, radio transport, map rendering, and operator applications.
+The [system overview](using-atlas.md) shows how those parts fit together.
 
 ## Keep evidence honest
 
-Acceptance is not execution. Requested cancellation is not proof an Asset stopped.
-Completion and file availability differ. Receiving a report proves neither fresh
-measurements nor two-way contact.
+An accepted request and an observed result are different facts.
+Receiving a report does not prove fresh measurements or two-way contact.
+Each subsystem defines how it represents that evidence.
 
 ## Document ownership
 
-The precedence for intended behavior is:
+- This charter owns Atlas's purpose, operating context, project-wide principles,
+  and end-to-end usage examples.
+- Subsystem documentation owns its behavior, failure cases, and planning decisions.
+- Protocol owns exact shared contracts. Core owns server mechanisms.
+  SDK owns client behavior. Other components own their runtime details.
 
-1. Central charter and stories: purpose, assumptions, user-visible behavior.
-2. Protocol: exact shared messages, fields, and state meanings implementing that behavior.
-3. Components: mechanisms and checks implementing those contracts.
-
-Component instructions link here. Resolve conflicting documents explicitly.
+Keep each rule with its owner and link to it from other documents.
+When a subsystem rule conflicts with the operating context, surface the mismatch
+and resolve it explicitly. Neither document silently overrides the other.
 Intended behavior is not proof of implementation.
 
 ## Change Atlas deliberately
 
-The owner approves behavior and scope; engineers choose conforming details.
-Keep selected behavior, proposals, and open questions distinct. Generated output,
-reviews, and historical specifications do not approve changes.
+The owner approves behavior and scope. Engineers choose conforming details.
+Keep selected decisions, proposals, and open questions distinct in subsystem docs.
+Generated output, reviews, and historical specifications do not approve changes.
