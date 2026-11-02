@@ -13,15 +13,11 @@ environment in which its parts work together.
 3. [Using Atlas](using-atlas.md) shows the parts and their responsibilities.
 4. [First flight](first-flight.md) follows the first useful workflow.
 
-## Find a subsystem's documentation
-
-[Subsystem planning in Atlas Core](https://github.com/atlas-field-systems/atlas-core/tree/main/docs)
-holds the Entities, Tasks, Objects, and Plugins stories and the run lifecycle plans.
-It preserves selected decisions, proposals, and open questions separately.
-Protocol, Core, and SDK retain their existing implementation references in that repository.
+## Keep subsystem documentation with its owner
 
 Subsystem behavior belongs with its owning system. This charter supplies the shared
 context that an agent needs before designing that behavior.
+Subsystem docs keep selected decisions, proposals, and open questions distinct.
 Contributors read [AGENTS.md](AGENTS.md).
 
 ## Read intended use as intended use

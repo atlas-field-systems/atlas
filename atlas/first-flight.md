@@ -31,8 +31,8 @@ physical action. A request reaching Core does not prove that the drone received
 or executed it.
 
 After the flight, the operator wants the run's operational history in a ZIP before
-Reset clears it. The [run lifecycle plan](https://github.com/atlas-field-systems/atlas-core/blob/main/docs/support/operations.md)
-defines that behavior and marks the detailed Reset procedure as a proposal.
+Reset clears it. The owning system's run lifecycle documentation defines that
+behavior. The detailed Reset procedure remains a proposal.
 
 This example explains one flight. Task scheduling, radio exchanges, and recovery
 rules belong in their owning subsystem documentation.

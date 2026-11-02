@@ -3,16 +3,40 @@
 Atlas connects operators to physical and digital Assets. Its normal field path
 crosses a gateway and a radio link.
 
+## Connectivity evolves
+
+Radio technology, IP connectivity, and edge networks will keep changing.
+Atlas is designed around constrained links with different capabilities.
+A LoRa-scale data rate is not a ceiling for the whole system.
+
+The likely early direction is a multimode radio with multiple transceivers:
+
+- 2.4 GHz FLRC as the primary field link.
+- 915 MHz LoRa for coverage when the FLRC link becomes unreliable.
+- Wi-Fi as a possible addition.
+
+The intended flight uses FLRC nearby and LoRa when distance makes FLRC spotty.
+FLRC is expected to carry more than single-digit kilobits per second.
+The radio project owns the detailed design as the hardware evolves.
+
+Mesh networking is part of this direction, with some participation in Atlas.
+Its mechanisms belong in the relevant radio and networking project documentation.
+
 ## IP mainly connects the supporting systems
 
 IP primarily connects Core, gateways, and operator interfaces.
-Most physical Assets use FLRC, LoRa, or both beyond the gateway.
+Most physical Assets use the available field radios beyond the gateway.
 Direct-IP Assets are possible, especially purely digital Assets.
 
-Field links can disappear and return. Bandwidth is a design constraint, not an
-assumption of continuous IP connectivity to every Asset.
-The operator has described LoRa throughput as roughly single-digit kilobits per
-second, with uncertainty. That is an expectation, not a fixed Protocol budget.
+Field links can disappear and return. Atlas cannot assume continuous IP
+connectivity to every Asset.
+
+## Gateway implementations can coexist
+
+Different radio systems can have different gateways. For example, an initial
+LoRa-only link could have a dedicated LoRa gateway. A later radio system could
+have a new gateway while the older gateway continues to be maintained.
+Atlas does not assume one permanent gateway design.
 
 ## Core is a deliberate dependency
 

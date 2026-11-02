@@ -8,16 +8,22 @@ the field link. The Asset runtime controls its equipment and reports what happen
 
 ```mermaid
 flowchart TD
-    U[Operator application] <-->|IP| C[Core]
+    subgraph Core
+        C[Shared state and requests]
+        P[Plugin subsystem] <--> C
+    end
+    U[Operator application] <-->|IP| C
     C <-->|IP| G[Gateway]
-    G <-->|FLRC, LoRa, or both| A[Physical Asset runtime and equipment]
+    G <-->|Available field links| A[Physical Asset runtime and equipment]
     D[Direct-IP Asset, often digital] <-->|IP| C
-    P[Informational Plugin] <-->|IP| C
 ```
 
 The direct-IP path is available. Most physical Assets use the gateway path.
 Applications and gateways can use an SDK or the public API where appropriate.
-The diagram shows responsibilities, not wire messages or a required network topology.
+The gateway represents the implementation used for that field link. Different
+gateway implementations can coexist as [connectivity evolves](environment.md#connectivity-evolves).
+The diagram shows system responsibilities, not process boundaries, wire messages,
+or a required network topology.
 
 ## What the parts do
 
@@ -28,7 +34,7 @@ The diagram shows responsibilities, not wire messages or a required network topo
 | Core | Shared state, retained evidence, and requests for work |
 | Gateway | Translation and forwarding across the field link |
 | Asset runtime | Equipment control, local execution, and reports of its effects |
-| Plugin | Acquiring, analyzing, and publishing information |
+| Plugin subsystem within Core | Acquiring, analyzing, and publishing information |
 
 ## The four pillars
 
@@ -38,7 +44,7 @@ Objects hold files and their metadata.
 Plugins bring information into Atlas, such as aircraft data or research about an area.
 Their current intended role does not include controlling Assets.
 
-The [subsystem planning docs](https://github.com/atlas-field-systems/atlas-core/tree/main/docs)
-define behavior within those pillars. Authentication and administration support them.
+Each subsystem's documentation defines its behavior. Authentication and
+administration support the pillars.
 
 [First flight](first-flight.md) follows one complete use of these parts.
