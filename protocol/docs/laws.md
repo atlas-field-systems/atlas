@@ -5,7 +5,7 @@ or the law gets changed on purpose first.
 
 "Checked" means `npm run check` fails when the law is broken.
 
-1. **Protocol guides storage.** Core, the SDK cache, and Assets store data built from these definitions: same variables, names, units, and shapes. Storage does not have to match the messages exactly. It may add its own fields (such as when a message arrived, or through which gateway) and combined views (such as an Asset's latest state), and those are defined here too. Storage never conflicts with the protocol: no renamed fields, different units, or different shapes for the same thing.
+1. **Protocol defines all Atlas data.** It defines both the messages and the storage layout. Core, the SDK cache, and Assets store data in storage formats defined here, built from the same variables, names, units, and shapes. Extra stored fields, such as when a message was received, are defined here too. Storage formats are not planned yet; see [Storage formats](../storage/README.md).
 2. **Flat messages.** Every field sits directly in the message. No header, wrapper, or sender field. *Checked.*
 3. **Every message starts the same way:** `type`, `time` (milliseconds since 1970, UTC), `seq` (the sender's own counter), and `asset_id`. *Checked.*
 4. **Variables are the building blocks.** Each field is defined once, in `variables/`, and reused everywhere. Messages and components only point at variables or components. *Checked.*

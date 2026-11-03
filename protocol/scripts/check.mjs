@@ -65,6 +65,9 @@ for (const [file, s] of Object.entries(schemas)) {
       if (def.$ref?.startsWith('../messages/')) errors.push(`${file}: law 2: messages never nest messages`);
     }
   }
+  if (/^variables\/.*_id\.json$/.test(file) && s.pattern !== '^[A-Za-z0-9]{1,4}$') {
+    errors.push(`${file}: IDs are 1 to 4 letters or digits (pattern ^[A-Za-z0-9]{1,4}$)`);
+  }
   if (file.startsWith('variables/') && s.type === 'string' && !s.enum && s.maxLength === undefined) {
     errors.push(`${file}: law 13: text needs a maxLength`);
   }

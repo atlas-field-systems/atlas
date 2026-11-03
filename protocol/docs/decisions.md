@@ -21,10 +21,11 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `time`: milliseconds since 1970 (UTC), as a number.
 - `seq`: the sender's own counter, up by one per message. On the mesh it shows dropped (gaps) and out-of-order messages.
 - `asset_id`: the Asset a command is for, or the Asset a report is from.
-- There is no sender field. Commands come from operators, and reports carry `asset_id`.
+- There is no sender field. Operators send commands. Plugins, if they ever send commands, are controlled by an operator, so who sent a command does not matter.
+- For now, plugins do not act on their own to direct Assets or issue Tasks. This may change later.
 
 ## Values
-- `asset_id` is 1 to 4 letters or digits (`A-Z`, `a-z`, `0-9`), such as `A1`. That is over 15 million IDs, far more than the roughly 20 Assets we expect (see the Charter's scale page). Other IDs stay standard UUIDs for now.
+- `asset_id` is 1 to 4 letters or digits (`A-Z`, `a-z`, `0-9`), such as `A1`. That is over 15 million IDs, far more than the roughly 20 Assets we expect (see the Charter's scale page). Every ID, not only `asset_id`, is 1 to 4 letters or digits. Any new `*_id` variable must use the same pattern; the check script enforces this.
 - Field names are long and readable in the definitions and in message JSON.
 
 ## Commands
@@ -40,6 +41,12 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 ## Compact JSON
 - Compact JSON is the message minified: same keys, same structure, no extra spaces.
 - Short keys (such as `time` -> `t`) are deferred to protocol 1.0. They are not implemented now, to avoid tangling the definitions.
+
+## Radio compression
+Radio links will use a proven existing compression method, chosen later.
+
+## Storage
+The protocol also defines the storage layout, so the whole data format lives here. Storage formats are not planned yet ([storage/](../storage/README.md)).
 
 ## Late reports
 An older time never overwrites newer state. There is no "history-only" message.
