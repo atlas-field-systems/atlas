@@ -1,0 +1,8 @@
+body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #1f2328; display: flex; }
+nav { width: 220px; min-height: 100vh; padding: 24px 16px; background: #f6f8fa; border-right: 1px solid #d0d7de; box-sizing: border-box; }
+nav a { display: block; padding: 4px 8px; color: #1f2328; text-decoration: none; border-radius: 4px; }
+nav a.on, nav a:hover { background: #ddf4ff; }
+main { max-width: 760px; padding: 24px 40px; }
+code, pre { font: 14px monospace; background: #f6f8fa; }
+pre { padding: 12px; overflow: auto; }
+@media (max-width: 700px) { body { display: block; } nav { width: auto; min-height: 0; } main { padding: 16px; } }
