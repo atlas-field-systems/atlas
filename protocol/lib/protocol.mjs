@@ -155,6 +155,7 @@ export function measure(value, compress, tree) {
   const packed = compress ? compress(bytes) : null;
   return {
     json,
+    aligned: JSON.stringify(value, null, 2),
     readableBytes: enc.encode(readable).length,
     bytes: bytes.length,
     compressed: packed?.length ?? null,

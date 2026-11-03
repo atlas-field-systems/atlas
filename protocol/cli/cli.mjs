@@ -21,9 +21,8 @@ function printFields(n, depth = 0) {
 function report(file, value) {
   const v = validate(protocol, file, value);
   const m = measure(value, compress, fieldTree(protocol, file));
-  console.log(`\n${bold('Compact JSON')} ${dim(`(same structure, short keys, ${m.bytes} bytes; readable ${m.readableBytes})`)}\n${m.json}`);
   const left = ['Message JSON', ...JSON.stringify(value, null, 2).split('\n')];
-  const right = [`Compressed (deflate, ${m.compressed} bytes)`, ...m.hex.split('\n'), '', 'Base64:', ...(m.base64.match(/.{1,64}/g) ?? [])];
+  const right = [`Compact JSON (minified on the wire: ${m.bytes} bytes)`, ...m.aligned.split('\n'), '', `Compressed (deflate, ${m.compressed} bytes)`, ...m.hex.split('\n'), '', 'Base64:', ...(m.base64.match(/.{1,64}/g) ?? [])];
   const width = Math.max(...left.map((l) => l.length)) + 3;
   console.log();
   for (let i = 0; i < Math.max(left.length, right.length); i++) {

@@ -24,11 +24,10 @@ function show(file) {
   const tree = fieldTree(protocol, file);
   let value = example(protocol, file);
   $('view').innerHTML = `<h2>${esc(s.title ?? file)} <code>${esc(file)}</code></h2><p>${esc(s.description)}</p>
-    <div id="compact"></div>
     <button id="ex">Use the example</button><button id="min">Minimal (required only)</button>
     <div class="cols"><div><h3>Fields</h3><table id="fields"></table></div>
-    <div><h3>Message JSON</h3><textarea id="json" spellcheck="false"></textarea><div id="result"></div></div>
-    <div><h3>Compressed</h3><div id="packed"></div></div></div>`;
+    <div><h3>Message JSON</h3><p class="lbl" id="readlbl"></p><textarea id="json" spellcheck="false"></textarea><div id="result"></div></div>
+    <div><h3>Compressed</h3><div id="compact"></div><div id="packed"></div></div></div>`;
   const render = (fromText) => {
     const rows = leaves(tree, value);
     $('fields').innerHTML = '<tr><th>Field</th><th>Value</th></tr>' + rows.map((r, i) => {
@@ -48,7 +47,9 @@ function show(file) {
     if (!fromText) $('json').value = JSON.stringify(value, null, 2);
     const v = validate(protocol, file, value);
     const m = measure(value, compress, tree);
-    $('compact').innerHTML = `<h3>Compact JSON</h3><p>Same structure with short keys from the definitions: <b>${m.bytes}</b> bytes (readable: ${m.readableBytes}, compressed: ${m.compressed})</p><pre class="wrap">${esc(m.json)}</pre>`;
+    $('compact').innerHTML = `<p class="lbl">Compact JSON, line for line with the message JSON. Sent minified on one line: <b>${m.bytes}</b> bytes</p><pre class="aligned">${esc(m.aligned)}</pre>`;
+    $('readlbl').innerHTML = `Readable: <b>${m.readableBytes}</b> bytes`;
+    $('json').rows = Math.max(m.aligned.split('\n').length, $('json').value.split('\n').length) + 1;
     renderPacked(m);
     $('result').innerHTML = `<p class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'Valid' : 'Invalid'}</p>
       ${v.errors.map((e) => `<div class="bad">${esc(e)}</div>`).join('')}
