@@ -5,6 +5,7 @@
   "description": "Which message this is. Each message fixes its own value, for example takeoff or telemetry.",
   "type": "string",
   "pattern": "^[a-z_]+$",
+  "maxLength": 32,
   "examples": [
     "takeoff"
   ]

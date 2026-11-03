@@ -50,6 +50,29 @@ for (const [file, s] of Object.entries(schemas)) {
   }
 }
 
+// Laws (docs/laws.md) that can be checked mechanically.
+const header = ['type', 'time', 'seq', 'asset_id'];
+for (const [file, s] of Object.entries(schemas)) {
+  const name = file.split('/')[1].replace('.json', '');
+  if (file.startsWith('messages/')) {
+    for (const h of header) {
+      if (!s.required?.includes(h) || s.properties?.[h]?.$ref !== `../variables/${h}.json`) errors.push(`${file}: law 3: must require "${h}" from variables/${h}.json`);
+    }
+    if (s.properties?.type?.const !== name) errors.push(`${file}: law 7: type must be fixed to "${name}"`);
+    if (s.additionalProperties !== false) errors.push(`${file}: law 2: must set additionalProperties to false`);
+    for (const [prop, def] of Object.entries(s.properties ?? {})) {
+      if (/^(header|sender|payload|data|body)$/.test(prop)) errors.push(`${file}: law 2: no "${prop}" wrapper or sender field`);
+      if (def.$ref?.startsWith('../messages/')) errors.push(`${file}: law 2: messages never nest messages`);
+    }
+  }
+  if (file.startsWith('variables/') && s.type === 'string' && !s.enum && s.maxLength === undefined) {
+    errors.push(`${file}: law 13: text needs a maxLength`);
+  }
+  for (const [prop, def] of Object.entries(s.properties ?? {})) {
+    if (def.type === 'array' && def.maxItems === undefined) errors.push(`${file}: law 13: list "${prop}" needs a maxItems`);
+  }
+}
+
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);

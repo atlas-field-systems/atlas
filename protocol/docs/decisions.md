@@ -30,8 +30,12 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 ## Commands
 - Takeoff: a target altitude.
 - Land: a landing position and an optional transit altitude. Without one, the Asset keeps its current altitude.
-- Move To: a destination position. Without an altitude, the Asset keeps its current one.
+- Move To: a destination position. Without an altitude, the Asset keeps its current one (confirmed).
 - Change Setting: a queued Task that sets exactly one setting to an explicit end state.
+
+## Limits
+- `type` is at most 32 characters.
+- A position carries at most 4 altitudes, one per reference. An Asset rarely reports all of them at once.
 
 ## Compact JSON
 - Compact JSON is the message minified: same keys, same structure, no extra spaces.
