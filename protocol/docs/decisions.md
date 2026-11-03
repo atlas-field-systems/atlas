@@ -34,6 +34,15 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - Move To: a destination position. Without an altitude, the Asset keeps its current one (confirmed).
 - Change Setting: a queued Task that sets exactly one setting to an explicit end state.
 
+## Connect and reports (proposed)
+- Hello: an Asset's first message on a link, with `protocol_version`. The API key stays at the link level, never in a message.
+- Hello Reply: Core answers `accepted` or `version_mismatch`, with the version to run.
+- Task Status: an Asset reports one Task's state (queued, active, completed, failed, cancelled), with an optional explanation.
+- Failsafe Status: an Asset reports a failsafe it switched on by itself (return_home or link_loss_response), with an explanation.
+- `task_id` is 1 to 4 letters or digits, like every ID.
+- Gateways will likely register themselves like Assets, with a Hello.
+- How Core reaches an Asset through a gateway (Core to gateway over IP, gateway to Asset over radio) is still open.
+
 ## Limits
 - `type` is at most 32 characters.
 - A position carries at most 4 altitudes, one per reference. An Asset rarely reports all of them at once.

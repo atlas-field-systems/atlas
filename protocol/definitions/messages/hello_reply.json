@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/hello_reply.json",
+  "title": "Hello Reply",
+  "description": "Core's answer to a Hello. On version_mismatch, Core closes the link and protocol_version says which version to update to. After an accepted hello, no message carries a version.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id",
+    "hello_result",
+    "protocol_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../variables/type.json",
+      "const": "hello_reply"
+    },
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../variables/asset_id.json"
+    },
+    "hello_result": {
+      "$ref": "../variables/hello_result.json"
+    },
+    "protocol_version": {
+      "$ref": "../variables/protocol_version.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "hello_reply",
+      "time": 1793667600000,
+      "seq": 44,
+      "asset_id": "A1",
+      "hello_result": "accepted",
+      "protocol_version": "0.3"
+    },
+    {
+      "type": "hello_reply",
+      "time": 1793667600000,
+      "seq": 44,
+      "asset_id": "A1",
+      "hello_result": "version_mismatch",
+      "protocol_version": "0.4"
+    }
+  ]
+}

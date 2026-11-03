@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/hello_result.json",
+  "title": "hello_result",
+  "description": "Core's answer to a hello: accepted, or version_mismatch (the device must be updated).",
+  "enum": [
+    "accepted",
+    "version_mismatch"
+  ],
+  "examples": [
+    "accepted"
+  ]
+}

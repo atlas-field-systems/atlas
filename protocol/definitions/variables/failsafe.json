@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/failsafe.json",
+  "title": "failsafe",
+  "description": "Which failsafe the Asset has switched on by itself: return_home, or its link_loss_response setting.",
+  "enum": [
+    "return_home",
+    "link_loss_response"
+  ],
+  "examples": [
+    "return_home"
+  ]
+}

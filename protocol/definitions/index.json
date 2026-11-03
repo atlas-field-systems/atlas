@@ -10,7 +10,11 @@
         "messages/change_setting.json",
         "messages/settings.json",
         "messages/status.json",
-        "messages/telemetry.json"
+        "messages/telemetry.json",
+        "messages/hello.json",
+        "messages/hello_reply.json",
+        "messages/task_status.json",
+        "messages/failsafe_status.json"
       ]
     },
     {
@@ -39,7 +43,12 @@
         "variables/longitude.json",
         "variables/ground_speed_mps.json",
         "variables/heading_deg.json",
-        "variables/battery_percent.json"
+        "variables/battery_percent.json",
+        "variables/protocol_version.json",
+        "variables/hello_result.json",
+        "variables/task_id.json",
+        "variables/task_state.json",
+        "variables/failsafe.json"
       ]
     }
   ]
