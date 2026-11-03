@@ -19,6 +19,8 @@ If you need something outside this repository, go to the one that owns it.
 
 ## This repository
 
+- **Bloat is the main enemy.** Keep data, docs and code lean. Do not duplicate anything that can be defined once or worked out.
+
 Read [README](README.md), [the charter](CHARTER.md), and the affected story first.
 This repository explains Atlas's purpose, operating environment, and how its parts
 fit together.
