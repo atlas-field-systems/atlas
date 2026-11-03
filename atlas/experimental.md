@@ -22,3 +22,16 @@ from A to B. This may become its own Charter section later.
 Open questions: how a radio link is set up and kept stable, how it reroutes when
 the mesh changes, how it copes with Assets moving, and what to call the stream
 idea, since it spans WebSocket and radio links.
+
+## Passive listening
+
+On broadcast radio links (FLRC, LoRa; not IP), Assets can listen to traffic that
+is already on the air and build a passive picture of the operation without asking
+Core. For example:
+
+- An Asset told to follow a Track it cannot see listens to another Asset's
+  observation reports on that Track and steers itself.
+- An Asset follows another Asset by hearing its status and position reports.
+
+Naming is still open for the always-open connection idea: "session" fits because
+the link stays open; "link" feels too generic.
