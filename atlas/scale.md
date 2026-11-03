@@ -13,8 +13,7 @@ Design so Atlas works well at these sizes and does not break just past them.
 
 ## Radio
 - **Telemetry rate depends on the link:** about every 15 seconds on LoRa, about every second on FLRC.
-- **Message size:** aim for a couple hundred bytes (about 200) after compression. Treat 255 bytes as the ceiling, about the largest single packet these radios carry.
-- **Bigger messages are split.** A message over the ceiling is split into chunks, sent chunk by chunk, and put back together when it arrives. The chunk format will be defined in the protocol later.
+- **Message size:** each radio or link sets its own size limit and splits messages into chunks if it needs to. The protocol has no size cap and does no chunking. About 200 bytes after compression is a goal for slow links, not a limit.
 - **Commands go before telemetry** when the radio is busy. Expect a few commands per minute per Asset.
 
 ## Runs and storage
