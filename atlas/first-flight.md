@@ -67,10 +67,9 @@ write their own Reset ZIP. Core's ZIP holds:
 - Errors and link drops.
 - A plain readable summary: start and end, devices, Tasks, and outcomes.
 
-After the run, all the ZIPs are gathered in one place. Together they show what
-every part did, so the whole run can be analyzed at once, including by a
-language model. Each system's documentation defines its own ZIP contents and
-Reset procedure.
+Reset ZIPs are for after the system is used: dump them into an AI agent to give
+it full context on how the system was used and any errors. Each system's
+documentation defines its own ZIP contents and Reset procedure.
 
 This example explains one flight. Detailed Task, radio, and recovery rules
 belong in their owning subsystem documentation.

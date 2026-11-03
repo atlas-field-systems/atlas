@@ -14,7 +14,8 @@ environment in which its parts work together.
 4. [First flight](first-flight.md) follows the first useful workflow.
 5. [Settings](settings.md) explains quick changes to an Asset's configuration.
 6. [Scale](scale.md) sets how big Atlas is meant to be, such as about 20 Assets.
-7. [Experimental ideas](experimental.md) lists ideas being explored, not committed.
+7. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
+8. [Experimental ideas](experimental.md) lists ideas being explored, not committed.
 
 ## Keep subsystem documentation with its owner
 

@@ -29,16 +29,16 @@ Each subsystem defines how it represents that evidence.
 
 ## Keep shared data simple
 
-The owner decides these data rules. Protocol follows them and adds the exact fields.
+The owner decides Atlas's data formats and data structures. Protocol follows them and adds the exact fields.
 
 - Each message has one time for the whole message. Mixed times are rare and need
   their own case. There is no sender field; messages carry `asset_id`, `time`, and `seq`.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
-- The protocol guides storage. Core, the SDK cache, and Assets store data built
-  from the protocol's definitions: same variables, names, units, and shapes.
-  Storage may add its own fields and combined views, defined in the protocol too,
-  but never conflicts with it.
+- The whole data format lives in Protocol. Protocol defines both the messages and
+  the storage layout. Core, the SDK cache, and Assets store data in those formats,
+  built from the same variables, names, units, and shapes.
+- Every ID is 1 to 4 letters or digits.
 
 ## Document ownership
 
