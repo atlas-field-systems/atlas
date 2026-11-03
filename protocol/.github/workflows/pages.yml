@@ -1,31 +1,38 @@
 name: pages
+# main is published at the site root; each open pull request from this repo gets a preview
+# at pr/pr-<number>/, removed when the pull request closes. Both go to the gh-pages branch.
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
   workflow_dispatch:
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
+  pull-requests: write
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: pages-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
 jobs:
   deploy:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci
-      - run: npm run check
-      - run: npm run build:site
-      - uses: actions/upload-pages-artifact@v3
+      - if: github.event.action != 'closed'
+        run: npm ci && npm run check && npm run build:site
+      - if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: _site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          folder: _site
+          branch: gh-pages
+          clean-exclude: pr/
+      - if: github.event_name == 'pull_request'
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: _site
+          preview-branch: gh-pages
+          umbrella-dir: pr

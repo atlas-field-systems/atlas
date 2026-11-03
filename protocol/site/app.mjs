@@ -3,6 +3,7 @@
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { deflateSync } from 'fflate';
+import { marked } from 'marked';
 import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType } from './lib/protocol.mjs';
 
 const readJson = async (f) => (await fetch(`definitions/${f}`)).json();
@@ -15,8 +16,34 @@ $('title').textContent = protocol.index.title;
 $('nav').innerHTML = protocol.index.groups.map((g) => `<h3>${esc(g.name)}</h3>` +
   g.files.map((f) => `<a data-file="${esc(f)}">${esc(protocol.schemas[f].title ?? f)}</a>`).join('')).join('');
 $('nav').onclick = (e) => { if (e.target.dataset.file) location.hash = e.target.dataset.file; };
-window.onhashchange = () => show(location.hash.slice(1));
-if (location.hash) show(location.hash.slice(1));
+const docs = await (await fetch('docs/index.json')).json();
+$('nav').innerHTML += '<h3>Docs</h3>' + docs.map((d) => `<a data-file="doc:${esc(d)}">${esc(d.replace(/\.md$/, '').replace(/[-/]/g, ' '))}</a>`).join('');
+branchBanner();
+window.onhashchange = () => route(location.hash.slice(1));
+if (location.hash) route(location.hash.slice(1));
+
+function route(h) { return h.startsWith('doc:') ? showDoc(h.slice(4)) : show(h); }
+
+async function showDoc(name) {
+  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.file === `doc:${name}`));
+  const text = await (await fetch(`docs/${name}`)).text();
+  $('view').innerHTML = `<article class="doc">${marked.parse(text)}</article>`;
+}
+
+// Which version this is (main or a pull request preview), with links to the others.
+async function branchBanner() {
+  const m = location.pathname.match(/^(.*?\/)pr\/pr-(\d+)\//);
+  const root = m ? m[1] : location.pathname.replace(/[^/]*$/, '');
+  const here = m ? Number(m[2]) : null;
+  let prs = [];
+  try { prs = await (await fetch('https://api.github.com/repos/atlas-field-systems/protocol/pulls?state=open&per_page=50')).json(); } catch {}
+  if (!Array.isArray(prs)) prs = [];
+  const link = (href, label, on) => on ? `<b>${esc(label)}</b>` : `<a href="${esc(href)}">${esc(label)}</a>`;
+  const cur = prs.find((p) => p.number === here);
+  $('branch').className = here ? 'branch' : 'branch main';
+  $('branch').innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/protocol/pull/${here}">#${here}</a>${cur ? `: ${esc(cur.title)}` : ''} (work in progress, not on main). ` : 'Showing main. ') +
+    'Versions: ' + link(root, 'main', !here) + prs.map((p) => link(`${root}pr/pr-${p.number}/`, `#${p.number} ${p.title}`, p.number === here)).join('');
+}
 
 function show(file) {
   if (!protocol.schemas[file]) return;
