@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/explanation.json",
+  "title": "explanation",
+  "description": "A short plain explanation from the Asset, such as why it is degraded.",
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 512,
+  "examples": [
+    "Navigation receiver unavailable"
+  ]
+}

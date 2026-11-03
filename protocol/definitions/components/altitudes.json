@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/altitudes.json",
+  "title": "altitudes",
+  "description": "One or more altitudes for the same point, each saying what it is measured from.",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "$ref": "altitude.json"
+  },
+  "examples": [
+    [
+      {
+        "altitude_m": 30,
+        "altitude_reference": "home"
+      },
+      {
+        "altitude_m": 215.4,
+        "altitude_reference": "msl"
+      }
+    ]
+  ]
+}
