@@ -1,0 +1,15 @@
+body { font: 14px/1.4 system-ui, sans-serif; margin: 0; color: #222; }
+header { padding: 10px 16px; background: #1d2b3a; color: #fff; display: flex; gap: 16px; align-items: baseline; }
+header h1 { font-size: 18px; margin: 0; } header span { opacity: .7; }
+main { display: flex; min-height: calc(100vh - 44px); }
+nav { width: 230px; border-right: 1px solid #ddd; padding: 8px; overflow: auto; }
+nav h3 { font-size: 12px; text-transform: uppercase; color: #777; margin: 12px 4px 4px; }
+nav a { display: block; padding: 3px 6px; border-radius: 4px; cursor: pointer; color: #135; text-decoration: none; }
+nav a.on, nav a:hover { background: #e4ecf5; }
+#view { flex: 1; padding: 12px 20px; overflow: auto; }
+.cols { display: flex; gap: 20px; flex-wrap: wrap; } .cols > div { flex: 1; min-width: 320px; }
+table { border-collapse: collapse; width: 100%; } td, th { border-bottom: 1px solid #eee; padding: 4px; text-align: left; vertical-align: top; }
+td.desc { color: #666; font-size: 12px; } input, select { width: 100%; box-sizing: border-box; }
+textarea { width: 100%; height: 300px; font: 12px monospace; }
+.ok { color: #18794e; font-weight: bold; } .bad { color: #b42318; font-weight: bold; }
+button { margin: 0 6px 8px 0; } code { font-size: 12px; }

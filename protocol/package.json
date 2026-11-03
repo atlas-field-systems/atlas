@@ -4,10 +4,24 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "test": "node --test test/*.test.mjs",
+    "cli": "node cli/cli.mjs",
+    "site": "node scripts/build-site.mjs && node scripts/serve.mjs",
+    "build:site": "node scripts/build-site.mjs"
   },
-  "devDependencies": {
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.5",
     "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1"
-  }
+    "ajv-formats": "^3.0.1",
+    "fflate": "^0.8.3"
+  },
+  "bin": {
+    "atlas-protocol": "cli/cli.mjs"
+  },
+  "files": [
+    "cli",
+    "lib",
+    "definitions"
+  ]
 }
