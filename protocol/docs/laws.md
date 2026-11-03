@@ -9,7 +9,7 @@ or the law gets changed on purpose first.
 
 1. **Protocol defines all Atlas data.** It defines both the messages and the storage layout. Core, the SDK cache, and Assets store data in storage formats defined here, built from the same variables, names, units, and shapes. Extra stored fields, such as when a message was received, are defined here too. Storage formats are not planned yet; see [Storage formats](../storage/README.md).
 2. **Flat messages.** Every field sits directly in the message. No header, wrapper, or sender field. The grouping lives only in the `type` name, never in nested objects. *Checked.*
-3. **Every message starts the same way:** `type`, `time` (milliseconds since 1970, UTC), `seq` (the sender's own counter), and `asset_id`, then `kind` if its type has kinds. The one exception: `query.core` may leave out `asset_id` to ask about every Asset. *Checked.*
+3. **Every message starts the same way:** `type`, `time` (milliseconds since 1970, UTC), `seq` (the sender's own counter) and `asset_id`, then `kind` if its type has kinds. `asset_id` is required on every message that concerns a single Asset; a message about many Assets (such as asking Core for all of them) leaves it out. *Checked: the first three are required everywhere, and `asset_id` always comes from its variable.*
 4. **Variables are the building blocks.** Each field is defined once, in `variables/`, and reused everywhere. Messages, kinds and components only point at variables or components. *Checked.*
 5. **No redundancy.** Never send the same fact twice in one message, and never send what the other end can work out on its own.
 6. **Full readable names.** Field names are whole words, such as `altitude_reference`. Short keys wait until protocol 1.0.

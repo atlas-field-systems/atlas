@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/core.json",
   "title": "Core query",
-  "description": "From an operator interface to Core, over the operator API (not defined yet). kind says what to ask for. Core answers with stored messages, unchanged. Here asset_id is optional: leave it out to ask about every Asset.",
+  "description": "From an operator interface to Core, over the operator API (not defined yet). kind says what to ask for. Core answers with stored messages, unchanged. Include asset_id to ask about one Asset; leave it out to ask about all of them.",
   "type": "object",
   "required": [
     "type",
