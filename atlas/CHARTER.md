@@ -31,10 +31,14 @@ Each subsystem defines how it represents that evidence.
 
 The owner decides these data rules. Protocol follows them and adds the exact fields.
 
-- Each message names one source, its `from`, and one time for the whole message.
-  A message never mixes sources. Mixed times are rare and need their own case.
+- Each message has one time for the whole message. Mixed times are rare and need
+  their own case. There is no sender field; messages carry `asset_id`, `time`, and `seq`.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
+- The protocol guides storage. Core, the SDK cache, and Assets store data built
+  from the protocol's definitions: same variables, names, units, and shapes.
+  Storage may add its own fields and combined views, defined in the protocol too,
+  but never conflicts with it.
 
 ## Document ownership
 
