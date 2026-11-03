@@ -4,12 +4,10 @@ How one telemetry report moves from an Asset to the operator, hop by hop. It use
 
 **Bloat is the main enemy.** Telemetry is the most frequent message, so every byte here counts most.
 
-```mermaid
-flowchart LR
-  A[Asset] -- "1. radio" --> G[Gateway]
-  G -- "2. IP, GAP" --> C[Core]
-  C -- "3. store GAP" --> S[(Core storage)]
-  C -- "4. GAP" --> O[Operator interface]
+```text
+Asset ──1. radio──▶ Gateway ──2. IP (GAP)──▶ Core ──3. store (GAP)──▶ Core storage
+                                              │
+                                              └──4. to operator (GAP)──▶ Operator interface
 ```
 
 ## 1. Asset → gateway

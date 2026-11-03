@@ -4,16 +4,16 @@ How one task is created, stored and moved, hop by hop. It uses the first-flight 
 
 **Bloat is the main enemy.** Each hop lists what could be removed.
 
-```mermaid
-flowchart LR
-  O[Operator interface] -- "1. operator API (IP) GAP" --> C[Core]
-  C -- "2. store GAP" --> S[(Core storage)]
-  C -- "3. IP, GAP routing" --> G[Gateway]
-  G -- "4. radio" --> A[Asset]
-  A -- "5. report.status" --> G
-  G --> C
-  C -- "6. update" --> S
-  C -- "7. GAP" --> O
+```text
+Operator interface ──1. operator API, IP (GAP)──▶ Core ──2. store (GAP)──▶ Core storage
+        ▲                                          │  ▲
+        └──────────7. to operator (GAP)────────────┘  └──6. update storage
+                                                   │
+                                     3. IP (GAP: routing)
+                                                   ▼
+                                                Gateway ──4. radio──▶ Asset
+                                                   ▲                    │
+                                                   └──5. report.status──┘
 ```
 
 ## 1. Operator interface → Core
