@@ -28,4 +28,4 @@ field to see the effect. Both tools only display; they never send anything.
 - `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer
 - `scripts/check.mjs`: checks every definition and example (`npm ci && npm run check && npm test`)
 
-AI agents: read [AGENTS.md](AGENTS.md). Undecided items: [docs/open-questions.md](docs/open-questions.md).
+Communication proposal (draft): [docs/communication.md](docs/communication.md). AI agents: read [AGENTS.md](AGENTS.md). Undecided items: [docs/open-questions.md](docs/open-questions.md).

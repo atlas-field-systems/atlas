@@ -2,7 +2,11 @@
 
 Not decided yet. Planning comes before building.
 
-- **Message envelope.** Messages like Takeoff will not be sent bare. They will be
+A draft answer to several of these (envelope, acknowledgement, queue delivery,
+version check, gateways) is in [communication.md](communication.md).
+
+- **Message envelope.** Deferred: to be detailed later, when the details of how messages travel are nailed down.
+  Messages like Takeoff will not be sent bare. They will be
   carried inside something that explains the context, for example a task list
   pushed to an Asset when it asks "what tasks do I have?".
 - **Command acknowledgement.** How a command is acknowledged, keeping "accepted"
