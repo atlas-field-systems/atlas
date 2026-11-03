@@ -35,9 +35,10 @@ for (const f of readdirSync(root).filter((x) => x.endsWith('.md'))) {
   writeFileSync(join(out, page(f)), `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>
 <link rel="stylesheet" href="style.css"></head><body><nav>${links}</nav><main>${marked.parse(md)}</main>
-<script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>`);
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>`);
 }
 cpSync('style.css', join(out, 'style.css'));
+cpSync('branch.js', join(out, 'branch.js'));
 // Mermaid is served from this site, not a CDN.
 const dist = 'node_modules/mermaid/dist';
 cpSync(join(dist, 'mermaid.esm.min.mjs'), join(out, 'mermaid.esm.min.mjs'));

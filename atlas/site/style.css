@@ -6,3 +6,6 @@ main { max-width: 760px; padding: 24px 40px; }
 code, pre { font: 14px monospace; background: #f6f8fa; }
 pre { padding: 12px; overflow: auto; }
 @media (max-width: 700px) { body { display: block; } nav { width: auto; min-height: 0; } main { padding: 16px; } }
+.branch { padding: 6px 16px; background: #fff4d6; border-bottom: 1px solid #e5c76b; font-size: 13px; }
+.branch.main { background: #eef3f8; border-color: #d5dde6; }
+.branch a, .branch b { margin-right: 10px; }
