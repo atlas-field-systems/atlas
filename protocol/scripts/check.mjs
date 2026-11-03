@@ -9,13 +9,11 @@ const root = 'definitions';
 const kinds = ['variables', 'components', 'messages'];
 const ajv = new Ajv({ strict: true, allErrors: true });
 addFormats(ajv);
-ajv.addKeyword('short_name');
 
 const errors = [];
 // A message or component may only point at definitions: a $ref, a $ref fixed to one
 // value (const), or a list of a $ref. It never defines a field itself.
-const onlyReferences = (full) => {
-  const { short_name, ...d } = full;
+const onlyReferences = (d) => {
   const keys = Object.keys(d).sort().join();
   if (keys === '$ref' || keys === '$ref,const') return true;
   const list = Object.keys(d).filter((k) => !['minItems', 'maxItems'].includes(k)).sort().join();
@@ -49,30 +47,6 @@ for (const [file, s] of Object.entries(schemas)) {
     }
   } catch (e) {
     errors.push(`${file}: ${e.message}`);
-  }
-}
-
-// Short keys: each variable's short_name is unique, and inside every object the
-// compact keys (short_name, else the full name) never collide.
-const shortOwner = {};
-for (const [file, s] of Object.entries(schemas)) {
-  if (!file.startsWith('variables/') || !s.short_name) continue;
-  if (shortOwner[s.short_name]) errors.push(`${file}: short_name "${s.short_name}" already used by ${shortOwner[s.short_name]}`);
-  shortOwner[s.short_name] = file;
-}
-const shortOf = (file, def) => {
-  if (def.short_name) return def.short_name;
-  const ref = def.$ref ?? def.items?.$ref;
-  if (!ref || def.items) return undefined;
-  const target = join(file, '..', ref).replace(/^definitions\//, '');
-  return schemas[target]?.short_name;
-};
-for (const [file, s] of Object.entries(schemas)) {
-  const seen = {};
-  for (const [prop, def] of Object.entries(s.properties ?? {})) {
-    const key = shortOf(file, def) ?? prop;
-    if (seen[key]) errors.push(`${file}: compact key "${key}" used by both "${seen[key]}" and "${prop}"`);
-    seen[key] = prop;
   }
 }
 

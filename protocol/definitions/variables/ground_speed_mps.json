@@ -3,7 +3,6 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/ground_speed_mps.json",
   "title": "ground_speed_mps",
   "description": "Horizontal speed over the ground, in metres per second.",
-  "short_name": "speed_mps",
   "type": "number",
   "minimum": 0,
   "examples": [

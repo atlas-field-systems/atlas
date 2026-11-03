@@ -1,7 +1,8 @@
 // Atlas Protocol viewer for the browser. Everything shown comes from definitions/.
-import Ajv from 'https://esm.sh/ajv@8.17.1/dist/2020';
-import addFormats from 'https://esm.sh/ajv-formats@3.0.1';
-import { deflateSync } from 'https://esm.sh/fflate@0.8.2';
+// Bundled into one local file at build time, so the site needs no outside servers.
+import Ajv from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import { deflateSync } from 'fflate';
 import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType } from './lib/protocol.mjs';
 
 const readJson = async (f) => (await fetch(`definitions/${f}`)).json();
@@ -46,7 +47,7 @@ function show(file) {
     };
     if (!fromText) $('json').value = JSON.stringify(value, null, 2);
     const v = validate(protocol, file, value);
-    const m = measure(value, compress, tree);
+    const m = measure(value, compress);
     $('compact').innerHTML = `<p class="lbl">Compact JSON, line for line with the message JSON. Sent minified on one line: <b>${m.bytes}</b> bytes</p><pre class="aligned">${esc(m.aligned)}</pre>`;
     $('readlbl').innerHTML = `Readable: <b>${m.readableBytes}</b> bytes`;
     $('json').rows = Math.max(m.aligned.split('\n').length, $('json').value.split('\n').length) + 1;

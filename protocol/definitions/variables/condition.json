@@ -3,7 +3,6 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/condition.json",
   "title": "condition",
   "description": "The Asset's own view of its overall health: unknown, healthy, degraded, or faulted.",
-  "short_name": "cond",
   "enum": [
     "unknown",
     "healthy",

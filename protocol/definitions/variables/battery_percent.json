@@ -3,7 +3,6 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/battery_percent.json",
   "title": "battery_percent",
   "description": "Battery remaining, 0 to 100 percent.",
-  "short_name": "battery",
   "type": "number",
   "minimum": 0,
   "maximum": 100,

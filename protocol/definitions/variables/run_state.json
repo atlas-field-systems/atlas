@@ -3,7 +3,6 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/run_state.json",
   "title": "run_state",
   "description": "Whether the Asset is working through its Tasks (running) or holding and waiting (paused).",
-  "short_name": "run",
   "enum": [
     "paused",
     "running"

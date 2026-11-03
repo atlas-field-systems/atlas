@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/land.json",
+  "title": "Land",
+  "description": "Command from an operator: land at a position. The Asset climbs or descends to the transit altitude (or keeps its current altitude if none is given), flies over the position, and lands.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id",
+    "landing_position"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../variables/type.json",
+      "const": "land"
+    },
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../variables/asset_id.json"
+    },
+    "landing_position": {
+      "$ref": "../components/position.json"
+    },
+    "transit_altitude": {
+      "$ref": "../components/altitude.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "land",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1",
+      "landing_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      },
+      "transit_altitude": {
+        "altitude_m": 20,
+        "altitude_reference": "home"
+      }
+    },
+    {
+      "type": "land",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1",
+      "landing_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      }
+    }
+  ]
+}

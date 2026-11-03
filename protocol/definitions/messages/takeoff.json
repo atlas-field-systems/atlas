@@ -27,8 +27,7 @@
       "$ref": "../variables/asset_id.json"
     },
     "target_altitude": {
-      "$ref": "../components/altitude.json",
-      "short_name": "target_alt"
+      "$ref": "../components/altitude.json"
     }
   },
   "examples": [

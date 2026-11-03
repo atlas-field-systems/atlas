@@ -21,8 +21,7 @@
       "minItems": 1,
       "items": {
         "$ref": "altitude.json"
-      },
-      "short_name": "alts"
+      }
     }
   },
   "examples": [

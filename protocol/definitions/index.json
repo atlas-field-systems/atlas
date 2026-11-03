@@ -5,6 +5,9 @@
       "name": "Messages",
       "files": [
         "messages/takeoff.json",
+        "messages/land.json",
+        "messages/move_to.json",
+        "messages/change_setting.json",
         "messages/settings.json",
         "messages/status.json",
         "messages/telemetry.json"

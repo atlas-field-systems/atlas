@@ -3,7 +3,6 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/link_loss_response.json",
   "title": "link_loss_response",
   "description": "What the Asset does if it loses its link to Core.",
-  "short_name": "link_loss_r",
   "enum": [
     "return_home",
     "hold",

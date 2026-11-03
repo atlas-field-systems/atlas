@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/change_setting.json",
+  "title": "Change Setting",
+  "description": "Command from an operator, queued as a Task: set exactly one setting to an explicit end state when the Task is reached.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../variables/type.json",
+      "const": "change_setting"
+    },
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../variables/asset_id.json"
+    },
+    "run_state": {
+      "$ref": "../variables/run_state.json"
+    },
+    "lights": {
+      "$ref": "../variables/lights.json"
+    },
+    "landing_gear": {
+      "$ref": "../variables/landing_gear.json"
+    },
+    "link_loss_response": {
+      "$ref": "../variables/link_loss_response.json"
+    }
+  },
+  "minProperties": 5,
+  "maxProperties": 5,
+  "$comment": "type, time, seq and asset_id plus exactly one setting.",
+  "examples": [
+    {
+      "type": "change_setting",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1",
+      "landing_gear": "up"
+    }
+  ]
+}

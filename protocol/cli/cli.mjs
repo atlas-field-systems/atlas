@@ -20,9 +20,9 @@ function printFields(n, depth = 0) {
 
 function report(file, value) {
   const v = validate(protocol, file, value);
-  const m = measure(value, compress, fieldTree(protocol, file));
+  const m = measure(value, compress);
   const left = ['Message JSON', ...JSON.stringify(value, null, 2).split('\n')];
-  const right = [`Compact JSON (minified on the wire: ${m.bytes} bytes)`, ...m.aligned.split('\n'), '', `Compressed (deflate, ${m.compressed} bytes)`, ...m.hex.split('\n'), '', 'Base64:', ...(m.base64.match(/.{1,64}/g) ?? [])];
+  const right = [`Compact JSON (sent minified on one line: ${m.bytes} bytes)`, ...m.aligned.split('\n'), '', `Compressed (deflate, ${m.compressed} bytes)`, ...m.hex.split('\n'), '', 'Base64:', ...(m.base64.match(/.{1,64}/g) ?? [])];
   const width = Math.max(...left.map((l) => l.length)) + 3;
   console.log();
   for (let i = 0; i < Math.max(left.length, right.length); i++) {
@@ -80,7 +80,7 @@ if (process.argv[2] === '--list') {
 } else if (process.argv[2] === '--show') {
   const file = process.argv[3];
   const value = example(protocol, file);
-  console.log(JSON.stringify({ file, value, validation: validate(protocol, file, value), size: measure(value, compress, fieldTree(protocol, file)) }));
+  console.log(JSON.stringify({ file, value, validation: validate(protocol, file, value), size: measure(value, compress) }));
 } else {
   console.log(bold(protocol.index.title));
   try {

@@ -27,8 +27,7 @@
       "$ref": "../variables/asset_id.json"
     },
     "position": {
-      "$ref": "../components/position.json",
-      "short_name": "pos"
+      "$ref": "../components/position.json"
     },
     "ground_speed_mps": {
       "$ref": "../variables/ground_speed_mps.json"

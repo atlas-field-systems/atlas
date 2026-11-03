@@ -3,7 +3,6 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/longitude.json",
   "title": "longitude",
   "description": "Longitude in WGS84 degrees, east positive.",
-  "short_name": "lon",
   "type": "number",
   "minimum": -180,
   "maximum": 180,
