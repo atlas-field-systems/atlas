@@ -4,6 +4,7 @@ import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { deflateSync } from 'fflate';
 import { marked } from 'marked';
+import { loadScenario } from './lib/scenario.mjs';
 import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType } from './lib/protocol.mjs';
 
 const readJson = async (f) => (await fetch(`definitions/${f}`)).json();
@@ -15,6 +16,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0
 $('title').textContent = protocol.index.title;
 $('nav').innerHTML = protocol.index.groups.map((g) => `<h3>${esc(g.name)}</h3>` +
   g.files.map((f) => `<a data-file="${esc(f)}">${esc(protocol.schemas[f].title ?? f)}</a>`).join('')).join('');
+const scenarios = await (await fetch('examples/index.json')).json();
+$('nav').innerHTML += '<h3>Scenarios</h3>' + scenarios.map((n) => `<a data-file="scenario:${esc(n)}">${esc(n.replace(/-/g, ' '))}</a>`).join('');
 $('nav').onclick = (e) => { if (e.target.dataset.file) location.hash = e.target.dataset.file; };
 const docs = await (await fetch('docs/index.json')).json();
 $('nav').innerHTML += '<h3>Docs</h3>' + docs.map((d) => `<a data-file="doc:${esc(d)}">${esc(d.replace(/\.md$/, '').replace(/[-/]/g, ' '))}</a>`).join('');
@@ -22,7 +25,11 @@ branchBanner();
 window.onhashchange = () => route(location.hash.slice(1));
 if (location.hash) route(location.hash.slice(1));
 
-function route(h) { return h.startsWith('doc:') ? showDoc(h.slice(4)) : show(h); }
+function route(h) {
+  if (h.startsWith('doc:')) return showDoc(h.slice(4));
+  if (h.startsWith('scenario:')) return showScenario(h.slice(9));
+  return show(h);
+}
 
 async function showDoc(name) {
   document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.file === `doc:${name}`));
@@ -43,6 +50,16 @@ async function branchBanner() {
   $('branch').className = here ? 'branch' : 'branch main';
   $('branch').innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/protocol/pull/${here}">#${here}</a>${cur ? `: ${esc(cur.title)}` : ''} (work in progress, not on main). ` : 'Showing main. ') +
     'Versions: ' + link(root, 'main', !here) + prs.map((p) => link(`${root}pr/pr-${p.number}/`, `#${p.number} ${p.title}`, p.number === here)).join('');
+}
+
+async function showScenario(name) {
+  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.file === `scenario:${name}`));
+  const s = await loadScenario(protocol, async (f) => (await fetch(`examples/${f}`)).json(), name, compress);
+  const row = (r) => r.gap
+    ? `<tr class="gap"><td>—</td><td></td><td><b>GAP: ${esc(r.gap)}</b></td><td>${esc(r.why)}</td><td></td><td></td></tr>`
+    : `<tr><td>${esc(r.file.slice(0, 2))}</td><td>${esc(r.from)} → ${esc(r.to)}</td><td><a href="#messages/${esc(r.message.type)}.json">${esc(r.message.type)}</a>${r.ok ? '' : ' <b>invalid</b>'}</td><td>${esc(r.why)}<details><summary>JSON</summary><pre>${esc(JSON.stringify(r.message, null, 2))}</pre></details></td><td>${r.bytes}</td><td>${r.compressed}</td></tr>`;
+  $('view').innerHTML = `<h2>${esc(s.title)}</h2><p>${esc(s.source)}</p>` + Object.entries(s.branches).map(([b, label]) =>
+    `<h3>${esc(label)}</h3><table class="scenario"><tr><th>#</th><th>From → To</th><th>Message</th><th>Why</th><th>Minified</th><th>Deflate</th></tr>${s.rows.filter((r) => r.branch === b).map(row).join('')}</table>`).join('');
 }
 
 function show(file) {

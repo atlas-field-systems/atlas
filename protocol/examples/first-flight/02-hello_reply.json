@@ -1,0 +1,8 @@
+{
+  "type": "hello_reply",
+  "time": 1793667600200,
+  "seq": 1,
+  "asset_id": "A1",
+  "hello_result": "accepted",
+  "protocol_version": "0.3"
+}

@@ -1,0 +1,8 @@
+{
+  "type": "task_status",
+  "time": 1793667605300,
+  "seq": 5,
+  "asset_id": "A1",
+  "task_id": "T1",
+  "task_state": "active"
+}
