@@ -1,0 +1,10 @@
+{
+  "type": "report.status",
+  "time": 1793667640300,
+  "seq": 15,
+  "asset_id": "A1",
+  "kind": "plan",
+  "plan_id": "P1",
+  "plan_state": "failed",
+  "explanation": "Link lost, returning home"
+}

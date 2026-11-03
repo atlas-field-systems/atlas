@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command/change_settings.json",
+  "title": "change_settings",
+  "description": "Set one or more settings, each to an explicit end state. At least one setting must be present.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "change_settings"
+    },
+    "run_state": {
+      "$ref": "../../../variables/run_state.json"
+    },
+    "lights": {
+      "$ref": "../../../variables/lights.json"
+    },
+    "landing_gear": {
+      "$ref": "../../../variables/landing_gear.json"
+    },
+    "link_loss_response": {
+      "$ref": "../../../variables/link_loss_response.json"
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "run_state"
+      ]
+    },
+    {
+      "required": [
+        "lights"
+      ]
+    },
+    {
+      "required": [
+        "landing_gear"
+      ]
+    },
+    {
+      "required": [
+        "link_loss_response"
+      ]
+    }
+  ],
+  "examples": [
+    {
+      "kind": "change_settings",
+      "lights": "on"
+    }
+  ]
+}

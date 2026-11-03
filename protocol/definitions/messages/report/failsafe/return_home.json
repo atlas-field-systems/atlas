@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/failsafe/return_home.json",
+  "title": "return_home",
+  "description": "The Asset is returning home by itself.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "return_home"
+    }
+  },
+  "examples": [
+    {
+      "kind": "return_home"
+    }
+  ]
+}

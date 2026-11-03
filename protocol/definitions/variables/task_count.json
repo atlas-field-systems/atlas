@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/task_count.json",
+  "title": "task_count",
+  "description": "How many Tasks the Plan has in total. The Asset knows it holds the whole Plan once it has this many.",
+  "type": "integer",
+  "minimum": 1,
+  "maximum": 255,
+  "examples": [
+    3
+  ]
+}

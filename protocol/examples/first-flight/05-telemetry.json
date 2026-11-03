@@ -1,5 +1,5 @@
 {
-  "type": "telemetry",
+  "type": "report.telemetry",
   "time": 1793667601000,
   "seq": 4,
   "asset_id": "A1",

@@ -21,10 +21,43 @@ function join(base, ref) {
   return parts.join('/');
 }
 
-// Turns a schema file into a tree of fields with every $ref resolved.
-export function fieldTree(protocol, file, name = '', required = true) {
+// A message type with kinds lists them in oneOf: messages/<group>/<type>/<kind>.json.
+export function kindsOf(protocol, file) {
+  return (protocol.schemas[file].oneOf ?? []).filter((b) => b.$ref).map((b) => {
+    const kindFile = join(file, b.$ref);
+    return { name: kindFile.split('/').pop().replace('.json', ''), file: kindFile };
+  });
+}
+
+// The message types as a tree: group > type > kinds, from the folder names under messages/.
+export function messageTree(protocol) {
+  const groups = [];
+  for (const f of protocol.index.groups.flatMap((g) => g.files)) {
+    const m = f.match(/^messages\/([a-z_]+)\/[a-z_]+\.json$/);
+    if (!m) continue;
+    let g = groups.find((x) => x.name === m[1]);
+    if (!g) groups.push(g = { name: m[1], types: [] });
+    g.types.push({ file: f, type: protocol.schemas[f].properties.type.const, kinds: kindsOf(protocol, f) });
+  }
+  return groups;
+}
+
+// Which definition file a message belongs to: type <group>.<type> is messages/<group>/<type>.json.
+export const messageFile = (message) => `messages/${String(message.type).replace('.', '/')}.json`;
+
+// "messages/<group>/<type>.json@<kind>" names one kind of a type; the part before @ is the file.
+export const splitId = (id) => { const [file, kind] = id.split('@'); return { file, kind }; };
+
+// Turns a schema file (or file@kind) into a tree of fields with every $ref resolved.
+export function fieldTree(protocol, id, name = '', required = true) {
+  const { file, kind } = splitId(id);
   const s = protocol.schemas[file];
-  return node(protocol, s, file, name, required);
+  const n = node(protocol, s, file, name, required);
+  const k = kind && kindsOf(protocol, file).find((x) => x.name === kind);
+  if (!k) return n;
+  const extra = node(protocol, protocol.schemas[k.file], k.file, '', true).children;
+  n.children = [...n.children.map((c) => (c.name === 'kind' ? extra.find((e) => e.name === 'kind') : c)), ...extra.filter((e) => e.name !== 'kind')];
+  return n;
 }
 
 function node(protocol, s, file, name, required) {
@@ -73,9 +106,11 @@ export function leaves(tree, value, path = []) {
   return [{ path, node: tree, value }];
 }
 
-export function example(protocol, file) {
+export function example(protocol, id) {
+  const { file, kind } = splitId(id);
   const s = protocol.schemas[file];
-  return structuredClone(s.examples?.[0] ?? generate(fieldTree(protocol, file)));
+  const ex = kind ? s.examples?.find((e) => e.kind === kind) : s.examples?.[0];
+  return structuredClone(ex ?? generate(fieldTree(protocol, id)));
 }
 
 export function generate(n) {
@@ -113,8 +148,8 @@ export function parseInput(n, text) {
   return text;
 }
 
-export function validate(protocol, file, value) {
-  const v = protocol.ajv.getSchema(protocol.schemas[file].$id);
+export function validate(protocol, id, value) {
+  const v = protocol.ajv.getSchema(protocol.schemas[splitId(id).file].$id);
   const ok = v(value);
   return { ok, errors: ok ? [] : v.errors.map((e) => `${e.instancePath || '(message)'} ${e.message}`) };
 }

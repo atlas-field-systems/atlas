@@ -4,17 +4,28 @@
     {
       "name": "Messages",
       "files": [
-        "messages/takeoff.json",
-        "messages/land.json",
-        "messages/move_to.json",
-        "messages/change_setting.json",
-        "messages/settings.json",
-        "messages/status.json",
-        "messages/telemetry.json",
-        "messages/hello.json",
-        "messages/hello_reply.json",
-        "messages/task_status.json",
-        "messages/failsafe_status.json"
+        "messages/admin/hello.json",
+        "messages/admin/hello_reply.json",
+        "messages/control/command.json",
+        "messages/control/task.json",
+        "messages/report/status.json",
+        "messages/report/failsafe.json",
+        "messages/report/telemetry.json",
+        "messages/report/settings.json"
+      ]
+    },
+    {
+      "name": "Kinds",
+      "files": [
+        "messages/control/command/takeoff.json",
+        "messages/control/command/move_to.json",
+        "messages/control/command/land.json",
+        "messages/control/command/change_settings.json",
+        "messages/report/status/asset.json",
+        "messages/report/status/task.json",
+        "messages/report/status/plan.json",
+        "messages/report/failsafe/return_home.json",
+        "messages/report/failsafe/link_loss_response.json"
       ]
     },
     {
@@ -28,6 +39,7 @@
       "name": "Variables",
       "files": [
         "variables/type.json",
+        "variables/kind.json",
         "variables/time.json",
         "variables/seq.json",
         "variables/asset_id.json",
@@ -48,7 +60,10 @@
         "variables/hello_result.json",
         "variables/task_id.json",
         "variables/task_state.json",
-        "variables/failsafe.json"
+        "variables/plan_id.json",
+        "variables/task_count.json",
+        "variables/plan_state.json",
+        "variables/reply_to.json"
       ]
     }
   ]

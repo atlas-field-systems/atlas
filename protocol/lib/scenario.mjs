@@ -1,7 +1,6 @@
 // Turns an example scenario (examples/<name>/scenario.json plus its message files)
-// into rows with sizes and validation. A scenario marked "proposal" uses message types that
-// do not exist yet, so it is shown without validation. Shared by the docs script, the tests and the viewer.
-import { validate, measure } from './protocol.mjs';
+// into rows with sizes and validation. Shared by the docs script, the tests and the viewer.
+import { validate, measure, messageFile } from './protocol.mjs';
 
 export async function loadScenario(protocol, readExample, name, compress) {
   const scenario = await readExample(`${name}/scenario.json`);
@@ -9,8 +8,8 @@ export async function loadScenario(protocol, readExample, name, compress) {
   for (const step of scenario.steps) {
     if (step.gap) { rows.push({ ...step }); continue; }
     const message = await readExample(`${name}/${step.file}`);
-    const file = `messages/${message.type}.json`;
-    const check = scenario.proposal ? { ok: null, errors: [] } : protocol.schemas[file] ? validate(protocol, file, message) : { ok: false, errors: [`no definition ${file}`] };
+    const file = messageFile(message);
+    const check = protocol.schemas[file] ? validate(protocol, file, message) : { ok: false, errors: [`no definition ${file}`] };
     const size = measure(message, compress);
     rows.push({ ...step, message, ok: check.ok, errors: check.errors, bytes: size.bytes, compressed: size.compressed, fields: size.fields });
   }

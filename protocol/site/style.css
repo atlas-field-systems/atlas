@@ -30,3 +30,7 @@ table.scenario th, table.scenario td { border-bottom: 1px solid #ddd; padding: .
 table.scenario td:nth-child(n+5) { text-align: right; white-space: nowrap; }
 table.scenario tr.gap td { background: #fff4d6; }
 table.scenario pre { font-size: .8rem; }
+nav .grp { font-weight: 600; margin: 8px 0 2px; text-transform: lowercase; }
+nav .typ { padding-left: 10px; }
+nav div.typ { color: #555; margin-top: 2px; }
+nav a.knd { padding-left: 22px; }

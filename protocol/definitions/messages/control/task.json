@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/task.json",
+  "title": "Task",
+  "description": "From Core: one use of a command, queued in a Plan. Each Task says which Plan it belongs to and how many Tasks that Plan has, so there is no separate Plan message. kind says which command.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id",
+    "kind",
+    "plan_id",
+    "task_id",
+    "task_count"
+  ],
+  "oneOf": [
+    {
+      "$ref": "command/takeoff.json"
+    },
+    {
+      "$ref": "command/move_to.json"
+    },
+    {
+      "$ref": "command/land.json"
+    },
+    {
+      "$ref": "command/change_settings.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "control.task"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    },
+    "plan_id": {
+      "$ref": "../../variables/plan_id.json"
+    },
+    "task_id": {
+      "$ref": "../../variables/task_id.json"
+    },
+    "task_count": {
+      "$ref": "../../variables/task_count.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "control.task",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "takeoff",
+      "plan_id": "P1",
+      "task_id": "T1",
+      "task_count": 4,
+      "target_altitude": {
+        "altitude_m": 30,
+        "altitude_reference": "home"
+      }
+    },
+    {
+      "type": "control.task",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "move_to",
+      "plan_id": "P1",
+      "task_id": "T2",
+      "task_count": 4,
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "home"
+          }
+        ]
+      }
+    },
+    {
+      "type": "control.task",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "land",
+      "plan_id": "P1",
+      "task_id": "T3",
+      "task_count": 4,
+      "landing_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      },
+      "transit_altitude": {
+        "altitude_m": 20,
+        "altitude_reference": "home"
+      }
+    },
+    {
+      "type": "control.task",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "change_settings",
+      "plan_id": "P1",
+      "task_id": "T4",
+      "task_count": 4,
+      "lights": "on"
+    }
+  ]
+}

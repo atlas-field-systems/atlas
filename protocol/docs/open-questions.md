@@ -2,6 +2,15 @@
 
 Not decided yet. Planning comes before building.
 
+## Message groups and plans
+
+- **Incomplete plans.** If some of a Plan's Tasks never arrive, does the Asset report `plan_state: incomplete`, or stay silent until Core resends?
+- **Queued settings confirmation.** When a queued `change_settings` task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?
+- **Commands during a plan.** If a `control.command` arrives while a Plan runs, does it pause the Plan or run beside it?
+- **One level deeper?** Should `kind` be folded into the path (`"type": "control.task.move_to"`), making one field instead of two?
+
+## Earlier
+
 A draft answer to several of these (envelope, acknowledgement, queue delivery,
 version check, gateways) is in [communication.md](communication.md).
 
@@ -11,11 +20,9 @@ version check, gateways) is in [communication.md](communication.md).
   pushed to an Asset when it asks "what tasks do I have?".
 - **Command acknowledgement.** How a command is acknowledged, keeping "accepted"
   separate from "observed result".
-- **Queue and task-list delivery.** How an Asset's queued Tasks reach it.
-- **Connect-time version check.** What the two ends exchange when they connect to
-  confirm they run the same protocol. No handshake message exists yet.
-- **Failure reporting.** A new Asset status, such as "return home active" or
-  "link-loss response active", reported when it happens.
+- **Queue and task-list delivery.** Partly answered: each `control.task` carries `plan_id`, `task_id` and `task_count`, and the Asset confirms the whole Plan with `report.status` kind `plan`. How they travel over the link is still open.
+- **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
+- **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** One of the four pillars; no definitions yet.
 - **Gateways.** Core talks to a gateway over IP through an API defined in the SDK.
   The gateway-to-Asset edge link is different, because of bandwidth limits.

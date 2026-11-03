@@ -1,0 +1,10 @@
+{
+  "type": "report.status",
+  "time": 1793667640100,
+  "seq": 13,
+  "asset_id": "A1",
+  "kind": "task",
+  "task_id": "T2",
+  "task_state": "failed",
+  "explanation": "Link lost, returning home"
+}

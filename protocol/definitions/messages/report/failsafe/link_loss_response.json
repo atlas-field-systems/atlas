@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/failsafe/link_loss_response.json",
+  "title": "link_loss_response",
+  "description": "The Asset lost its link and switched on its link_loss_response setting.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "link_loss_response"
+    }
+  },
+  "examples": [
+    {
+      "kind": "link_loss_response"
+    }
+  ]
+}

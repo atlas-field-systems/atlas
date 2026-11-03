@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command/land.json",
+  "title": "land",
+  "description": "Land at a position. The Asset climbs or descends to the transit altitude (or keeps its current altitude if none is given), flies over the position, and lands.",
+  "type": "object",
+  "required": [
+    "kind",
+    "landing_position"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "land"
+    },
+    "landing_position": {
+      "$ref": "../../../components/position.json"
+    },
+    "transit_altitude": {
+      "$ref": "../../../components/altitude.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "land",
+      "landing_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      },
+      "transit_altitude": {
+        "altitude_m": 20,
+        "altitude_reference": "home"
+      }
+    }
+  ]
+}

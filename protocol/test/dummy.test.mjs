@@ -2,7 +2,7 @@
 // in a temporary copy of definitions/, and both tools must pick it up unchanged.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,14 +11,24 @@ import { pathToFileURL } from 'node:url';
 const tmp = mkdtempSync(join(tmpdir(), 'atlas-'));
 const defs = join(tmp, 'definitions');
 cpSync('definitions', defs, { recursive: true });
-writeFileSync(join(defs, 'messages/zz_dummy.json'), JSON.stringify({
+// A new group (zz_probe) with a new type (dummy) that has one kind (ping).
+mkdirSync(join(defs, 'messages/zz_probe/dummy'), { recursive: true });
+writeFileSync(join(defs, 'messages/zz_probe/dummy.json'), JSON.stringify({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://atlas-field-systems.github.io/protocol/definitions/messages/zz_dummy.json',
+  $id: 'https://atlas-field-systems.github.io/protocol/definitions/messages/zz_probe/dummy.json',
   title: 'Dummy Probe',
   description: 'Exists only in this test.',
   type: 'object',
-  required: ['type', 'time', 'probe_level'],
-  properties: { type: { $ref: '../variables/type.json', const: 'zz_dummy' }, time: { $ref: '../variables/time.json' }, probe_level: { $ref: '../variables/zz_probe_level.json' } },
+  required: ['type', 'time', 'kind'],
+  oneOf: [{ $ref: 'dummy/ping.json' }],
+  unevaluatedProperties: false,
+  properties: { type: { $ref: '../../variables/type.json', const: 'zz_probe.dummy' }, time: { $ref: '../../variables/time.json' }, kind: { $ref: '../../variables/kind.json' } },
+}));
+writeFileSync(join(defs, 'messages/zz_probe/dummy/ping.json'), JSON.stringify({
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://atlas-field-systems.github.io/protocol/definitions/messages/zz_probe/dummy/ping.json',
+  title: 'ping', description: 'Test only.', type: 'object', required: ['kind', 'probe_level'],
+  properties: { kind: { $ref: '../../../variables/kind.json', const: 'ping' }, probe_level: { $ref: '../../../variables/zz_probe_level.json' } },
 }));
 writeFileSync(join(defs, 'variables/zz_probe_level.json'), JSON.stringify({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -26,17 +36,19 @@ writeFileSync(join(defs, 'variables/zz_probe_level.json'), JSON.stringify({
   title: 'zz_probe_level', description: 'Test only.', type: 'integer', minimum: 7,
 }));
 const index = JSON.parse(readFileSync(join(defs, 'index.json'), 'utf8'));
-index.groups[0].files.push('messages/zz_dummy.json');
+index.groups[0].files.push('messages/zz_probe/dummy.json');
+index.groups[1].files.push('messages/zz_probe/dummy/ping.json');
 index.groups.at(-1).files.push('variables/zz_probe_level.json');
 writeFileSync(join(defs, 'index.json'), JSON.stringify(index));
 const env = { ...process.env, ATLAS_DEFINITIONS: defs };
 
 test('CLI lists and renders the new definition', () => {
   const list = execFileSync('node', ['cli/cli.mjs', '--list'], { env, encoding: 'utf8' });
-  assert.match(list, /messages\/zz_dummy\.json\tDummy Probe/);
-  const shown = JSON.parse(execFileSync('node', ['cli/cli.mjs', '--show', 'messages/zz_dummy.json'], { env, encoding: 'utf8' }));
+  assert.match(list, /messages\/zz_probe\/dummy\.json@ping\tzz_probe › dummy › ping/);
+  const shown = JSON.parse(execFileSync('node', ['cli/cli.mjs', '--show', 'messages/zz_probe/dummy.json@ping'], { env, encoding: 'utf8' }));
   assert.equal(shown.value.probe_level, 7);
-  assert.equal(shown.value.type, 'zz_dummy');
+  assert.equal(shown.value.type, 'zz_probe.dummy');
+  assert.equal(shown.value.kind, 'ping');
   assert.ok(shown.size.hex.length > 0 && shown.size.base64.length > 0);
   assert.equal(shown.validation.ok, true);
   assert.ok(shown.size.bytes > 0);
@@ -49,14 +61,20 @@ test('site build ships the new definition and its lib renders it', async () => {
   const { default: Ajv } = await import('ajv/dist/2020.js');
   const { default: addFormats } = await import('ajv-formats');
   const p = await lib.loadProtocol((f) => JSON.parse(readFileSync(join(out, 'definitions', f), 'utf8')), Ajv, addFormats);
-  assert.equal(p.schemas['messages/zz_dummy.json'].title, 'Dummy Probe');
-  const value = lib.example(p, 'messages/zz_dummy.json');
-  assert.equal(lib.validate(p, 'messages/zz_dummy.json', value).ok, true);
+  assert.equal(p.schemas['messages/zz_probe/dummy.json'].title, 'Dummy Probe');
+  const tree = lib.messageTree(p).find((g) => g.name === 'zz_probe');
+  assert.deepEqual(tree.types[0].kinds.map((k) => k.name), ['ping']);
+  const value = lib.example(p, 'messages/zz_probe/dummy.json@ping');
+  assert.equal(value.kind, 'ping');
+  assert.equal(lib.validate(p, 'messages/zz_probe/dummy.json@ping', value).ok, true);
+  assert.equal(lib.validate(p, 'messages/zz_probe/dummy.json', { ...value, extra: 1 }).ok, false);
 });
 
 test('no tool source names any definition', () => {
   const names = readdirSync('definitions', { recursive: true }).filter((f) => f.endsWith('.json') && f !== 'index.json')
-    .map((f) => f.split('/').pop().replace('.json', ''));
+    .map((f) => f.split('/').pop().replace('.json', ''))
+    // type and kind are the two fields that say which message this is, so the tools may use them.
+    .filter((n) => !['type', 'kind'].includes(n));
   for (const dir of ['lib', 'cli', 'site']) {
     for (const f of readdirSync(dir)) {
       const src = readFileSync(join(dir, f), 'utf8');

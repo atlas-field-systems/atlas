@@ -2,7 +2,7 @@
 // Atlas Protocol viewer for the terminal. Everything shown comes from definitions/.
 import { select, input } from '@inquirer/prompts';
 import { load, compress } from './node-protocol.mjs';
-import { fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType } from '../lib/protocol.mjs';
+import { fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, messageTree, splitId } from '../lib/protocol.mjs';
 
 const protocol = await load();
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
@@ -35,13 +35,29 @@ function report(file, value) {
   console.log();
 }
 
-async function viewFile(file) {
-  const tree = fieldTree(protocol, file);
+// Every definition to pick from: messages as group › type › kind, then the other groups.
+// Kinds are shown under their types, so the group listing kind files is not repeated.
+function entries() {
+  const out = [];
+  for (const g of messageTree(protocol)) for (const t of g.types) {
+    const path = `${g.name} › ${t.file.split('/').pop().replace('.json', '')}`;
+    if (!t.kinds.length) out.push({ group: 'Messages', id: t.file, name: path, description: protocol.schemas[t.file].description });
+    for (const k of t.kinds) out.push({ group: 'Messages', id: `${t.file}@${k.name}`, name: `${path} › ${k.name}`, description: protocol.schemas[k.file].description });
+  }
+  const shown = new Set(messageTree(protocol).flatMap((g) => g.types.flatMap((t) => [t.file, ...t.kinds.map((k) => k.file)])));
+  for (const g of protocol.index.groups) for (const f of g.files) if (!shown.has(f)) out.push({ group: g.name, id: f, name: protocol.schemas[f].title, description: protocol.schemas[f].description });
+  return out;
+}
+
+async function viewFile(id) {
+  const tree = fieldTree(protocol, id);
+  const { file, kind } = splitId(id);
   const s = protocol.schemas[file];
-  console.log(`\n${bold(s.title ?? file)}  ${dim(file)}\n${s.description ?? ''}\n`);
+  const k = kind && entries().find((e) => e.id === id);
+  console.log(`\n${bold(k ? k.name : s.title ?? file)}  ${dim(id)}\n${s.description ?? ''}${k ? `\n${k.description}` : ''}\n`);
   printFields(tree);
-  let value = example(protocol, file);
-  report(file, value);
+  let value = example(protocol, id);
+  report(id, value);
   for (;;) {
     const action = await select({
       message: 'What next?',
@@ -53,7 +69,7 @@ async function viewFile(file) {
       ],
     });
     if (action === 'back') return;
-    if (action === 'example') value = example(protocol, file);
+    if (action === 'example') value = example(protocol, id);
     if (action === 'generate') value = generate({ ...tree, schema: {} });
     if (action === 'edit') {
       const rows = leaves(tree, value);
@@ -71,12 +87,12 @@ async function viewFile(file) {
         : await input({ message: `${row.path.join('.')} (${describeType(row.node)}, empty to remove)`, default: row.value === undefined ? '' : String(row.value) });
       value = setPath(value, row.path, next === '(remove)' ? undefined : parseInput(row.node, next));
     }
-    report(file, value);
+    report(id, value);
   }
 }
 
 if (process.argv[2] === '--list') {
-  for (const g of protocol.index.groups) for (const f of g.files) console.log(`${g.name}\t${f}\t${protocol.schemas[f].title}`);
+  for (const e of entries()) console.log(`${e.group}\t${e.id}\t${e.name}`);
 } else if (process.argv[2] === '--show') {
   const file = process.argv[3];
   const value = example(protocol, file);
@@ -88,11 +104,7 @@ if (process.argv[2] === '--list') {
       const file = await select({
         message: 'Pick a definition',
         pageSize: 25,
-        choices: protocol.index.groups.flatMap((g) => g.files.map((f) => ({
-          name: `${g.name.padEnd(11)} ${protocol.schemas[f].title}`,
-          value: f,
-          description: protocol.schemas[f].description,
-        }))),
+        choices: entries().map((e) => ({ name: `${e.group.padEnd(11)} ${e.name}`, value: e.id, description: e.description })),
       });
       await viewFile(file);
     }

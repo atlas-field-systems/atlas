@@ -1,6 +1,6 @@
 # Proposal: nested message groups
 
-Status: **proposed**. Nothing in `definitions/` changes until the developer approves this.
+Status: **adopted**. The definitions now follow this. Kept as the record of why and of the size comparison. The open questions moved to [open-questions.md](../open-questions.md), and the first-flight examples moved to `examples/first-flight/`, where the Plan's three tasks are now sent together before the run starts.
 
 ## Why
 
@@ -126,8 +126,7 @@ Settings examples (minified / deflate bytes):
 
 ## 5. The 22 first-flight messages, old and new
 
-- New files are in `examples/proposals/broad-types/first-flight/`. The viewer shows them under Scenarios › proposals › broad types › first flight.
-- They aren't checked against definitions yet, because those definitions don't exist.
+- These were the proposal's examples. The real ones are now `examples/first-flight/`, checked against the definitions by `npm test`.
 - Takeoff, Move To and Land become tasks T1–T3 of plan P1.
 - 06b is the new plan confirmation. Positions and `seq` match the old run so each row compares like for like.
 

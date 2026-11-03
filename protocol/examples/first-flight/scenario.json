@@ -31,7 +31,7 @@
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "04-status.json",
+      "file": "04-status-asset.json",
       "why": "The drone reports it is healthy and ready."
     },
     {
@@ -43,125 +43,141 @@
     },
     {
       "branch": "main",
-      "gap": "Plan delivery and task assignment",
-      "why": "The operator asks Core for Takeoff, Move To, Land. Core must send a plan summary, then each task with its task_id (T1, T2, T3), and the drone must confirm \"running plan N\". No message carries a plan or a task_id with a command yet, so task_status below cannot be tied to a command. The commands are shown bare."
+      "from": "Core",
+      "to": "Drone",
+      "file": "06-task-takeoff.json",
+      "why": "Core sends task 1 of 3 in plan P1: climb straight up to 30 m above home."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Drone",
-      "file": "06-takeoff.json",
-      "why": "Core sends the first task: climb straight up to 30 m above home."
+      "file": "07-task-move_to.json",
+      "why": "Core sends task 2 of 3 in plan P1 straight away: fly to a position, keeping the current altitude."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Drone",
+      "file": "08-task-land.json",
+      "why": "Core sends task 3 of 3 in plan P1: go to 20 m, fly back over the landing spot and land."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "07-task_status.json",
+      "file": "09-status-plan.json",
+      "why": "The drone holds all 3 tasks of plan P1 (task_count says how many to expect), so it confirms the plan is running."
+    },
+    {
+      "branch": "main",
+      "from": "Drone",
+      "to": "Core",
+      "file": "10-status-task.json",
       "why": "The drone reports it started T1 (Takeoff)."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "08-telemetry.json",
+      "file": "11-telemetry.json",
       "why": "The drone reports its climb."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "09-task_status.json",
+      "file": "12-status-task.json",
       "why": "The drone reports T1 done: it is holding at 30 m."
     },
     {
       "branch": "main",
-      "from": "Core",
-      "to": "Drone",
-      "file": "10-move_to.json",
-      "why": "Core sends the next task: fly to a position, keeping the current altitude."
+      "from": "Drone",
+      "to": "Core",
+      "file": "13-status-task.json",
+      "why": "The drone reports it started T2 (Move To), the next task in its queue."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "11-task_status.json",
-      "why": "The drone reports it started T2 (Move To)."
-    },
-    {
-      "branch": "main",
-      "from": "Drone",
-      "to": "Core",
-      "file": "12-telemetry.json",
+      "file": "14-telemetry.json",
       "why": "The drone reports its position and speed on the way."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "13-task_status.json",
+      "file": "15-status-task.json",
       "why": "The drone reports T2 done: it is over the destination."
     },
     {
       "branch": "main",
-      "from": "Core",
-      "to": "Drone",
-      "file": "14-land.json",
-      "why": "Core sends the last task: go to 20 m, fly back over the landing spot and land."
+      "from": "Drone",
+      "to": "Core",
+      "file": "16-status-task.json",
+      "why": "The drone reports it started T3 (Land), the last task in its queue."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "15-task_status.json",
-      "why": "The drone reports it started T3 (Land)."
-    },
-    {
-      "branch": "main",
-      "from": "Drone",
-      "to": "Core",
-      "file": "16-telemetry.json",
+      "file": "17-telemetry.json",
       "why": "The drone reports it is back on the ground."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "17-task_status.json",
-      "why": "The drone reports T3 done. The run is over."
+      "file": "18-status-task.json",
+      "why": "The drone reports T3 done."
+    },
+    {
+      "branch": "main",
+      "from": "Drone",
+      "to": "Core",
+      "file": "19-status-plan.json",
+      "why": "Every task of plan P1 is done, so the drone reports the plan completed. The run is over."
     },
     {
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
-      "file": "18-failsafe_status.json",
+      "file": "20-failsafe-link_loss_response.json",
       "why": "Partway through Move To, the drone loses the gateway and starts its link loss response. It sends this as soon as it can be heard again."
     },
     {
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
-      "file": "19-task_status.json",
+      "file": "21-status-task.json",
       "why": "The drone reports T2 failed, so Core's record matches what happened."
     },
     {
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
-      "file": "20-task_status.json",
+      "file": "22-status-task.json",
       "why": "The drone cancels the rest of the queue, so T3 (Land) is reported cancelled."
     },
     {
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
-      "file": "21-telemetry.json",
+      "file": "23-status-plan.json",
+      "why": "With T2 failed and T3 cancelled, the drone reports plan P1 failed."
+    },
+    {
+      "branch": "failsafe",
+      "from": "Drone",
+      "to": "Core",
+      "file": "24-telemetry.json",
       "why": "The drone reports its position on the way home."
     },
     {
       "branch": "main",
       "gap": "Run end and Reset",
-      "why": "Nothing marks the end of a run or the Reset ZIP. Not needed on the wire yet; listed so it is not forgotten."
+      "why": "Plan completed now marks the end of the run, but nothing covers the Reset ZIP yet. Not needed on the wire yet; listed so it is not forgotten."
     }
   ]
 }

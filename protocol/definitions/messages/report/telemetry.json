@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/telemetry.json",
+  "title": "Telemetry",
+  "description": "Report from an Asset: where it is and how it is moving. Leave out anything it does not know.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id",
+    "position"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "report.telemetry"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "position": {
+      "$ref": "../../components/position.json"
+    },
+    "ground_speed_mps": {
+      "$ref": "../../variables/ground_speed_mps.json"
+    },
+    "heading_deg": {
+      "$ref": "../../variables/heading_deg.json"
+    },
+    "battery_percent": {
+      "$ref": "../../variables/battery_percent.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "report.telemetry",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "home"
+          },
+          {
+            "altitude_m": 215.4,
+            "altitude_reference": "msl"
+          }
+        ]
+      },
+      "ground_speed_mps": 4.2,
+      "heading_deg": 90,
+      "battery_percent": 82
+    }
+  ]
+}

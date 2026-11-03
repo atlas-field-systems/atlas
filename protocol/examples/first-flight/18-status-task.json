@@ -1,0 +1,9 @@
+{
+  "type": "report.status",
+  "time": 1793667680300,
+  "seq": 14,
+  "asset_id": "A1",
+  "kind": "task",
+  "task_id": "T3",
+  "task_state": "completed"
+}
