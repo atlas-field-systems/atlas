@@ -26,7 +26,7 @@ function show(file) {
   let value = example(protocol, file);
   $('view').innerHTML = `<h2>${esc(s.title ?? file)} <code>${esc(file)}</code></h2><p>${esc(s.description)}</p>
     <button id="ex">Use the example</button><button id="min">Minimal (required only)</button>
-    <div class="cols"><div><h3>Fields</h3><table id="fields"></table></div>
+    <div class="cols"><div class="fieldcol"><h3>Fields</h3><table id="fields"></table></div>
     <div><h3>Message JSON</h3><p class="lbl" id="readlbl"></p><textarea id="json" spellcheck="false"></textarea><div id="result"></div></div>
     <div><h3>Compressed</h3><div id="compact"></div><div id="packed"></div></div></div>`;
   const render = (fromText) => {
@@ -37,8 +37,9 @@ function show(file) {
       const ctl = n.kind === 'enum'
         ? `<select data-i="${i}"><option value="">(none)</option>${n.options.map((o) => `<option ${o === cur ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`
         : `<input data-i="${i}" value="${esc(cur)}">`;
-      return `<tr><td><b>${esc(r.path.join('.'))}</b>${n.required ? '' : ' <i>(optional)</i>'}<br><code>${esc(describeType(n))}</code></td>
-        <td>${ctl}<div class="desc">${esc(n.description)}</div></td></tr>`;
+      return `<tr><td><b>${r.path.map(esc).join('.<wbr>')}</b>${n.required ? '' : ' <i>(optional)</i>'}<br><code>${esc(describeType(n))}</code></td>
+        <td class="val">${ctl}</td></tr>
+        <tr class="descrow"><td colspan="2" class="desc">${esc(n.description)}</td></tr>`;
     }).join('');
     $('fields').onchange = (e) => {
       const r = rows[e.target.dataset.i];
