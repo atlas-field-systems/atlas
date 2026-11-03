@@ -25,12 +25,22 @@ An accepted request and an observed result are different facts.
 Receiving a report does not prove fresh measurements or two-way contact.
 Each subsystem defines how it represents that evidence.
 
+## Keep shared data simple
+
+The owner decides these data rules. Protocol follows them and adds the exact fields.
+
+- Each message names one source, its `from`, and one time for the whole message.
+  A message never mixes sources. Mixed times are rare and need their own case.
+- Times are in milliseconds. Only specialized radio data uses nanosecond timing.
+- Counters are ordinary numbers, not long numbers written as text.
+
 ## Document ownership
 
 - This charter owns Atlas's purpose, operating context, project-wide principles,
   and end-to-end usage examples.
 - Subsystem documentation owns its behavior, failure cases, and planning decisions.
-- Protocol owns exact shared contracts. Core owns server mechanisms.
+- Protocol owns exact shared contracts within the charter's
+  [shared data rules](#keep-shared-data-simple). Core owns server mechanisms.
   SDK owns client behavior. Other components own their runtime details.
 
 Keep each rule with its owner and link to it from other documents.

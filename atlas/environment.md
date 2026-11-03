@@ -20,7 +20,11 @@ FLRC is expected to carry more than single-digit kilobits per second.
 The radio project owns the detailed design as the hardware evolves.
 
 Mesh networking is part of this direction, with some participation in Atlas.
-Its mechanisms belong in the relevant radio and networking project documentation.
+The radio links are mesh networks, building on Meshtastic and MeshCore, and
+they carry JSON messages. Their mechanisms belong in the radio project docs.
+
+Radio messages use a proven existing compression system, not a custom one.
+The choice is made once the message format settles.
 
 ## IP mainly connects the supporting systems
 
