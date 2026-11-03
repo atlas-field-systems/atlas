@@ -18,9 +18,10 @@ live in a **link profile** for that medium, not in the messages.
 ## Opening a connection
 
 1. The WebSocket (or radio link) opens.
-2. The two sides exchange a **hello**: protocol version, `asset_id`, reports and accepted commands, with
-   authentication. Leaning toward API keys. Challenge codes are a possible later
-   alternative.
+2. The link opening carries the Asset's `asset_id` and its 16-byte asset key
+   (and the enrollment key the first time). See [Storage](storage.md#registration).
+   Then the Asset sends `admin.hello`: protocol version, the reports it sends,
+   and its cameras.
 3. A version mismatch is refused with a clear "update this device" error.
    After the hello, no message carries a version.
 

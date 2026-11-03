@@ -25,6 +25,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
   query    asset, queue, core (kind: assets, history)
   report   status   (kind: asset, task, queue)
            failsafe (kind = trigger: link_loss, low_battery; response field)
+           gimbal, observation
            telemetry, battery, settings
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
@@ -100,3 +101,12 @@ They show the readable JSON beside the compressed bytes (hex dump and base64), w
 
 ## First version
 Takeoff, Settings, Status, and Telemetry. Port the rest later.
+
+## Storage, sensors and registration
+
+- Core uses a normal store with one table per kind of thing: assets, tasks, observations, tracks, geo features and telemetry. No raw message store. See [Storage](storage.md).
+- `admin.hello` declares cameras once: fixed or gimbal, direction from the nose, field of view. No zoom, no revision fields.
+- `report.gimbal` gives live gimbal pointing, often while active, never while idle.
+- `move_to` may carry `geofeature_id` beside the coordinates it flies. Edits to a feature do not change sent commands.
+- Assets send `report.observation`, never tracks. Fusion is a black box; for now each new observation becomes its own track. Tasks target tracks.
+- Assets self-register with a deployment enrollment key presented once on the link, not in hello. Keys are 16 random bytes (22 characters).

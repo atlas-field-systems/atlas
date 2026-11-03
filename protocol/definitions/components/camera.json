@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/camera.json",
+  "title": "camera",
+  "description": "One camera, declared once in admin.hello. yaw_deg and pitch_deg give where it faces relative to the nose; for a gimbal, its rest direction. Live gimbal pointing is report.gimbal.",
+  "type": "object",
+  "required": [
+    "camera_id",
+    "mount",
+    "yaw_deg",
+    "pitch_deg",
+    "horizontal_fov_deg",
+    "vertical_fov_deg"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "camera_id": {
+      "$ref": "../variables/camera_id.json"
+    },
+    "mount": {
+      "$ref": "../variables/mount.json"
+    },
+    "yaw_deg": {
+      "$ref": "../variables/yaw_deg.json"
+    },
+    "pitch_deg": {
+      "$ref": "../variables/pitch_deg.json"
+    },
+    "horizontal_fov_deg": {
+      "$ref": "../variables/fov_deg.json"
+    },
+    "vertical_fov_deg": {
+      "$ref": "../variables/fov_deg.json"
+    }
+  },
+  "examples": [
+    {
+      "camera_id": "C1",
+      "mount": "gimbal",
+      "yaw_deg": 0,
+      "pitch_deg": -45,
+      "horizontal_fov_deg": 80,
+      "vertical_fov_deg": 60
+    }
+  ]
+}

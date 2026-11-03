@@ -15,7 +15,9 @@
         "messages/report/failsafe.json",
         "messages/report/telemetry.json",
         "messages/report/battery.json",
-        "messages/report/settings.json"
+        "messages/report/settings.json",
+        "messages/report/gimbal.json",
+        "messages/report/observation.json"
       ]
     },
     {
@@ -37,7 +39,8 @@
       "name": "Components",
       "files": [
         "components/altitude.json",
-        "components/position.json"
+        "components/position.json",
+        "components/camera.json"
       ]
     },
     {
@@ -69,7 +72,14 @@
         "variables/task_id.json",
         "variables/task_state.json",
         "variables/reply_to.json",
-        "variables/report.json"
+        "variables/report.json",
+        "variables/observation_id.json",
+        "variables/camera_id.json",
+        "variables/geofeature_id.json",
+        "variables/mount.json",
+        "variables/yaw_deg.json",
+        "variables/pitch_deg.json",
+        "variables/fov_deg.json"
       ]
     }
   ]

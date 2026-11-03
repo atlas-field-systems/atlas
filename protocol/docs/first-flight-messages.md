@@ -11,7 +11,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says which protocol version it speaks. | 197 | 149 |
+| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says which protocol version it speaks. | 302 | 204 |
 | 02 | Core → Drone | [`admin.hello_reply`](../examples/first-flight/02-hello_reply.json) | Core accepts the drone and confirms the version both sides will use. | 124 | 105 |
 | 03 | Drone → Core | [`report.settings`](../examples/first-flight/03-settings.json) | The drone reports its current settings, so Core knows what it will do if the link drops. | 165 | 128 |
 | 04 | Drone → Core | [`report.status asset`](../examples/first-flight/04-status-asset.json) | The drone reports it is healthy and ready. | 106 | 92 |
@@ -48,12 +48,19 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
     "failsafe",
     "telemetry",
     "battery",
-    "settings"
+    "settings",
+    "gimbal",
+    "observation"
   ],
-  "commands": [
-    "takeoff",
-    "move_to",
-    "land"
+  "cameras": [
+    {
+      "camera_id": "C1",
+      "mount": "gimbal",
+      "yaw_deg": 0,
+      "pitch_deg": -45,
+      "horizontal_fov_deg": 80,
+      "vertical_fov_deg": 60
+    }
   ]
 }
 ```
@@ -510,9 +517,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-25 messages, 3834 bytes minified, 3000 bytes if each is deflated on its own.
+25 messages, 3939 bytes minified, 3055 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 43% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 42% of all bytes. Field names, quotes and punctuation are 62%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 
@@ -527,7 +534,7 @@ Where the bytes go (each field summed across every message):
 | `seq` | 25 | 187 | 5% |
 | `task_state` | 8 | 180 | 5% |
 | `task_id` | 11 | 154 | 4% |
-| `position.altitudes[].altitude_reference` | 5 | 135 | 4% |
+| `position.altitudes[].altitude_reference` | 5 | 135 | 3% |
 | `ground_speed_mps` | 5 | 104 | 3% |
 | `position.longitude` | 5 | 100 | 3% |
 
