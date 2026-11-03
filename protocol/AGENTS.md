@@ -21,6 +21,6 @@ If you need something outside this repository, go to the one that owns it.
 
 - `definitions/` is the source of truth. Docs, the CLI and the viewer follow it; never hardcode a message elsewhere.
 - [docs/laws.md](docs/laws.md) lists the rules every definition follows. Change a law on purpose before breaking it.
-- [docs/decisions.md](docs/decisions.md) records Lane's decisions; [docs/open-questions.md](docs/open-questions.md) lists what is not decided.
+- [docs/decisions.md](docs/decisions.md) records the developer's decisions; [docs/open-questions.md](docs/open-questions.md) lists what is not decided.
 - `storage/` will hold storage formats (to be planned).
-- Run `npm run check` and `npm test` before every PR. Do not merge without Lane's approval.
+- Run `npm run check` and `npm test` before every PR. Do not merge without the developer's approval.

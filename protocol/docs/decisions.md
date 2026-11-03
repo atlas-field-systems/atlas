@@ -1,6 +1,6 @@
 # Protocol decisions
 
-Decisions Lane made for the protocol. When a definition and this page disagree, fix one of them.
+Decisions the developer made for the protocol. When a definition and this page disagree, fix one of them.
 
 ## The goal
 All Atlas communication flows through this protocol. Improve the protocol, and everything improves.
