@@ -40,7 +40,7 @@ export async function render(name) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  for (const name of await readExample('index.json')) {
+  for (const name of (await readExample('index.json')).filter((n) => !n.startsWith('proposals/'))) {
     const path = `docs/${name}-messages.md`;
     await writeFile(path, await render(name));
     console.log(`Wrote ${path}`);

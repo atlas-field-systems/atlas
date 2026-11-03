@@ -1,0 +1,9 @@
+{
+  "type": "report.status",
+  "time": 1793667640200,
+  "seq": 11,
+  "asset_id": "A1",
+  "kind": "task",
+  "task_id": "T3",
+  "task_state": "cancelled"
+}

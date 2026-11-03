@@ -1,0 +1,9 @@
+{
+  "type": "report.status",
+  "time": 1793667605600,
+  "seq": 5,
+  "asset_id": "A1",
+  "kind": "plan",
+  "plan_id": "P1",
+  "plan_state": "running"
+}

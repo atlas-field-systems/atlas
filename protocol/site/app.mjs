@@ -17,7 +17,7 @@ $('title').textContent = protocol.index.title;
 $('nav').innerHTML = protocol.index.groups.map((g) => `<h3>${esc(g.name)}</h3>` +
   g.files.map((f) => `<a data-file="${esc(f)}">${esc(protocol.schemas[f].title ?? f)}</a>`).join('')).join('');
 const scenarios = await (await fetch('examples/index.json')).json();
-$('nav').innerHTML += '<h3>Scenarios</h3>' + scenarios.map((n) => `<a data-file="scenario:${esc(n)}">${esc(n.replace(/-/g, ' '))}</a>`).join('');
+$('nav').innerHTML += '<h3>Scenarios</h3>' + scenarios.map((n) => `<a data-file="scenario:${esc(n)}">${esc(n.replace(/-/g, ' ').replace(/\//g, ' › '))}</a>`).join('');
 $('nav').onclick = (e) => { if (e.target.dataset.file) location.hash = e.target.dataset.file; };
 const docs = await (await fetch('docs/index.json')).json();
 $('nav').innerHTML += '<h3>Docs</h3>' + docs.map((d) => `<a data-file="doc:${esc(d)}">${esc(d.replace(/\.md$/, '').replace(/[-/]/g, ' '))}</a>`).join('');
@@ -57,8 +57,8 @@ async function showScenario(name) {
   const s = await loadScenario(protocol, async (f) => (await fetch(`examples/${f}`)).json(), name, compress);
   const row = (r) => r.gap
     ? `<tr class="gap"><td>—</td><td></td><td><b>GAP: ${esc(r.gap)}</b></td><td>${esc(r.why)}</td><td></td><td></td></tr>`
-    : `<tr><td>${esc(r.file.slice(0, 2))}</td><td>${esc(r.from)} → ${esc(r.to)}</td><td><a href="#messages/${esc(r.message.type)}.json">${esc(r.message.type)}</a>${r.ok ? '' : ' <b>invalid</b>'}</td><td>${esc(r.why)}<details><summary>JSON</summary><pre>${esc(JSON.stringify(r.message, null, 2))}</pre></details></td><td>${r.bytes}</td><td>${r.compressed}</td></tr>`;
-  $('view').innerHTML = `<h2>${esc(s.title)}</h2><p>${esc(s.source)}</p>` + Object.entries(s.branches).map(([b, label]) =>
+    : `<tr><td>${esc(r.file.split('-')[0])}</td><td>${esc(r.from)} → ${esc(r.to)}</td><td>${protocol.schemas[`messages/${r.message.type}.json`] ? `<a href="#messages/${esc(r.message.type)}.json">${esc(r.message.type)}</a>` : `<code>${esc(r.message.type)}</code>`}${r.message.kind ? ` <code>${esc(r.message.kind)}</code>` : ''}${r.ok === false ? ' <b>invalid</b>' : ''}</td><td>${esc(r.why)}<details><summary>JSON</summary><pre>${esc(JSON.stringify(r.message, null, 2))}</pre></details></td><td>${r.bytes}</td><td>${r.compressed}</td></tr>`;
+  $('view').innerHTML = `<h2>${esc(s.title)}</h2>${s.proposal ? '<p class="branch">Proposal: these message types do not exist yet, so they are not checked.</p>' : ''}<p>${esc(s.source)}</p>` + Object.entries(s.branches).map(([b, label]) =>
     `<h3>${esc(label)}</h3><table class="scenario"><tr><th>#</th><th>From → To</th><th>Message</th><th>Why</th><th>Minified</th><th>Deflate</th></tr>${s.rows.filter((r) => r.branch === b).map(row).join('')}</table>`).join('');
 }
 

@@ -16,7 +16,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Every message
 - Messages are flat: every field sits directly in the message, with no header or wrapper.
-- Each command is its own message type. There is no generic command wrapper.
+- Each command is its own message type. There is no generic command wrapper. **Reversed (proposed):** messages are grouped like nested folders, because one flat list is hard to read and to maintain: `admin` (hello, hello_reply), `control` (command, task) and `report` (status, failsafe, telemetry, settings). `type` is the dotted path, such as `control.task`, and `kind` picks the exact message, such as `move_to`. A command is what an Asset can be told to do; a task is one use of a command, and Assets queue tasks. Each task carries `plan_id`, `task_id` and `task_count`, so there is no separate plan message. Failsafe is its own type under report, so it can carry more context than a status. The wire form may be compacted later. See [proposals/broad-types.md](proposals/broad-types.md).
 - `type`: which message this is, a short lowercase name such as `takeoff` or `telemetry`.
 - `time`: milliseconds since 1970 (UTC), as a number.
 - `seq`: the sender's own counter, up by one per message. On the mesh it shows dropped (gaps) and out-of-order messages.
@@ -61,6 +61,7 @@ The protocol also defines the storage layout, so the whole data format lives her
 An older time never overwrites newer state. There is no "history-only" message.
 
 ## Settings
+- (Proposed) The Asset's settings message, at connect or when it changes a setting itself, is a report: no confirmation. When Core sets a setting it is either immediate (a `control.command` with `kind: change_settings`, confirmed by a `report.settings` whose `reply_to` is Core's `seq`) or queued (a `control.task`, confirmed by its task status). Immediate is the easy default.
 - Settings are only variables used by the Settings message; no setting has its own message.
 - Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (return_home/hold/land/continue).
 - Each change is an explicit end state, never a toggle. The most recent time wins.

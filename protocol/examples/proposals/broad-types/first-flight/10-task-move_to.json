@@ -1,0 +1,14 @@
+{
+  "type": "control.task",
+  "time": 1793667613200,
+  "seq": 3,
+  "asset_id": "A1",
+  "kind": "move_to",
+  "plan_id": "P1",
+  "task_id": "T2",
+  "task_count": 3,
+  "destination": {
+    "latitude": 42.2761,
+    "longitude": -71.8031
+  }
+}
