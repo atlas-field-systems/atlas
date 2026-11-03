@@ -24,8 +24,14 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - There is no sender field. Commands come from operators, and reports carry `asset_id`.
 
 ## Values
-- IDs are long standard IDs (UUIDs) for now.
-- Field names are long and readable. Compression handles the length.
+- `asset_id` is 1 to 4 letters or digits (`A-Z`, `a-z`, `0-9`), such as `A1`. That is over 15 million IDs, far more than the roughly 20 Assets we expect (see the Charter's scale page). Other IDs stay standard UUIDs for now.
+- Field names are long and readable in the definitions and in message JSON.
+
+## Compact JSON
+- Compact JSON is the message with the same structure (nesting and lists kept), minified, with each key swapped for a short key.
+- Short keys come only from the definitions: a variable's `short_name` (for example `time` -> `t`, `seq` -> `s`, `altitude_reference` -> `altitude_r`), or a `short_name` next to a `$ref` in a message or component (for example `target_altitude` -> `target_alt`). No key list lives in the tools.
+- `npm run check` fails if two variables share a short key, or two fields in one object would get the same compact key.
+- The short-key list is provisional. It gets finalized at protocol 1.0.
 - Units: metres, metres per second, degrees from true north.
 - Every altitude names what it is measured from: `msl`, `ellipsoid`, `home`, or `ground`. A position may carry more than one altitude.
 

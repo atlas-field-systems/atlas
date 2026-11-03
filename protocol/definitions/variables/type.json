@@ -3,6 +3,7 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/type.json",
   "title": "type",
   "description": "Which message this is. Each message fixes its own value, for example takeoff or telemetry.",
+  "short_name": "ty",
   "type": "string",
   "pattern": "^[a-z_]+$",
   "examples": [

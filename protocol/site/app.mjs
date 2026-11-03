@@ -24,6 +24,7 @@ function show(file) {
   const tree = fieldTree(protocol, file);
   let value = example(protocol, file);
   $('view').innerHTML = `<h2>${esc(s.title ?? file)} <code>${esc(file)}</code></h2><p>${esc(s.description)}</p>
+    <div id="compact"></div>
     <button id="ex">Use the example</button><button id="min">Minimal (required only)</button>
     <div class="cols"><div><h3>Fields</h3><table id="fields"></table></div>
     <div><h3>Message JSON</h3><textarea id="json" spellcheck="false"></textarea><div id="result"></div></div>
@@ -46,7 +47,8 @@ function show(file) {
     };
     if (!fromText) $('json').value = JSON.stringify(value, null, 2);
     const v = validate(protocol, file, value);
-    const m = measure(value, compress);
+    const m = measure(value, compress, tree);
+    $('compact').innerHTML = `<h3>Compact JSON</h3><p>Same structure with short keys from the definitions: <b>${m.bytes}</b> bytes (readable: ${m.readableBytes}, compressed: ${m.compressed})</p><pre class="wrap">${esc(m.json)}</pre>`;
     renderPacked(m);
     $('result').innerHTML = `<p class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'Valid' : 'Invalid'}</p>
       ${v.errors.map((e) => `<div class="bad">${esc(e)}</div>`).join('')}
@@ -54,9 +56,8 @@ function show(file) {
       <table><tr><th>Largest fields</th><th>Bytes</th></tr>${m.fields.slice(0, 8).map((f) => `<tr><td>${esc(f.path)}</td><td>${f.bytes}</td></tr>`).join('')}</table>`;
   };
   const renderPacked = (m) => {
-    $('packed').innerHTML = `<p><b>${m.bytes}</b> bytes compact JSON &rarr; <b>${m.compressed}</b> bytes deflate (${Math.round((100 * m.compressed) / m.bytes)}%)</p>
-      <h4>Hex dump</h4><pre>${esc(m.hex)}</pre><h4>Base64</h4><pre class="wrap">${esc(m.base64)}</pre>
-      <h4>Compact JSON (what is compressed)</h4><pre class="wrap">${esc(m.json)}</pre>`;
+    $('packed').innerHTML = `<p><b>${m.bytes}</b> bytes compact JSON (above) &rarr; <b>${m.compressed}</b> bytes deflate (${Math.round((100 * m.compressed) / m.bytes)}%)</p>
+      <h4>Hex dump</h4><pre>${esc(m.hex)}</pre><h4>Base64</h4><pre class="wrap">${esc(m.base64)}</pre>`;
   };
   $('json').oninput = () => { try { value = JSON.parse($('json').value); render(true); } catch { $('result').innerHTML = '<p class="bad">Not valid JSON yet</p>'; } };
   $('ex').onclick = () => { value = example(protocol, file); render(); };

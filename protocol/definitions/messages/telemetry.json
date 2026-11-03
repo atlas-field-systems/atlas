@@ -27,7 +27,8 @@
       "$ref": "../variables/asset_id.json"
     },
     "position": {
-      "$ref": "../components/position.json"
+      "$ref": "../components/position.json",
+      "short_name": "pos"
     },
     "ground_speed_mps": {
       "$ref": "../variables/ground_speed_mps.json"
@@ -44,7 +45,7 @@
       "type": "telemetry",
       "time": 1793667600000,
       "seq": 42,
-      "asset_id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
+      "asset_id": "A1",
       "position": {
         "latitude": 42.2746,
         "longitude": -71.8063,

@@ -3,6 +3,7 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/explanation.json",
   "title": "explanation",
   "description": "A short plain explanation from the Asset, such as why it is degraded.",
+  "short_name": "expl",
   "type": "string",
   "minLength": 1,
   "maxLength": 512,

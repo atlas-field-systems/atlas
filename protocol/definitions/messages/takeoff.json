@@ -27,7 +27,8 @@
       "$ref": "../variables/asset_id.json"
     },
     "target_altitude": {
-      "$ref": "../components/altitude.json"
+      "$ref": "../components/altitude.json",
+      "short_name": "target_alt"
     }
   },
   "examples": [
@@ -35,7 +36,7 @@
       "type": "takeoff",
       "time": 1793667600000,
       "seq": 42,
-      "asset_id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
+      "asset_id": "A1",
       "target_altitude": {
         "altitude_m": 30,
         "altitude_reference": "home"

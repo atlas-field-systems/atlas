@@ -8,6 +8,7 @@ export async function loadProtocol(readJson, Ajv, addFormats) {
   for (const f of files) schemas[f] = await readJson(f);
   const ajv = new Ajv({ strict: false, allErrors: true });
   if (addFormats) addFormats(ajv);
+  ajv.addKeyword('short_name');
   for (const s of Object.values(schemas)) ajv.addSchema(s);
   return { index, schemas, ajv };
 }
@@ -31,10 +32,11 @@ function node(protocol, s, file, name, required) {
   if (s.$ref) {
     const target = join(file, s.$ref);
     const n = { ...fieldTree(protocol, target, name, required), source: target };
+    n.short = s.short_name ?? n.short;
     if (s.const !== undefined) Object.assign(n, { kind: 'enum', options: [s.const], schema: { ...n.schema, examples: [s.const] } });
     return n;
   }
-  const n = { name, required, description: s.description, source: file, schema: s };
+  const n = { name, short: s.short_name ?? name, required, description: s.description, source: file, schema: s };
   if (s.type === 'object') {
     const req = s.required ?? [];
     n.kind = 'object';
@@ -119,9 +121,23 @@ export function validate(protocol, file, value) {
   return { ok, errors: ok ? [] : v.errors.map((e) => `${e.instancePath || '(message)'} ${e.message}`) };
 }
 
+// The same message with every key swapped for its short_name from the definitions.
+// Structure (nesting, lists) is kept; only key names get shorter.
+export function compact(tree, value) {
+  if (tree.kind === 'object' && value && typeof value === 'object' && !Array.isArray(value)) {
+    const byName = Object.fromEntries(tree.children.map((c) => [c.name, c]));
+    return Object.fromEntries(Object.entries(value).map(([k, v]) =>
+      byName[k] ? [byName[k].short, compact(byName[k], v)] : [k, v]));
+  }
+  if (tree.kind === 'array' && Array.isArray(value)) return value.map((v) => compact(tree.item, v));
+  return value;
+}
+
 // Sizes in bytes. compress is a function bytes -> bytes (deflate today; swappable later).
-export function measure(value, compress) {
+export function measure(value, compress, tree) {
   const enc = new TextEncoder();
+  const readable = JSON.stringify(value, null, 2);
+  if (tree) value = compact(tree, value);
   const json = JSON.stringify(value);
   const bytes = enc.encode(json);
   const fields = [];
@@ -139,6 +155,7 @@ export function measure(value, compress) {
   const packed = compress ? compress(bytes) : null;
   return {
     json,
+    readableBytes: enc.encode(readable).length,
     bytes: bytes.length,
     compressed: packed?.length ?? null,
     hex: packed ? hexDump(packed) : '',

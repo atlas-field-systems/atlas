@@ -64,3 +64,12 @@ test('no tool source names any definition', () => {
     }
   }
 });
+
+test('compact JSON keeps structure and uses short keys from definitions', () => {
+  const shown = JSON.parse(execFileSync('node', ['cli/cli.mjs', '--show', 'messages/telemetry.json'], { env, encoding: 'utf8' }));
+  const c = JSON.parse(shown.size.json);
+  const defs = (f) => JSON.parse(readFileSync(join('definitions', f), 'utf8'));
+  assert.ok(c[defs('variables/time.json').short_name] > 0);
+  const nested = Object.values(c).find((v) => v && typeof v === 'object');
+  assert.ok(nested && Object.values(nested).some(Array.isArray));
+});

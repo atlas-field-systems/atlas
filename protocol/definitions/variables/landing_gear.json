@@ -3,6 +3,12 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/landing_gear.json",
   "title": "landing_gear",
   "description": "Whether the landing gear is up or down.",
-  "enum": ["up", "down"],
-  "examples": ["down"]
+  "short_name": "gear",
+  "enum": [
+    "up",
+    "down"
+  ],
+  "examples": [
+    "down"
+  ]
 }

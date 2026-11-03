@@ -3,6 +3,7 @@
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/time.json",
   "title": "time",
   "description": "When the message was made, in milliseconds since 1970-01-01 UTC.",
+  "short_name": "t",
   "type": "integer",
   "minimum": 0,
   "examples": [
