@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/sender_id.json",
+  "title": "sender_id",
+  "description": "The ID of whoever sent the message.",
+  "type": "string",
+  "format": "uuid",
+  "examples": ["4f1c2b7e-9a3d-4e8f-b6a1-2c5d7e9f0a1b"]
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/sender_kind.json",
+  "title": "sender_kind",
+  "description": "What kind of thing sent the message.",
+  "enum": ["asset", "operator", "core", "gateway", "plugin"],
+  "examples": ["asset"]
+}

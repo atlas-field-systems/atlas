@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/settings.json",
+  "title": "Settings",
+  "description": "Sets or reports an Asset's settings. Operators send it to change them; the Asset sends it when it changes one itself. The most recent time wins.",
+  "type": "object",
+  "required": ["header", "asset_id", "settings"],
+  "additionalProperties": false,
+  "properties": {
+    "header": { "$ref": "../components/header.json" },
+    "asset_id": { "$ref": "../variables/asset_id.json" },
+    "settings": { "$ref": "../components/settings_values.json" }
+  },
+  "examples": [{
+    "header": { "from": { "id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e", "kind": "asset" }, "time": 1793667605000, "seq": 7 },
+    "asset_id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
+    "settings": { "lights": "on", "landing_gear": "down" }
+  }]
+}

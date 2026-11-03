@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/settings_values.json",
+  "title": "settings_values",
+  "description": "One or more settings, each as an explicit end state. Never a toggle.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": false,
+  "properties": {
+    "run_state": { "$ref": "../variables/run_state.json" },
+    "lights": { "$ref": "../variables/lights.json" },
+    "landing_gear": { "$ref": "../variables/landing_gear.json" },
+    "link_loss_response": { "$ref": "../variables/link_loss_response.json" }
+  },
+  "examples": [{ "lights": "on", "landing_gear": "down" }]
+}

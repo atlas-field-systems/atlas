@@ -1,0 +1,12 @@
+{
+  "title": "Atlas Protocol definitions",
+  "groups": [
+    { "name": "Messages", "files": ["messages/takeoff.json", "messages/settings.json"] },
+    { "name": "Components", "files": ["components/header.json", "components/sender.json", "components/altitude.json", "components/settings_values.json"] },
+    { "name": "Variables", "files": [
+      "variables/sender_id.json", "variables/sender_kind.json", "variables/time.json", "variables/seq.json",
+      "variables/asset_id.json", "variables/altitude_m.json", "variables/altitude_reference.json",
+      "variables/run_state.json", "variables/lights.json", "variables/landing_gear.json", "variables/link_loss_response.json"
+    ] }
+  ]
+}

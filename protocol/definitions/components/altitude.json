@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/altitude.json",
+  "title": "altitude",
+  "description": "One altitude and what it is measured from.",
+  "type": "object",
+  "required": ["altitude_m", "altitude_reference"],
+  "additionalProperties": false,
+  "properties": {
+    "altitude_m": { "$ref": "../variables/altitude_m.json" },
+    "altitude_reference": { "$ref": "../variables/altitude_reference.json" }
+  },
+  "examples": [{ "altitude_m": 30, "altitude_reference": "home" }]
+}

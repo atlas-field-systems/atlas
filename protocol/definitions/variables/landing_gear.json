@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/landing_gear.json",
+  "title": "landing_gear",
+  "description": "Whether the landing gear is up or down.",
+  "enum": ["up", "down"],
+  "examples": ["down"]
+}

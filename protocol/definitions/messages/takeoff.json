@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/takeoff.json",
+  "title": "Takeoff",
+  "description": "A Task telling an Asset to leave the ground and climb to a target altitude.",
+  "type": "object",
+  "required": ["header", "asset_id", "target_altitude"],
+  "additionalProperties": false,
+  "properties": {
+    "header": { "$ref": "../components/header.json" },
+    "asset_id": { "$ref": "../variables/asset_id.json" },
+    "target_altitude": { "$ref": "../components/altitude.json" }
+  },
+  "examples": [{
+    "header": { "from": { "id": "4f1c2b7e-9a3d-4e8f-b6a1-2c5d7e9f0a1b", "kind": "operator" }, "time": 1793667600000, "seq": 42 },
+    "asset_id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
+    "target_altitude": { "altitude_m": 30, "altitude_reference": "home" }
+  }]
+}

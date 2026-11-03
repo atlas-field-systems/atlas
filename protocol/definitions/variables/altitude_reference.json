@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/altitude_reference.json",
+  "title": "altitude_reference",
+  "description": "What an altitude is measured from: msl (mean sea level), ellipsoid (WGS84), home (the launch point), or ground (directly below).",
+  "enum": ["msl", "ellipsoid", "home", "ground"],
+  "examples": ["home"]
+}

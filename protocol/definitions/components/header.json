@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/header.json",
+  "title": "header",
+  "description": "Every message starts with this: who sent it, when, and the sender's counter.",
+  "type": "object",
+  "required": ["from", "time", "seq"],
+  "additionalProperties": false,
+  "properties": {
+    "from": { "$ref": "sender.json" },
+    "time": { "$ref": "../variables/time.json" },
+    "seq": { "$ref": "../variables/seq.json" }
+  },
+  "examples": [{ "from": { "id": "4f1c2b7e-9a3d-4e8f-b6a1-2c5d7e9f0a1b", "kind": "operator" }, "time": 1793667600000, "seq": 42 }]
+}
