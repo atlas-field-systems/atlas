@@ -11,6 +11,14 @@ const ajv = new Ajv({ strict: true, allErrors: true });
 addFormats(ajv);
 
 const errors = [];
+// A message or component may only point at definitions: a $ref, a $ref fixed to one
+// value (const), or a list of a $ref. It never defines a field itself.
+const onlyReferences = (d) => {
+  const keys = Object.keys(d).sort().join();
+  if (keys === '$ref' || keys === '$ref,const') return true;
+  const list = Object.keys(d).filter((k) => !['minItems', 'maxItems'].includes(k)).sort().join();
+  return d.type === 'array' && list === 'items,type' && Object.keys(d.items).join() === '$ref';
+};
 const files = kinds.flatMap((k) =>
   readdirSync(join(root, k)).filter((f) => f.endsWith('.json')).map((f) => `${k}/${f}`));
 const schemas = Object.fromEntries(
@@ -29,7 +37,7 @@ for (const [file, s] of Object.entries(schemas)) {
   if (!s.examples?.length) errors.push(`${file}: needs at least one example`);
   if (!file.startsWith('variables/')) {
     for (const [prop, def] of Object.entries(s.properties ?? {})) {
-      if (Object.keys(def).join() !== '$ref') errors.push(`${file}: "${prop}" must only be a $ref (define fields once, in variables/)`);
+      if (!onlyReferences(def)) errors.push(`${file}: "${prop}" must be a $ref, a $ref with a fixed const, or a list of a $ref (define fields once, in variables/)`);
     }
   }
   try {

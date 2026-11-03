@@ -21,7 +21,14 @@ function printFields(n, depth = 0) {
 function report(file, value) {
   const v = validate(protocol, file, value);
   const m = measure(value, compress);
-  console.log('\n' + JSON.stringify(value, null, 2));
+  const left = ['Message JSON', ...JSON.stringify(value, null, 2).split('\n')];
+  const right = [`Compressed (deflate, ${m.compressed} bytes)`, ...m.hex.split('\n'), '', 'Base64:', ...(m.base64.match(/.{1,64}/g) ?? [])];
+  const width = Math.max(...left.map((l) => l.length)) + 3;
+  console.log();
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    console.log((left[i] ?? '').padEnd(width) + dim(right[i] ?? ''));
+  }
+  console.log(`\nCompact JSON (what is compressed):\n${dim(m.json)}`);
   console.log(v.ok ? '\x1b[32mValid\x1b[0m' : '\x1b[31mInvalid\x1b[0m\n  ' + v.errors.join('\n  '));
   console.log(`Size: ${m.bytes} bytes as compact JSON, ${m.compressed} bytes compressed (deflate)`);
   console.log('Largest fields:');

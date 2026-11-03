@@ -26,7 +26,8 @@ function show(file) {
   $('view').innerHTML = `<h2>${esc(s.title ?? file)} <code>${esc(file)}</code></h2><p>${esc(s.description)}</p>
     <button id="ex">Use the example</button><button id="min">Minimal (required only)</button>
     <div class="cols"><div><h3>Fields</h3><table id="fields"></table></div>
-    <div><h3>Message JSON</h3><textarea id="json" spellcheck="false"></textarea><div id="result"></div></div></div>`;
+    <div><h3>Message JSON</h3><textarea id="json" spellcheck="false"></textarea><div id="result"></div></div>
+    <div><h3>Compressed</h3><div id="packed"></div></div></div>`;
   const render = (fromText) => {
     const rows = leaves(tree, value);
     $('fields').innerHTML = '<tr><th>Field</th><th>Value</th></tr>' + rows.map((r, i) => {
@@ -46,10 +47,16 @@ function show(file) {
     if (!fromText) $('json').value = JSON.stringify(value, null, 2);
     const v = validate(protocol, file, value);
     const m = measure(value, compress);
+    renderPacked(m);
     $('result').innerHTML = `<p class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'Valid' : 'Invalid'}</p>
       ${v.errors.map((e) => `<div class="bad">${esc(e)}</div>`).join('')}
       <p><b>${m.bytes}</b> bytes as compact JSON, <b>${m.compressed}</b> bytes compressed (deflate)</p>
       <table><tr><th>Largest fields</th><th>Bytes</th></tr>${m.fields.slice(0, 8).map((f) => `<tr><td>${esc(f.path)}</td><td>${f.bytes}</td></tr>`).join('')}</table>`;
+  };
+  const renderPacked = (m) => {
+    $('packed').innerHTML = `<p><b>${m.bytes}</b> bytes compact JSON &rarr; <b>${m.compressed}</b> bytes deflate (${Math.round((100 * m.compressed) / m.bytes)}%)</p>
+      <h4>Hex dump</h4><pre>${esc(m.hex)}</pre><h4>Base64</h4><pre class="wrap">${esc(m.base64)}</pre>
+      <h4>Compact JSON (what is compressed)</h4><pre class="wrap">${esc(m.json)}</pre>`;
   };
   $('json').oninput = () => { try { value = JSON.parse($('json').value); render(true); } catch { $('result').innerHTML = '<p class="bad">Not valid JSON yet</p>'; } };
   $('ex').onclick = () => { value = example(protocol, file); render(); };

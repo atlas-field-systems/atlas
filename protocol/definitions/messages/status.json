@@ -2,17 +2,26 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/status.json",
   "title": "Status",
-  "description": "The Asset reports its overall health. Link health and Task progress are reported separately.",
+  "description": "Report from an Asset: its overall health. Link health and Task progress are reported separately.",
   "type": "object",
   "required": [
-    "header",
+    "type",
+    "time",
+    "seq",
     "asset_id",
     "condition"
   ],
   "additionalProperties": false,
   "properties": {
-    "header": {
-      "$ref": "../components/header.json"
+    "type": {
+      "$ref": "../variables/type.json",
+      "const": "status"
+    },
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../variables/seq.json"
     },
     "asset_id": {
       "$ref": "../variables/asset_id.json"
@@ -26,14 +35,9 @@
   },
   "examples": [
     {
-      "header": {
-        "from": {
-          "id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
-          "kind": "asset"
-        },
-        "time": 1793667610000,
-        "seq": 8
-      },
+      "type": "status",
+      "time": 1793667600000,
+      "seq": 42,
       "asset_id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
       "condition": "degraded",
       "explanation": "Navigation receiver unavailable"

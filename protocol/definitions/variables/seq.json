@@ -2,8 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/seq.json",
   "title": "seq",
-  "description": "The sender's own message counter. It goes up by one for each message. Sender plus seq is unique.",
+  "description": "The sender's own message counter, up by one per message. Gaps show dropped messages; going backwards shows out-of-order ones.",
   "type": "integer",
   "minimum": 0,
-  "examples": [42]
+  "examples": [
+    42
+  ]
 }

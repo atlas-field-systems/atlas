@@ -13,19 +13,14 @@
     {
       "name": "Components",
       "files": [
-        "components/header.json",
-        "components/sender.json",
         "components/altitude.json",
-        "components/settings_values.json",
-        "components/position.json",
-        "components/altitudes.json"
+        "components/position.json"
       ]
     },
     {
       "name": "Variables",
       "files": [
-        "variables/sender_id.json",
-        "variables/sender_kind.json",
+        "variables/type.json",
         "variables/time.json",
         "variables/seq.json",
         "variables/asset_id.json",

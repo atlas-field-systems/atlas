@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/type.json",
+  "title": "type",
+  "description": "Which message this is. Each message fixes its own value, for example takeoff or telemetry.",
+  "type": "string",
+  "pattern": "^[a-z_]+$",
+  "examples": [
+    "takeoff"
+  ]
+}

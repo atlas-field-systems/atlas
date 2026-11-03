@@ -30,7 +30,9 @@ export function fieldTree(protocol, file, name = '', required = true) {
 function node(protocol, s, file, name, required) {
   if (s.$ref) {
     const target = join(file, s.$ref);
-    return { ...fieldTree(protocol, target, name, required), source: target };
+    const n = { ...fieldTree(protocol, target, name, required), source: target };
+    if (s.const !== undefined) Object.assign(n, { kind: 'enum', options: [s.const], schema: { ...n.schema, examples: [s.const] } });
+    return n;
   }
   const n = { name, required, description: s.description, source: file, schema: s };
   if (s.type === 'object') {
@@ -134,5 +136,31 @@ export function measure(value, compress) {
   };
   walk(value, []);
   fields.sort((a, b) => b.bytes - a.bytes);
-  return { json, bytes: bytes.length, compressed: compress ? compress(bytes).length : null, fields };
+  const packed = compress ? compress(bytes) : null;
+  return {
+    json,
+    bytes: bytes.length,
+    compressed: packed?.length ?? null,
+    hex: packed ? hexDump(packed) : '',
+    base64: packed ? toBase64(packed) : '',
+    fields,
+  };
+}
+
+// 16 bytes per line: offset, hex, and printable characters.
+export function hexDump(bytes) {
+  const lines = [];
+  for (let i = 0; i < bytes.length; i += 16) {
+    const row = [...bytes.slice(i, i + 16)];
+    const hex = row.map((b) => b.toString(16).padStart(2, '0')).join(' ').padEnd(47);
+    const text = row.map((b) => (b >= 32 && b < 127 ? String.fromCharCode(b) : '.')).join('');
+    lines.push(`${i.toString(16).padStart(4, '0')}  ${hex}  ${text}`);
+  }
+  return lines.join('\n');
+}
+
+function toBase64(bytes) {
+  let s = '';
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s);
 }

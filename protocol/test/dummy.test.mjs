@@ -17,8 +17,8 @@ writeFileSync(join(defs, 'messages/zz_dummy.json'), JSON.stringify({
   title: 'Dummy Probe',
   description: 'Exists only in this test.',
   type: 'object',
-  required: ['header', 'probe_level'],
-  properties: { header: { $ref: '../components/header.json' }, probe_level: { $ref: '../variables/zz_probe_level.json' } },
+  required: ['type', 'time', 'probe_level'],
+  properties: { type: { $ref: '../variables/type.json', const: 'zz_dummy' }, time: { $ref: '../variables/time.json' }, probe_level: { $ref: '../variables/zz_probe_level.json' } },
 }));
 writeFileSync(join(defs, 'variables/zz_probe_level.json'), JSON.stringify({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -36,6 +36,8 @@ test('CLI lists and renders the new definition', () => {
   assert.match(list, /messages\/zz_dummy\.json\tDummy Probe/);
   const shown = JSON.parse(execFileSync('node', ['cli/cli.mjs', '--show', 'messages/zz_dummy.json'], { env, encoding: 'utf8' }));
   assert.equal(shown.value.probe_level, 7);
+  assert.equal(shown.value.type, 'zz_dummy');
+  assert.ok(shown.size.hex.length > 0 && shown.size.base64.length > 0);
   assert.equal(shown.validation.ok, true);
   assert.ok(shown.size.bytes > 0);
 });

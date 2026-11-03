@@ -2,17 +2,26 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/telemetry.json",
   "title": "Telemetry",
-  "description": "The Asset reports where it is and how it is moving. Leave out anything it does not know.",
+  "description": "Report from an Asset: where it is and how it is moving. Leave out anything it does not know.",
   "type": "object",
   "required": [
-    "header",
+    "type",
+    "time",
+    "seq",
     "asset_id",
     "position"
   ],
   "additionalProperties": false,
   "properties": {
-    "header": {
-      "$ref": "../components/header.json"
+    "type": {
+      "$ref": "../variables/type.json",
+      "const": "telemetry"
+    },
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../variables/seq.json"
     },
     "asset_id": {
       "$ref": "../variables/asset_id.json"
@@ -32,14 +41,9 @@
   },
   "examples": [
     {
-      "header": {
-        "from": {
-          "id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
-          "kind": "asset"
-        },
-        "time": 1793667610000,
-        "seq": 8
-      },
+      "type": "telemetry",
+      "time": 1793667600000,
+      "seq": 42,
       "asset_id": "8b2e6d1a-3c4f-4a5b-9e7d-1f2a3b4c5d6e",
       "position": {
         "latitude": 42.2746,

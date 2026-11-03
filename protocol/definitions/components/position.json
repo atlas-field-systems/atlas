@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/position.json",
   "title": "position",
-  "description": "Where something is: latitude, longitude, and optionally one or more altitudes.",
+  "description": "Where something is: latitude, longitude, and optionally one or more altitudes, each with its reference.",
   "type": "object",
   "required": [
     "latitude",
@@ -17,7 +17,11 @@
       "$ref": "../variables/longitude.json"
     },
     "altitudes": {
-      "$ref": "altitudes.json"
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "altitude.json"
+      }
     }
   },
   "examples": [
