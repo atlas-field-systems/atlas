@@ -19,7 +19,7 @@ flowchart TD
 ```
 
 The direct-IP path is available. Most physical Assets use the gateway path.
-Applications and gateways can use an SDK or the public API where appropriate.
+Applications and gateways can use an SDK or the public API.
 The gateway represents the implementation used for that field link. Different
 gateway implementations can coexist as [connectivity evolves](environment.md#connectivity-evolves).
 The diagram shows system responsibilities, not process boundaries, wire messages,
@@ -43,6 +43,10 @@ Tasks describe requested work and reported outcomes.
 Objects hold files and their metadata.
 Plugins bring information into Atlas, such as aircraft data or research about an area.
 Their current intended role does not include controlling Assets.
+
+Core runs in Docker as a set of modules, such as the API and data storage.
+One module is the Plugins module. Plugins are small and run inside it.
+An Asset's [settings](settings.md) are its current configuration, kept in its entry.
 
 Each subsystem's documentation defines its behavior. Authentication and
 administration support the pillars.

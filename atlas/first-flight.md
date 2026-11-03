@@ -41,6 +41,20 @@ Core retains the requests and reported evidence. The Asset runtime performs the
 physical action. A request reaching Core does not prove that the drone received
 or executed it.
 
+## When something goes wrong
+
+If a Task in the queue fails, the drone cancels the remaining Tasks and follows
+its emergency behavior. Core marks those Tasks cancelled once the drone reports
+it, so the records match what happened.
+
+Each Asset has [settings](settings.md) for how it responds to events such as
+losing its radio link. The last resort is return to home, done by an Atlas layer
+on the drone above the flight controller or by switching ArduPilot into its
+return-to-home mode.
+
+Failure always wins. Whatever state the drone is in, including paused, a failure
+sends it home. An Asset must never stay airborne until it falls out of the sky.
+
 ## Keep the whole run for debugging
 
 When the operator spins them down, Core, each gateway, and each Asset each
@@ -58,7 +72,7 @@ every part did, so the whole run can be analyzed at once, including by a
 language model. Each system's documentation defines its own ZIP contents and
 Reset procedure.
 
-This example explains one flight. Task scheduling, radio exchanges, and recovery
-rules belong in their owning subsystem documentation.
+This example explains one flight. Detailed Task, radio, and recovery rules
+belong in their owning subsystem documentation.
 
 [Charter home](README.md)
