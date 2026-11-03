@@ -34,9 +34,6 @@
     },
     "heading_deg": {
       "$ref": "../../variables/heading_deg.json"
-    },
-    "battery_percent": {
-      "$ref": "../../variables/battery_percent.json"
     }
   },
   "examples": [
@@ -60,8 +57,7 @@
         ]
       },
       "ground_speed_mps": 4.2,
-      "heading_deg": 90,
-      "battery_percent": 82
+      "heading_deg": 90
     }
   ]
 }

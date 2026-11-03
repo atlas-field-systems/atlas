@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/kind.json",
   "title": "kind",
-  "description": "Which exact message within a type, such as takeoff for control.task or plan for report.status. Each kind fixes its own value.",
+  "description": "Which exact message within a type, such as takeoff for control.command or queue for report.status. Each kind fixes its own value.",
   "type": "string",
   "pattern": "^[a-z_]+$",
   "maxLength": 32,

@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/type.json",
   "title": "type",
-  "description": "Which message this is, as a path through the message groups, such as control.task or report.status. Each message type fixes its own value.",
+  "description": "Which message this is, as a path through the message groups, such as control.command or report.status. Each message type fixes its own value.",
   "type": "string",
   "pattern": "^[a-z_]+\\.[a-z_]+$",
   "maxLength": 32,
   "examples": [
-    "control.task"
+    "control.command"
   ]
 }

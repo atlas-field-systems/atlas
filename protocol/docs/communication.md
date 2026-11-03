@@ -35,10 +35,9 @@ live in a **link profile** for that medium, not in the messages.
 
 Sending a whole queue at once could fail on a slow link. Instead:
 
-1. Core sends a short **plan summary**: plan number, task count, and task IDs.
-2. Core sends **each task as its own message**.
-3. The Asset confirms **"running plan N"** once it has every task.
-4. Missing pieces are resent, or the Asset asks for them one at a time.
+1. Core sends **each task as its own message** (a `control.command` with a `task_id`).
+2. The Asset reports its **queue**: the list of task IDs it holds, in order.
+3. Core resends any task missing from that list. Core can ask for the queue at any time.
 
 ## Task states
 

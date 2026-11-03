@@ -2,12 +2,13 @@
 
 Not decided yet. Planning comes before building.
 
-## Message groups and plans
+## Message groups and the queue
 
-- **Incomplete plans.** If some of a Plan's Tasks never arrive, does the Asset report `plan_state: incomplete`, or stay silent until Core resends?
+- **Future Asset data.** When Assets need to report new data (beyond telemetry, battery, settings and status), how is it added? Each gets a new fixed report, but who decides, and how does an Asset say which reports it supports?
+- **More failsafe triggers.** `link_loss` is the only trigger. Others, such as low battery, are not defined yet.
 - **Queued settings confirmation.** When a queued `change_settings` task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?
-- **Commands during a plan.** If a `control.command` arrives while a Plan runs, does it pause the Plan or run beside it?
-- **One level deeper?** Should `kind` be folded into the path (`"type": "control.task.move_to"`), making one field instead of two?
+- **Commands while the queue runs.** If an immediate `control.command` (no `task_id`) arrives while Tasks run, does it pause the queue or run beside it?
+- **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier
 
@@ -20,7 +21,7 @@ version check, gateways) is in [communication.md](communication.md).
   pushed to an Asset when it asks "what tasks do I have?".
 - **Command acknowledgement.** How a command is acknowledged, keeping "accepted"
   separate from "observed result".
-- **Queue and task-list delivery.** Partly answered: each `control.task` carries `plan_id`, `task_id` and `task_count`, and the Asset confirms the whole Plan with `report.status` kind `plan`. How they travel over the link is still open.
+- **Queue and task-list delivery.** Partly answered: each Task is a `control.command` with `task_id`, and the Asset answers with its queue (`report.status` kind `queue`). How they travel over the link is still open.
 - **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
 - **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** One of the four pillars; no definitions yet.

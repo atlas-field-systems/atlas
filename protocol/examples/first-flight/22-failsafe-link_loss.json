@@ -1,8 +1,9 @@
 {
   "type": "report.failsafe",
   "time": 1793667640000,
-  "seq": 12,
+  "seq": 13,
   "asset_id": "A1",
-  "kind": "link_loss_response",
+  "kind": "link_loss",
+  "response": "return_home",
   "explanation": "No contact with gateway for 30 s"
 }

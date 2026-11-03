@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/failsafe.json",
   "title": "Failsafe",
-  "description": "From an Asset, sent as soon as it switches on a failsafe by itself. kind says which failsafe.",
+  "description": "From an Asset, sent as soon as a failsafe triggers and it acts by itself. kind is the trigger (what happened). response is what the Asset does about it.",
   "type": "object",
   "required": [
     "type",
@@ -10,14 +10,11 @@
     "seq",
     "asset_id",
     "kind",
-    "explanation"
+    "response"
   ],
   "oneOf": [
     {
-      "$ref": "failsafe/return_home.json"
-    },
-    {
-      "$ref": "failsafe/link_loss_response.json"
+      "$ref": "failsafe/link_loss.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -40,6 +37,9 @@
     },
     "explanation": {
       "$ref": "../../variables/explanation.json"
+    },
+    "response": {
+      "$ref": "../../variables/failsafe_response.json"
     }
   },
   "examples": [
@@ -48,16 +48,9 @@
       "time": 1793667600000,
       "seq": 42,
       "asset_id": "A1",
-      "kind": "link_loss_response",
+      "kind": "link_loss",
+      "response": "return_home",
       "explanation": "No contact with gateway for 30 s"
-    },
-    {
-      "type": "report.failsafe",
-      "time": 1793667600000,
-      "seq": 42,
-      "asset_id": "A1",
-      "kind": "return_home",
-      "explanation": "Battery below return reserve"
     }
   ]
 }

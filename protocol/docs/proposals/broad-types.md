@@ -1,6 +1,6 @@
 # Proposal: nested message groups
 
-Status: **adopted**. The definitions now follow this. Kept as the record of why and of the size comparison. The open questions moved to [open-questions.md](../open-questions.md), and the first-flight examples moved to `examples/first-flight/`, where the Plan's three tasks are now sent together before the run starts.
+Status: **adopted, then revised**: `control.task` was merged into `control.command` (a `task_id` makes it queued), Plans were replaced by the queue, failsafe `kind` became the trigger, and the battery got its own report. See [decisions.md](../decisions.md). The definitions now follow this. Kept as the record of why and of the size comparison. The open questions moved to [open-questions.md](../open-questions.md), and the first-flight examples moved to `examples/first-flight/`, where the Plan's three tasks are now sent together before the run starts.
 
 ## Why
 

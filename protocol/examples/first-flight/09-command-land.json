@@ -1,12 +1,10 @@
 {
-  "type": "control.task",
+  "type": "control.command",
   "time": 1793667605100,
   "seq": 4,
   "asset_id": "A1",
   "kind": "land",
-  "plan_id": "P1",
   "task_id": "T3",
-  "task_count": 3,
   "landing_position": {
     "latitude": 42.2746,
     "longitude": -71.8063

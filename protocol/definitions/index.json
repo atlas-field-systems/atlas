@@ -7,10 +7,11 @@
         "messages/admin/hello.json",
         "messages/admin/hello_reply.json",
         "messages/control/command.json",
-        "messages/control/task.json",
+        "messages/control/queue_request.json",
         "messages/report/status.json",
         "messages/report/failsafe.json",
         "messages/report/telemetry.json",
+        "messages/report/battery.json",
         "messages/report/settings.json"
       ]
     },
@@ -23,9 +24,8 @@
         "messages/control/command/change_settings.json",
         "messages/report/status/asset.json",
         "messages/report/status/task.json",
-        "messages/report/status/plan.json",
-        "messages/report/failsafe/return_home.json",
-        "messages/report/failsafe/link_loss_response.json"
+        "messages/report/status/queue.json",
+        "messages/report/failsafe/link_loss.json"
       ]
     },
     {
@@ -48,6 +48,7 @@
         "variables/run_state.json",
         "variables/lights.json",
         "variables/landing_gear.json",
+        "variables/failsafe_response.json",
         "variables/link_loss_response.json",
         "variables/condition.json",
         "variables/explanation.json",
@@ -60,9 +61,6 @@
         "variables/hello_result.json",
         "variables/task_id.json",
         "variables/task_state.json",
-        "variables/plan_id.json",
-        "variables/task_count.json",
-        "variables/plan_state.json",
         "variables/reply_to.json"
       ]
     }

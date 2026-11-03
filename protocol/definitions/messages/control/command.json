@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command.json",
   "title": "Command",
-  "description": "From Core: do this now. Never queued; the Asset acts on it as soon as it arrives. kind says which command.",
+  "description": "From Core: tell an Asset to do something. kind says what. Without task_id it is done now (such as a button press). With task_id it is a Task: added to the end of the Asset's queue.",
   "type": "object",
   "required": [
     "type",
@@ -42,6 +42,9 @@
     },
     "kind": {
       "$ref": "../../variables/kind.json"
+    },
+    "task_id": {
+      "$ref": "../../variables/task_id.json"
     }
   },
   "examples": [
@@ -62,6 +65,7 @@
       "seq": 42,
       "asset_id": "A1",
       "kind": "move_to",
+      "task_id": "T2",
       "destination": {
         "latitude": 42.2746,
         "longitude": -71.8063,
@@ -79,6 +83,7 @@
       "seq": 42,
       "asset_id": "A1",
       "kind": "land",
+      "task_id": "T3",
       "landing_position": {
         "latitude": 42.2746,
         "longitude": -71.8063
@@ -94,6 +99,15 @@
       "seq": 42,
       "asset_id": "A1",
       "kind": "change_settings",
+      "lights": "on"
+    },
+    {
+      "type": "control.command",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "change_settings",
+      "task_id": "T4",
       "lights": "on"
     }
   ]

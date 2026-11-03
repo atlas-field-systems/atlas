@@ -20,16 +20,16 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
   ```text
   admin    hello, hello_reply
-  control  command (kind: takeoff, move_to, land, change_settings)
-           task    (the same kinds, plus plan_id, task_id, task_count)
-  report   status  (kind: asset, task, plan)
-           failsafe (kind: return_home, link_loss_response)
-           telemetry, settings
+  control  command (kind: takeoff, move_to, land, change_settings; task_id = queued)
+           queue_request
+  report   status   (kind: asset, task, queue)
+           failsafe (kind = trigger: link_loss; response field)
+           telemetry, battery, settings
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
-- A **command** is something an Asset can be told to do, done now and never queued. A **task** is one use of a command, queued in a Plan. Tasks reuse the command kinds, so each kind is defined once.
+- A **command** is something an Asset can do. A **task** is one queued use of a command. There is one message, `control.command`, and one list of command kinds. Without `task_id` it runs now (a button press). With `task_id` it is a Task, added to the end of the queue. This replaced a separate `control.task` type that repeated every command kind.
 - Failsafe is its own type under `report`, so it sits with everything else the Asset tells Core but can carry more context than a status.
-- `type`: which message this is, as its group and type joined by a dot, such as `control.task` or `report.telemetry`. It is the message's folder and file name.
+- `type`: which message this is, as its group and type joined by a dot, such as `control.command` or `report.telemetry`. It is the message's folder and file name.
 - `time`: milliseconds since 1970 (UTC), as a number.
 - `seq`: the sender's own counter, up by one per message. On the mesh it shows dropped (gaps) and out-of-order messages.
 - `asset_id`: the Asset a command is for, or the Asset a report is from.
@@ -40,22 +40,25 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `asset_id` is 1 to 4 letters or digits (`A-Z`, `a-z`, `0-9`), such as `A1`. That is over 15 million IDs, far more than the roughly 20 Assets we expect (see the Charter's scale page). Every ID, not only `asset_id`, is 1 to 4 letters or digits. Any new `*_id` variable must use the same pattern; the check script enforces this.
 - Field names are long and readable in the definitions and in message JSON.
 
-## Commands (kinds of `control.command` and `control.task`)
+## Commands (kinds of `control.command`)
 - takeoff: a target altitude.
 - land: a landing position and an optional transit altitude. Without one, the Asset keeps its current altitude.
 - move_to: a destination position. Without an altitude, the Asset keeps its current one (confirmed).
 - change_settings: one or more settings, each an explicit end state.
 
-## Plans
-- There is no separate Plan message, which could be lost. Each `control.task` carries `plan_id`, `task_id`, and `task_count` (how many Tasks the Plan has).
-- Once the Asset holds all `task_count` Tasks, it confirms with `report.status` of kind `plan`, `plan_state: running`. It reports `completed`, `failed`, or `cancelled` the same way.
+## Queue
+- There are no Plans. A **queue** is just the list of an Asset's unfinished Tasks, in order. It is not an object and has no ID.
+- `task_id` is unique per Asset, even after a Task finishes.
+- The Asset sends `report.status` of kind `queue` (a list of `task_ids`) whenever Tasks are added, and when Core sends `control.queue_request`. This replaces `task_count`: Core compares the list with the Tasks it sent and resends any that are missing. One short report covers any number of Tasks.
 
 ## Connect and reports
 - `admin.hello`: an Asset's first message on a link, with `protocol_version`. The API key stays at the link level, never in a message.
 - `admin.hello_reply`: Core answers `accepted` or `version_mismatch`, with the version to run.
-- `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `plan`: one Plan's state.
-- `report.failsafe`: a failsafe the Asset switched on by itself (kind `return_home` or `link_loss_response`), with an explanation.
-- `task_id` and `plan_id` are 1 to 4 letters or digits, like every ID.
+- `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
+- `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss`); `response` is what it does (`return_home`, `hold`, `land` or `continue`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
+- `report.battery`: the battery, on its own schedule, separate from telemetry, because it changes even when the Asset does not move.
+- **Asset data reports are fixed and standard.** Every Asset reports battery, position and the rest with the same defined report and components. There are no free-form or "misc" fields. New kinds of Asset data get a new defined report.
+- `task_id` is 1 to 4 letters or digits, like every ID.
 - Gateways will likely register themselves like Assets, with a Hello. Later link business (gateway registration, time sync, goodbye) goes under `admin`.
 - How Core reaches an Asset through a gateway (Core to gateway over IP, gateway to Asset over radio) is still open.
 

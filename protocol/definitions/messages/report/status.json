@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/status.json",
   "title": "Status",
-  "description": "From an Asset: how it, one of its Tasks, or one of its Plans stands. kind says which.",
+  "description": "From an Asset: how it, one of its Tasks, or its queue stands. kind says which.",
   "type": "object",
   "required": [
     "type",
@@ -19,7 +19,7 @@
       "$ref": "status/task.json"
     },
     {
-      "$ref": "status/plan.json"
+      "$ref": "status/queue.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -65,9 +65,12 @@
       "time": 1793667600000,
       "seq": 42,
       "asset_id": "A1",
-      "kind": "plan",
-      "plan_id": "P1",
-      "plan_state": "running"
+      "kind": "queue",
+      "task_ids": [
+        "T1",
+        "T2",
+        "T3"
+      ]
     }
   ]
 }
