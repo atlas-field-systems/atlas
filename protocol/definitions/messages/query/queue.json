@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/queue.json",
+  "title": "Queue query",
+  "description": "Ask for an Asset's queue. Core asks the Asset, which answers with report.status of kind queue. An Asset asks Core after reconnecting, and Core answers by resending each queued Task as it was first sent (control.command or control.settings with task_id).",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "query.queue"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "query.queue",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1"
+    }
+  ]
+}

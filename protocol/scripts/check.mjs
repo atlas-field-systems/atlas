@@ -66,7 +66,9 @@ for (const [file, s] of Object.entries(schemas)) {
   if (isType(file)) {
     const [, group, type] = file.replace('.json', '').split('/');
     for (const h of header) {
-      if (!s.required?.includes(h) || !props[h]?.$ref || resolve(file, props[h].$ref) !== `variables/${h}.json`) errors.push(`${file}: law 3: must require "${h}" from variables/${h}.json`);
+      // Law 3 exception: query.core may ask about every Asset, so asset_id is optional there.
+      const optional = h === 'asset_id' && file === 'messages/query/core.json';
+      if ((!optional && !s.required?.includes(h)) || !props[h]?.$ref || resolve(file, props[h].$ref) !== `variables/${h}.json`) errors.push(`${file}: law 3: must require "${h}" from variables/${h}.json`);
     }
     if (props.type?.const !== `${group}.${type}`) errors.push(`${file}: law 7: type must be fixed to "${group}.${type}" (its folder and file name)`);
     if (s.oneOf) {

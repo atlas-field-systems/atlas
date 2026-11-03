@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command.json",
   "title": "Command",
-  "description": "From Core: tell an Asset to do something. kind says what. Without task_id it is done now (such as a button press). With task_id it is a Task: added to the end of the Asset's queue.",
+  "description": "From Core: tell an Asset to do something. kind says what. Without task_id it runs now, beside the queue. With task_id it is a Task, added to the end of the Asset's queue. Settings changes use control.settings.",
   "type": "object",
   "required": [
     "type",
@@ -20,9 +20,6 @@
     },
     {
       "$ref": "command/land.json"
-    },
-    {
-      "$ref": "command/change_settings.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -92,23 +89,6 @@
         "altitude_m": 20,
         "altitude_reference": "home"
       }
-    },
-    {
-      "type": "control.command",
-      "time": 1793667600000,
-      "seq": 42,
-      "asset_id": "A1",
-      "kind": "change_settings",
-      "lights": "on"
-    },
-    {
-      "type": "control.command",
-      "time": 1793667600000,
-      "seq": 42,
-      "asset_id": "A1",
-      "kind": "change_settings",
-      "task_id": "T4",
-      "lights": "on"
     }
   ]
 }

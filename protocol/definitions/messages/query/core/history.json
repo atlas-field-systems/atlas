@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/core/history.json",
+  "title": "history",
+  "description": "Stored reports, oldest first. report picks one kind of report (such as telemetry); since and until limit the time. Leave any out to get everything.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "history"
+    },
+    "report": {
+      "$ref": "../../../variables/report.json"
+    },
+    "since": {
+      "$ref": "../../../variables/time.json"
+    },
+    "until": {
+      "$ref": "../../../variables/time.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "history",
+      "report": "telemetry",
+      "since": 1793667600000
+    }
+  ]
+}

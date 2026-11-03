@@ -39,5 +39,6 @@ The battery is its own fixed report, `report.battery` (91 / 82), sent on its own
 - **Bloat:** do not split it into separate position and speed records. That would repeat `asset_id` and `time` in each.
 
 ## 4. Core → operator interface
+- To read stored telemetry, an operator interface sends `query.core` of kind `history` with `report: telemetry` (126 / 101). Core answers with the stored reports, unchanged. That hop is the operator API, which is not defined yet.
 - **GAP:** not defined. Sketch, not decided: Core forwards the same message.
 - **Bloat:** if the operator only needs the latest picture, Core could forward only the newest report per Asset and drop older ones.

@@ -2,14 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/hello.json",
   "title": "Hello",
-  "description": "First message from an Asset when a link opens: which Asset it is and which protocol version it runs. Authentication (an API key) is handled by the link, not this message.",
+  "description": "First message from an Asset when a link opens: which Asset it is, which protocol version it runs, and which reports it sends. Authentication (an API key) is handled by the link, not this message.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
     "asset_id",
-    "protocol_version"
+    "protocol_version",
+    "reports"
   ],
   "additionalProperties": false,
   "properties": {
@@ -28,6 +29,14 @@
     },
     "protocol_version": {
       "$ref": "../../variables/protocol_version.json"
+    },
+    "reports": {
+      "type": "array",
+      "items": {
+        "$ref": "../../variables/report.json"
+      },
+      "minItems": 1,
+      "maxItems": 5
     }
   },
   "examples": [
@@ -36,7 +45,14 @@
       "time": 1793667600000,
       "seq": 42,
       "asset_id": "A1",
-      "protocol_version": "0.3"
+      "protocol_version": "0.3",
+      "reports": [
+        "status",
+        "failsafe",
+        "telemetry",
+        "battery",
+        "settings"
+      ]
     }
   ]
 }

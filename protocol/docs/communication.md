@@ -35,9 +35,9 @@ live in a **link profile** for that medium, not in the messages.
 
 Sending a whole queue at once could fail on a slow link. Instead:
 
-1. Core sends **each task as its own message** (a `control.command` with a `task_id`).
+1. Core sends **each task as its own message** (a `control.command` or `control.settings` with a `task_id`).
 2. The Asset reports its **queue**: the list of task IDs it holds, in order.
-3. Core resends any task missing from that list. Core can ask for the queue at any time.
+3. Core resends any task missing from that list. Either side can ask for the queue at any time with `query.queue`, for example an Asset after reconnecting.
 
 ## Task states
 

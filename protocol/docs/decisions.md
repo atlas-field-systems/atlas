@@ -20,14 +20,17 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
   ```text
   admin    hello, hello_reply
-  control  command (kind: takeoff, move_to, land, change_settings; task_id = queued)
-           queue_request
+  control  command  (kind: takeoff, move_to, land; task_id = queued)
+           settings (task_id = queued change_settings)
+  query    asset, queue, core (kind: assets, history)
   report   status   (kind: asset, task, queue)
-           failsafe (kind = trigger: link_loss; response field)
+           failsafe (kind = trigger: link_loss, low_battery; response field)
            telemetry, battery, settings
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
-- A **command** is something an Asset can do. A **task** is one queued use of a command. There is one message, `control.command`, and one list of command kinds. Without `task_id` it runs now (a button press). With `task_id` it is a Task, added to the end of the queue. This replaced a separate `control.task` type that repeated every command kind.
+- A **command** is something an Asset can do: takeoff, move_to, land. A **task** is one queued use of a command or a settings change. `control.command` and `control.settings` each take an optional `task_id`. Without it, the message runs now (a button press). With it, the message is a Task added to the end of the queue. Each kind is defined once.
+- **Immediate commands and settings changes run alongside the queue and do not pause it.**
+- `query` holds questions: `query.asset` (Core asks an Asset for one report), `query.queue` (either side asks for an Asset's queue, for example an Asset after reconnecting), and `query.core` (an operator interface asks Core for its Assets or stored history, over the operator API, which is not defined yet). Answers are always the normal messages, so no answer formats are added.
 - Failsafe is its own type under `report`, so it sits with everything else the Asset tells Core but can carry more context than a status.
 - `type`: which message this is, as its group and type joined by a dot, such as `control.command` or `report.telemetry`. It is the message's folder and file name.
 - `time`: milliseconds since 1970 (UTC), as a number.
@@ -44,18 +47,17 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - takeoff: a target altitude.
 - land: a landing position and an optional transit altitude. Without one, the Asset keeps its current altitude.
 - move_to: a destination position. Without an altitude, the Asset keeps its current one (confirmed).
-- change_settings: one or more settings, each an explicit end state.
 
 ## Queue
 - There are no Plans. A **queue** is just the list of an Asset's unfinished Tasks, in order. It is not an object and has no ID.
 - `task_id` is unique per Asset, even after a Task finishes.
-- The Asset sends `report.status` of kind `queue` (a list of `task_ids`) whenever Tasks are added, and when Core sends `control.queue_request`. This replaces `task_count`: Core compares the list with the Tasks it sent and resends any that are missing. One short report covers any number of Tasks.
+- The Asset sends `report.status` of kind `queue` (a list of `task_ids`) whenever Tasks are added, and when Core sends `query.queue`. This replaces `task_count`: Core compares the list with the Tasks it sent and resends any that are missing. One short report covers any number of Tasks.
 
 ## Connect and reports
-- `admin.hello`: an Asset's first message on a link, with `protocol_version`. The API key stays at the link level, never in a message.
+- `admin.hello`: an Asset's first message on a link, with `protocol_version` and `reports`, the list of reports it sends (a drone without a battery sensor leaves out `battery`). The API key stays at the link level, never in a message.
 - `admin.hello_reply`: Core answers `accepted` or `version_mismatch`, with the version to run.
 - `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
-- `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss`); `response` is what it does (`return_home`, `hold`, `land` or `continue`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
+- `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`return_home`, `hold`, `land` or `continue`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
 - `report.battery`: the battery, on its own schedule, separate from telemetry, because it changes even when the Asset does not move.
 - **Asset data reports are fixed and standard.** Every Asset reports battery, position and the rest with the same defined report and components. There are no free-form or "misc" fields. New kinds of Asset data get a new defined report.
 - `task_id` is 1 to 4 letters or digits, like every ID.
@@ -81,8 +83,8 @@ An older time never overwrites newer state. There is no "history-only" message.
 
 ## Settings
 - `report.settings`, sent at connect or when the Asset changes a setting itself, is a report and needs no confirmation.
-- When Core changes a setting, it is either immediate or queued. An immediate change is a `control.command` of kind `change_settings` (the easy default, a button press), confirmed by a `report.settings` whose `reply_to` is the command's `seq`. A queued change is a `control.task` of kind `change_settings`, confirmed by its task status.
-- Settings are only variables, used by `report.settings` and the `change_settings` kind; no setting has its own message.
+- When Core changes a setting, it is either immediate or queued. An immediate change is a `control.settings` without `task_id` (the easy default, a button press), confirmed by a `report.settings` whose `reply_to` is the command's `seq`. A queued change is a `control.settings` with `task_id`, for example placed after a move_to,, confirmed by its task status.
+- Settings are only variables, used by `report.settings` and `control.settings`; no setting has its own message.
 - Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (return_home/hold/land/continue).
 - Each change is an explicit end state, never a toggle. The most recent time wins.
 - No custom per-Asset settings yet.

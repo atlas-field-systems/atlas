@@ -63,5 +63,6 @@ Operator interface ──1. operator API, IP (GAP)──▶ Core ──2. store 
 - **Bloat:** keep one log, not a log and a separate "current state" copy, unless reading speed needs it.
 
 ## 7. Core → operator interface
+- An operator interface can also ask Core with `query.core` (kind `history`). That hop is the operator API, which is not defined yet.
 - **GAP:** not defined. Sketch, not decided: Core forwards the same `report.status` message.
 - **Bloat:** forward the message itself, not a new "task view" format.

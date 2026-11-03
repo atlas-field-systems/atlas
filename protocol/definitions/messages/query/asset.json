@@ -1,20 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/queue_request.json",
-  "title": "Queue request",
-  "description": "From Core: ask an Asset for its queue. The Asset answers with report.status of kind queue.",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/asset.json",
+  "title": "Asset query",
+  "description": "From Core: ask an Asset for one report now. The Asset answers with that report, as it normally sends it (status answers with its asset status).",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
-    "asset_id"
+    "asset_id",
+    "report"
   ],
   "additionalProperties": false,
   "properties": {
     "type": {
       "$ref": "../../variables/type.json",
-      "const": "control.queue_request"
+      "const": "query.asset"
     },
     "time": {
       "$ref": "../../variables/time.json"
@@ -24,14 +25,18 @@
     },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
+    },
+    "report": {
+      "$ref": "../../variables/report.json"
     }
   },
   "examples": [
     {
-      "type": "control.queue_request",
+      "type": "query.asset",
       "time": 1793667600000,
       "seq": 42,
-      "asset_id": "A1"
+      "asset_id": "A1",
+      "report": "settings"
     }
   ]
 }

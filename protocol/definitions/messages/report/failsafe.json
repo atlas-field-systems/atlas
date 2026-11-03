@@ -15,6 +15,9 @@
   "oneOf": [
     {
       "$ref": "failsafe/link_loss.json"
+    },
+    {
+      "$ref": "failsafe/low_battery.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -51,6 +54,15 @@
       "kind": "link_loss",
       "response": "return_home",
       "explanation": "No contact with gateway for 30 s"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "low_battery",
+      "response": "return_home",
+      "explanation": "Battery at 18 %"
     }
   ]
 }

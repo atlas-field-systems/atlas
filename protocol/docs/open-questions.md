@@ -4,10 +4,9 @@ Not decided yet. Planning comes before building.
 
 ## Message groups and the queue
 
-- **Future Asset data.** When Assets need to report new data (beyond telemetry, battery, settings and status), how is it added? Each gets a new fixed report, but who decides, and how does an Asset say which reports it supports?
-- **More failsafe triggers.** `link_loss` is the only trigger. Others, such as low battery, are not defined yet.
-- **Queued settings confirmation.** When a queued `change_settings` task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?
-- **Commands while the queue runs.** If an immediate `control.command` (no `task_id`) arrives while Tasks run, does it pause the queue or run beside it?
+- **What registration contains.** `admin.hello` now lists the reports an Asset sends. What else an Asset must say about itself when it registers (what it is, what it can do) depends on what Core stores for each Asset, so it is tied to the storage formats, which are deferred.
+- **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
+- **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier
@@ -21,7 +20,7 @@ version check, gateways) is in [communication.md](communication.md).
   pushed to an Asset when it asks "what tasks do I have?".
 - **Command acknowledgement.** How a command is acknowledged, keeping "accepted"
   separate from "observed result".
-- **Queue and task-list delivery.** Partly answered: each Task is a `control.command` with `task_id`, and the Asset answers with its queue (`report.status` kind `queue`). How they travel over the link is still open.
+- **Queue and task-list delivery.** Partly answered: each Task is a `control.command` or `control.settings` with `task_id`, and the Asset answers with its queue (`report.status` kind `queue`). How they travel over the link is still open.
 - **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
 - **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** One of the four pillars; no definitions yet.
