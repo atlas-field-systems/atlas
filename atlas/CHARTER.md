@@ -7,6 +7,8 @@ Read the [operating environment](environment.md) before designing a subsystem.
 
 The owner must be able to read the docs whenever they change.
 Use short user stories and visible data flows to expose mismatches with intended use.
+Describe and review the intended user-visible flow before implementing it.
+Keep unresolved product decisions visible in the owning subsystem's documentation.
 Put a consequential restriction in its owning system's story before adopting it.
 
 ## Keep the systems replaceable

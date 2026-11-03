@@ -47,4 +47,22 @@ Their current intended role does not include controlling Assets.
 Each subsystem's documentation defines its behavior. Authentication and
 administration support the pillars.
 
+## Information-focused stories
+
+These stories describe intended use.
+
+### Observe an aircraft
+
+An ADS-B receiver is an Asset. It reports Observations about a passing aircraft.
+Atlas uses those Observations as evidence to maintain a shared Track of the
+aircraft for the operator to follow. The operator does not need to control that
+aircraft to observe it through Atlas.
+
+### Research a place
+
+An operator selects a building or area and requests research from a Plugin within
+Core. The Plugin publishes its findings through Entities and any files through
+Objects. The operator can find those results in Atlas afterward.
+The Plugin's request handling belongs in its subsystem documentation.
+
 [First flight](first-flight.md) follows one complete use of these parts.
