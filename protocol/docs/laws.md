@@ -3,6 +3,8 @@
 The rules every Atlas message follows. If a change breaks a law, the change is wrong,
 or the law gets changed on purpose first.
 
+**Bloat is the main enemy.** Every field, record and message must earn its place. Do not duplicate anything that can be defined once or worked out.
+
 "Checked" means `npm run check` fails when the law is broken.
 
 1. **Protocol defines all Atlas data.** It defines both the messages and the storage layout. Core, the SDK cache, and Assets store data in storage formats defined here, built from the same variables, names, units, and shapes. Extra stored fields, such as when a message was received, are defined here too. Storage formats are not planned yet; see [Storage formats](../storage/README.md).

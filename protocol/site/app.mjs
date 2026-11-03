@@ -43,6 +43,12 @@ async function showDoc(name) {
   document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.file === `doc:${name}`));
   const text = await (await fetch(`docs/${name}`)).text();
   $('view').innerHTML = `<article class="doc">${marked.parse(text)}</article>`;
+  const diagrams = [...document.querySelectorAll('code.language-mermaid')];
+  if (!diagrams.length) return;
+  diagrams.forEach((c) => { c.parentElement.outerHTML = `<pre class="mermaid">${esc(c.textContent)}</pre>`; });
+  const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+  mermaid.initialize({ startOnLoad: false });
+  await mermaid.run({ querySelector: 'pre.mermaid' });
 }
 
 // Which version this is (main or a pull request preview), with links to the others.
