@@ -12,3 +12,13 @@ Because the Asset is on the ground, that elevation is its altitude above sea lev
 From then on, the Asset can report altitude above sea level as well as above home.
 
 Open questions: where Core gets elevation data in the field, and how accurate it must be.
+
+## Links, not just messages
+
+Every Atlas connection is now a two-way stream, like a WebSocket. So a radio's job
+is to keep a live link up between radios, not just to deliver single messages
+from A to B. This may become its own Charter section later.
+
+Open questions: how a radio link is set up and kept stable, how it reroutes when
+the mesh changes, how it copes with Assets moving, and what to call the stream
+idea, since it spans WebSocket and radio links.
