@@ -5,5 +5,5 @@
   "asset_id": "A1",
   "kind": "link_loss",
   "response": "return_to_home",
-  "explanation": "No contact with gateway for 30 s"
+  "explanation": "No contact with Core for 30 s"
 }

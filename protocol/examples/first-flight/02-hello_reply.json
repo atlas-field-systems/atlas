@@ -4,5 +4,5 @@
   "seq": 1,
   "asset_id": "A1",
   "hello_result": "accepted",
-  "protocol_version": "0.6"
+  "protocol_version": "0.7"
 }

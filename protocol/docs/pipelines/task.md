@@ -33,7 +33,7 @@ Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP
 
 ## 3–4. Core → gateway → Asset
 - **Who:** Core sends it, a gateway relays it over radio, and the Asset receives it.
-- **Link:** IP to the gateway, then radio. Routing is the link's job: the gateway adds nothing, and a copy that arrives twice is dropped by `(sender, seq)` ([communication.md](../communication.md#routing-and-duplicates)).
+- **Link:** IP to the gateway, then radio. Routing is the link's job: the gateway adds nothing, and a copy that arrives twice is dropped by `(sender, seq, time)` ([communication.md](../communication.md#routing-and-duplicates)).
 - **Message** (159 / 128; it was 186 / 140 with Plans):
 
   ```json
@@ -50,16 +50,17 @@ Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP
   ```json
   {"type":"report.status","time":1793667605400,"seq":7,"asset_id":"A1","kind":"task","task_id":"T1","task_state":"active"}
   ```
-- Once Tasks are added, the Asset sends its queue (112 / 97). Core resends any Task missing from the list:
+- Once Tasks are added, the Asset sends its queue (112 / 97). Core resends any Task it sent that the Asset has never listed or reported on:
 
   ```json
   {"type":"report.status","time":1793667605300,"seq":6,"asset_id":"A1","kind":"queue","task_ids":["T1","T2","T3"]}
   ```
 - **Bloat:** one status per state change, with no repeat of the task's fields. Good as is.
 - `task_id` is unique per Asset, so the status needs nothing else to say which Task it means.
+- A final status (completed, failed, cancelled) is resent unchanged until Core answers with `admin.reply` ([communication.md](../communication.md#final-reports-are-acknowledged)).
 
 ## 6. Core updates storage
-- **GAP:** the storage layout is not defined. Sketch, not decided: add the status message to the log. The current state is the latest status by `time` (an older time never overwrites newer state).
+- **GAP:** the storage layout is not defined. Sketch, not decided: add the status message to the log. A status only moves a Task forward, and the first final state stays ([communication.md](../communication.md#task-states)).
 - **Bloat:** keep one log, not a log and a separate "current state" copy, unless reading speed needs it.
 
 ## 7. Core → operator interface

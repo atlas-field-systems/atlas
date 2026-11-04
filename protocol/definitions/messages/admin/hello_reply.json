@@ -43,7 +43,7 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "accepted",
-      "protocol_version": "0.6"
+      "protocol_version": "0.7"
     },
     {
       "type": "admin.hello_reply",
@@ -51,7 +51,7 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "version_mismatch",
-      "protocol_version": "0.6"
+      "protocol_version": "0.7"
     },
     {
       "type": "admin.hello_reply",
@@ -59,7 +59,7 @@
       "seq": 1,
       "operator_id": "OP1",
       "hello_result": "accepted",
-      "protocol_version": "0.6"
+      "protocol_version": "0.7"
     },
     {
       "type": "admin.hello_reply",
@@ -67,7 +67,7 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "refused",
-      "protocol_version": "0.6"
+      "protocol_version": "0.7"
     }
   ],
   "anyOf": [

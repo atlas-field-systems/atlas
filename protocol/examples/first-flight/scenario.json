@@ -99,86 +99,93 @@
     },
     {
       "branch": "main",
+      "from": "Core",
+      "to": "Drone",
+      "file": "14-reply.json",
+      "why": "Core acknowledges the final report. Until it does, the drone resends T1's report unchanged; every final report gets this answer (not shown again below)."
+    },
+    {
+      "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "14-status-task.json",
+      "file": "15-status-task.json",
       "why": "The drone reports it started T2 (Move To), the next Task in its queue."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "15-telemetry.json",
+      "file": "16-telemetry.json",
       "why": "The drone reports its position and speed on the way."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "16-battery.json",
+      "file": "17-battery.json",
       "why": "The drone reports its battery."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "17-status-task.json",
+      "file": "18-status-task.json",
       "why": "The drone reports T2 done: it is over the destination."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "18-status-task.json",
+      "file": "19-status-task.json",
       "why": "The drone reports it started T3 (Land), the last Task in its queue."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "19-telemetry.json",
+      "file": "20-telemetry.json",
       "why": "The drone reports it is back on the ground."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "20-status-task.json",
+      "file": "21-status-task.json",
       "why": "The drone reports T3 done. Its queue is now empty, so the run is over."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
-      "file": "21-battery.json",
+      "file": "22-battery.json",
       "why": "The drone reports its battery after landing."
     },
     {
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
-      "file": "22-failsafe-link_loss.json",
-      "why": "Partway through Move To, the drone loses the gateway (the trigger) and returns to home (its link_loss_response setting). It sends this as soon as it can be heard again."
-    },
-    {
-      "branch": "failsafe",
-      "from": "Drone",
-      "to": "Core",
-      "file": "23-status-task.json",
-      "why": "The drone reports T2 failed, so Core's record matches what happened."
+      "file": "23-failsafe-link_loss.json",
+      "why": "Partway through Move To, the drone has heard nothing new from Core for 30 s (its link_loss_after_s), so it loses contact (the trigger) and returns to home (its link_loss_response setting). It sends this as soon as it can be heard again."
     },
     {
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
       "file": "24-status-task.json",
+      "why": "The drone reports T2 failed, so Core's record matches what happened."
+    },
+    {
+      "branch": "failsafe",
+      "from": "Drone",
+      "to": "Core",
+      "file": "25-status-task.json",
       "why": "The drone cancels the rest of its queue, so T3 (Land) is reported cancelled."
     },
     {
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
-      "file": "25-telemetry.json",
+      "file": "26-telemetry.json",
       "why": "The drone reports its position on the way home."
     },
     {

@@ -43,6 +43,9 @@
     "link_loss_response": {
       "$ref": "../../variables/link_loss_response.json"
     },
+    "link_loss_after_s": {
+      "$ref": "../../variables/link_loss_after_s.json"
+    },
     "low_battery_response": {
       "$ref": "../../variables/low_battery_response.json"
     },
@@ -87,6 +90,11 @@
     {
       "required": [
         "telemetry_every_s"
+      ]
+    },
+    {
+      "required": [
+        "link_loss_after_s"
       ]
     }
   ],
