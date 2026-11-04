@@ -80,9 +80,11 @@ export function startAsset({ url, asset_id = 'A1', key, enrollment_key, home = {
   const tick = setInterval(() => {
     if (battery < LOW_BATTERY && !lowBattery && pos.alt > 0) { lowBattery = true; failsafe('low_battery', settings.low_battery_response, `Battery at ${battery}%`); }
     if (!active && queue.length && !lowBattery) { active = queue.shift(); taskState(active.task_id, 'active'); }
-    if (!active) { ground = 0; return; }
     const step = dt * speed;
     let done = false;
+    // Telemetry every telemetry_every_s of sim time, on the ground too, and when a move ends.
+    const beat = () => { if ((sinceTelemetry += step) >= settings.telemetry_every_s || done) { sinceTelemetry = 0; telemetry(); } };
+    if (!active) { ground = 0; return beat(); }
     const fly = (to, alt) => {
       if (Math.abs(pos.alt - alt) > 0.1) { pos.alt += Math.sign(alt - pos.alt) * Math.min(3 * step, Math.abs(alt - pos.alt)); ground = 0; return false; }
       const dy = (to.latitude - pos.latitude) * M_PER_DEG, dx = (to.longitude - pos.longitude) * M_PER_DEG * Math.cos(pos.latitude * Math.PI / 180);
@@ -97,8 +99,7 @@ export function startAsset({ url, asset_id = 'A1', key, enrollment_key, home = {
       if (!active.over) active.over = fly(active.landing_position, active.transit_altitude?.altitude_m ?? pos.alt);
       else { pos.alt = Math.max(0, pos.alt - 2 * step); done = pos.alt === 0; }
     }
-    // Telemetry every telemetry_every_s of flight time (only while flying), and when a move ends.
-    if ((sinceTelemetry += step) >= settings.telemetry_every_s || done) { sinceTelemetry = 0; telemetry(); }
+    beat();
     if (done) {
       taskState(active.task_id, 'completed'); active = null;
       if (!queue.length) { battery = Math.max(0, battery - 8); send({ type: 'report.battery', battery_percent: battery }); }

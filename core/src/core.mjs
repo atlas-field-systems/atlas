@@ -23,7 +23,8 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
   const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify({ ...m, seq: seq++ }));
   const stamp = (m) => ({ ...m, time: Date.now() });
   const toOperators = (m) => { for (const o of ops) send(o, m); };
-  const noKeys = ({ key, enrollment_key, ...m }) => m;
+  // Operators get an Asset's hello as admin.asset: the same fields without keys.
+  const noKeys = ({ key, enrollment_key, ...m }) => ({ ...m, type: 'admin.asset' });
 
   const page = (await readFile(new URL('../public/index.html', import.meta.url), 'utf8')).replace('__PROTOCOL_VERSION__', VERSION);
   const http = createServer((req, res) => {

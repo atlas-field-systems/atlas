@@ -12,7 +12,7 @@ console.log(`Atlas Core on http://localhost:${core.port}/#OP1:demo-operator-key-
 startAsset({ url, asset_id: 'A1', key: 'demo-asset-key-0000000', enrollment_key: 'demo-enrollment-key-00', speed: Number(process.env.SPEED ?? 4), log: console.log });
 const op = connectOperator({ url, operator_id: 'OP1', key: 'demo-operator-key-0000' });
 await op.ready;
-await op.until((m) => m.type === 'admin.hello' && m.asset_id === 'A1');
+await op.until((m) => m.type === 'admin.asset' && m.asset_id === 'A1');
 await new Promise((r) => setTimeout(r, 3000));
 for (const f of ['07-command-takeoff.json', '08-command-move_to.json', '09-command-land.json']) {
   const { type, asset_id, kind, task_id, task_seq, ...rest } = ex(f);

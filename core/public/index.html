@@ -24,7 +24,7 @@ ws.onmessage = (e) => {
   if (m.type === 'admin.reply') return m.reply_result === 'refused' && log(`refused: ${m.explanation}`);
   if (m.type === 'admin.hello_reply') return log(`hello: ${m.hello_result}`);
   const a = assets[m.asset_id] ??= { state: {}, path: [], seen: new Set() };
-  if (m.type === 'admin.hello') { a.hello = m; send({ type: 'query.core', kind: 'history', asset_id: m.asset_id, report: 'telemetry' }); }
+  if (m.type === 'admin.asset') { a.hello = m; send({ type: 'query.core', kind: 'history', asset_id: m.asset_id, report: 'telemetry' }); }
   else if (m.type === 'report.telemetry') { if (!a.seen.has(m.time)) { a.seen.add(m.time); a.path.push(m); a.path.sort((x, y) => x.time - y.time); } }
   else if (m.type === 'report.status' && m.kind === 'task') { a.state[`task ${m.task_id}`] = m.task_state; }
   else a.state[m.kind ?? m.type.split('.')[1]] = m.condition ?? m.battery_percent ?? m.task_ids?.join(' ') ?? m.response ?? m.run_state ?? '';

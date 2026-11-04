@@ -41,9 +41,11 @@ test('the protocol first-flight example runs through Core', async () => {
     assert.equal(check(m), null, step.file);
     if (step.from === 'Drone') {
       await drone.send(m);
-      // Forwarded unchanged except for Core's own seq, and never with a key.
-      const fwd = await op.until((r) => r.type === m.type && r.time === m.time);
-      assert.deepEqual(strip(fwd), strip(m));
+      // Forwarded unchanged except for Core's own seq, and never with a key (a hello goes out as admin.asset).
+      const type = m.type === 'admin.hello' ? 'admin.asset' : m.type;
+      const fwd = await op.until((r) => r.type === type && r.time === m.time);
+      assert.deepEqual(strip(fwd), strip({ ...m, type }));
+      assert.equal(check(fwd), null);
       assert.equal(fwd.key, undefined);
     } else {
       if (m.type === 'control.command') assert.equal((await op.request(strip(m))).reply_result, 'accepted', step.file);
@@ -152,7 +154,7 @@ test('keys in the hello, refusals, one link per ID, duplicates and repeats', asy
   assert.equal((await badOp.ready).hello_result, 'refused');
   const op = connectOperator({ url, operator_id: 'OP1', key: OPKEY });
   await op.ready;
-  assert.deepEqual(strip(await op.until((m) => m.type === 'admin.hello')), strip({ ...hello, commands: ['land'] }));
+  assert.deepEqual(strip(await op.until((m) => m.type === 'admin.asset')), strip({ ...hello, type: 'admin.asset', commands: ['land'] }));
   await a.send(ex('03-settings.json'));
   const takeoff = await op.request(strip(ex('07-command-takeoff.json')));
   assert.equal(takeoff.explanation, 'A1 does not accept takeoff');
