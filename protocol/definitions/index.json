@@ -47,6 +47,7 @@
         "variables/kind.json",
         "variables/time.json",
         "variables/seq.json",
+        "variables/command.json",
         "variables/every_s.json",
         "variables/asset_id.json",
         "variables/altitude_m.json",

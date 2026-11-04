@@ -18,7 +18,7 @@ live in a **link profile** for that medium, not in the messages.
 ## Opening a connection
 
 1. The WebSocket (or radio link) opens.
-2. The two sides exchange a **hello**: protocol version and `asset_id`, with
+2. The two sides exchange a **hello**: protocol version, `asset_id`, reports and accepted commands, with
    authentication. Leaning toward API keys. Challenge codes are a possible later
    alternative.
 3. A version mismatch is refused with a clear "update this device" error.

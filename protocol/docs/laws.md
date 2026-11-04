@@ -21,3 +21,4 @@ or the law gets changed on purpose first.
 12. **No size cap or chunking in the protocol.** Atlas runs over many links. Each link handles its own size limits, splitting, and compression.
 13. **Easy to compress and split.** Keep structure predictable and fields small: text and lists have length limits, and there are no giant single fields such as embedded files. *Limits checked.*
 14. **Asset data reports are fixed.** Every Asset reports the same data the same way, using defined reports and components. No free-form or misc fields. New kinds of data get a new defined report.
+15. **One command kind per action.** Each action is its own command kind even when its fields match another (a payload drop and `move_to` both take a position), because meaning and success differ and `hello` declares support per kind. Shared fields reuse the same definitions instead of copies.

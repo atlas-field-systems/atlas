@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/settings.json",
   "title": "Settings",
-  "description": "From an Asset: its current settings, each an explicit end state. Sent when it connects, when it changes one itself, and to confirm an immediate control.settings (reply_to is that command's seq). At least one setting must be present.",
+  "description": "From an Asset: its current settings, each an explicit end state. Sent when it connects, when it changes one itself, and to confirm an immediate control.settings (reply_to is that command's seq). It carries only the settings the Asset supports, so the one sent on connect tells Core which settings it may change. At least one setting must be present.",
   "type": "object",
   "required": [
     "type",

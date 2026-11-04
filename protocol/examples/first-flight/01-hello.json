@@ -10,5 +10,10 @@
     "telemetry",
     "battery",
     "settings"
+  ],
+  "commands": [
+    "takeoff",
+    "move_to",
+    "land"
   ]
 }
