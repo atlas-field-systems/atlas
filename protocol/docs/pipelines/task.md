@@ -7,9 +7,9 @@ How one Task is created, stored and moved, hop by hop. It uses the first-flight 
 ```text
 Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP)──▶ Core storage
         ▲                                          │  ▲
-        └──────────7. to operator (GAP)────────────┘  └──6. update storage
+        └──────────7. to operator (pushed)────────┘  └──6. update storage
                                                    │
-                                     3. IP (GAP: routing)
+                                     3. the Asset's link
                                                    ▼
                                                 Gateway ──4. radio──▶ Asset
                                                    ▲                    │
@@ -33,7 +33,7 @@ Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP
 
 ## 3–4. Core → gateway → Asset
 - **Who:** Core sends it, a gateway relays it over radio, and the Asset receives it.
-- **Link:** IP to the gateway, then radio. **GAP:** how Core picks the gateway, and what the gateway adds, if anything, is not defined.
+- **Link:** IP to the gateway, then radio. Routing is the link's job: the gateway adds nothing, and a copy that arrives twice is dropped by `(sender, seq)` ([communication.md](../communication.md#routing-and-duplicates)).
 - **Message** (159 / 128; it was 186 / 140 with Plans):
 
   ```json
@@ -64,5 +64,5 @@ Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP
 
 ## 7. Core → operator interface
 - An operator interface can also ask Core with `query.core` (kind `history`). That hop is the operator WebSocket.
-- **GAP:** not defined. Sketch, not decided: Core forwards the same `report.status` message.
+- Core forwards the same `report.status` message, unchanged, over the operator WebSocket.
 - **Bloat:** forward the message itself, not a new "task view" format.
