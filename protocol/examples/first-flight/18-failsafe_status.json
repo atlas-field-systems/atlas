@@ -1,8 +1,0 @@
-{
-  "type": "failsafe_status",
-  "time": 1793667640000,
-  "seq": 9,
-  "asset_id": "A1",
-  "failsafe": "link_loss_response",
-  "explanation": "No contact with gateway for 30 s"
-}

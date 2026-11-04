@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/battery.json",
+  "title": "Battery",
+  "description": "Report from an Asset: its battery. Sent on its own schedule, separate from telemetry, because the battery changes even when the Asset does not move.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id",
+    "battery_percent"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "report.battery"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "battery_percent": {
+      "$ref": "../../variables/battery_percent.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "report.battery",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "battery_percent": 82
+    }
+  ]
+}

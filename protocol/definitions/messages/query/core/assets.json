@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/core/assets.json",
+  "title": "assets",
+  "description": "Which Assets Core knows. Core answers with each Asset's latest admin.hello (what it is and which reports it supports).",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "assets"
+    }
+  },
+  "examples": [
+    {
+      "kind": "assets"
+    }
+  ]
+}

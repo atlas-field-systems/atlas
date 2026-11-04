@@ -2,13 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/link_loss_response.json",
   "title": "link_loss_response",
-  "description": "What the Asset does if it loses its link to Core.",
-  "enum": [
-    "return_home",
-    "hold",
-    "land",
-    "continue"
-  ],
+  "description": "Setting: which failsafe_response the Asset uses if it loses its link to Core.",
+  "$ref": "failsafe_response.json",
   "examples": [
     "return_home"
   ]

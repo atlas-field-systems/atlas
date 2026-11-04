@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/core.json",
+  "title": "Core query",
+  "description": "From an operator interface to Core, over the operator API (not defined yet). kind says what to ask for. Core answers with stored messages, unchanged. Include asset_id to ask about one Asset; leave it out to ask about all of them.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "core/assets.json"
+    },
+    {
+      "$ref": "core/history.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "query.core"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "query.core",
+      "time": 1793667600000,
+      "seq": 42,
+      "kind": "assets"
+    },
+    {
+      "type": "query.core",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "history",
+      "report": "telemetry",
+      "since": 1793667600000,
+      "until": 1793667700000
+    }
+  ]
+}

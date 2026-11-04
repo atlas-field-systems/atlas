@@ -18,7 +18,7 @@ live in a **link profile** for that medium, not in the messages.
 ## Opening a connection
 
 1. The WebSocket (or radio link) opens.
-2. The two sides exchange a **hello**: protocol version and `asset_id`, with
+2. The two sides exchange a **hello**: protocol version, `asset_id`, reports and accepted commands, with
    authentication. Leaning toward API keys. Challenge codes are a possible later
    alternative.
 3. A version mismatch is refused with a clear "update this device" error.
@@ -35,10 +35,9 @@ live in a **link profile** for that medium, not in the messages.
 
 Sending a whole queue at once could fail on a slow link. Instead:
 
-1. Core sends a short **plan summary**: plan number, task count, and task IDs.
-2. Core sends **each task as its own message**.
-3. The Asset confirms **"running plan N"** once it has every task.
-4. Missing pieces are resent, or the Asset asks for them one at a time.
+1. Core sends **each task as its own message** (a `control.command` or `control.settings` with a `task_id`).
+2. The Asset reports its **queue**: the list of task IDs it holds, in order.
+3. Core resends any task missing from that list. Either side can ask for the queue at any time with `query.queue`, for example an Asset after reconnecting.
 
 ## Task states
 

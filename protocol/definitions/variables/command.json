@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/command.json",
+  "title": "command",
+  "description": "One command kind an Asset accepts, the kind value of control.command.",
+  "enum": [
+    "takeoff",
+    "move_to",
+    "land"
+  ],
+  "examples": [
+    "move_to"
+  ]
+}

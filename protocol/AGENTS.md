@@ -19,6 +19,8 @@ If you need something outside this repository, go to the one that owns it.
 
 ## This repository
 
+- **Bloat is the enemy, but good organization is not bloat.** Keep data, docs and code lean, and define nothing twice. For example, the same command kinds listed under two message types is bloat. Grouping things clearly is not.
+
 - `definitions/` is the source of truth. Docs, the CLI and the viewer follow it; never hardcode a message elsewhere.
 - [docs/laws.md](docs/laws.md) lists the rules every definition follows. Change a law on purpose before breaking it.
 - [docs/decisions.md](docs/decisions.md) records the developer's decisions; [docs/open-questions.md](docs/open-questions.md) lists what is not decided.

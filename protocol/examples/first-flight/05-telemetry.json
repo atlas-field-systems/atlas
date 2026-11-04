@@ -1,5 +1,5 @@
 {
-  "type": "telemetry",
+  "type": "report.telemetry",
   "time": 1793667601000,
   "seq": 4,
   "asset_id": "A1",
@@ -14,6 +14,5 @@
     ]
   },
   "ground_speed_mps": 0,
-  "heading_deg": 0,
-  "battery_percent": 98
+  "heading_deg": 0
 }

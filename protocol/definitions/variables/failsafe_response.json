@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/failsafe_response.json",
+  "title": "failsafe_response",
+  "description": "What an Asset does by itself when a failsafe triggers.",
+  "enum": [
+    "return_home",
+    "hold",
+    "land",
+    "continue"
+  ],
+  "examples": [
+    "return_home"
+  ]
+}

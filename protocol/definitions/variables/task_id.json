@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/task_id.json",
   "title": "task_id",
-  "description": "Which Task this is. Up to 4 letters or digits, such as \"T7\".",
+  "description": "Which Task this is. Unique per Asset: no two Tasks for the same Asset share one, even after they finish. Up to 4 letters or digits, such as \"T1\".",
   "type": "string",
   "pattern": "^[A-Za-z0-9]{1,4}$",
   "minLength": 1,

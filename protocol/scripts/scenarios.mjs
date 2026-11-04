@@ -20,7 +20,7 @@ export async function render(name) {
     out.push(`## ${label}`, '', '| # | From → To | Message | Why | Minified | Deflate |', '|---|---|---|---|---|---|');
     for (const r of s.rows.filter((r) => r.branch === branch)) {
       if (r.gap) out.push(`| — | | **GAP: ${r.gap}** | ${r.why} | | |`);
-      else out.push(`| ${r.file.slice(0, 2)} | ${r.from} → ${r.to} | [\`${r.message.type}\`](../examples/${name}/${r.file}) | ${r.why} | ${r.bytes} | ${r.compressed} |`);
+      else out.push(`| ${r.file.split('-')[0]} | ${r.from} → ${r.to} | [\`${r.message.type}${r.message.kind ? ` ${r.message.kind}` : ''}\`](../examples/${name}/${r.file}) | ${r.why} | ${r.bytes} | ${r.compressed} |`);
     }
     out.push('');
     for (const r of s.rows.filter((r) => r.branch === branch && r.message))
@@ -40,7 +40,7 @@ export async function render(name) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  for (const name of (await readExample('index.json')).filter((n) => !n.startsWith('proposals/'))) {
+  for (const name of (await readExample('index.json'))) {
     const path = `docs/${name}-messages.md`;
     await writeFile(path, await render(name));
     console.log(`Wrote ${path}`);

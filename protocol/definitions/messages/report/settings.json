@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/settings.json",
+  "title": "Settings",
+  "description": "From an Asset: its current settings, each an explicit end state. Sent when it connects, when it changes one itself, and to confirm an immediate control.settings (reply_to is that command's seq). It carries only the settings the Asset supports, so the one sent on connect tells Core which settings it may change. At least one setting must be present.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "report.settings"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "reply_to": {
+      "$ref": "../../variables/reply_to.json"
+    },
+    "run_state": {
+      "$ref": "../../variables/run_state.json"
+    },
+    "lights": {
+      "$ref": "../../variables/lights.json"
+    },
+    "landing_gear": {
+      "$ref": "../../variables/landing_gear.json"
+    },
+    "link_loss_response": {
+      "$ref": "../../variables/link_loss_response.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "report.settings",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "lights": "on",
+      "landing_gear": "down"
+    },
+    {
+      "type": "report.settings",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "reply_to": 9,
+      "lights": "on"
+    }
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "run_state"
+      ]
+    },
+    {
+      "required": [
+        "lights"
+      ]
+    },
+    {
+      "required": [
+        "landing_gear"
+      ]
+    },
+    {
+      "required": [
+        "link_loss_response"
+      ]
+    }
+  ]
+}

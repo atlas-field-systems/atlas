@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/status/queue.json",
+  "title": "queue",
+  "description": "The Asset's queue: the task_id of every Task it has not finished, in the order it will run them. Sent when Tasks are added, and when Core asks. An empty list means nothing is queued.",
+  "type": "object",
+  "required": [
+    "kind",
+    "task_ids"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "queue"
+    },
+    "task_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../../../variables/task_id.json"
+      },
+      "maxItems": 64
+    }
+  },
+  "examples": [
+    {
+      "kind": "queue",
+      "task_ids": [
+        "T1",
+        "T2",
+        "T3"
+      ]
+    }
+  ]
+}
