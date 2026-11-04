@@ -4,6 +4,6 @@
   "seq": 13,
   "asset_id": "A1",
   "kind": "link_loss",
-  "response": "return_home",
+  "response": "return_to_home",
   "explanation": "No contact with gateway for 30 s"
 }

@@ -41,7 +41,7 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "accepted",
-      "protocol_version": "0.3"
+      "protocol_version": "0.4"
     },
     {
       "type": "admin.hello_reply",

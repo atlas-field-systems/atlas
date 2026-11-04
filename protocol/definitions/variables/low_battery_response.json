@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/low_battery_response.json",
+  "title": "low_battery_response",
+  "description": "Setting: which failsafe_response the Asset uses when its battery gets too low.",
+  "$ref": "failsafe_response.json",
+  "examples": [
+    "land_at"
+  ]
+}

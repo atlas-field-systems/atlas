@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/core/history.json",
   "title": "history",
-  "description": "Stored reports, oldest first. report picks one kind of report (such as telemetry); since and until limit the time. Leave any out to get everything.",
+  "description": "Stored reports, oldest first, from Core's append-only log. report picks one kind (telemetry gives the path flown); since and until limit the time. With asset_id on the query, one Asset's past path over a time range is one message. Leave any out to get everything.",
   "type": "object",
   "required": [
     "kind"

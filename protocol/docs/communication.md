@@ -39,6 +39,18 @@ Sending a whole queue at once could fail on a slow link. Instead:
 1. Core sends **each task as its own message** (a `control.command` or `control.settings` with a `task_id`).
 2. The Asset reports its **queue**: the list of task IDs it holds, in order.
 3. Core resends any task missing from that list. Either side can ask for the queue at any time with `query.queue`, for example an Asset after reconnecting.
+4. Each task carries `task_seq`, its place in the queue (1, 2, 3, ...). The Asset runs tasks in that order. If it holds 1 and 3, it finishes 1, then waits at the gap for 2, up to 10 s. If 2 has not come, it sends `query.queue` and keeps waiting; Core resends 2.
+5. A task whose `task_id` the Asset already holds is ignored, so a resend is harmless.
+
+## Immediate commands and cancel
+
+- A motion command without `task_id` (takeoff, move_to, land, return_to_home) runs now and **cancels the rest of the queue**. The Asset reports each cancelled task (`report.status` kind `task`, `cancelled`) and then its empty queue.
+- A `control.settings` without `task_id` runs now beside the queue and does not cancel it.
+- `control.cancel` stops a command partway, for example a landing. With `task_id` it cancels that task; without, it stops the motion running now. The Asset then holds (hovers, or stays on the ground), sets `run_state` paused, reports the task cancelled, and sends `report.settings` with `reply_to` the cancel's `seq`. Core resumes it with `run_state: running` or sends a new command.
+
+## Losing the link
+
+Each failsafe trigger has its own response setting. With `link_loss_response: continue` the Asset keeps its mission while out of contact (for example Core in a car going through a tunnel). When the link returns it says hello, sends its queue, and Core and the Asset resync with `query.queue`.
 
 ## Task states
 
@@ -54,7 +66,8 @@ expected interval (set in the link profile), it is shown as stale.
 ## What goes on the stream
 
 Everything except large files, such as object files. Large files use a separate
-file transfer. Over IP, bandwidth efficiency does not matter for now.
+file transfer. Over IP, bandwidth efficiency does not matter for now. Link bandwidth
+is a link-design concern, handled in each link profile, not in the messages.
 
 ## SDK
 

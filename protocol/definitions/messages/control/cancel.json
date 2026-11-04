@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/cancel.json",
+  "title": "Cancel",
+  "description": "From Core: stop a command. With task_id, cancel that Task: a queued one is dropped; an active one stops. Without task_id, stop whatever motion is running now. After stopping, the Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed. It reports report.status task cancelled for a Task, and report.settings (run_state paused, reply_to this seq).",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "control.cancel"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "task_id": {
+      "$ref": "../../variables/task_id.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "control.cancel",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "task_id": "T3"
+    },
+    {
+      "type": "control.cancel",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1"
+    }
+  ]
+}

@@ -5,6 +5,7 @@
   "asset_id": "A1",
   "kind": "move_to",
   "task_id": "T2",
+  "task_seq": 2,
   "destination": {
     "latitude": 42.2761,
     "longitude": -71.8031

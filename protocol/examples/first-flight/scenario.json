@@ -158,7 +158,7 @@
       "from": "Drone",
       "to": "Core",
       "file": "22-failsafe-link_loss.json",
-      "why": "Partway through Move To, the drone loses the gateway (the trigger) and returns home (its link_loss_response setting). It sends this as soon as it can be heard again."
+      "why": "Partway through Move To, the drone loses the gateway (the trigger) and returns to home (its link_loss_response setting). It sends this as soon as it can be heard again."
     },
     {
       "branch": "failsafe",

@@ -20,8 +20,9 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
   ```text
   admin    hello, hello_reply
-  control  command  (kind: takeoff, move_to, land; task_id = queued)
-           settings (task_id = queued change_settings)
+  control  command  (kind: takeoff, move_to, land, return_to_home; task_id + task_seq = queued)
+           settings (task_id + task_seq = queued change_settings)
+           cancel   (task_id, or none for the motion running now)
   query    asset, queue, core (kind: assets, history)
   report   status   (kind: asset, task, queue)
            failsafe (kind = trigger: link_loss, low_battery; response field)
@@ -59,7 +60,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `admin.hello`: an Asset's first message on a link, with `protocol_version` and `reports`, the list of reports it sends (a drone without a battery sensor leaves out `battery`). The API key stays at the link level, never in a message.
 - `admin.hello_reply`: Core answers `accepted` or `version_mismatch`, with the version to run.
 - `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
-- `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`return_home`, `hold`, `land` or `continue`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
+- `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`continue`, `hold`, `land`, `return_to_home` or `land_at`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
 - `report.battery`: the battery, on its own schedule, separate from telemetry, because it changes even when the Asset does not move.
 - **Asset data reports are fixed and standard.** Every Asset reports battery, position and the rest with the same defined report and components. There are no free-form or "misc" fields. New kinds of Asset data get a new defined report.
 - `task_id` is 1 to 4 letters or digits, like every ID.
@@ -87,7 +88,7 @@ An older time never overwrites newer state. There is no "history-only" message.
 - `report.settings`, sent at connect or when the Asset changes a setting itself, is a report and needs no confirmation.
 - When Core changes a setting, it is either immediate or queued. An immediate change is a `control.settings` without `task_id` (the easy default, a button press), confirmed by a `report.settings` whose `reply_to` is the command's `seq`. A queued change is a `control.settings` with `task_id`, for example placed after a move_to,, confirmed by its task status.
 - Settings are only variables, used by `report.settings` and `control.settings`; no setting has its own message.
-- Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (return_home/hold/land/continue).
+- Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` and `low_battery_response` (continue/hold/land/return_to_home/land_at), and `land_at_position`, the point `land_at` goes to (not necessarily the takeoff point).
 - Each change is an explicit end state, never a toggle. The most recent time wins.
 - No custom per-Asset settings yet.
 
@@ -110,3 +111,14 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `move_to` stays simple and never carries a geo feature. Cameras may give an optional roll.
 - Assets send `report.observation`, never tracks. Fusion is a separate swappable Docker module: observations in, tracks out. It alone decides when observations are the same target. The first, temporary module makes one track per observation. Tasks target tracks.
 - Assets self-register with a deployment enrollment key presented once on the link, not in hello. Keys are 16 random bytes (22 characters).
+
+## Queue order, cancel and failures (0.4)
+
+- Every Task carries `task_seq`, its place in the queue. If an Asset holds Tasks 1 and 3, it waits at the gap for 2, up to 10 s, then sends `query.queue`; Core resends what is missing. A Task whose `task_id` it already holds is ignored.
+- `admin.hello` `commands` may be empty, for a receive-only Asset such as an ADS-B receiver.
+- An immediate motion command (no `task_id`) cancels the rest of the queue; the Asset reports each cancelled Task and its empty queue. Settings stay immediate beside the queue.
+- `control.cancel` stops a Task (by `task_id`) or the motion running now (no `task_id`). The Asset holds, sets `run_state` paused, and reports the Task cancelled plus `report.settings` with `reply_to`.
+- `return_to_home` is a command, and the same name is a failsafe response.
+- Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps its mission and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel.
+- History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
+- Link bandwidth is a link-design concern (link profiles), not a message concern.

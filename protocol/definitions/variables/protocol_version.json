@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/protocol_version.json",
   "title": "protocol_version",
-  "description": "Which protocol version a device runs, such as \"0.3\". Both ends must match exactly.",
+  "description": "Which protocol version a device runs, such as \"0.4\". Both ends must match exactly.",
   "type": "string",
   "minLength": 1,
   "maxLength": 32,
   "examples": [
-    "0.3"
+    "0.4"
   ]
 }

@@ -24,3 +24,5 @@ or the law gets changed on purpose first.
 15. **One command kind per action.** Each action is its own command kind even when its fields match another (a payload drop and `move_to` both take a position), because meaning and success differ and `hello` declares support per kind. Shared fields reuse the same definitions instead of copies.
 16. **Assets observe; fusion decides tracks.** Assets send observations, never tracks. Tracks come only out of the fusion module.
 17. **Keys stay off the messages.** Credentials travel with the link opening, never inside a message, and keys are short (16 bytes).
+18. **Tasks run in `task_seq` order.** A gap is waited for (bounded, then `query.queue`); a repeated `task_id` does nothing.
+19. **Every failure has a defined safe response.** Each trigger has a response setting, and it overrides paused. An Asset never stays airborne until it falls.

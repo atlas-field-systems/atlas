@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/task_seq.json",
+  "title": "task_seq",
+  "description": "A Task's place in its Asset's queue, set by Core: 1 for the first Task sent to that Asset, then up by one per Task, never reused. The Asset runs Tasks in this order.",
+  "type": "integer",
+  "minimum": 1,
+  "examples": [
+    3
+  ]
+}
