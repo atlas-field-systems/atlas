@@ -1,4 +1,4 @@
-// Atlas Core prototype: one WebSocket per Asset or operator interface, protocol 0.5 messages.
+// Atlas Core prototype: one WebSocket per Asset or operator interface, protocol messages (see src/protocol.mjs).
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -19,9 +19,11 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
   const repeats = new Set();
   const fresh = dedupe();
   let seq = 0;
-  const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify({ ...m }));
-  const stamp = (m) => ({ ...m, time: Date.now(), seq: seq++ });
-  const toOperators = (m) => { for (const o of ops) if (o.hello) send(o, m); };
+  // Everything Core sends carries Core's own new seq (law 20); forwarded reports keep their time.
+  const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify({ ...m, seq: seq++ }));
+  const stamp = (m) => ({ ...m, time: Date.now() });
+  const toOperators = (m) => { for (const o of ops) send(o, m); };
+  const noKeys = ({ key, enrollment_key, ...m }) => m;
 
   const page = (await readFile(new URL('../public/index.html', import.meta.url), 'utf8')).replace('__PROTOCOL_VERSION__', VERSION);
   const http = createServer((req, res) => {
@@ -30,61 +32,67 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
   });
   const wss = new WebSocketServer({ noServer: true });
 
-  // Link opening: credentials travel in the connection request, never in a message (law 17).
-  // Browsers cannot set WebSocket headers, so the prototype uses the query string.
+  // Links open with no credentials; keys travel only in the opening hello (law 17).
   http.on('upgrade', (req, socket, head) => {
-    const url = new URL(req.url, 'http://core');
-    const p = Object.fromEntries(url.searchParams);
-    let who;
-    if (url.pathname === '/asset' && /^[A-Za-z0-9]{1,4}$/.test(p.asset_id ?? '') && p.key) {
-      const row = store.asset(p.asset_id);
-      if (row && same(row.key_hash, hash(p.key))) who = { asset_id: p.asset_id };
-      else if (!row && enrollmentKey && p.enrollment_key && same(hash(p.enrollment_key), hash(enrollmentKey))) {
-        store.addAsset(p.asset_id, hash(p.key));
-        who = { asset_id: p.asset_id };
-        log(`enrolled ${p.asset_id}`);
-      }
-    } else if (url.pathname === '/operator' && operators[p.operator_id] && p.key && same(operators[p.operator_id], hash(p.key))) {
-      who = { operator_id: p.operator_id };
-    }
-    if (!who) { socket.end('HTTP/1.1 401 Unauthorized\r\n\r\n'); return; }
-    wss.handleUpgrade(req, socket, head, (ws) => { Object.assign(ws, who); wss.emit('connection', ws); });
+    const path = new URL(req.url, 'http://core').pathname;
+    if (path !== '/asset' && path !== '/operator') { socket.end('HTTP/1.1 404 Not Found\r\n\r\n'); return; }
+    wss.handleUpgrade(req, socket, head, (ws) => { ws.side = path.slice(1); wss.emit('connection', ws); });
   });
 
+  // The first message must be the right hello with a good key; anything else closes the link.
+  function opening(ws, m) {
+    const asset = ws.side === 'asset';
+    const id = asset ? m.asset_id : m.operator_id;
+    const reply = (hello_result) => send(ws, stamp({ type: 'admin.hello_reply', [asset ? 'asset_id' : 'operator_id']: id, hello_result, protocol_version: VERSION }));
+    if (check(m) || m.type !== (asset ? 'admin.hello' : 'admin.operator_hello')) return ws.close();
+    let ok = false;
+    if (asset) {
+      const row = store.asset(id);
+      if (row) ok = same(row.key_hash, hash(m.key ?? ''));
+      else if (m.key && enrollmentKey && m.enrollment_key && same(hash(m.enrollment_key), hash(enrollmentKey))) {
+        store.addAsset(id, hash(m.key)); ok = true; log(`enrolled ${id}`);
+      }
+    } else ok = Boolean(operators[id]) && same(operators[id], hash(m.key));
+    if (!ok) { reply('refused'); return ws.close(); }
+    if (m.protocol_version !== VERSION) { reply('version_mismatch'); return ws.close(); }
+    ws.id = id; ws.sender = `${ws.side}:${id}`;
+    fresh(ws.sender, m);
+    reply('accepted');
+    // One link per ID (law 22): the newer link replaces the older.
+    if (asset) {
+      const old = assets.get(id); if (old) old.close();
+      assets.set(id, ws); ws.hello = noKeys(m);
+      store.saveHello(ws.hello, Date.now());
+      return toOperators(ws.hello);
+    }
+    for (const o of ops) if (o.id === id) { ops.delete(o); o.close(); }
+    ops.add(ws);
+    for (const h of store.hellos()) { send(ws, h); for (const r of store.latest(h.asset_id)) send(ws, r); }
+  }
+
   wss.on('connection', (ws) => {
-    const sender = ws.asset_id ? `asset:${ws.asset_id}` : `operator:${ws.operator_id}`;
     ws.on('message', (data) => {
       let m;
-      try { m = JSON.parse(data); } catch { return log(`${sender}: not JSON`); }
-      if (!Number.isInteger(m?.seq) || !fresh(sender, m)) return; // repeat over a second link: drop
+      try { m = JSON.parse(data); } catch { return ws.id ? log(`${ws.sender}: not JSON`) : ws.close(); }
+      if (!ws.id) return opening(ws, m);
+      if (!Number.isInteger(m?.seq) || !fresh(ws.sender, m)) return; // seen before (another link): drop
       const bad = check(m);
-      if (ws.asset_id) return fromAsset(ws, m, bad);
+      if (ws.side === 'asset') return fromAsset(ws, m, bad);
       return fromOperator(ws, m, bad);
     });
     ws.on('close', () => {
-      if (ws.asset_id && assets.get(ws.asset_id) === ws) assets.delete(ws.asset_id);
+      if (ws.side === 'asset' && assets.get(ws.id) === ws) assets.delete(ws.id);
       ops.delete(ws);
       for (const r of repeats) if (r.ws === ws) { clearInterval(r.timer); repeats.delete(r); }
     });
   });
 
   function fromAsset(ws, m, bad) {
-    if (bad || m.asset_id !== ws.asset_id) return log(`${ws.asset_id}: dropped ${m.type}: ${bad ?? 'wrong asset_id'}`);
-    store.heard(ws.asset_id, Date.now());
-    if (m.type === 'admin.hello') {
-      const ok = m.protocol_version === VERSION;
-      send(ws, stamp({ type: 'admin.hello_reply', asset_id: m.asset_id, hello_result: ok ? 'accepted' : 'version_mismatch', protocol_version: VERSION }));
-      if (!ok) return ws.close();
-      ws.hello = m;
-      const old = assets.get(m.asset_id);
-      if (old && old !== ws) old.close();
-      assets.set(m.asset_id, ws);
-      store.saveHello(m, Date.now());
-      return toOperators(m);
-    }
-    if (!ws.hello) return log(`${ws.asset_id}: ${m.type} before hello`);
+    if (bad || m.asset_id !== ws.id) return log(`${ws.id}: dropped ${m.type}: ${bad ?? 'wrong asset_id'}`);
+    store.heard(ws.id, Date.now());
+    if (m.type.startsWith('admin.')) return log(`${ws.id}: ignored ${m.type} after hello`);
     if (m.type === 'query.queue') { for (const t of store.openTasks(m.asset_id)) send(ws, stamp(t)); return; }
-    if (!m.type.startsWith('report.')) return log(`${ws.asset_id}: ignored ${m.type}`);
+    if (!m.type.startsWith('report.')) return log(`${ws.id}: ignored ${m.type}`);
     store.report(m);
     toOperators(m);
     // Resend any open Task missing from the Asset's queue.
@@ -93,16 +101,6 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
 
   function fromOperator(ws, m, bad) {
     const reply = (reason) => send(ws, stamp({ type: 'admin.reply', ...(m.asset_id && { asset_id: m.asset_id }), reply_to: m.seq, reply_result: reason ? 'refused' : 'accepted', ...(reason && { explanation: reason }) }));
-    if (m.type === 'admin.operator_hello' && !bad) {
-      const ok = m.protocol_version === VERSION && m.operator_id === ws.operator_id;
-      send(ws, stamp({ type: 'admin.hello_reply', operator_id: ws.operator_id, hello_result: ok ? 'accepted' : 'version_mismatch', protocol_version: VERSION }));
-      if (!ok) return ws.close();
-      ws.hello = m;
-      ops.add(ws);
-      for (const h of store.hellos()) { send(ws, h); for (const r of store.latest(h.asset_id)) send(ws, r); }
-      return;
-    }
-    if (!ws.hello) return ws.close();
     if (bad) return reply(bad);
     const asset = m.asset_id && assets.get(m.asset_id);
     if (m.type.startsWith('control.')) {
@@ -120,18 +118,19 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
       reply();
       return send(asset, stamp(m));
     }
+    // A query's answer goes first; its admin.reply comes last and marks the end.
     if (m.type === 'query.core') {
-      reply();
-      if (m.kind === 'assets') return store.hellos().filter((h) => !m.asset_id || h.asset_id === m.asset_id).forEach((h) => send(ws, h));
-      return store.history(m.asset_id, m.report, m.since, m.until).forEach((r) => send(ws, r));
+      const answer = m.kind === 'assets' ? store.hellos().filter((h) => !m.asset_id || h.asset_id === m.asset_id) : store.history(m.asset_id, m.report, m.since, m.until);
+      answer.forEach((r) => send(ws, r));
+      return reply();
     }
     if (m.type === 'query.asset') {
       const slot = `report.${m.report}`;
       const latest = () => store.latestOne(m.asset_id, slot) ?? store.latestOne(m.asset_id, `${slot}.asset`);
       if (!store.asset(m.asset_id)) return reply(`unknown asset ${m.asset_id}`);
-      reply();
       for (const r of repeats) if (r.ws === ws && r.key === `${m.asset_id}.${m.report}`) { clearInterval(r.timer); repeats.delete(r); }
       const l = latest(); if (l) send(ws, l);
+      reply();
       if (m.every_s) repeats.add({ ws, key: `${m.asset_id}.${m.report}`, timer: setInterval(() => { const x = latest(); if (x) send(ws, x); }, m.every_s * 1000) });
       return;
     }

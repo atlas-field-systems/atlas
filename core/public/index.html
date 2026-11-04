@@ -12,12 +12,12 @@
 // Credentials come from the address: http://host/#OP1:key (not stored anywhere).
 const [operator_id, key] = decodeURIComponent(location.hash.slice(1)).split(':');
 const VERSION = '__PROTOCOL_VERSION__';
-const ws = new WebSocket(`ws://${location.host}/operator?${new URLSearchParams({ operator_id, key })}`);
+const ws = new WebSocket(`ws://${location.host}/operator`);
 let seq = 0;
 const send = (m) => ws.send(JSON.stringify({ type: m.type, time: Date.now(), seq: seq++, ...m }));
 const assets = {}; // asset_id -> { hello, state: {}, path: [] }
 const log = (t) => { document.querySelector('#log').textContent = `${t}\n${document.querySelector('#log').textContent}`.slice(0, 4000); };
-ws.onopen = () => send({ type: 'admin.operator_hello', operator_id, protocol_version: VERSION });
+ws.onopen = () => send({ type: 'admin.operator_hello', operator_id, protocol_version: VERSION, key });
 ws.onclose = () => log('disconnected');
 ws.onmessage = (e) => {
   const m = JSON.parse(e.data);
