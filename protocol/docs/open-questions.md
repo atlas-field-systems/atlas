@@ -4,7 +4,7 @@ Not decided yet. Planning comes before building.
 
 ## Message groups and the queue
 
-- **Same target, two observation IDs.** One Asset may see the same thing in two places and give it two `observation_id`s, giving two tracks. Fusion is expected to merge them later; how is open.
+- **Tasks and geo features.** How a Task links to a geo feature (not through `move_to`) is open.
 - **Observation types.** What a target is (person, vehicle, ...) is deferred.
 - **What else registration contains.** `admin.hello` lists reports and cameras, and [Storage](storage.md) keeps them. Whether an Asset should also say what it is (drone, camera post) or which commands it supports is open.
 - **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
@@ -12,6 +12,8 @@ Not decided yet. Planning comes before building.
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier
+
+- **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
 
 A draft answer to several of these (envelope, acknowledgement, queue delivery,
 version check, gateways) is in [communication.md](communication.md).

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command/move_to.json",
   "title": "move_to",
-  "description": "Fly to a position. If the position has no altitude, the Asset keeps its current altitude. geofeature_id, if present, links the Task to the geo feature it came from, so Core can show which feature an Asset is working on; the Asset always flies destination, and later edits to the feature do not change a sent command.",
+  "description": "Fly to a position. If the position has no altitude, the Asset keeps its current altitude.",
   "type": "object",
   "required": [
     "kind",
@@ -15,9 +15,6 @@
     },
     "destination": {
       "$ref": "../../../components/position.json"
-    },
-    "geofeature_id": {
-      "$ref": "../../../variables/geofeature_id.json"
     }
   },
   "examples": [
@@ -32,14 +29,6 @@
             "altitude_reference": "home"
           }
         ]
-      }
-    },
-    {
-      "kind": "move_to",
-      "geofeature_id": "G1",
-      "destination": {
-        "latitude": 42.2761,
-        "longitude": -71.8031
       }
     }
   ]

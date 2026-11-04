@@ -25,7 +25,7 @@ Core records what was asked; the Asset does it. A Task is the stored `control.co
 
 ## Geo features
 
-A geo feature is `{geofeature_id, kind, geometry}`, made by an operator in Core. A `move_to` can carry an optional `geofeature_id` beside the `destination` it actually flies. The link lets an interface show which feature an Asset is working on. Editing a geo feature never changes a command already sent; Core sends a new one if needed. Geo features are not sent over the Asset link on their own.
+A geo feature is `{geofeature_id, kind, geometry}`, made by an operator in Core. `move_to` stays simple and never names a geo feature; how Tasks link to geo features is an open question. Editing a geo feature never changes a command already sent. Geo features are not sent over the Asset link on their own.
 
 ## Observations and tracks
 
@@ -35,7 +35,7 @@ Assets report observations (`report.observation`), never tracks. An Asset reuses
 Asset ── report.observation ──▶ Core ──▶ [ fusion ] ──▶ tracks
 ```
 
-Fusion is a black box: observations go in, tracks come out. For now each new `asset_id` + `observation_id` pair becomes its own track, and the track lists its source observations. Tasks that aim at a target name the track. Observation types (person, vehicle, and so on) are deferred.
+Fusion is its own swappable module, run in Docker like the other Core pillars. Core passes observations in and tracks come out; what happens inside is up to the module, including when one Asset gives a target two IDs or several Assets see the same thing. The first iteration uses a temporary fusion module that turns every new `asset_id` + `observation_id` pair into its own track (listing its source), to find the Core/fusion boundary and make debugging easy. Tasks that aim at a target name the track. Observation types (person, vehicle, and so on) are deferred.
 
 ## Registration
 
