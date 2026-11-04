@@ -7,7 +7,7 @@ How one Task is created, stored and moved, hop by hop. It uses the first-flight 
 ```text
 Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP)──▶ Core storage
         ▲                                          │  ▲
-        └──────────7. to operator (pushed)────────┘  └──6. update storage
+        └──────────7. to operator (pushed)─────────┘  └──6. update storage
                                                    │
                                      3. the Asset's link
                                                    ▼
