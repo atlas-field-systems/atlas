@@ -39,9 +39,9 @@ No user accounts or roles.
    asset key (it stores only the hash) and answers `admin.hello_reply` with `operator_id`.
 2. Each interface has its own `operator_id`. A newer link with the same ID replaces
    the older; Core closes the older.
-3. Core pushes every Asset's latest `admin.hello` (the asset list) and each Asset's
+3. Core pushes every Asset's latest hello as `admin.asset` (the asset list: the hello without its keys) and each Asset's
    latest reports (settings, status, queue, telemetry, battery), unchanged except for
-   Core's own `seq` (and no keys).
+   Core's own `seq`.
 4. From then on Core forwards each new report as it arrives: telemetry, status,
    queue changes and failsafes.
 5. To act, the interface sends `control.command`, `control.settings` or `control.cancel`

@@ -23,14 +23,14 @@
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "03-hello.json",
-      "why": "Core pushes the asset list: each Asset's latest admin.hello without its key, with Core's own seq (A1 here). Everything Core sends carries Core's seq."
+      "file": "03-asset.json",
+      "why": "Core pushes the asset list: each Asset's latest admin.hello as admin.asset, without its keys, with Core's own seq (A1 here). Everything Core sends carries Core's seq."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "04-hello.json",
+      "file": "04-asset.json",
       "why": "And A2, a receive-only ADS-B receiver that accepts no commands."
     },
     {

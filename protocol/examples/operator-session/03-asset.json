@@ -1,5 +1,5 @@
 {
-  "type": "admin.hello",
+  "type": "admin.asset",
   "time": 1793667600000,
   "seq": 101,
   "asset_id": "A1",

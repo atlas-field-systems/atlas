@@ -5,6 +5,7 @@
       "name": "Messages",
       "files": [
         "messages/admin/hello.json",
+        "messages/admin/asset.json",
         "messages/admin/hello_reply.json",
         "messages/admin/operator_hello.json",
         "messages/admin/reply.json",
