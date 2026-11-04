@@ -17,6 +17,8 @@ If you need something outside this repository, go to the one that owns it.
 - Want how Core works inside? Go to **core**.
 - Want how a gateway, Asset or app talks to Core, or how bytes cross a link? Go to **sdk**.
 
+[atlas-core](https://github.com/atlas-field-systems/atlas-core) and [atlas-core-archive](https://github.com/atlas-field-systems/atlas-core-archive) are the old Core. They are temporary read-only references to mine for docs and will be deleted. Nothing there is decided for the new parts; write what is kept into the owning repo.
+
 ## This repository
 
 - Core's internal behavior, storage use and failure rules go here.
