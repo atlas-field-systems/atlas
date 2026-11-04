@@ -79,7 +79,7 @@ So a message can arrive twice. Every receiver, Core included, applies one rule:
 
 ## Push, and asking
 
-- Core **pushes** tasks and settings to an Asset when they change.
+- Core **pushes** tasks and settings to an Asset when they change. Assets never poll for work.
 - An Asset may also **ask**, for example "send me my tasks" after reconnecting.
   Core answers with the same push messages.
 - Both directions use the same messages. There is no separate request/response format.
@@ -107,6 +107,8 @@ Each failsafe trigger has its own response setting. With `link_loss_response: co
 ## Task states
 
 `queued`, `active`, `completed`, `failed`, `cancelled`.
+When a task fails, or a failsafe triggers, the Asset cancels the rest of the queue
+and reports each cancelled task and its empty queue.
 Only reports from the Asset move a task forward. Core never assumes progress from
 silence or position.
 
