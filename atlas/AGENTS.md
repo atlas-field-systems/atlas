@@ -19,6 +19,8 @@ If you need something outside this repository, go to the one that owns it.
 
 ## This repository
 
+- **Bloat is the enemy, but good organization is not bloat.** Keep data, docs and code lean, and define nothing twice. For example, the same command kinds listed under two message types is bloat. Grouping things clearly is not.
+
 Read [README](README.md), [the charter](CHARTER.md), and the affected story first.
 This repository explains Atlas's purpose, operating environment, and how its parts
 fit together.
