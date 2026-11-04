@@ -48,12 +48,15 @@ its emergency behavior. Core marks those Tasks cancelled once the drone reports
 it, so the records match what happened.
 
 Each Asset has [settings](settings.md) for how it responds to events such as
-losing its radio link. The last resort is return to home, done by an Atlas layer
-on the drone above the flight controller or by switching ArduPilot into its
-return-to-home mode.
+losing its radio link. Each trigger has its own response: continue the mission,
+return to home, or land at a chosen point. Losing the link can be set to continue,
+for example when Core rides in a car through a tunnel and the drone should keep
+its mission and resync later. Return to home is done by an Atlas layer above the
+flight controller or by ArduPilot's return-to-home mode.
 
-Failure always wins. Whatever state the drone is in, including paused, a failure
-sends it home. An Asset must never stay airborne until it falls out of the sky.
+Failure always wins. Every failure has a defined safe response, and it applies
+whatever state the drone is in, including paused. An Asset never stays airborne
+until it falls out of the sky.
 
 ## Keep the whole run for debugging
 
