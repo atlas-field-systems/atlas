@@ -16,7 +16,8 @@ It does not wait in a queue or go through a Task's steps.
   "running", always as an explicit end state.
 - A Change Setting Task can pause an Asset inside a queue. It waits there until
   someone resumes it, for example: fly here, pause, wait for the operator, continue.
-- A failure overrides any setting, including paused, and sends the Asset home.
+- A failure overrides any setting, including paused, and the Asset carries out
+  that failure's defined safe response.
 
 How an Asset responds when something goes wrong is in [First flight](first-flight.md#when-something-goes-wrong).
 
