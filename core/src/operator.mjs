@@ -3,7 +3,7 @@ import WebSocket from 'ws';
 import { VERSION } from './protocol.mjs';
 
 export function connectOperator({ url, operator_id, key }) {
-  const ws = new WebSocket(`${url}/operator?${new URLSearchParams({ operator_id, key })}`);
+  const ws = new WebSocket(`${url}/operator`);
   let seq = 0;
   const received = [];
   const waiters = [];
@@ -18,7 +18,7 @@ export function connectOperator({ url, operator_id, key }) {
     waiters.push({ test, resolve: (m) => { clearTimeout(t); resolve(m); } });
   });
   const ready = new Promise((r, j) => { ws.on('open', r); ws.on('error', j); })
-    .then(() => { send({ type: 'admin.operator_hello', operator_id, protocol_version: VERSION }); return until((m) => m.type === 'admin.hello_reply'); });
+    .then(() => { send({ type: 'admin.operator_hello', operator_id, protocol_version: VERSION, key }); return until((m) => m.type === 'admin.hello_reply'); });
   // Sends a message and waits for Core's admin.reply to it.
   const request = (m) => { const s = send(m); return until((r) => r.type === 'admin.reply' && r.reply_to === s); };
   return { ws, ready, send, request, until, received, close: () => ws.close() };

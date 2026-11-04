@@ -2,7 +2,7 @@
 
 Atlas Core is the server that keeps the shared picture of a site and requests work from Assets. It stores data in the formats defined in Protocol and talks to gateways and apps through the SDK.
 
-**First-flight prototype.** Built to learn fast; findings go back into Protocol and the Charter ([docs/findings.md](docs/findings.md)).
+**First-flight prototype.** Built to learn fast; speaks Protocol 0.6; findings go back into Protocol and the Charter ([docs/findings.md](docs/findings.md)).
 
 ```sh
 git clone --recurse-submodules https://github.com/atlas-field-systems/core && cd core && npm install && npm run demo
