@@ -22,4 +22,5 @@ If you need something outside this repository, go to the one that owns it.
 - Core's internal behavior, storage use and failure rules go here.
 - Message and storage formats live in **protocol**; do not define them here.
 - How clients talk to Core lives in **sdk**.
-- Do not build before the developer approves the plans. Do not merge without the developer's approval.
+- Prototypes are approved: build small, learn, and write findings to [docs/findings.md](docs/findings.md) so they can go back into Protocol and the Charter. Do not change Protocol from here.
+- Run `npm test` before every PR. Do not merge without the developer's approval.
