@@ -118,6 +118,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `admin.hello` `commands` may be empty, for a receive-only Asset such as an ADS-B receiver.
 - An immediate motion command (no `task_id`) cancels the rest of the queue; the Asset reports each cancelled Task and its empty queue. Settings stay immediate beside the queue.
 - `control.cancel` stops a Task (by `task_id`) or the motion running now (no `task_id`). The Asset holds, sets `run_state` paused, and reports the Task cancelled plus `report.settings` with `reply_to`.
+- When a Task fails, or a failsafe triggers, the Asset cancels the rest of the queue and reports each cancelled Task and its empty queue.
 - `return_to_home` is a command, and the same name is a failsafe response.
 - Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps its mission and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.

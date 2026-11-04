@@ -17,6 +17,8 @@ If you need something outside this repository, go to the one that owns it.
 - Want how Core works inside? Go to **core**.
 - Want how a gateway, Asset or app talks to Core, or how bytes cross a link? Go to **sdk**.
 
+[atlas-core](https://github.com/atlas-field-systems/atlas-core) and [atlas-core-archive](https://github.com/atlas-field-systems/atlas-core-archive) are the old Core. They are temporary read-only references to mine for docs and will be deleted. Nothing there is decided for the new parts; write what is kept into the owning repo.
+
 ## This repository
 
 - **Bloat is the enemy, but good organization is not bloat.** Keep data, docs and code lean, and define nothing twice. For example, the same command kinds listed under two message types is bloat. Grouping things clearly is not.
