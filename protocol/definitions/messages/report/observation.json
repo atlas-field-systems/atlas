@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/observation.json",
+  "title": "Observation report",
+  "description": "Something the Asset sees, such as a person or vehicle, and where. Assets report observations, never tracks: Core's fusion turns observations into tracks. Reuse observation_id while the Asset keeps seeing the same target. What the target is (its type) is not defined yet.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id",
+    "observation_id",
+    "position"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "report.observation"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "observation_id": {
+      "$ref": "../../variables/observation_id.json"
+    },
+    "position": {
+      "$ref": "../../components/position.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "report.observation",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "observation_id": "O1",
+      "position": {
+        "latitude": 42.2758,
+        "longitude": -71.8041
+      }
+    }
+  ]
+}

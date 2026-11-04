@@ -9,11 +9,23 @@
     "failsafe",
     "telemetry",
     "battery",
-    "settings"
+    "settings",
+    "gimbal",
+    "observation"
   ],
   "commands": [
     "takeoff",
     "move_to",
     "land"
+  ],
+  "cameras": [
+    {
+      "camera_id": "C1",
+      "mount": "gimbal",
+      "yaw_deg": 0,
+      "pitch_deg": -45,
+      "horizontal_fov_deg": 80,
+      "vertical_fov_deg": 60
+    }
   ]
 }

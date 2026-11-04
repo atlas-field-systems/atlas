@@ -4,12 +4,16 @@ Not decided yet. Planning comes before building.
 
 ## Message groups and the queue
 
-- **What registration contains.** `admin.hello` now lists the reports an Asset sends. What else an Asset must say about itself when it registers (what it is, what it can do) depends on what Core stores for each Asset, so it is tied to the storage formats, which are deferred.
+- **Tasks and geo features.** How a Task links to a geo feature (not through `move_to`) is open.
+- **Observation types.** What a target is (person, vehicle, ...) is deferred.
+- **What else registration contains.** `admin.hello` lists reports and cameras, and [Storage](storage.md) keeps them. Whether an Asset should also say what it is (drone, camera post) or which commands it supports is open.
 - **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
 - **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier
+
+- **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
 
 A draft answer to several of these (envelope, acknowledgement, queue delivery,
 version check, gateways) is in [communication.md](communication.md).
