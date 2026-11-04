@@ -57,7 +57,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - The Asset sends `report.status` of kind `queue` (a list of `task_ids`) whenever Tasks are added, and when Core sends `query.queue`. This replaces `task_count`: Core compares the list with the Tasks it sent and resends any that are missing. One short report covers any number of Tasks.
 
 ## Connect and reports
-- `admin.hello`: an Asset's first message on a link, with `protocol_version` and `reports`, the list of reports it sends (a drone without a battery sensor leaves out `battery`). The API key stays at the link level, never in a message.
+- `admin.hello`: an Asset's first message on a link, with `protocol_version` and `reports`, the list of reports it sends (a drone without a battery sensor leaves out `battery`). From 0.6 it also carries the asset key (required) and, the first time, the enrollment key.
 - `admin.hello_reply`: Core answers `accepted` or `version_mismatch`, with the version to run.
 - `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
 - `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`continue`, `hold`, `land`, `return_to_home` or `land_at`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
@@ -110,7 +110,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `report.gimbal` gives live gimbal pointing, often while active, never while idle.
 - `move_to` stays simple and never carries a geo feature. Cameras may give an optional roll.
 - Assets send `report.observation`, never tracks. Fusion is a separate swappable Docker module: observations in, tracks out. It alone decides when observations are the same target. The first, temporary module makes one track per observation. Tasks target tracks.
-- Assets self-register with a deployment enrollment key presented once on the link, not in hello. Keys are 16 random bytes (22 characters).
+- Assets self-register with a deployment enrollment key presented once, in the first hello (from 0.6). Keys are 16 random bytes (22 characters).
 
 ## Queue order, cancel and failures (0.4)
 
@@ -126,8 +126,19 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 ## Operator API (0.5)
 
 - Each operator interface opens one WebSocket to Core and uses the same messages as Assets, pushed both ways, with no polling. No user accounts or roles.
-- It presents its own `operator_id` and 16-byte key with the link opening, checked like an asset key (Core stores the hash), then sends `admin.operator_hello`. Core answers `admin.hello_reply` with `operator_id`.
+- It presents its own `operator_id` and 16-byte key (with the link opening in 0.5; in `admin.operator_hello` from 0.6), checked like an asset key (Core stores the hash), then sends `admin.operator_hello`. Core answers `admin.hello_reply` with `operator_id`.
 - On connect, Core pushes every Asset's latest `admin.hello` and latest reports, then forwards telemetry, status, queue changes and failsafes live.
 - Operators send `control.command`, `control.settings` and `control.cancel` with `asset_id`. Core checks them against the Asset's hello and refuses unsupported ones with a reason. Reading uses `query.core` and `query.asset` (`every_s`).
 - Core answers every operator message with `admin.reply` (`accepted` or `refused` with `explanation`, `reply_to` its `seq`). The Asset's reports confirm the effect.
 - Routing is the link's job. A receiver handles a message once per `(sender, seq)`; see [Routing and duplicates](communication.md#routing-and-duplicates).
+
+## Keys, links and answers (0.6)
+
+- Keys travel in the opening hello, not the link opening (browsers cannot set WebSocket headers, and URLs end up in logs). `admin.hello` requires `key` and carries `enrollment_key` the first time; `admin.operator_hello` carries `key`. No other message carries a key, and Core never sends one: operators get an Asset's hello as `admin.asset`, a separate definition without key fields, so a forwarded copy validates without a key. A bad key gets `hello_result: refused` and the link closes.
+- The hello must be the first message on a link. Anything before an accepted hello closes the link.
+- One link per ID. Each operator interface has its own `operator_id`. A second link with the same `asset_id` or `operator_id` replaces the older one.
+- Everything a sender sends gets a new `seq`. Core puts its own `seq` on every report it forwards or repeats, so `every_s` repeats are never dropped as duplicates.
+- A command to an Asset that is not connected is refused with a reason. Core does not hold it.
+- A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched.
+- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset still ignores a resent Task silently.)
+- Telemetry rate is the Asset setting `telemetry_every_s`.

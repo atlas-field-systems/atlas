@@ -48,6 +48,9 @@
     },
     "land_at_position": {
       "$ref": "../../components/position.json"
+    },
+    "telemetry_every_s": {
+      "$ref": "../../variables/telemetry_every_s.json"
     }
   },
   "anyOf": [
@@ -80,6 +83,11 @@
       "required": [
         "land_at_position"
       ]
+    },
+    {
+      "required": [
+        "telemetry_every_s"
+      ]
     }
   ],
   "examples": [
@@ -109,6 +117,13 @@
         "latitude": 42.2751,
         "longitude": -71.8049
       }
+    },
+    {
+      "type": "control.settings",
+      "time": 1793667600000,
+      "seq": 44,
+      "asset_id": "A1",
+      "telemetry_every_s": 0.5
     }
   ],
   "dependentRequired": {

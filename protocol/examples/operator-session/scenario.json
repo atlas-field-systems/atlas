@@ -10,7 +10,7 @@
       "from": "Operator",
       "to": "Core",
       "file": "01-operator_hello.json",
-      "why": "The operator interface opens its WebSocket (operator_id and key in the connection request) and says hello."
+      "why": "The operator interface opens its WebSocket and says hello with its operator_id and key, the only message that carries the key."
     },
     {
       "branch": "main",
@@ -23,14 +23,14 @@
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "03-hello.json",
-      "why": "Core pushes the asset list: each Asset's latest admin.hello, unchanged (A1 here)."
+      "file": "03-asset.json",
+      "why": "Core pushes the asset list: each Asset's latest admin.hello as admin.asset, without its keys, with Core's own seq (A1 here). Everything Core sends carries Core's seq."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "04-hello.json",
+      "file": "04-asset.json",
       "why": "And A2, a receive-only ADS-B receiver that accepts no commands."
     },
     {
@@ -65,15 +65,15 @@
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "09-reply.json",
-      "why": "Core accepts the query."
+      "file": "09-battery.json",
+      "why": "Core sends its latest battery copy with its own seq, and again every 30 s, each with a new seq."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "10-battery.json",
-      "why": "Core sends its latest battery copy, then every 30 s."
+      "file": "10-reply.json",
+      "why": "Then Core accepts the query. A query's reply comes after its answer, so it marks the end."
     },
     {
       "branch": "main",
@@ -137,6 +137,27 @@
       "to": "Operator",
       "file": "19-failsafe-low_battery.json",
       "why": "A failsafe is forwarded the moment it arrives."
+    },
+    {
+      "branch": "main",
+      "from": "Operator",
+      "to": "Core",
+      "file": "20-query-history.json",
+      "why": "The operator asks for A1's path over the first 100 s."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "21-telemetry.json",
+      "why": "Core sends each stored telemetry report, oldest first (one here)."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "22-reply.json",
+      "why": "The reply marks the end of the answer. Had nothing matched, this reply would come alone."
     }
   ]
 }

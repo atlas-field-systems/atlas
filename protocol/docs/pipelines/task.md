@@ -64,5 +64,5 @@ Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP
 
 ## 7. Core → operator interface
 - An operator interface can also ask Core with `query.core` (kind `history`). That hop is the operator WebSocket.
-- Core forwards the same `report.status` message, unchanged, over the operator WebSocket.
+- Core forwards the same `report.status` message, unchanged except for Core's own `seq`, over the operator WebSocket.
 - **Bloat:** forward the message itself, not a new "task view" format.

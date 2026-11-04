@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/asset.json",
+  "title": "Asset",
+  "description": "An Asset as Core shares it with operator interfaces: the Asset's latest admin.hello without its keys, with Core's own seq. Core sends it when an operator connects and whenever an Asset says hello. Fields mean the same as in admin.hello.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "asset_id",
+    "protocol_version",
+    "reports",
+    "commands"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "admin.asset"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "protocol_version": {
+      "$ref": "../../variables/protocol_version.json"
+    },
+    "reports": {
+      "type": "array",
+      "items": {
+        "$ref": "../../variables/report.json"
+      },
+      "minItems": 1,
+      "maxItems": 7
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "$ref": "../../variables/command.json"
+      },
+      "minItems": 0,
+      "maxItems": 4
+    },
+    "cameras": {
+      "type": "array",
+      "items": {
+        "$ref": "../../components/camera.json"
+      },
+      "minItems": 1,
+      "maxItems": 4
+    }
+  },
+  "examples": [
+    {
+      "type": "admin.asset",
+      "time": 1793667600000,
+      "seq": 101,
+      "asset_id": "A1",
+      "protocol_version": "0.6",
+      "reports": [
+        "status",
+        "failsafe",
+        "telemetry",
+        "battery",
+        "settings",
+        "gimbal",
+        "observation"
+      ],
+      "commands": [
+        "takeoff",
+        "move_to",
+        "land",
+        "return_to_home"
+      ],
+      "cameras": [
+        {
+          "camera_id": "C1",
+          "mount": "gimbal",
+          "yaw_deg": 0,
+          "pitch_deg": -45,
+          "horizontal_fov_deg": 80,
+          "vertical_fov_deg": 60
+        }
+      ]
+    }
+  ]
+}

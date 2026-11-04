@@ -9,6 +9,10 @@ Not decided yet. Planning comes before building.
 - **What else registration contains.** `admin.hello` lists reports and cameras, and [Storage](storage.md) keeps them. Whether an Asset should also say what it is (drone, camera post) or which commands it supports is open.
 - **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
 - **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?
+- **Errors back to an Asset.** An Asset gets no reply, so an invalid report is dropped and logged by Core and the Asset never learns. Should there be an error message to Assets?
+- **`reply_to` through Core.** Core forwards an operator's `control.settings` with its own `seq`, so the Asset's `report.settings` `reply_to` names Core's `seq`, not the operator's. Should Core map it back when forwarding?
+- **What "latest state" includes.** On connect Core pushes each Asset's hello and newest reports. Is the queue part of it, and should an operator see a connected or stale flag, rather than working it out from report times?
+- **Holding commands for offline Assets.** Refused for now (0.6). Revisit if store-and-forward links need it.
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier

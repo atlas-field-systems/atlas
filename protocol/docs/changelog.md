@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6
+
+- Keys move from the link opening into the opening hello: `key` (and `enrollment_key` the first time) on `admin.hello`, `key` on `admin.operator_hello`. `key` is required on both. Keys appear in no other message, and Core never sends one: it shares an Asset's hello with operators as the new `admin.asset`, which has no key fields. New `hello_result` `refused`.
+- The hello must come first. One link per ID: a newer link with the same `asset_id` or `operator_id` replaces the older.
+- Everything a sender sends gets a new `seq`; Core puts its own `seq` on forwarded reports and on each `every_s` repeat.
+- A query's `admin.reply` comes after its answer and marks the end; an accepted reply alone means nothing matched.
+- Commands to an Asset that is not connected are refused.
+- New setting `telemetry_every_s`.
+
 ## 0.5
 
 - Operator API: one WebSocket per operator interface, same messages, pushed both ways. New `admin.operator_hello` and `operator_id`; the key travels with the link opening, like an asset key.

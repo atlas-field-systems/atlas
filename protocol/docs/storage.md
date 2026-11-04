@@ -44,12 +44,12 @@ Assets register themselves. No operator adds them first.
 
 1. The deployment has one **enrollment key**, set in Core and given to the fleet.
 2. A new Asset picks its own 4-character `asset_id` and makes its own random **asset key**.
-3. When the link opens, the Asset presents its `asset_id`, its asset key and (the first time only) the enrollment key. These travel with the link opening (for example the WebSocket connection request), not inside `admin.hello`.
+3. When the link opens, the Asset presents its `asset_id`, its asset key and (the first time only) the enrollment key. These travel in its opening `admin.hello` and nowhere else; the hello Core stores leaves them out.
 4. If the enrollment key is right and the ID is free, Core stores the ID with a hash of the asset key. A taken ID is refused, and the Asset picks another.
 5. From then on only that asset key works for that ID. A wrong key, or an unknown ID without the enrollment key, is refused.
 6. Removing an Asset deletes its row. Changing the enrollment key stops new Assets from joining without affecting existing ones.
 
-**Key size: 16 random bytes (128 bits), sent as 22 characters of base64url.** 128 random bits cannot be guessed: at a million tries per second it would take far longer than the age of the universe, and Core can also limit tries. Longer keys add no useful safety for a field network. Keys are sent once per link opening, never in each message, so the cost is 22 bytes per connection (44 the first time, with the enrollment key). The same size is used for both keys.
+**Key size: 16 random bytes (128 bits), sent as 22 characters of base64url.** 128 random bits cannot be guessed: at a million tries per second it would take far longer than the age of the universe, and Core can also limit tries. Longer keys add no useful safety for a field network. Keys are sent once per link, in the opening hello, never in other messages, so the cost is 22 bytes per connection (44 the first time, with the enrollment key). The same size is used for both keys.
 
 ## History
 

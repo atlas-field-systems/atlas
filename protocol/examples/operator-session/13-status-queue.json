@@ -1,7 +1,7 @@
 {
   "type": "report.status",
   "time": 1793667702400,
-  "seq": 20,
+  "seq": 109,
   "asset_id": "A1",
   "kind": "queue",
   "task_ids": [

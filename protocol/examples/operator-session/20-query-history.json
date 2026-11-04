@@ -1,0 +1,10 @@
+{
+  "type": "query.core",
+  "time": 1793667710000,
+  "seq": 5,
+  "asset_id": "A1",
+  "kind": "history",
+  "report": "telemetry",
+  "since": 1793667600000,
+  "until": 1793667700000
+}

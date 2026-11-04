@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/asset.json",
   "title": "Asset query",
-  "description": "Ask for one of an Asset's reports, any it lists in hello. Core asks the Asset, which answers with that report as it normally sends it. An operator interface or edge link can ask Core instead, which answers with the latest copy it holds (latest telemetry gives the most recent position). With every_s, Core keeps sending that report every every_s seconds until the same query arrives with every_s 0. Repeats matter mostly on slow edge links; fast links can just ask.",
+  "description": "Ask for one of an Asset's reports, any it lists in hello. Core asks the Asset, which answers with that report as it normally sends it. An operator interface or edge link can ask Core instead, which answers with the latest copy it holds (latest telemetry gives the most recent position). With every_s, Core keeps sending that report every every_s seconds until the same query arrives with every_s 0. Like everything Core sends, each repeat carries Core's own new seq, so the duplicate rule never drops it. Repeats matter mostly on slow edge links; fast links can just ask.",
   "type": "object",
   "required": [
     "type",

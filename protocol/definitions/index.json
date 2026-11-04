@@ -5,6 +5,7 @@
       "name": "Messages",
       "files": [
         "messages/admin/hello.json",
+        "messages/admin/asset.json",
         "messages/admin/hello_reply.json",
         "messages/admin/operator_hello.json",
         "messages/admin/reply.json",
@@ -87,7 +88,10 @@
         "variables/mount.json",
         "variables/yaw_deg.json",
         "variables/pitch_deg.json",
-        "variables/fov_deg.json"
+        "variables/fov_deg.json",
+        "variables/key.json",
+        "variables/enrollment_key.json",
+        "variables/telemetry_every_s.json"
       ]
     }
   ]

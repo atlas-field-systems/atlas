@@ -45,6 +45,9 @@
     },
     "land_at_position": {
       "$ref": "../../components/position.json"
+    },
+    "telemetry_every_s": {
+      "$ref": "../../variables/telemetry_every_s.json"
     }
   },
   "examples": [
@@ -54,7 +57,8 @@
       "seq": 42,
       "asset_id": "A1",
       "lights": "on",
-      "landing_gear": "down"
+      "landing_gear": "down",
+      "telemetry_every_s": 1
     },
     {
       "type": "report.settings",
@@ -94,6 +98,11 @@
     {
       "required": [
         "land_at_position"
+      ]
+    },
+    {
+      "required": [
+        "telemetry_every_s"
       ]
     }
   ]
