@@ -24,7 +24,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 | 11 | Drone → Core | [`report.status task`](../examples/first-flight/11-status-task.json) | The drone reports it started T1 (Takeoff). | 120 | 97 |
 | 12 | Drone → Core | [`report.telemetry`](../examples/first-flight/12-telemetry.json) | The drone reports its climb. | 222 | 163 |
 | 13 | Drone → Core | [`report.status task`](../examples/first-flight/13-status-task.json) | The drone reports T1 done: it is holding at 30 m. | 123 | 98 |
-| 14 | Core → Drone | [`admin.reply`](../examples/first-flight/14-reply.json) | Core acknowledges the final report. Until it does, the drone resends T1's report unchanged; every final report gets this answer (not shown again below). | 106 | 91 |
+| 14 | Core → Drone | [`admin.reply`](../examples/first-flight/14-reply.json) | Core acknowledges the final report. Until it does, the drone resends T1's report unchanged; every final report gets this answer (not shown again below). | 121 | 101 |
 | 15 | Drone → Core | [`report.status task`](../examples/first-flight/15-status-task.json) | The drone reports it started T2 (Move To), the next Task in its queue. | 121 | 96 |
 | 16 | Drone → Core | [`report.telemetry`](../examples/first-flight/16-telemetry.json) | The drone reports its position and speed on the way. | 226 | 163 |
 | 17 | Drone → Core | [`report.battery`](../examples/first-flight/17-battery.json) | The drone reports its battery. | 92 | 83 |
@@ -313,7 +313,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 5,
   "asset_id": "A1",
   "reply_to": 9,
-  "reply_result": "accepted"
+  "reply_result": "accepted",
+  "task_id": "T1"
 }
 ```
 
@@ -546,9 +547,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-26 messages, 4262 bytes minified, 3272 bytes if each is deflated on its own.
+26 messages, 4277 bytes minified, 3282 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 40% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 40% of all bytes. Field names, quotes and punctuation are 62%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 
@@ -562,7 +563,7 @@ Where the bytes go (each field summed across every message):
 | `kind` | 14 | 195 | 5% |
 | `seq` | 26 | 194 | 5% |
 | `task_state` | 8 | 180 | 4% |
-| `task_id` | 11 | 154 | 4% |
+| `task_id` | 12 | 168 | 4% |
 | `position.altitudes[].altitude_reference` | 5 | 135 | 3% |
 | `ground_speed_mps` | 5 | 104 | 2% |
 | `position.longitude` | 5 | 100 | 2% |

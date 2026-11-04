@@ -4,10 +4,10 @@
 
 - Duplicates: a message is identified by `(sender, seq, time)`. A retry is the same message unchanged and gets the same answer again. The "lower hello means restart" rule is removed. Core keeps its `seq` across restarts. A sender's clock never goes backwards and it sends nothing before its clock is set.
 - Task states only move forward; the first final state stays. Late or contradicting reports change nothing.
-- The Asset resends a Task's final report until Core acknowledges it with `admin.reply`. Core resends a Task only while the Asset has never shown it holds it. An Asset never runs a `task_id` twice and remembers at least its last 1024 finished Tasks. The queue report includes the running Task.
+- The Asset resends a Task's final report until Core acknowledges it with `admin.reply`, which now carries the `task_id`. Core resends a Task only while the Asset has never shown it holds it. An Asset never runs a `task_id` twice and remembers at least its last 1024 finished Tasks. The queue report includes the running Task.
 - `control.cancel` never creates a Task. Core refuses an unknown or finished `task_id`. Cancelling a queued Task leaves the running one alone. A cancel that arrives before its Task is remembered.
-- Settings: the connect report lists every supported setting; later reports may be partial, and a setting left out is unchanged. Per setting the newest `time` wins.
-- Link loss: contact means new messages from Core. New `admin.alive`, sent by Core when it would otherwise be quiet. New setting `link_loss_after_s` (30 s unless set). With `link_loss_response: continue` the Asset keeps its Task and queue.
+- Settings: the connect report lists every supported setting; later reports may be partial, and a setting left out is unchanged. Per setting the newest `time` wins; an Asset never sends two settings reports with the same `time`.
+- Link loss: contact means new messages from Core. New `admin.alive`, sent by Core when it has sent nothing new for a while. New setting `link_loss_after_s` (30 s unless set). With `link_loss_response: continue` the Asset keeps its Task and queue.
 
 ## 0.6
 

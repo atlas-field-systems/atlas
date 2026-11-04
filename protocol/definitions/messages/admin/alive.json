@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/alive.json",
   "title": "Alive",
-  "description": "From Core to an Asset when Core has sent it nothing for a third of its link_loss_after_s, so the Asset can tell a quiet Core from a lost link. It carries nothing else: any new message from Core counts as contact.",
+  "description": "From Core to an Asset when Core has sent it nothing new for a third of its link_loss_after_s (repeated answers to retries don't count), so the Asset can tell a quiet Core from a lost link. It carries nothing else: any new message from Core counts as contact.",
   "type": "object",
   "required": [
     "type",

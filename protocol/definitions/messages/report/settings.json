@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/settings.json",
   "title": "Settings",
-  "description": "From an Asset: settings, each an explicit end state. After each accepted hello it sends its connect report: every setting it supports, with its value. Core refuses changes to settings the latest connect report left out, and the Asset never reports one until its next hello. Later reports, sent when it changes a setting itself or to confirm an immediate control.settings (reply_to is that command's seq), may carry only some settings; a setting left out is unchanged. Per setting, the newest time wins (on equal times, the higher seq). land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
+  "description": "From an Asset: settings, each an explicit end state. After each accepted hello it sends its connect report: every setting it supports, with its value. Core refuses changes to settings the latest connect report left out, and the Asset never reports one until its next hello. Later reports, sent when it changes a setting itself or to confirm an immediate control.settings (reply_to is that command's seq), may carry only some settings; a setting left out is unchanged. Per setting, the newest time wins; an Asset never sends two settings reports with the same time. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
   "type": "object",
   "required": [
     "type",

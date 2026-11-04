@@ -104,8 +104,10 @@ Sending a whole queue at once could fail on a slow link. Instead:
 
 When a task finishes (`completed`, `failed` or `cancelled`), the Asset keeps sending
 that `report.status` as a retry, on each new link and every 10 s, until Core answers
-it with `admin.reply` (`accepted`, `reply_to` the report's `seq`). A lost answer is
-covered the same way: Core recognises the retry and sends its answer again.
+it with `admin.reply` (`accepted`, `reply_to` the report's `seq`, and its `task_id`).
+The Asset matches both, so after its `seq` restarts an old answer can't close a new
+report. A lost answer is covered the same way: Core recognises the retry and sends its
+answer again.
 
 A task the Asset has shown it holds that leaves its queue with no final report is
 waiting for that report. If the Asset restarted and lost it, the outcome is unknown;
@@ -129,8 +131,9 @@ Core does not send the task again.
   latest connect report left out, and the Asset never reports one until its next hello.
 - A later `report.settings` may carry only some settings. A setting left out is
   unchanged, not unsupported.
-- Per setting, the newest `time` wins; on equal times, the higher `seq`. An older report
-  is kept in history and changes nothing.
+- Per setting, the newest `time` wins, wherever the report comes from (Core forwards
+  reports with its own `seq`). An Asset never sends two settings reports with the same
+  `time`. An older report is kept in history and changes nothing.
 
 ## Losing the link
 
@@ -139,7 +142,8 @@ duplicates) after its accepted hello. Nothing else counts: not an open socket, n
 radio acknowledgement, not hearing the gateway or other Assets.
 
 - So silence means something, Core is never quiet for long. When it has sent an Asset
-  nothing for a third of that Asset's `link_loss_after_s`, it sends `admin.alive`.
+  nothing new for a third of that Asset's `link_loss_after_s` (repeated answers to
+  retries don't count), it sends `admin.alive`.
 - The link is **lost** when the Asset has had no contact for `link_loss_after_s`
   (30 s unless set), timed on its own clock. A link that drops and comes back within
   that time is not lost.
