@@ -18,6 +18,18 @@ minimal: build only what is needed now.
 The project owner decides Atlas's data formats and data structures. Protocol
 writes them down exactly. See [Keep shared data simple](CHARTER.md#keep-shared-data-simple).
 
+## Avoid lock-in
+
+Do not tie Atlas to one vendor, link, library or communication pattern. Keep
+patterns flexible (push, ask, repeat, one link or many) so a part can change
+without reworking the rest.
+
+## Rapid prototyping
+
+Prototypes sanity-test the docs. Build a small working version early, see where
+the docs are wrong or missing, and write the findings back into the spec and the
+owning docs. A prototype proves nothing on its own; the docs stay the source.
+
 ## No generated code
 
 Atlas code is written by hand and read by people. Do not generate code from
