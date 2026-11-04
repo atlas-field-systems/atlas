@@ -72,7 +72,8 @@ write their own Reset ZIP. Core's ZIP holds:
 
 Reset ZIPs are for after the system is used: dump them into an AI agent to give
 it full context on how the system was used and any errors. Each system's
-documentation defines its own ZIP contents and Reset procedure.
+documentation defines its own ZIP contents and Reset procedure. Merging
+several ZIPs into one is a separate process.
 
 This example explains one flight. Detailed Task, radio, and recovery rules
 belong in their owning subsystem documentation.

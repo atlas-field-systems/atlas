@@ -17,6 +17,8 @@ If you need something outside this repository, go to the one that owns it.
 - Want how Core works inside? Go to **core**.
 - Want how a gateway, Asset or app talks to Core, or how bytes cross a link? Go to **sdk**.
 
+[atlas-core](https://github.com/atlas-field-systems/atlas-core) and [atlas-core-archive](https://github.com/atlas-field-systems/atlas-core-archive) are the old Core. They are temporary read-only references to mine for docs and will be deleted. Nothing there is decided for the new parts; write what is kept into the owning repo.
+
 ## This repository
 
 - **Bloat is the enemy, but good organization is not bloat.** Keep data, docs and code lean, and define nothing twice. For example, the same command kinds listed under two message types is bloat. Grouping things clearly is not.
@@ -43,6 +45,13 @@ Keep selected direction, proposals, and open questions distinct. Preserve the
 owner's testing simplifications. Do not turn a review suggestion into a scheduler,
 Plugin platform, or other unrequested scope. Obtain the owner's agreement for
 product changes and do not merge without approval.
+
+Working rules for every Atlas repository:
+
+- Commit as `the-Drunken-coder` with `183743141+the-Drunken-coder@users.noreply.github.com`.
+- Merge only after the owner approves, with `git merge --no-ff`, then push main.
+- CI must be green before any merge.
+- No CDN dependencies: pages and tools load nothing from third-party servers at run time; ship what they need in the repo or the package.
 
 Keep pages short and concrete. Put review transcripts and temporary plans in the
 PR rather than the charter. Check relative links, anchors, whitespace, and diagram
