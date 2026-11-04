@@ -13,11 +13,11 @@ Protocol gaps found while building the prototype. Protocol is not changed from h
 7. **Messages before hello.** The hello must be first or the link closes.
 8. **A second link for the same Asset.** The newer link replaces the older (law 22).
 9. **Telemetry rate.** Asset setting `telemetry_every_s`.
+10. **Repeated task_id from an operator.** Core refuses it with a reason; the Asset ignores a resent Task silently.
 
 ## Still open (in Protocol's open-questions)
 
-10. **Where operator keys come from.** The prototype reads them from config (`ATLAS_OPERATORS`).
-11. **Repeated task_id from an operator.** The Asset ignores a repeat silently; Core refuses it with a reason.
+11. **Where operator keys come from.** The prototype reads them from config (`ATLAS_OPERATORS`).
 12. **Bad messages from an Asset.** Dropped and logged; the Asset never knows.
 13. **What "latest state" means on connect.** The prototype pushes each Asset's hello and newest report of each type.
 14. **Storage formats.** The prototype stores whole messages as JSON beside a few key columns.
