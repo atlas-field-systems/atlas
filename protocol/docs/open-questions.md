@@ -5,7 +5,7 @@ Not decided yet. Planning comes before building.
 ## Message groups and the queue
 
 - **Tasks and geo features.** How a Task links to a geo feature (not through `move_to`) is open.
-- **Observation types.** What a target is (person, vehicle, ...) is deferred.
+- **Observation types.** Deferred: what a target is (person, vehicle, ...), and richer observations such as bearing-only (no position) and ADS-B with its many extra fields, which must still be shown on observations and tracks.
 - **What else registration contains.** `admin.hello` lists reports and cameras, and [Storage](storage.md) keeps them. Whether an Asset should also say what it is (drone, camera post) or which commands it supports is open.
 - **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
 - **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?

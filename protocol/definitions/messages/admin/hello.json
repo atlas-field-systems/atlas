@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/hello.json",
   "title": "Hello",
-  "description": "First message from an Asset when a link opens: which Asset it is, which protocol version it runs, and which reports it sends and which command kinds it accepts. Core never sends a command kind the Asset does not list. Supported settings are not listed here: the Asset's report.settings on connect carries only the settings it has, and Core never sends others. The asset key travels with the link opening, not this message. The cameras list gives each camera, how it is mounted and its field of view; leave it out if the Asset has none.",
+  "description": "First message from an Asset when a link opens: which Asset it is, which protocol version it runs, and which reports it sends and which command kinds it accepts (an empty list for a receive-only Asset, such as an ADS-B receiver). Core never sends a command kind the Asset does not list. Supported settings are not listed here: the Asset's report.settings on connect carries only the settings it has, and Core never sends others. The asset key travels with the link opening, not this message. The cameras list gives each camera, how it is mounted and its field of view; leave it out if the Asset has none.",
   "type": "object",
   "required": [
     "type",
@@ -44,8 +44,8 @@
       "items": {
         "$ref": "../../variables/command.json"
       },
-      "minItems": 1,
-      "maxItems": 3
+      "minItems": 0,
+      "maxItems": 4
     },
     "cameras": {
       "type": "array",
@@ -62,7 +62,7 @@
       "time": 1793667600000,
       "seq": 42,
       "asset_id": "A1",
-      "protocol_version": "0.3",
+      "protocol_version": "0.4",
       "reports": [
         "status",
         "failsafe",
@@ -73,7 +73,8 @@
       "commands": [
         "takeoff",
         "move_to",
-        "land"
+        "land",
+        "return_to_home"
       ],
       "cameras": [
         {
@@ -85,6 +86,18 @@
           "vertical_fov_deg": 60
         }
       ]
+    },
+    {
+      "type": "admin.hello",
+      "time": 1793667600000,
+      "seq": 1,
+      "asset_id": "R1",
+      "protocol_version": "0.4",
+      "reports": [
+        "status",
+        "observation"
+      ],
+      "commands": []
     }
   ]
 }

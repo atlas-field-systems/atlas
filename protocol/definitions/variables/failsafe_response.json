@@ -2,14 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/failsafe_response.json",
   "title": "failsafe_response",
-  "description": "What an Asset does by itself when a failsafe triggers.",
+  "description": "What an Asset does by itself when a failsafe triggers: keep its mission (continue), hold where it is, land where it is, return_to_home (its takeoff point), or land_at its land_at_position setting.",
   "enum": [
-    "return_home",
+    "continue",
     "hold",
     "land",
-    "continue"
+    "return_to_home",
+    "land_at"
   ],
   "examples": [
-    "return_home"
+    "return_to_home"
   ]
 }

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/settings.json",
   "title": "Settings change",
-  "description": "From Core: set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_to is this seq. With task_id it is a change_settings Task in the queue, confirmed by its task status. At least one setting must be present.",
+  "description": "From Core: set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_to is this seq. With task_id it is a change_settings Task in the queue, confirmed by its task status. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
   "type": "object",
   "required": [
     "type",
@@ -28,6 +28,9 @@
     "task_id": {
       "$ref": "../../variables/task_id.json"
     },
+    "task_seq": {
+      "$ref": "../../variables/task_seq.json"
+    },
     "run_state": {
       "$ref": "../../variables/run_state.json"
     },
@@ -39,6 +42,12 @@
     },
     "link_loss_response": {
       "$ref": "../../variables/link_loss_response.json"
+    },
+    "low_battery_response": {
+      "$ref": "../../variables/low_battery_response.json"
+    },
+    "land_at_position": {
+      "$ref": "../../components/position.json"
     }
   },
   "anyOf": [
@@ -61,6 +70,16 @@
       "required": [
         "link_loss_response"
       ]
+    },
+    {
+      "required": [
+        "low_battery_response"
+      ]
+    },
+    {
+      "required": [
+        "land_at_position"
+      ]
     }
   ],
   "examples": [
@@ -77,7 +96,27 @@
       "seq": 42,
       "asset_id": "A1",
       "task_id": "T3",
+      "task_seq": 3,
       "landing_gear": "up"
+    },
+    {
+      "type": "control.settings",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1",
+      "low_battery_response": "land_at",
+      "land_at_position": {
+        "latitude": 42.2751,
+        "longitude": -71.8049
+      }
     }
-  ]
+  ],
+  "dependentRequired": {
+    "task_id": [
+      "task_seq"
+    ],
+    "task_seq": [
+      "task_id"
+    ]
+  }
 }

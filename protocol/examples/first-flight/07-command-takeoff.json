@@ -5,6 +5,7 @@
   "asset_id": "A1",
   "kind": "takeoff",
   "task_id": "T1",
+  "task_seq": 1,
   "target_altitude": {
     "altitude_m": 30,
     "altitude_reference": "home"

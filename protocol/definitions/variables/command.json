@@ -6,7 +6,8 @@
   "enum": [
     "takeoff",
     "move_to",
-    "land"
+    "land",
+    "return_to_home"
   ],
   "examples": [
     "move_to"

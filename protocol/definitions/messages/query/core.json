@@ -53,6 +53,16 @@
       "report": "telemetry",
       "since": 1793667600000,
       "until": 1793667700000
+    },
+    {
+      "type": "query.core",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1",
+      "kind": "history",
+      "report": "telemetry",
+      "since": 1793664000000,
+      "until": 1793667600000
     }
   ]
 }
