@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/status/task.json",
   "title": "task",
-  "description": "Where one of its Tasks stands. Only these reports move a Task forward.",
+  "description": "Where one of its Tasks stands. Only these reports move a Task forward, and only forward. A final state (completed, failed, cancelled) is resent unchanged until Core acknowledges it with admin.reply.",
   "type": "object",
   "required": [
     "kind",

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/reply.json",
   "title": "Reply",
-  "description": "From Core to an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in its hello. reply_to is the operator message's seq. For a query, Core sends the answer first and the reply last, so the reply marks the end of the answer. Refusals include a command to an Asset that is not connected (Core does not hold it). asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect.",
+  "description": "From Core. To an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in its hello. reply_to is the operator message's seq. For a query, Core sends the answer first and the reply last, so the reply marks the end of the answer. Refusals include a command to an Asset that is not connected (Core does not hold it). asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect. To an Asset, accepted acknowledges a final task report (completed, failed or cancelled): reply_to that report's seq and task_id its Task, so the Asset matches both. The Asset resends the report until it gets this. A retried message gets the same reply again, unchanged.",
   "type": "object",
   "required": [
     "type",
@@ -31,6 +31,9 @@
     },
     "reply_result": {
       "$ref": "../../variables/reply_result.json"
+    },
+    "task_id": {
+      "$ref": "../../variables/task_id.json"
     },
     "explanation": {
       "$ref": "../../variables/explanation.json"
@@ -65,6 +68,15 @@
       "reply_to": 8,
       "reply_result": "refused",
       "explanation": "A2 does not accept takeoff"
+    },
+    {
+      "type": "admin.reply",
+      "time": 1793667613100,
+      "seq": 5,
+      "asset_id": "A1",
+      "reply_to": 9,
+      "reply_result": "accepted",
+      "task_id": "T1"
     }
   ]
 }

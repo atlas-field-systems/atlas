@@ -54,7 +54,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 ## Queue
 - There are no Plans. A **queue** is just the list of an Asset's unfinished Tasks, in order. It is not an object and has no ID.
 - `task_id` is unique per Asset, even after a Task finishes.
-- The Asset sends `report.status` of kind `queue` (a list of `task_ids`) whenever Tasks are added, and when Core sends `query.queue`. This replaces `task_count`: Core compares the list with the Tasks it sent and resends any that are missing. One short report covers any number of Tasks.
+- The Asset sends `report.status` of kind `queue` (a list of `task_ids`) whenever Tasks are added, and when Core sends `query.queue`. This replaces `task_count`: Core compares the list with the Tasks it sent and resends any the Asset has never listed or reported on. One short report covers any number of Tasks.
 
 ## Connect and reports
 - `admin.hello`: an Asset's first message on a link, with `protocol_version` and `reports`, the list of reports it sends (a drone without a battery sensor leaves out `battery`). From 0.6 it also carries the asset key (required) and, the first time, the enrollment key.
@@ -117,8 +117,8 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - Every Task carries `task_seq`, its place in the queue. If an Asset holds Tasks 1 and 3, it waits at the gap for 2, up to 10 s, then sends `query.queue`; Core resends what is missing. A Task whose `task_id` it already holds is ignored.
 - `admin.hello` `commands` may be empty, for a receive-only Asset such as an ADS-B receiver.
 - An immediate motion command (no `task_id`) cancels the rest of the queue; the Asset reports each cancelled Task and its empty queue. Settings stay immediate beside the queue.
-- `control.cancel` stops a Task (by `task_id`) or the motion running now (no `task_id`). The Asset holds, sets `run_state` paused, and reports the Task cancelled plus `report.settings` with `reply_to`.
-- When a Task fails, or a failsafe triggers, the Asset cancels the rest of the queue and reports each cancelled Task and its empty queue.
+- `control.cancel` stops a Task (by `task_id`) or the motion running now (no `task_id`). When motion stops, the Asset holds and sets `run_state` paused; cancelling a queued Task only drops it (0.7). It reports the Task cancelled plus `report.settings` with `reply_to`.
+- When a Task fails, or a failsafe triggers with any response except `continue`, the Asset cancels the rest of the queue and reports each cancelled Task and its empty queue.
 - `return_to_home` is a command, and the same name is a failsafe response.
 - Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps its mission and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
@@ -131,7 +131,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - On connect, Core pushes every Asset's latest `admin.hello` and latest reports, then forwards telemetry, status, queue changes and failsafes live.
 - Operators send `control.command`, `control.settings` and `control.cancel` with `asset_id`. Core checks them against the Asset's hello and refuses unsupported ones with a reason. Reading uses `query.core` and `query.asset` (`every_s`).
 - Core answers every operator message with `admin.reply` (`accepted` or `refused` with `explanation`, `reply_to` its `seq`). The Asset's reports confirm the effect.
-- Routing is the link's job. A receiver handles a message once per `(sender, seq)`; see [Routing and duplicates](communication.md#routing-and-duplicates).
+- Routing is the link's job. A receiver handles a message once per `(sender, seq, time)`; see [Routing and duplicates](communication.md#routing-and-duplicates).
 
 ## Keys, links and answers (0.6)
 
@@ -141,5 +141,18 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - Everything a sender sends gets a new `seq`. Core puts its own `seq` on every report it forwards or repeats, so `every_s` repeats are never dropped as duplicates.
 - A command to an Asset that is not connected is refused with a reason. Core does not hold it.
 - A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched.
-- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset still ignores a resent Task silently.)
+- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset ignores a resent Task it holds, and resends the final report of one it finished.)
 - Telemetry rate is the Asset setting `telemetry_every_s`.
+
+## Recovery (0.7)
+
+From the review of the first-flight prototype: lost, repeated, late and reordered messages, and restarts, must not repeat work or erase what Core knows. See [communication.md](communication.md).
+
+- **Duplicates and retries.** A message is identified by `(sender, seq, time)`. A retry is the same message unchanged, and a receiver that answered it sends the same answer again. A restarted Asset or operator interface may start `seq` at 0; its `time` keeps the new messages distinct, so the "lower hello means restart" rule is gone. Core keeps its `seq` across restarts.
+- **Clocks.** A sender's clock never goes backwards, even across a restart, and it sends nothing before its clock is set. Clocks do not need to match each other.
+- **Tasks move forward only.** The first final state stays. A late or contradicting report goes to history, changes nothing and is not forwarded.
+- **Final reports are acknowledged.** The Asset resends a Task's final report until Core answers with `admin.reply`, which names the `task_id` so an answer can't be matched to the wrong report after the Asset's `seq` restarts. Core resends a Task only while the Asset has never listed it or reported on it. A Task lost in an Asset restart stays unknown and is not run again.
+- **An Asset never runs a `task_id` twice.** It remembers at least its last 1024 finished Tasks and resends their final report if one arrives again.
+- **Cancel never creates a Task.** Core refuses a cancel for an unknown or finished Task. Cancelling a queued Task leaves the running one alone. A cancel that arrives before its Task makes the Asset remember it as cancelled.
+- **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Per setting the newest `time` wins, and an Asset never sends two settings reports with the same `time`.
+- **Link loss.** Contact with Core means hearing new messages from Core. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), the `link_loss` failsafe triggers once. With `continue` the Asset keeps its Task and queue.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/cancel.json",
   "title": "Cancel",
-  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): stop a command. With task_id, cancel that Task: a queued one is dropped; an active one stops. Without task_id, stop whatever motion is running now. After stopping, the Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed. It reports report.status task cancelled for a Task, and report.settings (run_state paused, reply_to this seq).",
+  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): stop a command. It never creates a Task. With task_id, Core passes it on only for a Task that has not finished, and refuses an unknown or finished one. A queued Task is dropped and the running one carries on; an active one stops. Without task_id, stop whatever motion is running now. When motion stops, the Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed. It reports the Task cancelled, then its queue, and answers every cancel with report.settings (reply_to this seq). For a Task it already finished it changes nothing and resends that Task's final report; for one it has not received yet, it remembers it as cancelled, reports it cancelled and never runs it.",
   "type": "object",
   "required": [
     "type",

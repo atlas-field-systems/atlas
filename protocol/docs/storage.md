@@ -7,14 +7,14 @@ How Core stores what it knows. A normal store with one table per kind of thing. 
 | Table | One row per | Holds |
 | --- | --- | --- |
 | assets | Asset | `asset_id`, key hash, `reports` it supports, `cameras`, last heard time |
-| tasks | Task | `asset_id`, `task_id`, the command or settings message that carried the `task_id`, its latest state (and `explanation` if it failed) |
+| tasks | Task | `asset_id`, `task_id`, the command or settings message that carried the `task_id`, its latest state (and `explanation` if it failed), whether the Asset has shown it holds it |
 | geofeatures | geo feature | `geofeature_id`, kind, geometry (a point, line or area) |
 | observations | observation | `asset_id`, `observation_id`, latest position and time, `track_id` |
 | tracks | track | `track_id`, its source observations, latest position and time |
 | telemetry | telemetry report | `asset_id`, time, position, speed, heading (a time series) |
 | history | stored report | `asset_id`, time, the report as received (status, failsafe, settings, battery) |
 
-Latest status, battery, settings and gimbal pointing are kept on the asset row or beside it, newest only. No row has a revision or version counter.
+Latest status, battery and gimbal pointing are kept on the asset row or beside it, newest only. Settings are kept per setting: the report holding that setting's newest value, and which settings the latest connect report listed. No row has a revision or version counter.
 
 ## Assets
 
@@ -22,7 +22,7 @@ An Asset row is created when the Asset first registers (see [Registration](#regi
 
 ## Tasks
 
-Core records what was asked; the Asset does it. A Task is the stored `control.command` or `control.settings` that carried a `task_id`, plus its latest `report.status` of kind `task`. Finished states (completed, failed, cancelled) are final. A failed Task carries a reason.
+Core records what was asked; the Asset does it. A Task is the stored `control.command` or `control.settings` that carried a `task_id`, plus its latest `report.status` of kind `task`. Its state only moves forward, and finished states (completed, failed, cancelled) are final. A failed Task carries a reason. A `control.cancel` is never stored as a Task.
 
 ## Geo features
 

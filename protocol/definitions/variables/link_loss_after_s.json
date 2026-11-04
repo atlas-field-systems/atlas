@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/link_loss_after_s.json",
+  "title": "link_loss_after_s",
+  "description": "Setting: seconds without contact with Core before the Asset's link_loss failsafe triggers, timed on the Asset's own clock. Contact is any new message from Core; Core sends admin.alive when it has sent nothing new for a third of this. 30 unless set. Fractions allowed.",
+  "type": "number",
+  "minimum": 1,
+  "maximum": 3600,
+  "examples": [
+    30
+  ]
+}

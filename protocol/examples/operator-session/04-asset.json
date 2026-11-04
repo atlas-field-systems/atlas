@@ -3,7 +3,7 @@
   "time": 1793667500000,
   "seq": 102,
   "asset_id": "A2",
-  "protocol_version": "0.6",
+  "protocol_version": "0.7",
   "reports": [
     "status",
     "observation"
