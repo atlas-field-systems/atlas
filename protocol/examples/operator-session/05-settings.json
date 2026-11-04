@@ -1,0 +1,10 @@
+{
+  "type": "report.settings",
+  "time": 1793667600400,
+  "seq": 2,
+  "asset_id": "A1",
+  "run_state": "running",
+  "lights": "off",
+  "landing_gear": "down",
+  "link_loss_response": "return_to_home"
+}

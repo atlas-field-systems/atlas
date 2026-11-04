@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/operator_hello.json",
+  "title": "Operator hello",
+  "description": "First message from an operator interface when its WebSocket opens. The operator_id and its key travel with the link opening and are checked like asset keys (Core stores only the key's hash). Core answers admin.hello_reply with operator_id, then pushes every Asset's latest admin.hello and latest reports, then forwards new reports live. No user accounts or roles.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "operator_id",
+    "protocol_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "admin.operator_hello"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "operator_id": {
+      "$ref": "../../variables/operator_id.json"
+    },
+    "protocol_version": {
+      "$ref": "../../variables/protocol_version.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "admin.operator_hello",
+      "time": 1793667600000,
+      "seq": 0,
+      "operator_id": "OP1",
+      "protocol_version": "0.5"
+    }
+  ],
+  "not": {
+    "required": [
+      "asset_id"
+    ]
+  }
+}

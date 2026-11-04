@@ -1,0 +1,9 @@
+{
+  "type": "admin.reply",
+  "time": 1793667703010,
+  "seq": 103,
+  "asset_id": "A2",
+  "reply_to": 3,
+  "reply_result": "refused",
+  "explanation": "A2 does not accept takeoff"
+}

@@ -1,0 +1,7 @@
+{
+  "type": "admin.operator_hello",
+  "time": 1793667700000,
+  "seq": 0,
+  "operator_id": "OP1",
+  "protocol_version": "0.5"
+}

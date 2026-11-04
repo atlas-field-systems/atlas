@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/reply.json",
+  "title": "Reply",
+  "description": "From Core to an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in its hello. reply_to is the operator message's seq. asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "reply_to",
+    "reply_result"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "admin.reply"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "reply_to": {
+      "$ref": "../../variables/reply_to.json"
+    },
+    "reply_result": {
+      "$ref": "../../variables/reply_result.json"
+    },
+    "explanation": {
+      "$ref": "../../variables/explanation.json"
+    }
+  },
+  "if": {
+    "properties": {
+      "reply_result": {
+        "const": "refused"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "explanation"
+    ]
+  },
+  "examples": [
+    {
+      "type": "admin.reply",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "reply_to": 7,
+      "reply_result": "accepted"
+    },
+    {
+      "type": "admin.reply",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A2",
+      "reply_to": 8,
+      "reply_result": "refused",
+      "explanation": "A2 does not accept takeoff"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "type": "control.command",
+  "time": 1793667703000,
+  "seq": 3,
+  "asset_id": "A2",
+  "kind": "takeoff",
+  "target_altitude": {
+    "altitude_m": 30,
+    "altitude_reference": "home"
+  }
+}

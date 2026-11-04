@@ -23,6 +23,8 @@ or the law gets changed on purpose first.
 14. **Asset data reports are fixed.** Every Asset reports the same data the same way, using defined reports and components. No free-form or misc fields. New kinds of data get a new defined report.
 15. **One command kind per action.** Each action is its own command kind even when its fields match another (a payload drop and `move_to` both take a position), because meaning and success differ and `hello` declares support per kind. Shared fields reuse the same definitions instead of copies.
 16. **Assets observe; fusion decides tracks.** Assets send observations, never tracks. Tracks come only out of the fusion module.
-17. **Keys stay off the messages.** Credentials travel with the link opening, never inside a message, and keys are short (16 bytes).
+17. **Keys stay off the messages.** Asset and operator credentials travel with the link opening, never inside a message, and keys are short (16 bytes).
 18. **Tasks run in `task_seq` order.** A gap is waited for (bounded, then `query.queue`); a repeated `task_id` does nothing.
 19. **Every failure has a defined safe response.** Each trigger has a response setting, and it overrides paused. Low battery can never be set to continue. An Asset never stays airborne until it falls.
+20. **Routing belongs to links.** No message carries a route, hop or gateway field. A message seen twice (same sender, same `seq`) is handled once.
+21. **Core answers every operator message.** One `admin.reply`, accepted or refused with a reason. Only the Asset's reports confirm an effect.

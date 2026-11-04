@@ -42,7 +42,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667600000,
   "seq": 1,
   "asset_id": "A1",
-  "protocol_version": "0.4",
+  "protocol_version": "0.5",
   "reports": [
     "status",
     "failsafe",
@@ -82,7 +82,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 1,
   "asset_id": "A1",
   "hello_result": "accepted",
-  "protocol_version": "0.4"
+  "protocol_version": "0.5"
 }
 ```
 

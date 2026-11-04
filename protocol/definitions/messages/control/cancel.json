@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/cancel.json",
   "title": "Cancel",
-  "description": "From Core: stop a command. With task_id, cancel that Task: a queued one is dropped; an active one stops. Without task_id, stop whatever motion is running now. After stopping, the Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed. It reports report.status task cancelled for a Task, and report.settings (run_state paused, reply_to this seq).",
+  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): stop a command. With task_id, cancel that Task: a queued one is dropped; an active one stops. Without task_id, stop whatever motion is running now. After stopping, the Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed. It reports report.status task cancelled for a Task, and report.settings (run_state paused, reply_to this seq).",
   "type": "object",
   "required": [
     "type",

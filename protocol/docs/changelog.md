@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5
+
+- Operator API: one WebSocket per operator interface, same messages, pushed both ways. New `admin.operator_hello` and `operator_id`; the key travels with the link opening, like an asset key.
+- `admin.hello_reply` names the Asset or the operator interface.
+- New `admin.reply`: Core's `accepted` or `refused` (with `explanation`) to every operator message.
+- Routing is the link's job. Receivers drop a repeated `(sender, seq)`.
+- New example: operator session.
+
 ## 0.4
 
 - Tasks carry `task_seq`. Assets wait (bounded) at a gap, then `query.queue`; a repeated `task_id` does nothing.

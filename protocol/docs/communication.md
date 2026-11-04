@@ -9,7 +9,8 @@ message whenever it has something to say. Nothing has to wait for a reply.
 
 - Over IP (Core, gateways, apps), the stream is a **WebSocket**.
 - Over radio, the stream is the **mesh link**.
-- The **gateway bridges** the two. It passes the same protocol messages along.
+- The **gateway bridges** the two. It passes the same protocol messages along
+  and does the routing (see [Routing and duplicates](#routing-and-duplicates)).
   Packaging and compression may differ per link; the messages do not.
 
 Details that belong to one medium (size limits, chunking, compression, timing)
@@ -24,6 +25,49 @@ live in a **link profile** for that medium, not in the messages.
    and its cameras.
 3. A version mismatch is refused with a clear "update this device" error.
    After the hello, no message carries a version.
+
+## Operator interfaces
+
+An operator interface (a map, a console, a script) is just another link: **one
+WebSocket per interface**, the same messages, pushed both ways, no polling.
+No user accounts or roles.
+
+1. The WebSocket opens with the interface's `operator_id` and its 16-byte key in
+   the connection request. Core checks it like an asset key: it stores only the
+   key's hash. Keys never travel inside a message.
+2. The interface sends `admin.operator_hello` (its `operator_id` and protocol version).
+   Core answers `admin.hello_reply` with `operator_id`.
+3. Core pushes every Asset's latest `admin.hello` (the asset list) and each Asset's
+   latest reports (settings, status, queue, telemetry, battery), unchanged.
+4. From then on Core forwards each new report as it arrives: telemetry, status,
+   queue changes and failsafes.
+5. To act, the interface sends `control.command`, `control.settings` or `control.cancel`
+   with `asset_id`. Core checks it against that Asset's hello (and its settings report)
+   and passes it on with Core's own `seq`, or refuses it with a reason.
+6. To read, it uses `query.core` and `query.asset`; `every_s` repeats an answer.
+7. Core answers **every** operator message after the hello with one `admin.reply`:
+   `accepted` or `refused` (with `explanation`), `reply_to` its `seq`. Accepted only means
+   Core passed it on. The Asset's own reports (task status, queue, `report.settings`)
+   confirm the effect, and reach the interface like any other report.
+
+## Routing and duplicates
+
+**Routing is the link's job, not the protocol's.** A gateway, mesh or radio picks the
+path and may send a message over more than one. Messages carry no route, hop or
+gateway fields, and Core reaches an Asset through whichever link it is on.
+
+So a message can arrive twice. Every receiver, Core included, applies one rule:
+
+- A message is identified by its **sender** (the ID checked at the link opening:
+  `asset_id`, `operator_id`, or Core) and its **`seq`**.
+- A sender's `seq` is one counter across all its links. It does not reset on reconnect;
+  it restarts at 0 only when the sender itself restarts.
+- The receiver remembers, per sender, the `seq` values it has handled (at least the last
+  1024). A message whose `(sender, seq)` it has already handled is dropped: not acted on,
+  not stored, not replied to.
+- An unseen `seq` is handled even if it arrives late or out of order.
+- A hello whose `seq` is below the highest remembered means the sender restarted:
+  the receiver forgets that sender's `seq` values, then handles the hello.
 
 ## Push, and asking
 

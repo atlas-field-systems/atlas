@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/explanation.json",
   "title": "explanation",
-  "description": "A short plain explanation from the Asset, such as why it is degraded.",
+  "description": "A short plain explanation, such as why an Asset is degraded or why Core refused a message.",
   "type": "string",
   "minLength": 1,
   "maxLength": 512,
