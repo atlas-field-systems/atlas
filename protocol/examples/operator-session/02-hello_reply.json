@@ -4,5 +4,5 @@
   "seq": 100,
   "operator_id": "OP1",
   "hello_result": "accepted",
-  "protocol_version": "0.5"
+  "protocol_version": "0.6"
 }

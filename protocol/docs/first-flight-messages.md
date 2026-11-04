@@ -11,9 +11,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says which protocol version it speaks. | 359 | 234 |
-| 02 | Core → Drone | [`admin.hello_reply`](../examples/first-flight/02-hello_reply.json) | Core accepts the drone and confirms the version both sides will use. | 124 | 106 |
-| 03 | Drone → Core | [`report.settings`](../examples/first-flight/03-settings.json) | The drone reports its current settings, so Core knows what it will do if the link drops. | 168 | 130 |
+| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says hello: its protocol version, its key and, this first time, the enrollment key. | 432 | 295 |
+| 02 | Core → Drone | [`admin.hello_reply`](../examples/first-flight/02-hello_reply.json) | Core accepts the drone and confirms the version both sides will use. | 124 | 105 |
+| 03 | Drone → Core | [`report.settings`](../examples/first-flight/03-settings.json) | The drone reports its current settings, so Core knows what it will do if the link drops. | 190 | 142 |
 | 04 | Drone → Core | [`report.status asset`](../examples/first-flight/04-status-asset.json) | The drone reports it is healthy and ready. | 106 | 92 |
 | 05 | Drone → Core | [`report.telemetry`](../examples/first-flight/05-telemetry.json) | The drone reports where it is on the ground. | 221 | 162 |
 | 06 | Drone → Core | [`report.battery`](../examples/first-flight/06-battery.json) | The drone reports its battery, on its own schedule. | 91 | 83 |
@@ -42,7 +42,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667600000,
   "seq": 1,
   "asset_id": "A1",
-  "protocol_version": "0.5",
+  "protocol_version": "0.6",
+  "key": "q3J8vR2xT0bN5mK7wY1cZg",
+  "enrollment_key": "H4sLp9Qe2Vd6Fu0Ka8Tn3w",
   "reports": [
     "status",
     "failsafe",
@@ -82,7 +84,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 1,
   "asset_id": "A1",
   "hello_result": "accepted",
-  "protocol_version": "0.5"
+  "protocol_version": "0.6"
 }
 ```
 
@@ -99,7 +101,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "run_state": "running",
   "lights": "off",
   "landing_gear": "down",
-  "link_loss_response": "return_to_home"
+  "link_loss_response": "return_to_home",
+  "telemetry_every_s": 1
 }
 ```
 
@@ -526,9 +529,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-25 messages, 4041 bytes minified, 3100 bytes if each is deflated on its own.
+25 messages, 4136 bytes minified, 3172 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 41% of all bytes. Field names, quotes and punctuation are 62%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 40% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 
@@ -552,8 +555,8 @@ Longest single fields:
 | Message | Field | Bytes |
 |---|---|---|
 | 22-failsafe-link_loss.json | `explanation` | 48 |
+| 01-hello.json | `enrollment_key` | 41 |
 | 23-status-task.json | `explanation` | 41 |
 | 03-settings.json | `link_loss_response` | 37 |
+| 01-hello.json | `key` | 30 |
 | 05-telemetry.json | `position.altitudes.0.altitude_reference` | 27 |
-| 07-command-takeoff.json | `target_altitude.altitude_reference` | 27 |
-| 09-command-land.json | `transit_altitude.altitude_reference` | 27 |

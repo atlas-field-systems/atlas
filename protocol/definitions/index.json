@@ -87,7 +87,10 @@
         "variables/mount.json",
         "variables/yaw_deg.json",
         "variables/pitch_deg.json",
-        "variables/fov_deg.json"
+        "variables/fov_deg.json",
+        "variables/key.json",
+        "variables/enrollment_key.json",
+        "variables/telemetry_every_s.json"
       ]
     }
   ]

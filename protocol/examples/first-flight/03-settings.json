@@ -6,5 +6,6 @@
   "run_state": "running",
   "lights": "off",
   "landing_gear": "down",
-  "link_loss_response": "return_to_home"
+  "link_loss_response": "return_to_home",
+  "telemetry_every_s": 1
 }

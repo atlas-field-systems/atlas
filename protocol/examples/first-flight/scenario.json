@@ -11,7 +11,7 @@
       "from": "Drone",
       "to": "Core",
       "file": "01-hello.json",
-      "why": "The drone opens the link through the gateway and says which protocol version it speaks."
+      "why": "The drone opens the link through the gateway and says hello: its protocol version, its key and, this first time, the enrollment key."
     },
     {
       "branch": "main",

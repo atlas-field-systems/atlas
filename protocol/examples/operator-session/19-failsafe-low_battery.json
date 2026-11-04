@@ -1,7 +1,7 @@
 {
   "type": "report.failsafe",
   "time": 1793667709000,
-  "seq": 25,
+  "seq": 113,
   "asset_id": "A1",
   "kind": "low_battery",
   "response": "land",

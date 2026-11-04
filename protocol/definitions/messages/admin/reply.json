@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/reply.json",
   "title": "Reply",
-  "description": "From Core to an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in its hello. reply_to is the operator message's seq. asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect.",
+  "description": "From Core to an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in its hello. reply_to is the operator message's seq. For a query, Core sends the answer first and the reply last, so the reply marks the end of the answer. Refusals include a command to an Asset that is not connected (Core does not hold it). asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect.",
   "type": "object",
   "required": [
     "type",
