@@ -1,0 +1,8 @@
+{
+  "type": "report.status",
+  "time": 1793667600600,
+  "seq": 3,
+  "asset_id": "A1",
+  "kind": "asset",
+  "condition": "healthy"
+}

@@ -19,7 +19,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - **Adopted:** messages are grouped like nested folders, because one flat list of types is hard to read and to maintain. This reverses "each command is its own message type". See [proposals/broad-types.md](proposals/broad-types.md) for the reasoning and size comparison.
 
   ```text
-  admin    hello, hello_reply
+  admin    hello, hello_reply, operator_hello, reply
   control  command  (kind: takeoff, move_to, land, return_to_home; task_id + task_seq = queued)
            settings (task_id + task_seq = queued change_settings)
            cancel   (task_id, or none for the motion running now)
@@ -33,7 +33,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - A **command** is something an Asset can do: takeoff, move_to, land. A **task** is one queued use of a command or a settings change. `control.command` and `control.settings` each take an optional `task_id`. Without it, the message runs now (a button press). With it, the message is a Task added to the end of the queue. Each kind is defined once.
 - `admin.hello` lists `commands`, the command kinds the Asset accepts. Core never sends a kind not listed. Settings support is the set of settings in the Asset's `report.settings` on connect.
 - **Immediate commands and settings changes run alongside the queue and do not pause it.**
-- `query` holds questions: `query.asset` (ask for any report an Asset supports: Core asks the Asset, or an operator interface or edge link asks Core for its latest copy, such as the latest telemetry for the most recent position; optional `every_s` makes Core repeat it every N seconds, `every_s` 0 cancels, mostly for slow edge links), `query.queue` (either side asks for an Asset's queue, for example an Asset after reconnecting), and `query.core` (an operator interface asks Core for its Assets or stored history, over the operator API, which is not defined yet). Answers are always the normal messages, so no answer formats are added.
+- `query` holds questions: `query.asset` (ask for any report an Asset supports: Core asks the Asset, or an operator interface or edge link asks Core for its latest copy, such as the latest telemetry for the most recent position; optional `every_s` makes Core repeat it every N seconds, `every_s` 0 cancels, mostly for slow edge links), `query.queue` (either side asks for an Asset's queue, for example an Asset after reconnecting), and `query.core` (an operator interface asks Core for its Assets or stored history, over its operator WebSocket). Answers are always the normal messages, so no answer formats are added.
 - Failsafe is its own type under `report`, so it sits with everything else the Asset tells Core but can carry more context than a status.
 - `type`: which message this is, as its group and type joined by a dot, such as `control.command` or `report.telemetry`. It is the message's folder and file name.
 - `time`: milliseconds since 1970 (UTC), as a number.
@@ -65,7 +65,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - **Asset data reports are fixed and standard.** Every Asset reports battery, position and the rest with the same defined report and components. There are no free-form or "misc" fields. New kinds of Asset data get a new defined report.
 - `task_id` is 1 to 4 letters or digits, like every ID.
 - Gateways will likely register themselves like Assets, with a Hello. Later link business (gateway registration, time sync, goodbye) goes under `admin`.
-- How Core reaches an Asset through a gateway (Core to gateway over IP, gateway to Asset over radio) is still open.
+- How Core reaches an Asset through a gateway is the link's job, not the protocol's. See [Routing and duplicates](communication.md#routing-and-duplicates).
 
 ## Limits
 - `type` and `kind` are each at most 32 characters.
@@ -122,3 +122,12 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps its mission and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
 - Link bandwidth is a link-design concern (link profiles), not a message concern.
+
+## Operator API (0.5)
+
+- Each operator interface opens one WebSocket to Core and uses the same messages as Assets, pushed both ways, with no polling. No user accounts or roles.
+- It presents its own `operator_id` and 16-byte key with the link opening, checked like an asset key (Core stores the hash), then sends `admin.operator_hello`. Core answers `admin.hello_reply` with `operator_id`.
+- On connect, Core pushes every Asset's latest `admin.hello` and latest reports, then forwards telemetry, status, queue changes and failsafes live.
+- Operators send `control.command`, `control.settings` and `control.cancel` with `asset_id`. Core checks them against the Asset's hello and refuses unsupported ones with a reason. Reading uses `query.core` and `query.asset` (`every_s`).
+- Core answers every operator message with `admin.reply` (`accepted` or `refused` with `explanation`, `reply_to` its `seq`). The Asset's reports confirm the effect.
+- Routing is the link's job. A receiver handles a message once per `(sender, seq)`; see [Routing and duplicates](communication.md#routing-and-duplicates).

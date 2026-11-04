@@ -2,13 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/hello_reply.json",
   "title": "Hello Reply",
-  "description": "Core's answer to a Hello. On version_mismatch, Core closes the link and protocol_version says which version to update to. After an accepted hello, no message carries a version.",
+  "description": "Core's answer to a Hello. On version_mismatch, Core closes the link and protocol_version says which version to update to. After an accepted hello, no message carries a version. It names the Asset (asset_id) or the operator interface (operator_id) that said hello, never both.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
-    "asset_id",
     "hello_result",
     "protocol_version"
   ],
@@ -27,6 +26,9 @@
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
+    "operator_id": {
+      "$ref": "../../variables/operator_id.json"
+    },
     "hello_result": {
       "$ref": "../../variables/hello_result.json"
     },
@@ -41,7 +43,7 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "accepted",
-      "protocol_version": "0.4"
+      "protocol_version": "0.5"
     },
     {
       "type": "admin.hello_reply",
@@ -49,7 +51,33 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "version_mismatch",
-      "protocol_version": "0.4"
+      "protocol_version": "0.5"
+    },
+    {
+      "type": "admin.hello_reply",
+      "time": 1793667600000,
+      "seq": 1,
+      "operator_id": "OP1",
+      "hello_result": "accepted",
+      "protocol_version": "0.5"
     }
-  ]
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "asset_id"
+      ]
+    },
+    {
+      "required": [
+        "operator_id"
+      ]
+    }
+  ],
+  "not": {
+    "required": [
+      "asset_id",
+      "operator_id"
+    ]
+  }
 }

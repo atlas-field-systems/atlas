@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/settings.json",
   "title": "Settings change",
-  "description": "From Core: set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_to is this seq. With task_id it is a change_settings Task in the queue, confirmed by its task status. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
+  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_to is this seq. With task_id it is a change_settings Task in the queue, confirmed by its task status. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
   "type": "object",
   "required": [
     "type",

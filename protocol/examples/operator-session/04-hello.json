@@ -1,0 +1,12 @@
+{
+  "type": "admin.hello",
+  "time": 1793667500000,
+  "seq": 1,
+  "asset_id": "A2",
+  "protocol_version": "0.5",
+  "reports": [
+    "status",
+    "observation"
+  ],
+  "commands": []
+}

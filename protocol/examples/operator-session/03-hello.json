@@ -1,0 +1,32 @@
+{
+  "type": "admin.hello",
+  "time": 1793667600000,
+  "seq": 1,
+  "asset_id": "A1",
+  "protocol_version": "0.5",
+  "reports": [
+    "status",
+    "failsafe",
+    "telemetry",
+    "battery",
+    "settings",
+    "gimbal",
+    "observation"
+  ],
+  "commands": [
+    "takeoff",
+    "move_to",
+    "land",
+    "return_to_home"
+  ],
+  "cameras": [
+    {
+      "camera_id": "C1",
+      "mount": "gimbal",
+      "yaw_deg": 0,
+      "pitch_deg": -45,
+      "horizontal_fov_deg": 80,
+      "vertical_fov_deg": 60
+    }
+  ]
+}

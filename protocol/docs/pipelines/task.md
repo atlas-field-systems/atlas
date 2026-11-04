@@ -5,11 +5,11 @@ How one Task is created, stored and moved, hop by hop. It uses the first-flight 
 **Bloat is the enemy, but good organization is not bloat.** Each hop lists what could be removed.
 
 ```text
-Operator interface ──1. operator API, IP (GAP)──▶ Core ──2. store (GAP)──▶ Core storage
+Operator interface ──1. operator WebSocket──▶ Core ──2. store (GAP)──▶ Core storage
         ▲                                          │  ▲
-        └──────────7. to operator (GAP)────────────┘  └──6. update storage
+        └──────────7. to operator (pushed)─────────┘  └──6. update storage
                                                    │
-                                     3. IP (GAP: routing)
+                                     3. the Asset's link
                                                    ▼
                                                 Gateway ──4. radio──▶ Asset
                                                    ▲                    │
@@ -18,8 +18,8 @@ Operator interface ──1. operator API, IP (GAP)──▶ Core ──2. store 
 
 ## 1. Operator interface → Core
 - **Who:** an operator, using an operator interface.
-- **Link:** the operator API over IP.
-- **GAP:** the operator API is not defined. It is unclear whether the interface sends a whole `control.command` or a smaller request that Core turns into one.
+- **Link:** the operator's WebSocket to Core (see [communication.md](../communication.md#operator-interfaces)).
+- The interface sends a whole `control.command`. Core checks it against the Asset's hello, answers `admin.reply`, and sends it on with its own `seq`.
 - **Bloat:** if the interface sends the finished `control.command`, Core needs no second format. One message, end to end, is the leanest choice.
 
 ## 2. Core stores the task
@@ -33,7 +33,7 @@ Operator interface ──1. operator API, IP (GAP)──▶ Core ──2. store 
 
 ## 3–4. Core → gateway → Asset
 - **Who:** Core sends it, a gateway relays it over radio, and the Asset receives it.
-- **Link:** IP to the gateway, then radio. **GAP:** how Core picks the gateway, and what the gateway adds, if anything, is not defined.
+- **Link:** IP to the gateway, then radio. Routing is the link's job: the gateway adds nothing, and a copy that arrives twice is dropped by `(sender, seq)` ([communication.md](../communication.md#routing-and-duplicates)).
 - **Message** (159 / 128; it was 186 / 140 with Plans):
 
   ```json
@@ -63,6 +63,6 @@ Operator interface ──1. operator API, IP (GAP)──▶ Core ──2. store 
 - **Bloat:** keep one log, not a log and a separate "current state" copy, unless reading speed needs it.
 
 ## 7. Core → operator interface
-- An operator interface can also ask Core with `query.core` (kind `history`). That hop is the operator API, which is not defined yet.
-- **GAP:** not defined. Sketch, not decided: Core forwards the same `report.status` message.
+- An operator interface can also ask Core with `query.core` (kind `history`). That hop is the operator WebSocket.
+- Core forwards the same `report.status` message, unchanged, over the operator WebSocket.
 - **Bloat:** forward the message itself, not a new "task view" format.

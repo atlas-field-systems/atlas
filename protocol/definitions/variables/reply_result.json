@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/reply_result.json",
+  "title": "reply_result",
+  "description": "Core's answer to an operator message: accepted (Core took it and passed it on, or will answer), or refused (with an explanation). Accepted is not done: the Asset's own reports confirm the effect.",
+  "enum": [
+    "accepted",
+    "refused"
+  ],
+  "examples": [
+    "accepted"
+  ]
+}
