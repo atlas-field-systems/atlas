@@ -13,6 +13,11 @@
     "gimbal",
     "observation"
   ],
+  "commands": [
+    "takeoff",
+    "move_to",
+    "land"
+  ],
   "cameras": [
     {
       "camera_id": "C1",

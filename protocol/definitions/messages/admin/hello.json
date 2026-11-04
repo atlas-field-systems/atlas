@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/hello.json",
   "title": "Hello",
-  "description": "First message from an Asset when a link opens: which Asset it is, which protocol version it runs, and which reports it sends. The asset key travels with the link opening, not this message. The cameras list gives each camera, how it is mounted and its field of view; leave it out if the Asset has none.",
+  "description": "First message from an Asset when a link opens: which Asset it is, which protocol version it runs, and which reports it sends and which command kinds it accepts. Core never sends a command kind the Asset does not list. Supported settings are not listed here: the Asset's report.settings on connect carries only the settings it has, and Core never sends others. The asset key travels with the link opening, not this message. The cameras list gives each camera, how it is mounted and its field of view; leave it out if the Asset has none.",
   "type": "object",
   "required": [
     "type",
@@ -10,7 +10,8 @@
     "seq",
     "asset_id",
     "protocol_version",
-    "reports"
+    "reports",
+    "commands"
   ],
   "additionalProperties": false,
   "properties": {
@@ -38,6 +39,14 @@
       "minItems": 1,
       "maxItems": 7
     },
+    "commands": {
+      "type": "array",
+      "items": {
+        "$ref": "../../variables/command.json"
+      },
+      "minItems": 1,
+      "maxItems": 3
+    },
     "cameras": {
       "type": "array",
       "items": {
@@ -60,6 +69,11 @@
         "telemetry",
         "battery",
         "settings"
+      ],
+      "commands": [
+        "takeoff",
+        "move_to",
+        "land"
       ],
       "cameras": [
         {

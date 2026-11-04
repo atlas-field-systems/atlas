@@ -50,6 +50,7 @@
         "variables/kind.json",
         "variables/time.json",
         "variables/seq.json",
+        "variables/command.json",
         "variables/roll_deg.json",
         "variables/every_s.json",
         "variables/asset_id.json",
