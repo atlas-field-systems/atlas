@@ -7,7 +7,7 @@
 - An immediate motion command cancels the rest of the queue. Settings stay immediate.
 - New `control.cancel`: stop a Task or the motion running now; the Asset holds and pauses.
 - New command `return_to_home`. The failsafe response `return_home` is renamed `return_to_home`.
-- Failsafe responses: `continue`, `hold`, `land`, `return_to_home`, `land_at`. New settings `low_battery_response` and `land_at_position`.
+- Failsafe responses: `continue`, `hold`, `land`, `return_to_home`, `land_at`. New settings `low_battery_response` (no `continue`) and `land_at_position`.
 - History: append-only log in storage, and `query.core` history for an Asset's past path.
 
 ## 0.3

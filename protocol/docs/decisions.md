@@ -88,7 +88,7 @@ An older time never overwrites newer state. There is no "history-only" message.
 - `report.settings`, sent at connect or when the Asset changes a setting itself, is a report and needs no confirmation.
 - When Core changes a setting, it is either immediate or queued. An immediate change is a `control.settings` without `task_id` (the easy default, a button press), confirmed by a `report.settings` whose `reply_to` is the command's `seq`. A queued change is a `control.settings` with `task_id`, for example placed after a move_to,, confirmed by its task status.
 - Settings are only variables, used by `report.settings` and `control.settings`; no setting has its own message.
-- Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` and `low_battery_response` (continue/hold/land/return_to_home/land_at), and `land_at_position`, the point `land_at` goes to (not necessarily the takeoff point).
+- Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (continue/hold/land/return_to_home/land_at) and `low_battery_response` (the same list without continue), and `land_at_position`, the point `land_at` goes to (not necessarily the takeoff point).
 - Each change is an explicit end state, never a toggle. The most recent time wins.
 - No custom per-Asset settings yet.
 
