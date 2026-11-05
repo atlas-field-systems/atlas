@@ -63,13 +63,18 @@ files point here. Architecture detail lives in [design-decisions.md](design-deci
 Fix the real hole. Adding a new concept, field, or mechanism to paper over a bug is
 a design problem. Prefer deleting the wrong thing over layering a new one.
 
-Plan first-class shapes early. Capabilities that will matter later — fusion, tracks,
-geo features, and the like — belong in the protocol picture before first flight
-forces a hack. Defer the implementation if needed; do not defer the shape.
+Name important domain distinctions early so first flight does not conflate them
+(for example Observation versus Track). Keep untested shapes provisional until a
+concrete story, consumer, or prototype establishes what the contract needs. Commit
+an exact contract early only when postponing creates a specific, explainable
+obstacle. Do not let an imagined future architecture indefinitely delay first
+flight; do not let first-flight shortcuts define the whole architecture either.
 
-Fail loud on purpose. Prefer strict version and contract breaks that surface
-mismatch early over silent compatibility. Do not invent protocol fields to paper
-over attribution or routing the link or Core already owns.
+Matching protocol versions are required today; wire-contract changes follow the
+selected versioning rules in [design-decisions.md](design-decisions.md) and
+Protocol. Never silently reinterpret unsupported messages or conceal incompatible
+behavior. Do not invent protocol fields to paper over attribution or routing the
+link or Core already owns.
 
 Protocol is the spec. The SDK is the one implementation and front door. Core uses
 the SDK and keeps business rules only — no second validation or dedupe stack.
@@ -79,12 +84,13 @@ Locked how-it-works, laws, and communication docs beat an implementation plan wh
 they conflict. Change a lock on purpose with the owner; do not quietly diverge in
 code.
 
-An `admin.reply` with accepted means Core passed something on or acknowledged a
-report. Only Asset reports prove the effect. Do not treat acknowledgment as
-completion.
-
-Dedupe stops a message being acted on twice. Replays still reach readers —
-streams, subscribers, and pictures. Forward other creators' messages unchanged.
+Accepted acknowledgment and observed Asset outcomes are different facts. Asset
+reports are the observed outcome under the contract, not the same fact as
+acceptance. Preserve uncertainty when the outcome is not known — see
+[Keep evidence honest](#keep-evidence-honest). State guarantees together with
+their assumptions and recovery boundaries. Preserve message identity when
+forwarding, and separate repeated effects from repeated delivery. Exact rules live
+in Protocol (`communication.md` / SDK docs).
 
 SDK helpers report contact, queues, and outcomes. The Asset app owns motion and
 failsafes. Helpers never fly.
@@ -93,12 +99,17 @@ Stress undecided ideas with small prototypes and write findings back into the do
 The docs stay the source.
 
 Every coding agent reads and upholds this charter and
-[design-decisions.md](design-decisions.md). The Charter is the quality gate.
+[design-decisions.md](design-decisions.md). The Charter is the **review standard**.
+Reading or quoting it does not prove a change meets it. A change should make clear
+what problem it solves, why this is the simplest credible fix, and what evidence
+supports the claim.
 
 ## Change Atlas deliberately
 
 The owner approves behavior and scope. Engineers choose conforming details.
 Keep selected decisions, proposals, and open questions distinct in subsystem docs.
 Coding agents and their subagents follow this charter and
-[design-decisions.md](design-decisions.md). Generated output, reviews, and
+[design-decisions.md](design-decisions.md). When evidence shows an approved
+assumption is wrong, the agent explains the mismatch and proposes the smallest
+correction; the owner still decides. Generated output, reviews, and
 historical specifications do not approve changes and do not override this charter.

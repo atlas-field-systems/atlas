@@ -27,10 +27,12 @@ detail; they do not replace the Charter.
 
 ## Subagents
 
-When you direct a subagent, hand off a slice, or spawn parallel work, put the
-Charter fundamentals (judgment + design decisions that apply) and this repo's
-local rules into that agent's brief. Do not assume it already knows them. The
-Charter is how Atlas keeps code quality.
+When you direct a subagent, hand off a slice, or spawn parallel work, give a
+**compact brief**: the task and scope; links to the authoritative documents
+([the charter](CHARTER.md), [design decisions](design-decisions.md), and this
+repo's rules) for the revision in use; the few constraints that materially
+affect this task; the expected result and how it will be checked. Do not paste
+the entire Charter. Do not assume the subagent already knows the fundamentals.
 
 ## This repository
 
