@@ -27,4 +27,5 @@ If you need something outside this repository, go to the one that owns it.
 - [docs/laws.md](docs/laws.md) lists the rules every definition follows. Change a law on purpose before breaking it.
 - [docs/decisions.md](docs/decisions.md) records the developer's decisions; [docs/open-questions.md](docs/open-questions.md) lists what is not decided.
 - `storage/` will hold storage formats (to be planned).
+- **Versions and releases.** Never edit a version by hand; `npm run bump -- <major.minor>` sets it everywhere ([law 10](docs/laws.md)). Main carries the version being worked on, and PRs may amend it until it is released. When the developer calls a version done, tag that merge commit `v<major.minor>` and push the tag. Core and other users move only to release tags. The first PR after a release that changes messages or storage bumps to the next version.
 - Run `npm run check` and `npm test` before every PR. Do not merge without the developer's approval.
