@@ -179,12 +179,7 @@ is a link-design concern, handled in each link profile, not in the messages.
 
 ## SDK
 
-Keep these ideas from the old SDK and cut the rest:
-
-- Commands are read from Protocol, never hardcoded.
-- An Asset-side client.
-- Recovery after reconnecting.
-- Every send ends as one of: **accepted**, **rejected**, or **no answer yet**.
+What the SDK keeps is in [sdk/README.md](../sdk/README.md).
 
 ## Escape hatches
 
