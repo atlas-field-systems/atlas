@@ -1,0 +1,66 @@
+name: release
+# Pushing to production makes the release: git push origin main:production
+# Tags are v<major.minor>.<patch>. major.minor is the protocol version (protocol_version.json);
+# the patch counts releases that change no message, such as SDK or tool fixes.
+# Only commits on main are released. A rerun finishes a release whose GitHub release is missing.
+on:
+  push:
+    branches: [production]
+permissions:
+  contents: write
+concurrency: release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && npm run check && npm test
+      - id: plan
+        run: |
+          git merge-base --is-ancestor HEAD origin/main || { echo "::error::production must be a commit on main. Release with: git push origin main:production"; exit 1; }
+          wire=$(node -p "require('./definitions/variables/protocol_version.json').examples[0]")
+          latest=$(git tag -l "v$wire.*" --sort=-v:refname | grep -E "^v${wire//./\\.}\.[0-9]+$" | head -1 || true)
+          at_head=$(git tag --points-at HEAD | grep -E "^v${wire//./\\.}\.[0-9]+$" | sort -rV | head -1 || true)
+          next=
+          if [ -n "$at_head" ]; then
+            latest=$at_head; echo "Nothing new: $at_head is this commit."
+          elif [ -z "$latest" ]; then
+            next="v$wire.0"
+          elif git merge-base --is-ancestor HEAD "$latest" || git diff --quiet "$latest" HEAD -- . ':!*.md' ':!docs'; then
+            echo "Nothing new since $latest."
+          elif ! git diff --quiet "$latest" HEAD -- definitions examples storage; then
+            echo "::error::The protocol changed since $latest. Run npm run bump on main first."; exit 1
+          else
+            next="v$wire.$(( ${latest##*.} + 1 ))"
+          fi
+          target=${next:-$latest}
+          [ -n "$next" ] || git merge-base --is-ancestor "$target" origin/main || { echo "::error::$target is not on main, so it is not released."; exit 1; }
+          if [ "${target##*.}" = 0 ]; then
+            awk -v h="## $wire" '$0 == h { f = 1; next } /^## / { f = 0 } f' docs/changelog.md > "$RUNNER_TEMP/notes.md"
+            grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md" || { echo "::error::docs/changelog.md has no ## $wire section"; exit 1; }
+          fi
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          echo "wire=$wire" >> "$GITHUB_OUTPUT"
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT: ${{ steps.plan.outputs.next }}
+          TARGET: ${{ steps.plan.outputs.target }}
+          WIRE: ${{ steps.plan.outputs.wire }}
+        run: |
+          if [ -n "$NEXT" ]; then
+            git -c user.name=the-Drunken-coder -c user.email=183743141+the-Drunken-coder@users.noreply.github.com tag -a "$NEXT" -m "Protocol $NEXT"
+            git push origin "$NEXT"
+          fi
+          if gh release view "$TARGET" >/dev/null 2>&1; then echo "$TARGET already has its GitHub release."; exit 0; fi
+          if [ "${TARGET##*.}" = 0 ]; then
+            gh release create "$TARGET" --verify-tag --title "Protocol $TARGET" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release create "$TARGET" --verify-tag --title "Protocol $TARGET" --notes "No message changes; protocol version $WIRE." --generate-notes
+          fi
