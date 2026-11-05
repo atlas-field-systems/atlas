@@ -55,8 +55,8 @@ No user accounts or roles.
 5. To act, the interface sends `control.command`, `control.settings` or
    `control.cancel` with `asset_id` and its own `from`/`seq`. Core checks it
    against that Asset's describe (and its connect settings report) and passes it
-   on **unchanged**, or refuses it with a reason. A command to an Asset that is
-   not connected is refused; Core does not hold it.
+   on **unchanged**, or refuses it with a reason. Anything sent to an Asset that
+   is [offline](#when-core-counts-an-asset-offline) is refused; Core does not hold it.
 6. To read, it uses `query.core` and `query.asset`; `every_s` repeats an answer
    as a **new** message (new `seq` from its creator). Core sends a query's answer
    first and its `admin.reply` last, so the reply marks the end; an accepted
@@ -119,7 +119,8 @@ Sending a whole queue at once could fail on a slow link. Instead:
    running one included, in order (`report.status` kind `queue`).
 4. Core resends a task only while the Asset has never shown it holds it: never
    listed in a queue report, never reported on. Once the Asset has shown it, Core
-   never sends it again. Either side can ask for the queue at any time with
+   never sends it again. Core also stops for good when the Asset goes
+   [offline](#when-core-counts-an-asset-offline). Either side can ask for the queue at any time with
    `query.queue`, for example an Asset after reconnecting.
 5. The Asset runs tasks in the order of the queue list it holds. There is no
    `task_seq` and no gap-wait timer.
@@ -180,6 +181,26 @@ open socket, a radio acknowledgement, or other Assets overheard on the mesh.
 - The `link_loss` failsafe then triggers once, with the Asset's `link_loss_response`.
   It can trigger again only after contact returns and is lost again.
 - With `link_loss_response: continue` the Asset keeps its Task and queue.
+
+### When Core counts an Asset offline
+
+Core uses the same rule from its side. An open link proves nothing: a drone behind
+a gateway can be out of radio range while the gateway's link to Core stays open.
+
+- An Asset is **connected** while it has an accepted hello on an open link and Core
+  has heard a new (non-duplicate) message from it (`from` is its id) within its
+  `link_loss_after_s`, timed on Core's clock. Otherwise it is **offline**. It is
+  connected again as soon as Core hears something new from it.
+- So a quiet Asset is not mistaken for a lost one, an Asset sends `admin.alive`
+  (`from` is its own id) when it has sent nothing new for a third of its
+  `link_loss_after_s`. Its telemetry usually keeps it from being that quiet.
+- Core refuses `control.command`, `control.settings` and `control.cancel` for an
+  offline Asset and holds nothing. The operator sends again once it is back.
+- **Core never carries work across a disconnect.** When an Asset goes offline,
+  Core stops resending every Task the Asset has not shown it holds, and never
+  sends those Tasks again. Core records no final state for them, because it does
+  not know whether they arrived. If the Asset later lists or reports on one, that
+  report is the record.
 
 ## After reconnecting (Asset)
 

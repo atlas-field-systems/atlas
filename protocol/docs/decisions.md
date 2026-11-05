@@ -140,7 +140,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - The hello must be the first message on a link. Anything before an accepted hello closes the link.
 - One link per ID. Each operator interface has its own `operator_id`. A second link with the same `asset_id` or `operator_id` replaces the older one.
 - Everything a creator sends gets a new `seq`. Core forwards other creators' messages unchanged. A deliberate repeat (including `every_s`) is a new message with a new `seq` from its creator, so the duplicate rule never drops it.
-- A command to an Asset that is not connected is refused with a reason. Core does not hold it. The operator sends it again once the Asset is back.
+- A command to an Asset that is not connected is refused with a reason. Core does not hold it.
 - A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched.- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset ignores a resent Task it holds, and resends the final report of one it finished.)
 - Telemetry rate is the Asset setting `telemetry_every_s`.
 
@@ -174,3 +174,9 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 - **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no ordering rule and no correlation field.
 - **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` → unacked finals → queue report → `query.queue`; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
 - **Handshake vs description:** hello = keys + version + id; `admin.describe` is keyless; `admin.asset` is removed.
+
+## Offline Assets (0.8)
+
+- Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset sends `admin.alive` when it has been quiet for a third of that. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
+- Commands, settings changes and cancels for an offline Asset are refused and not held. The operator sends them again once the Asset is back.
+- Core never carries work across a disconnect. When an Asset goes offline, Core stops resending the Tasks it never saw confirmed and records no final state for them.

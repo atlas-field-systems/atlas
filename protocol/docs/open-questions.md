@@ -18,7 +18,7 @@ Not decided yet. Planning comes before building.
 ## Earlier
 
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
-- **Holding commands for offline Assets.** Answered: Core refuses and holds nothing (see [decisions](decisions.md)). Revisit only if it becomes a real problem.
+- **Holding commands for offline Assets.** Answered in 0.8: Core refuses and holds nothing, counts an Asset offline by contact rather than an open link, and never carries work across a disconnect (see [communication.md](communication.md#when-core-counts-an-asset-offline)). Revisit only if it becomes a real problem.
 
 Most of these are answered in [communication.md](communication.md).
 
