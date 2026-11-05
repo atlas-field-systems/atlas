@@ -36,7 +36,7 @@ Operator interface ──1. operator WebSocket──▶ Core ──2. store─�
   ```
 - **Bloat:**
   - Removed: `plan_id` and `task_count`, which repeated in every Task (27 bytes each). The queue report below now catches lost Tasks.
-  - `"type":"control.command"` is 23 characters in every command. Short keys are deferred to 1.0.
+  - `"type":"control.command"` is 23 characters in every command. Link compression shrinks it; the name stays readable.
   - The gateway should relay the message unchanged. Any wrapper it adds is pure bloat.
 
 ## 5. Asset → Core: task status
