@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/semi_minor_m.json",
+  "title": "semi_minor_m",
+  "description": "Half the short axis of an uncertainty ellipse, in metres. No larger than semi_major_m.",
+  "type": "number",
+  "exclusiveMinimum": 0,
+  "examples": [
+    12
+  ]
+}

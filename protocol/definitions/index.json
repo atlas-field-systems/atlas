@@ -38,7 +38,9 @@
         "messages/report/status/task.json",
         "messages/report/status/queue.json",
         "messages/report/failsafe/link_loss.json",
-        "messages/report/failsafe/low_battery.json"
+        "messages/report/failsafe/low_battery.json",
+        "messages/report/observation/coordinates.json",
+        "messages/report/observation/bearing.json"
       ]
     },
     {
@@ -46,7 +48,10 @@
       "files": [
         "components/altitude.json",
         "components/position.json",
-        "components/camera.json"
+        "components/camera.json",
+        "components/point.json",
+        "components/uncertainty.json",
+        "components/details.json"
       ]
     },
     {
@@ -94,7 +99,22 @@
         "variables/fov_deg.json",
         "variables/key.json",
         "variables/enrollment_key.json",
-        "variables/telemetry_every_s.json"
+        "variables/telemetry_every_s.json",
+        "variables/entity_type.json",
+        "variables/bearing_deg.json",
+        "variables/bearing_uncertainty_deg.json",
+        "variables/elevation_deg.json",
+        "variables/elevation_uncertainty_deg.json",
+        "variables/range_m.json",
+        "variables/range_uncertainty_m.json",
+        "variables/semi_major_m.json",
+        "variables/semi_minor_m.json",
+        "variables/orientation_deg.json",
+        "variables/altitude_uncertainty_m.json",
+        "variables/icao_address.json",
+        "variables/callsign.json",
+        "variables/squawk.json",
+        "variables/color.json"
       ]
     }
   ]
