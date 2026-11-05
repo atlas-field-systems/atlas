@@ -1,7 +1,8 @@
 {
   "type": "admin.describe",
-  "time": 1793667600000,
-  "seq": 101,
+  "time": 1793667600250,
+  "seq": 2,
+  "from": "A1",
   "asset_id": "A1",
   "reports": [
     "status",
@@ -27,6 +28,5 @@
       "horizontal_fov_deg": 80,
       "vertical_fov_deg": 60
     }
-  ],
-  "from": "A1"
+  ]
 }

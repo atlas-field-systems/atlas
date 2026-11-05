@@ -86,8 +86,13 @@ So a message can arrive twice. Every receiver, Core included, applies one rule:
 - A creator's clock never goes backwards, even across a restart, and a creator
   sends nothing until its clock is set. Clocks need not match each other.
 - The receiver remembers, per `from`, the `(seq, time)` of each message it has
-  handled (at least the last 1024). A message it has already handled is not acted
-  on or stored again. If the receiver answered it (`admin.reply`, or
+  handled (at least the last 1024). A message it has already handled is not
+  **acted on** again: no task runs twice, no setting is applied twice, nothing is
+  stored twice. Acting and delivering are separate. A replayed message (a
+  `query.core` answer, Core's connect push after a reconnect) is still
+  **delivered** to the reader that asked for it or is watching: a stream, a
+  subscriber, a live picture. A picture upserts by `(from, seq, time)`; when it
+  replaces a value, the newest `time` wins. If the receiver answered it (`admin.reply`, or
   `report.settings` with `reply_from`/`reply_to`), it sends that same answer
   again, unchanged, so a sender that retries learns the outcome. Queries change
   nothing, so a repeated query is answered again (Core's last-answer cache).
@@ -174,9 +179,11 @@ radio acknowledgement, not hearing the gateway or other Assets.
 
 On an accepted hello the Asset SDK, without waiting for the program:
 
-1. Resends any unfinished final task reports (retries).
-2. Sends its current queue report.
-3. Sends `query.queue` so Core can resend anything missing.
+1. Sends `admin.describe`.
+2. Sends its connect `report.settings` (every setting it supports; see above).
+3. Resends any unacknowledged final task reports (retries, same bytes).
+4. Sends its current queue report.
+5. Sends `query.queue` so Core can resend anything missing.
 
 Inflight operator `request`s across a drop become **`unknown`**, not failed. The
 SDK does not auto-retry operator commands.
@@ -184,4 +191,6 @@ SDK does not auto-retry operator commands.
 ## Operator picture after reconnect
 
 An operator live picture **rebuilds** from Core's connect push (describe + latest
-reports). It does not resume a local cache without that replay.
+reports). It does not resume a local cache without that replay. Those messages are
+replays the operator may already have seen; they are delivered to the picture
+anyway (see Routing and duplicates).

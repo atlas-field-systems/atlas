@@ -2,8 +2,8 @@
   "type": "query.asset",
   "time": 1793667701000,
   "seq": 1,
+  "from": "OP1",
   "asset_id": "A1",
   "report": "battery",
-  "every_s": 30,
-  "from": "OP1"
+  "every_s": 30
 }

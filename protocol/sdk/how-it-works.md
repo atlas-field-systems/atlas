@@ -29,7 +29,8 @@ One module owns:
    - Operator: `from` = its `operator_id`
    - Core: `from` = `CORE` when Core creates the message
 3. **Remember / dedupe** — key is `(from, seq, time)`. A retry is the same bytes
-   again. Auth loss hard-stops stamping and sending; already-read local data may
+   again. Dedupe stops a message being **acted on** twice; it does not stop
+   delivery to `stream`, `subscribe` or the live picture (replays still arrive). Auth loss hard-stops stamping and sending; already-read local data may
    stay readable.
 
 Core keeps a **last-answer cache** so a retried request gets the same
