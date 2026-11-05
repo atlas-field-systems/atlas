@@ -13,7 +13,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 |---|---|---|---|---|---|
 | 01 | Operator → Core | [`admin.operator_hello`](../examples/operator-session/01-operator_hello.json) | The operator interface opens its WebSocket and says hello with its operator_id and key, the only message that carries the key. | 136 | 120 |
 | 02 | Core → Operator | [`admin.hello_reply`](../examples/operator-session/02-hello_reply.json) | Core checks the key against its stored hash and accepts. | 130 | 109 |
-| 03 | Core → Operator | [`admin.asset`](../examples/operator-session/03-asset.json) | Core pushes the asset list: each Asset's latest admin.hello as admin.asset, without its keys, with Core's own seq (A1 here). Everything Core sends carries Core's seq. | 361 | 234 |
+| 03 | Core → Operator | [`admin.asset`](../examples/operator-session/03-asset.json) | Core pushes the asset list: each Asset's latest admin.hello as admin.asset, without its keys, with Core's own seq (A1 here). Everything Core sends carries Core's seq. | 361 | 232 |
 | 04 | Core → Operator | [`admin.asset`](../examples/operator-session/04-asset.json) | And A2, a receive-only ADS-B receiver that accepts no commands. | 143 | 117 |
 | 05 | Core → Operator | [`report.settings`](../examples/operator-session/05-settings.json) | Core pushes A1's latest state: settings, | 215 | 152 |
 | 06 | Core → Operator | [`report.status asset`](../examples/operator-session/06-status-asset.json) | health, | 108 | 94 |
@@ -42,8 +42,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667700000,
   "seq": 0,
   "operator_id": "OP1",
-  "protocol_version": "0.7",
-  "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e"
+  "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e",
+  "protocol_version": "0.7"
 }
 ```
 
@@ -72,7 +72,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667600000,
   "seq": 101,
   "asset_id": "A1",
-  "protocol_version": "0.7",
   "reports": [
     "status",
     "failsafe",
@@ -97,7 +96,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
       "horizontal_fov_deg": 80,
       "vertical_fov_deg": 60
     }
-  ]
+  ],
+  "protocol_version": "0.7"
 }
 ```
 
@@ -111,12 +111,12 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667500000,
   "seq": 102,
   "asset_id": "A2",
-  "protocol_version": "0.7",
   "reports": [
     "status",
     "observation"
   ],
-  "commands": []
+  "commands": [],
+  "protocol_version": "0.7"
 }
 ```
 
@@ -431,7 +431,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-22 messages, 3250 bytes minified, 2563 bytes if each is deflated on its own.
+22 messages, 3250 bytes minified, 2561 bytes if each is deflated on its own.
 
 The header (`type`, `time`, `seq`, `asset_id`) is 44% of all bytes. Field names, quotes and punctuation are 59%; the values themselves are the rest.
 

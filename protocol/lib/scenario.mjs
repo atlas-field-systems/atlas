@@ -1,14 +1,15 @@
 // Turns an example scenario (examples/<name>/scenario.json plus its message files)
 // into rows with sizes and validation. Shared by the docs script, the tests and the viewer.
-import { validate, measure, messageFile } from './protocol.mjs';
+import { validate, measure, messageFile, withVersion } from './protocol.mjs';
 
 export async function loadScenario(protocol, readExample, name, compress) {
   const scenario = await readExample(`${name}/scenario.json`);
   const rows = [];
   for (const step of scenario.steps) {
     if (step.gap) { rows.push({ ...step }); continue; }
-    const message = await readExample(`${name}/${step.file}`);
-    const file = messageFile(message);
+    const raw = await readExample(`${name}/${step.file}`);
+    const file = messageFile(raw);
+    const message = withVersion(protocol.schemas[file], raw, protocol.version);
     const check = protocol.schemas[file] ? validate(protocol, file, message) : { ok: false, errors: [`no definition ${file}`] };
     const size = measure(message, compress);
     rows.push({ ...step, message, ok: check.ok, errors: check.errors, bytes: size.bytes, compressed: size.compressed, fields: size.fields });

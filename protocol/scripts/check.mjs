@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
+import { fillVersion, wireVersion } from '../lib/protocol.mjs';
 
 const root = 'definitions';
 const ajv = new Ajv({ strict: true, strictRequired: false, allErrors: true });
@@ -21,6 +22,16 @@ const onlyReferences = (d) => {
 const files = ['variables', 'components', 'messages'].flatMap((k) =>
   readdirSync(join(root, k), { recursive: true }).filter((f) => f.endsWith('.json')).map((f) => `${k}/${f}`)).sort();
 const schemas = Object.fromEntries(files.map((f) => [f, JSON.parse(readFileSync(join(root, f), 'utf8'))]));
+
+// Law 10: the version lives only in package.json. Definitions and examples never write it.
+const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+if (!/^\d+\.\d+\.\d+$/.test(version)) errors.push(`package.json: version must be major.minor.patch, not "${version}"`);
+if (schemas['variables/protocol_version.json'].examples) errors.push('variables/protocol_version.json: law 10: no examples; loading fills them in from package.json');
+for (const [file, s] of Object.entries(schemas)) if (s.examples?.some((e) => e?.protocol_version !== undefined)) errors.push(`${file}: law 10: examples leave out protocol_version; loading fills it in from package.json`);
+for (const f of readdirSync('examples', { recursive: true }).filter((f) => f.endsWith('.json'))) {
+  if (JSON.parse(readFileSync(join('examples', f), 'utf8')).protocol_version !== undefined) errors.push(`examples/${f}: law 10: leave out protocol_version; loading fills it in from package.json`);
+}
+fillVersion(schemas, wireVersion(version));
 for (const s of Object.values(schemas)) ajv.addSchema(s);
 const resolve = (file, ref) => posix.normalize(posix.join(posix.dirname(file), ref));
 

@@ -14,4 +14,5 @@ cpSync('docs', `${out}/docs`, { recursive: true });
 const docs = readdirSync('docs', { recursive: true }).filter((f) => f.endsWith('.md')).sort();
 writeFileSync(`${out}/docs/index.json`, JSON.stringify(docs));
 cpSync('examples', `${out}/examples`, { recursive: true });
+cpSync('package.json', `${out}/package.json`);
 console.log(`Built ${out}/`);

@@ -27,4 +27,5 @@ If you need something outside this repository, go to the one that owns it.
 - [docs/laws.md](docs/laws.md) lists the rules every definition follows. Change a law on purpose before breaking it.
 - [docs/decisions.md](docs/decisions.md) records the developer's decisions; [docs/open-questions.md](docs/open-questions.md) lists what is not decided.
 - `storage/` will hold storage formats (to be planned).
+- The version lives only in `package.json`; nothing else writes it ([law 10](docs/laws.md)). Bump it in the PR that changes the protocol: minor for any change to messages or storage, patch for docs and tools only. After the merge, tag the merge commit `v<version>` and push the tag. That tag is the release the SDK depends on.
 - Run `npm run check` and `npm test` before every PR. Do not merge without the developer's approval.

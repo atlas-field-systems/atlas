@@ -8,7 +8,8 @@ import { loadScenario } from './lib/scenario.mjs';
 import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, messageTree, messageFile, splitId } from './lib/protocol.mjs';
 
 const readJson = async (f) => (await fetch(`definitions/${f}`)).json();
-const protocol = await loadProtocol(readJson, Ajv, addFormats);
+const { version } = await (await fetch('package.json')).json();
+const protocol = await loadProtocol(readJson, Ajv, addFormats, version);
 const compress = (b) => deflateSync(b, { level: 9 });
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);

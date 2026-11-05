@@ -60,7 +60,8 @@ test('site build ships the new definition and its lib renders it', async () => {
   const lib = await import(pathToFileURL(join(out, 'lib/protocol.mjs')));
   const { default: Ajv } = await import('ajv/dist/2020.js');
   const { default: addFormats } = await import('ajv-formats');
-  const p = await lib.loadProtocol((f) => JSON.parse(readFileSync(join(out, 'definitions', f), 'utf8')), Ajv, addFormats);
+  const { version } = JSON.parse(readFileSync(join(out, 'package.json'), 'utf8'));
+  const p = await lib.loadProtocol((f) => JSON.parse(readFileSync(join(out, 'definitions', f), 'utf8')), Ajv, addFormats, version);
   assert.equal(p.schemas['messages/zz_probe/dummy.json'].title, 'Dummy Probe');
   const tree = lib.messageTree(p).find((g) => g.name === 'zz_probe');
   assert.deepEqual(tree.types[0].kinds.map((k) => k.name), ['ping']);
@@ -73,8 +74,9 @@ test('site build ships the new definition and its lib renders it', async () => {
 test('no tool source names any definition', () => {
   const names = readdirSync('definitions', { recursive: true }).filter((f) => f.endsWith('.json') && f !== 'index.json')
     .map((f) => f.split('/').pop().replace('.json', ''))
-    // type and kind are the two fields that say which message this is, so the tools may use them.
-    .filter((n) => !['type', 'kind'].includes(n));
+    // type and kind say which message this is, and protocol_version comes from package.json,
+    // so the tools may use them.
+    .filter((n) => !['type', 'kind', 'protocol_version'].includes(n));
   for (const dir of ['lib', 'cli', 'site']) {
     for (const f of readdirSync(dir)) {
       const src = readFileSync(join(dir, f), 'utf8');

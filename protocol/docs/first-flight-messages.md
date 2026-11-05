@@ -11,7 +11,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says hello: its protocol version, its key and, this first time, the enrollment key. | 432 | 296 |
+| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says hello: its protocol version, its key and, this first time, the enrollment key. | 432 | 297 |
 | 02 | Core → Drone | [`admin.hello_reply`](../examples/first-flight/02-hello_reply.json) | Core accepts the drone and confirms the version both sides will use. | 124 | 105 |
 | 03 | Drone → Core | [`report.settings`](../examples/first-flight/03-settings.json) | The drone reports its current settings, so Core knows what it will do if the link drops. | 213 | 152 |
 | 04 | Drone → Core | [`report.status asset`](../examples/first-flight/04-status-asset.json) | The drone reports it is healthy and ready. | 106 | 92 |
@@ -43,7 +43,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667600000,
   "seq": 1,
   "asset_id": "A1",
-  "protocol_version": "0.7",
   "key": "q3J8vR2xT0bN5mK7wY1cZg",
   "enrollment_key": "H4sLp9Qe2Vd6Fu0Ka8Tn3w",
   "reports": [
@@ -70,7 +69,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
       "horizontal_fov_deg": 80,
       "vertical_fov_deg": 60
     }
-  ]
+  ],
+  "protocol_version": "0.7"
 }
 ```
 
@@ -547,7 +547,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-26 messages, 4277 bytes minified, 3282 bytes if each is deflated on its own.
+26 messages, 4277 bytes minified, 3283 bytes if each is deflated on its own.
 
 The header (`type`, `time`, `seq`, `asset_id`) is 40% of all bytes. Field names, quotes and punctuation are 62%; the values themselves are the rest.
 
