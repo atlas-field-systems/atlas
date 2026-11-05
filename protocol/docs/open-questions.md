@@ -18,13 +18,10 @@ Not decided yet. Planning comes before building.
 
 ## Plugins
 
-The direction is in [decisions](decisions.md#plugins). The protocol carries only calls to Plugin actions and their results.
+The direction is in [decisions](decisions.md#plugins).
 
-- **Listing actions.** How does an operator learn which Plugins and actions exist and what inputs each takes? One way is a list Core sends on connect, like `admin.describe` for an Asset.
-- **Inputs.** Is every input built from protocol variables and components (a box, a position, a geo feature ID), so Protocol still defines every format? Or does each action bring its own schema? There is no area or box component yet.
-- **List outputs.** What is one item in a returned list, such as a building found through Overpass that is not stored in Core?
-- **Long calls.** Gathering imagery may take minutes. Is a call a `query` answered as a stream that ends with `admin.reply`, or does it need progress, cancel, and a result that survives the caller disconnecting?
-- **Callers.** Only operator interfaces, or Assets too?
+- **List outputs.** What is one item in a returned list? Not every item is a geo feature; a ground elevation, for example, is a number. To be settled after reviewing example Plugins.
+- **The `plugin` messages.** The exact messages for listing, calling and answering are not defined yet.
 
 ## Earlier
 
