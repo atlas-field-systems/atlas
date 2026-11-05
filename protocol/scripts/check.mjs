@@ -26,8 +26,12 @@ const schemas = Object.fromEntries(files.map((f) => [f, JSON.parse(readFileSync(
 // Law 10: the version lives only in package.json. Definitions and examples never write it.
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 if (!/^\d+\.\d+\.\d+$/.test(version)) errors.push(`package.json: version must be major.minor.patch, not "${version}"`);
-if (schemas['variables/protocol_version.json'].examples) errors.push('variables/protocol_version.json: law 10: no examples; loading fills them in from package.json');
-for (const [file, s] of Object.entries(schemas)) if (s.examples?.some((e) => e?.protocol_version !== undefined)) errors.push(`${file}: law 10: examples leave out protocol_version; loading fills it in from package.json`);
+const pv = schemas['variables/protocol_version.json'];
+if (pv.examples || pv.const !== undefined || pv.enum) errors.push('variables/protocol_version.json: law 10: no examples, const or enum; loading fills the version in from package.json');
+for (const [file, s] of Object.entries(schemas)) {
+  if (s.examples?.some((e) => e?.protocol_version !== undefined)) errors.push(`${file}: law 10: examples leave out protocol_version; loading fills it in from package.json`);
+  if (s.properties?.protocol_version && Object.keys(s.properties.protocol_version).join() !== '$ref') errors.push(`${file}: law 10: "protocol_version" is only a $ref; the version lives in package.json`);
+}
 for (const f of readdirSync('examples', { recursive: true }).filter((f) => f.endsWith('.json'))) {
   if (JSON.parse(readFileSync(join('examples', f), 'utf8')).protocol_version !== undefined) errors.push(`examples/${f}: law 10: leave out protocol_version; loading fills it in from package.json`);
 }
