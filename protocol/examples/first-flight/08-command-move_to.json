@@ -2,12 +2,12 @@
   "type": "control.command",
   "time": 1793667605050,
   "seq": 3,
+  "from": "CORE",
   "asset_id": "A1",
   "kind": "move_to",
   "task_id": "T2",
   "destination": {
     "latitude": 42.2761,
     "longitude": -71.8031
-  },
-  "from": "CORE"
+  }
 }

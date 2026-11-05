@@ -2,6 +2,7 @@
   "type": "control.command",
   "time": 1793667605100,
   "seq": 4,
+  "from": "CORE",
   "asset_id": "A1",
   "kind": "land",
   "task_id": "T3",
@@ -12,6 +13,5 @@
   "transit_altitude": {
     "altitude_m": 20,
     "altitude_reference": "home"
-  },
-  "from": "CORE"
+  }
 }

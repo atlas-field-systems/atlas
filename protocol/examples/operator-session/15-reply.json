@@ -1,11 +1,11 @@
 {
   "type": "admin.reply",
   "time": 1793667703010,
-  "seq": 110,
+  "seq": 103,
+  "from": "CORE",
   "asset_id": "A2",
+  "reply_from": "OP1",
   "reply_to": 3,
   "reply_result": "refused",
-  "explanation": "A2 does not accept takeoff",
-  "from": "CORE",
-  "reply_from": "OP1"
+  "explanation": "A2 does not accept takeoff"
 }

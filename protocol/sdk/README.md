@@ -13,10 +13,12 @@ Transport adapters (WebSocket, Meshtastic, FLRC) only move bytes. Each will be
 its own package beside the SDK, so a program installs only the links it uses.
 
 **Status:** how-it-works is locked (protocol 0.8). Runtime code is not built yet.
-Do not implement the thin slice until the developer says to start.
+Build it from [IMPLEMENTATION.md](IMPLEMENTATION.md): one slice per PR, in order,
+and the developer approves each merge before the next slice starts.
 
 | Doc | What it covers |
 | --- | --- |
+| [Implementation plan](IMPLEMENTATION.md) | Layout, signatures, build slices, tests, decided points |
 | [How it works](how-it-works.md) | Front door, identity, queue, picture, reconnect, Core-as-user |
 | [Concepts](concepts.md) | The kept concepts, rewritten to match the locks |
 | This README | Scope, non-goals, where code will live |
