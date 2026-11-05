@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/details.json",
+  "title": "details",
+  "description": "Defined facts about a target beyond where it is, such as an aircraft's ADS-B identity or the colour a camera sees. Only the details listed here exist; a new kind of detail is added to this list. Each detail stays true for its observation_id until a new value for it arrives, so a detail left out is unchanged.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": false,
+  "properties": {
+    "icao_address": {
+      "$ref": "../variables/icao_address.json"
+    },
+    "callsign": {
+      "$ref": "../variables/callsign.json"
+    },
+    "squawk": {
+      "$ref": "../variables/squawk.json"
+    },
+    "color": {
+      "$ref": "../variables/color.json"
+    }
+  },
+  "examples": [
+    {
+      "icao_address": "A1B2C3",
+      "callsign": "N123AB",
+      "squawk": "1200"
+    },
+    {
+      "color": "red"
+    }
+  ]
+}

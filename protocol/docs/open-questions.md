@@ -5,8 +5,7 @@ Not decided yet. Planning comes before building.
 ## Message groups and the queue
 
 - **Tasks and geo features.** How a Task links to a geo feature (not through `move_to`) is open.
-- **Observation types.** Deferred: what a target is (person, vehicle, ...), and richer observations such as bearing-only (no position) and ADS-B with its many extra fields, which must still be shown on observations and tracks.
-- **What else registration contains.** `admin.describe` lists reports, commands and cameras; [Storage](storage.md) keeps them. Whether an Asset should also say what it is (drone, camera post) is open.
+- **What else registration contains.** `admin.describe` lists reports, commands and cameras; [Storage](storage.md) keeps them. Answered in 0.8: an Asset may say what it is with `entity_type`.
 - **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
 - **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough? And if a newer immediate change already set that setting, the queued one changes nothing: is it still `completed`?
 - **Errors back to an Asset.** An Asset gets no reply (except Core's acknowledgement of a final task report), so an invalid report is dropped and logged by Core and the Asset never learns. Should there be an error message to Assets?
@@ -19,6 +18,7 @@ Not decided yet. Planning comes before building.
 
 - **Additive changes and the version.** Answered: every change after a release is a new version, additive or not (law 10). Ends never ignore unknown fields.
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
+- **Observation types.** Answered in 0.8: observation kinds `coordinates` and `bearing`, a shared `entity_type`, uncertainty areas, and a fixed list of `details`. See [decisions](decisions.md#storage-sensors-and-registration).
 
 Most of these are answered in [communication.md](communication.md).
 

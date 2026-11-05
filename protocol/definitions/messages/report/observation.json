@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/observation.json",
   "title": "Observation report",
-  "description": "Something the Asset sees, such as a person or vehicle, and where. Assets report observations, never tracks: Core's fusion turns observations into tracks. Reuse observation_id while the Asset keeps seeing the same target. What the target is (its type) is not defined yet.",
+  "description": "Something the Asset sees, such as a person or vehicle. kind says what the sensor measured: coordinates (where the target is) or bearing (which way it is from the sensor). Assets report observations, never tracks: Core's fusion turns observations into tracks. Reuse observation_id while the Asset keeps seeing the same target. entity_type and each detail stay true for the observation_id until a new value arrives, so they need not be repeated.",
   "type": "object",
   "required": [
     "type",
@@ -10,10 +10,18 @@
     "seq",
     "from",
     "asset_id",
-    "observation_id",
-    "position"
+    "kind",
+    "observation_id"
   ],
-  "additionalProperties": false,
+  "oneOf": [
+    {
+      "$ref": "observation/coordinates.json"
+    },
+    {
+      "$ref": "observation/bearing.json"
+    }
+  ],
+  "unevaluatedProperties": false,
   "properties": {
     "type": {
       "$ref": "../../variables/type.json",
@@ -31,11 +39,17 @@
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    },
     "observation_id": {
       "$ref": "../../variables/observation_id.json"
     },
-    "position": {
-      "$ref": "../../components/position.json"
+    "entity_type": {
+      "$ref": "../../variables/entity_type.json"
+    },
+    "details": {
+      "$ref": "../../components/details.json"
     }
   },
   "examples": [
@@ -43,13 +57,53 @@
       "type": "report.observation",
       "time": 1793667600000,
       "seq": 42,
-      "asset_id": "A1",
+      "from": "A3",
+      "asset_id": "A3",
+      "kind": "coordinates",
       "observation_id": "O1",
+      "entity_type": "airplane",
       "position": {
+        "latitude": 42.2758,
+        "longitude": -71.8041,
+        "altitudes": [
+          {
+            "altitude_m": 1250,
+            "altitude_reference": "msl"
+          }
+        ]
+      },
+      "uncertainty": {
+        "semi_major_m": 30,
+        "altitude_uncertainty_m": 15
+      },
+      "details": {
+        "icao_address": "A1B2C3",
+        "callsign": "N123AB",
+        "squawk": "1200"
+      }
+    },
+    {
+      "type": "report.observation",
+      "time": 1793667600000,
+      "seq": 43,
+      "from": "A2",
+      "asset_id": "A2",
+      "kind": "bearing",
+      "observation_id": "O3",
+      "entity_type": "ground_vehicle",
+      "origin": {
         "latitude": 42.2758,
         "longitude": -71.8041
       },
-      "from": "A1"
+      "bearing_deg": 117,
+      "bearing_uncertainty_deg": 2,
+      "elevation_deg": -4,
+      "elevation_uncertainty_deg": 3,
+      "range_m": 180,
+      "range_uncertainty_m": 10,
+      "details": {
+        "color": "red"
+      }
     }
   ]
 }

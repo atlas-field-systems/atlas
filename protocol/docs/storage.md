@@ -6,11 +6,11 @@ How Core stores what it knows. A normal store with one table per kind of thing. 
 
 | Table | One row per | Holds |
 | --- | --- | --- |
-| assets | Asset | `asset_id`, key hash, `reports` and `commands` it supports, `cameras`, last heard time |
+| assets | Asset | `asset_id`, `entity_type`, key hash, `reports` and `commands` it supports, `cameras`, last heard time |
 | tasks | Task | `asset_id`, `task_id`, the command or settings message that carried the `task_id`, its latest state (and `explanation` if it failed), whether the Asset has shown it holds it |
 | geofeatures | geo feature | `geofeature_id`, kind, geometry (a point, line or area) |
-| observations | observation | `asset_id`, `observation_id`, latest position and time, `track_id` |
-| tracks | track | `track_id`, its source observations, latest position and time |
+| observations | observation | `asset_id`, `observation_id`, `kind`, the latest measurement (that kind's fields) and its time, `entity_type`, the latest value of each detail, `track_id` |
+| tracks | track | `track_id`, `entity_type`, latest position and `uncertainty` if known, and time, its source observations |
 | telemetry | telemetry report | `asset_id`, time, position, speed, heading (a time series) |
 | history | stored report | `asset_id`, time, the report as received (status, failsafe, settings, battery) |
 
@@ -18,7 +18,7 @@ Latest status, battery and gimbal pointing are kept on the asset row or beside i
 
 ## Assets
 
-An Asset row is created when the Asset first registers (see [Registration](#registration)). Its supported reports, commands and cameras come from `admin.describe`. Each camera says whether it is `fixed` or on a `gimbal`, which way it faces relative to the nose (`yaw_deg`, `pitch_deg`; for a gimbal, its rest direction) and its field of view, so an interface can draw what it sees. Live gimbal pointing comes from `report.gimbal`, which an Asset sends often while the gimbal is active and not at all while it is idle.
+An Asset row is created when the Asset first registers (see [Registration](#registration)). What it is (`entity_type`, if it says), its supported reports, commands and cameras come from `admin.describe`. Each camera says whether it is `fixed` or on a `gimbal`, which way it faces relative to the nose (`yaw_deg`, `pitch_deg`; for a gimbal, its rest direction) and its field of view, so an interface can draw what it sees. Live gimbal pointing comes from `report.gimbal`, which an Asset sends often while the gimbal is active and not at all while it is idle.
 
 ## Tasks
 
@@ -36,7 +36,11 @@ Assets report observations (`report.observation`), never tracks. An Asset reuses
 Asset ── report.observation ──▶ Core ──▶ [ fusion ] ──▶ tracks
 ```
 
-Fusion is its own swappable module, run in Docker like the other Core pillars. Core passes observations in and tracks come out; what happens inside is up to the module, including when one Asset gives a target two IDs or several Assets see the same thing. The first iteration uses a temporary fusion module that turns every new `asset_id` + `observation_id` pair into its own track (listing its source), to find the Core/fusion boundary and make debugging easy. Tasks that aim at a target name the track. Observation types (person, vehicle, and so on) are deferred.
+Fusion is its own swappable module, run in Docker like the other Core pillars. Core passes observations in and tracks come out; what happens inside is up to the module, including when one Asset gives a target two IDs or several Assets see the same thing. The first iteration uses a temporary fusion module that turns every new `asset_id` + `observation_id` pair into its own track (listing its source), to find the Core/fusion boundary and make debugging easy. Tasks that aim at a target name the track.
+
+An observation's `kind` says what the sensor measured. `coordinates` gives the target's position and its `uncertainty`. `bearing` gives the `origin` the sensor recorded when it saw the target, the bearing, and optionally elevation and range, each with its own uncertainty. `entity_type` and `details` stay true for an observation until a new value arrives, so Core keeps the latest of each.
+
+A track holds what fusion decided: its `entity_type`, and a position with an `uncertainty` area once fusion can place it. As fusion combines observations, the area shrinks; it is often a polygon. Source-specific facts, such as a callsign, are not copied onto the track: displays read them from the track's latest source observation. The temporary module copies a `coordinates` observation's position and uncertainty onto its track, and leaves a `bearing` observation's track without a position, so displays draw the bearing from the observation.
 
 ## Registration
 
