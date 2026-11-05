@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/queue.json",
   "title": "Queue query",
-  "description": "Ask for an Asset's queue. Core asks the Asset, which answers with report.status of kind queue. An Asset asks Core after reconnecting, and Core answers by resending, as first sent (control.command or control.settings with task_id), each Task the Asset has never listed in a queue report or reported on.",
+  "description": "Ask for an Asset's queue. Core asks the Asset, which answers with report.status of kind queue. An Asset asks Core after reconnecting, and Core answers by resending, as first sent (control.command or control.settings with task_id), each Task the Asset has never listed in a queue report or reported on, except Tasks sent before the Asset last went offline.",
   "type": "object",
   "required": [
     "type",

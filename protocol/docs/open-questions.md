@@ -11,13 +11,13 @@ Not decided yet. Planning comes before building.
 - **Errors back to an Asset.** An Asset gets no reply (except Core's acknowledgement of a final task report), so an invalid report is dropped and logged by Core and the Asset never learns. Should there be an error message to Assets?
 - **`reply_to` through Core.** Answered in 0.8: every message carries `from`; Core forwards unchanged; replies use `reply_from` + `reply_to` naming (`from`, `seq`).
 - **What "latest state" includes.** Partly answered in 0.8: on connect Core pushes each Asset's `admin.describe` and newest reports. The SDK live picture is opt-in; on disconnect the last snapshot stays readable as `stale: true`. Whether the queue is always in the connect push stays open.
-- **Holding commands for offline Assets.** Refused for now (0.6). Revisit if store-and-forward links need it.
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier
 
 - **Additive changes and the version.** Answered: every change after a release is a new version, additive or not (law 10). Ends never ignore unknown fields.
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
+- **Holding commands for offline Assets.** Answered in 0.8: Core refuses and holds nothing, counts an Asset offline by contact rather than an open link, and never carries work across a disconnect (see [communication.md](communication.md#when-core-counts-an-asset-offline)). Revisit only if it becomes a real problem.
 - **Observation types.** Answered in 0.8: observation kinds `coordinates` and `bearing`, a shared `entity_type`, uncertainty areas, and a fixed list of `details`. See [decisions](decisions.md#storage-sensors-and-registration).
 
 Most of these are answered in [communication.md](communication.md).

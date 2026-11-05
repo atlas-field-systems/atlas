@@ -201,7 +201,7 @@ Invariants:
 - Dedupe key: `(from, seq, time)`. Dedupe decides whether a message is **acted on**, not whether it is delivered (section 3.6). Keep a per-`from` bounded ring (Map + array, size N, oldest evicted). Memory is bounded by `N × distinct from`. Add a cap on distinct `from` (default 4096, LRU).
 - No Core-style last-answer cache in the SDK for forwarded traffic. That cache belongs to **Core** (business layer); the SDK exposes `seen()` and `onDuplicate` so Core can resend its cached reply.
 - The Asset helpers are different: an Asset answers `control.settings` and `control.cancel` itself with `report.settings`, so the Asset queue helper keeps its own answer replay (section 3.9). It is Asset-side, bounded, and separate from Core's cache.
-- Contact (communication.md, Losing the link): identity records `lastContact` (the `now()` of the last **non-duplicate** inbound message after an accepted hello whose `asset_id` is this identity's id and whose `from` is **not** this identity's id). Exposed as `identity.contact()` and an observer event `contact`. The SDK only reports contact; timing `link_loss_after_s` and triggering the `link_loss` failsafe is the Asset app's work (helpers never fly). A creator sends nothing until its clock is set: `build` throws `SdkError('clock_unset')` while `now()` returns null.
+- Contact (communication.md, Losing the link): identity records `lastContact` (the `now()` of the last **non-duplicate** inbound message after an accepted hello whose `asset_id` is this identity's id and whose `from` is **not** this identity's id). Exposed as `identity.contact()` and an observer event `contact`. The Asset app sends `report.telemetry` early when it has sent nothing new for a third of its `link_loss_after_s`, so Core can count it connected; the SDK exposes when it last sent something new (communication.md, When Core counts an Asset offline). The SDK only reports contact; timing `link_loss_after_s` and triggering the `link_loss` failsafe is the Asset app's work (helpers never fly). A creator sends nothing until its clock is set: `build` throws `SdkError('clock_unset')` while `now()` returns null.
 
 ### 3.6 Link
 
@@ -512,7 +512,7 @@ separate Core PR, not done here:
 - Replace Core's Ajv loader with `check`. Replace the socket code with `wsServer` + `createLink({side:'server'})`.
 - Core identity is `createIdentity({id:'CORE', role:'core', seqStore: <persisted>})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
-- Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check, command listed in describe, `task_id` duplicate, ordered task list, `every_s` repeats (a new Core-created message each time, with a new seq).
+- Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), stop resending Tasks once an Asset goes offline, command listed in describe, `task_id` duplicate, ordered task list, `every_s` repeats (a new Core-created message each time, with a new seq).
 - Pin Core to the protocol release tag that contains the SDK.
 
 ---

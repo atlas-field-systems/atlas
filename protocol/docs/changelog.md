@@ -12,6 +12,7 @@
 - Asset reconnect order: after each accepted hello, describe → connect `report.settings` → unacked finals → queue report → `query.queue`.
 - Acknowledgements (law 23): Core acknowledges `admin.describe` and the connect `report.settings` with `admin.reply`; the Asset resends each until acknowledged and sends nothing else first.
 - A cancel that changes no setting is answered with `run_state` unchanged. While paused, a new immediate command runs but queued tasks wait for `run_state: running`. Link loss counts on the ground; every response except `continue` keeps the Asset down and cancels its queue.
+- Offline Assets: Core counts an Asset offline after `link_loss_after_s` with nothing new from it, even with a link open. A quiet Asset sends `report.telemetry` early. Core refuses and holds nothing for an offline Asset, and stops resending Tasks it never saw confirmed once the Asset goes offline.
 - Link loss contact: any new (non-duplicate) message after the accepted hello that names this Asset in `asset_id` and was not sent by this Asset (not only `from: CORE`). Covers Core forwards of operator traffic.
 
 ## 0.7
