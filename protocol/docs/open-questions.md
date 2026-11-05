@@ -22,7 +22,6 @@ Not decided yet. Planning comes before building.
 
 Most of these are answered in [communication.md](communication.md).
 
-- **Message envelope.** Dropped: no envelope. Context travels in flat fields (`from`, `asset_id`, `task_id`, `reply_from`/`reply_to`), per [law 2](laws.md). Packing, splitting and compression belong to the link profile (law 12).
 - **Command acknowledgement.** Answered for operators: `admin.reply` says accepted or refused; the Asset's reports give the observed result.
 - **Queue and task-list delivery.** Answered in 0.8: Core-owned ordered `task_id` list; each body once; Asset queue report; Core resends missing. No `task_seq`, no gap-wait.
 - **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
