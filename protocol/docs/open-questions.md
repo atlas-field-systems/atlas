@@ -13,6 +13,7 @@ Not decided yet. Planning comes before building.
 - **`reply_to` through Core.** Core forwards an operator's `control.settings` with its own `seq`, so the Asset's `report.settings` `reply_to` names Core's `seq`, not the operator's. Should Core map it back when forwarding?
 - **What "latest state" includes.** On connect Core pushes each Asset's hello and newest reports. Is the queue part of it, and should an operator see a connected or stale flag, rather than working it out from report times?
 - **Holding commands for offline Assets.** Refused for now (0.6). Revisit if store-and-forward links need it.
+- **Additive changes and the version.** The Charter says changes to meaning are additive and only breaking changes matter for the version. But law 10 refuses any version difference, and every message sets `additionalProperties: false`, so an older Core or Asset rejects a new field. Today every change to messages needs a new version. Should an end ignore unknown fields so additive changes keep the version, or should the Charter say every change is versioned?
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier
