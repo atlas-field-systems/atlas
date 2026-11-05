@@ -159,6 +159,18 @@ From the review of the first-flight prototype: lost, repeated, late and reordere
 - **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Per setting the newest `time` wins, and an Asset never sends two settings reports with the same `time`.
 - **Link loss.** Contact with Core means hearing new (non-duplicate) messages after the accepted hello that name this Asset in `asset_id` and were not sent by this Asset. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), the `link_loss` failsafe triggers once. With `continue` the Asset keeps its Task and queue.
 
+## Acknowledgements and edges (0.8)
+
+Owner answers to the edges a throwaway Core prototype of 0.7 found.
+
+- **What must arrive is acknowledged** (law 23). Core acknowledges an Asset's `admin.describe` and connect `report.settings` as it does final reports, and the Asset waits for each before going on, so a later partial settings report is never taken for the full list.
+- **Core starts first and stops last.** A Core restart mid-operation is not designed for: Core keeps its `seq`, but not which messages it has handled, and a final report for a Task Core doesn't know does not occur.
+- **A resent Task is a retry.** Core forwards an operator's Task unchanged, so resending a missing body sends the same bytes.
+- **Same-millisecond settings changes.** Two changes to one setting with the same `time` can tie. Accepted as too rare for a rule.
+- **A cancel that changes no setting** is answered with `run_state` unchanged.
+- **Paused waits.** A new immediate command runs while paused, but queued tasks wait for `run_state: running`.
+- **Link loss on the ground.** It counts there too; every response except `continue` keeps the Asset down and cancels its queue.
+
 ## SDK locks (0.8)
 
 Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [sdk/README.md](../sdk/README.md).
@@ -174,5 +186,5 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 - **Identity:** one SDK module for keys-on-hello, `from`/`seq`/`time` stamp, and remember/dedupe; Core keeps a last-answer cache only.
 - **Contact:** new post-hello messages with this Asset's `asset_id` whose `from` is not this Asset (not only `from: CORE`).
 - **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no ordering rule and no correlation field.
-- **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` → unacked finals → queue report → `query.queue`; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
+- **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` (each waiting for Core's `admin.reply`) → unacked finals → queue report → `query.queue`; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
 - **Handshake vs description:** hello = keys + version + id; `admin.describe` is keyless; `admin.asset` is removed.

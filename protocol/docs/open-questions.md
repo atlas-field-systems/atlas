@@ -8,7 +8,7 @@ Not decided yet. Planning comes before building.
 - **Observation types.** Deferred: what a target is (person, vehicle, ...), and richer observations such as bearing-only (no position) and ADS-B with its many extra fields, which must still be shown on observations and tracks.
 - **What else registration contains.** `admin.describe` lists reports, commands and cameras; [Storage](storage.md) keeps them. Whether an Asset should also say what it is (drone, camera post) is open.
 - **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
-- **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough?
+- **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough? And if a newer immediate change already set that setting, the queued one changes nothing: is it still `completed`?
 - **Errors back to an Asset.** An Asset gets no reply (except Core's acknowledgement of a final task report), so an invalid report is dropped and logged by Core and the Asset never learns. Should there be an error message to Assets?
 - **`reply_to` through Core.** Answered in 0.8: every message carries `from`; Core forwards unchanged; replies use `reply_from` + `reply_to` naming (`from`, `seq`).
 - **What "latest state" includes.** Partly answered in 0.8: on connect Core pushes each Asset's `admin.describe` and newest reports. The SDK live picture is opt-in; on disconnect the last snapshot stays readable as `stale: true`. Whether the queue is always in the connect push stays open.

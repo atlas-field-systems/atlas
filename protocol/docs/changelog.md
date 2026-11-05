@@ -9,6 +9,8 @@
 - SDK how-it-works locked under `sdk/`: shared `check()`, `request`/`stream`/`subscribe`, on-demand picture with opt-in live + `stale`, bytes-only adapters, one identity module, Asset auto-resync, no operator command auto-retry.
 - Dedupe: act once, deliver always. A replayed message is not acted on again but is still delivered to streams, subscribers and the live picture; the picture upserts by `(from, seq, time)`.
 - Asset reconnect order: after each accepted hello, describe → connect `report.settings` → unacked finals → queue report → `query.queue`.
+- Acknowledgements (law 23): Core acknowledges `admin.describe` and the connect `report.settings` with `admin.reply`; the Asset resends each until acknowledged and sends nothing else first.
+- A cancel that changes no setting is answered with `run_state` unchanged. While paused, a new immediate command runs but queued tasks wait for `run_state: running`. Link loss counts on the ground; every response except `continue` keeps the Asset down and cancels its queue.
 - Link loss contact: any new (non-duplicate) message after the accepted hello that names this Asset in `asset_id` and was not sent by this Asset (not only `from: CORE`). Covers Core forwards of operator traffic.
 
 ## 0.7
