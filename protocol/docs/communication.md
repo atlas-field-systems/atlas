@@ -32,7 +32,7 @@ adapters only move bytes; framing and JSON stay in the SDK or link profile.
 4. If the Asset already has a link open, the newer link replaces the older; Core
    closes the older.
 5. After an accepted hello, the Asset sends `admin.describe` (reports, commands,
-   cameras — no keys). Core stores it and will forward it unchanged to operators.
+   cameras — no keys). Core stores it, acknowledges it with `admin.reply`, and will forward it unchanged to operators.
 
 ## Operator interfaces
 
@@ -147,8 +147,8 @@ Core does not send the task again.
 - `control.cancel` stops a command partway, for example a landing. It never creates a task.
   - Core passes on a cancel with `task_id` only for a task that has not finished. It refuses an unknown `task_id` ("A1 has no task T9") and a finished one ("T3 is already completed").
   - With `task_id` for a queued task, that task is dropped and the running one carries on. With `task_id` for the active task, or without `task_id`, the motion running now stops.
-  - When the Asset stops motion, it holds (hovers, or stays on the ground) and sets `run_state` paused. Core resumes it with `run_state: running` or sends a new command.
-  - The Asset reports the task cancelled, then its queue. It answers every cancel with `report.settings`, `reply_from`/`reply_to` naming the cancel.
+  - When the Asset stops motion, it holds (hovers, or stays on the ground) and sets `run_state` paused. Core resumes it with `run_state: running` or sends a new command. A new immediate command runs at once and the Asset stays paused: queued tasks, new ones included, wait for `run_state: running`.
+  - The Asset reports the task cancelled, then its queue. It answers every cancel with `report.settings`, `reply_from`/`reply_to` naming the cancel. A cancel that changes no setting (a queued task dropped) is answered with `run_state` unchanged.
   - For a task it has already finished, the Asset changes nothing and sends that task's final report again. For a task it has not received yet, it remembers the `task_id` as cancelled, reports it cancelled, and never runs it.
 
 ## Settings
@@ -156,6 +156,9 @@ Core does not send the task again.
 - After each accepted hello the Asset sends its **connect report**: a `report.settings`
   with every setting it supports and its value. Core refuses changes to any setting the
   latest connect report left out, and the Asset never reports one until its next hello.
+  Core acknowledges the connect report with `admin.reply`, and the Asset sends nothing
+  after it until then (see [After reconnecting](#after-reconnecting-asset)), so a later
+  partial report is never taken for the full list.
 - A later `report.settings` may carry only some settings. A setting left out is
   unchanged, not unsupported.
 - Per setting, the newest `time` wins, wherever the report comes from (Core forwards
@@ -180,13 +183,20 @@ open socket, a radio acknowledgement, or other Assets overheard on the mesh.
 - The `link_loss` failsafe then triggers once, with the Asset's `link_loss_response`.
   It can trigger again only after contact returns and is lost again.
 - With `link_loss_response: continue` the Asset keeps its Task and queue.
+- Link loss counts on the ground too. There every response except `continue` keeps the
+  Asset on the ground and cancels its queue, so no queued takeoff starts while Core
+  can't see it.
 
 ## After reconnecting (Asset)
 
 After each accepted hello the Asset, in this order:
 
-1. Sends `admin.describe`.
-2. Sends its connect `report.settings` (every setting it supports; see above).
+1. Sends `admin.describe` and waits for Core's `admin.reply`.
+2. Sends its connect `report.settings` (every setting it supports; see above) and waits
+   for Core's `admin.reply`.
+
+   It resends each unchanged every 10 s until answered, and sends nothing else first.
+
 3. Resends any unacknowledged final task reports (retries, same bytes).
 4. Sends its current queue report.
 5. Sends `query.queue` so Core can resend anything missing.
