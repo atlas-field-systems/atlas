@@ -16,7 +16,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Every message
 - Messages are flat: every field sits directly in the message, with no header or wrapper.
-- **Adopted:** messages are grouped like nested folders, because one flat list of types is hard to read and to maintain. This reverses "each command is its own message type". The cost is about 7 bytes per message for the group in `type`, plus the `kind` field where a type has kinds; sending `type` as a number from a fixed table would win most of it back, and waits with short keys for 1.0.
+- **Adopted:** messages are grouped like nested folders, because one flat list of types is hard to read and to maintain. This reverses "each command is its own message type". The cost is about 7 bytes per message for the group in `type`, plus the `kind` field where a type has kinds. Link compression wins most of it back; see [Compact JSON](#compact-json).
 
   ```text
   admin    hello, hello_reply, operator_hello, reply
@@ -74,10 +74,11 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Compact JSON
 - Compact JSON is the message minified: same keys, same structure, no extra spaces.
-- Short keys (such as `time` -> `t`) are deferred to protocol 1.0. They are not implemented now, to avoid tangling the definitions.
+- No short keys (such as `time` -> `t`) and no type numbers, now or at 1.0. Names stay readable in the definitions, in messages and in storage.
+- Compression does the work short keys would. On the first-flight run, deflating each message with a dictionary of the definitions' names takes 4661 bytes to 2041 (largest message 117); short keys on top save only 3% more.
 
 ## Radio compression
-Radio links will use a proven existing compression method, chosen later.
+Each link chooses its own compression in its link profile: a proven existing method, chosen later. A link that compresses with a dictionary can build it from the definitions, because one version always means the same definitions (law 10). The hello and its reply are never compressed (law 12).
 
 ## Storage
 The protocol also defines the storage layout, so the whole data format lives here. Core's tables are in [Storage](storage.md); stored record formats are not defined yet.
@@ -96,6 +97,7 @@ An older time never overwrites newer state. There is no "history-only" message.
 ## Versions
 - Everything is assumed up to date. There is no backward compatibility.
 - There is one version check, at connect. A mismatch is rejected with a clear "update this device" error.
+- Every change after a release is a new version, even an additive one (law 10).
 
 ## Tools
 The CLI and web viewer only display messages. They never send to a live Core.
@@ -157,6 +159,18 @@ From the review of the first-flight prototype: lost, repeated, late and reordere
 - **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Per setting the newest `time` wins, and an Asset never sends two settings reports with the same `time`.
 - **Link loss.** Contact with Core means hearing new (non-duplicate) messages after the accepted hello that name this Asset in `asset_id` and were not sent by this Asset. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), the `link_loss` failsafe triggers once. With `continue` the Asset keeps its Task and queue.
 
+## Acknowledgements and edges (0.8)
+
+Owner answers to the edges a throwaway Core prototype of 0.7 found.
+
+- **What must arrive is acknowledged** (law 23). Core acknowledges an Asset's `admin.describe` and connect `report.settings` as it does final reports, and the Asset waits for each before going on, so a later partial settings report is never taken for the full list.
+- **Core starts first and stops last.** A Core restart mid-operation is not designed for: Core keeps its `seq`, but not which messages it has handled, and a final report for a Task Core doesn't know does not occur.
+- **A resent Task is a retry.** Core forwards an operator's Task unchanged, so resending a missing body sends the same bytes.
+- **Same-millisecond settings changes.** Two changes to one setting with the same `time` can tie. Accepted as too rare for a rule.
+- **A cancel that changes no setting** is answered with `run_state` unchanged.
+- **Paused waits.** A new immediate command runs while paused, but queued tasks wait for `run_state: running`.
+- **Link loss on the ground.** It counts there too; every response except `continue` keeps the Asset down and cancels its queue.
+
 ## SDK locks (0.8)
 
 Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [sdk/README.md](../sdk/README.md).
@@ -172,7 +186,7 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 - **Identity:** one SDK module for keys-on-hello, `from`/`seq`/`time` stamp, and remember/dedupe; Core keeps a last-answer cache only.
 - **Contact:** new post-hello messages with this Asset's `asset_id` whose `from` is not this Asset (not only `from: CORE`).
 - **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no ordering rule and no correlation field.
-- **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` → unacked finals → queue report → `query.queue`; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
+- **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` (each waiting for Core's `admin.reply`) → unacked finals → queue report → `query.queue`; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
 - **Handshake vs description:** hello = keys + version + id; `admin.describe` is keyless; `admin.asset` is removed.
 
 ## Offline Assets (0.8)

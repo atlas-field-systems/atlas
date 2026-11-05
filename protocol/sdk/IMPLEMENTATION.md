@@ -230,7 +230,7 @@ Link = {
 Hello state machine (client):
 1. `open` → `hello_sent`: build `admin.hello` (asset) or `admin.operator_hello` (operator). `protocol_version = defs.version`.
 2. Wait for `admin.hello_reply` (not `admin.reply`).
-   - `accepted` → an Asset sends `admin.describe` (D9) and its connect `report.settings`, then → `ready` (section 3.10).
+   - `accepted` → an Asset sends `admin.describe` (D9) and its connect `report.settings`, each acknowledged by Core's `admin.reply`, then → `ready` (section 3.10).
    - `version_mismatch` → state `version_mismatch`, close, and reject `open()` with `SdkError('version_mismatch', {peer: protocol_version})`. No retry loop (strict breaks are intended).
    - `refused` → `identity.stop('refused')`, state `auth_lost`, close. Network sends stop. Local reads stay.
    - timeout → close, `SdkError('timeout')`, eligible for reconnect.
@@ -351,7 +351,7 @@ Invariants (law 18, communication.md):
 export function createReconnector(link factory, opts: { backoff?: {minMs:500,maxMs:30000,factor:2,jitter:0.2} })
 ```
 - Reconnect on transport close or hello timeout. Stop on `auth_lost` and `version_mismatch`.
-- **Asset**, after **every** accepted hello (first connect and each reconnect), in order (communication.md, After reconnecting): the link sends (1) `admin.describe` from `opts.describe` and (2) the connect `report.settings` from `opts.connectSettings()` (every setting it supports; Core refuses changes to any setting it leaves out), then sets state `ready`. The Asset queue listens with `onState` and on `ready` sends (3) unacked final reports, (4) `queueReport()`, (5) `query.queue`. The reconnector only reopens the link and has no resync steps of its own; `link.mjs` never imports `asset-queue.mjs`.
+- **Asset**, after **every** accepted hello (first connect and each reconnect), in order (communication.md, After reconnecting): the link sends (1) `admin.describe` from `opts.describe` and (2) the connect `report.settings` from `opts.connectSettings()` (every setting it supports; Core refuses changes to any setting it leaves out). It sends each only after the one before is acknowledged by Core's `admin.reply` (matched by `reply_from`/`reply_to`), resending the same bytes every 10 s until then (law 23), then sets state `ready`. The Asset queue listens with `onState` and on `ready` sends (3) unacked final reports, (4) `queueReport()`, (5) `query.queue`. The reconnector only reopens the link and has no resync steps of its own; `link.mjs` never imports `asset-queue.mjs`.
 - **Operator**: pending → `unknown/disconnected`. No command retry. The live picture (if on) goes `stale:true` and then rebuilds from Core's connect push. Those messages are mostly duplicates of what it saw before; they are delivered anyway (section 3.6).
 - The seq counter continues across reconnects (same identity object).
 
@@ -433,7 +433,7 @@ Acceptance:
 ### Slice 3: Link + hello + describe (D9)
 Files: `link.mjs`, inbound pipeline without dedupe (dedupe lands in slice 4), observer basics.
 Acceptance (fake transport plus a test server built from `createLink({side:'server'})`):
-- Asset hello accepted → describe from `opts.describe`, then connect `report.settings` from `opts.connectSettings` when provided, then `ready`; describe carries no key and no version.
+- Asset hello accepted → describe from `opts.describe`, then (after its `admin.reply`) connect `report.settings` from `opts.connectSettings` when provided, then (after its `admin.reply`) `ready`; a lost reply is covered by resending the same bytes; describe carries no key and no version.
 - Operator hello accepted → `ready`, with no describe.
 - A message before the hello is accepted is refused locally (`not_ready`). A server receiving a non-hello first closes.
 - `version_mismatch` → `open()` rejects, state set, no reconnect.
@@ -582,7 +582,7 @@ Confirmed by the developer. These are settled; do not reopen them in a slice PR.
 - **P2 (slice 9):** the live picture issues its own `query.core kind assets` on connect and reconnect, and is `ready` when that request's `admin.reply` arrives. It does not try to detect the end of Core's connect push.
 - **P3 (slice 2):** each transport adapter is a sibling package with its own `package.json`. No npm workspaces.
 - **P4 (slice 6):** the Asset queue takes a Map-like store (`get`/`set`/`delete`/`keys`, default `new Map()`), section 3.9. One record per finished task (final bytes + `acked`) and one per answer, newest ≥1024 of each kept. A cancel before arrival is a finished task whose final is `cancelled`.
-- **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings` and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report → `query.queue`. `createLink` takes `connectSettings`.
+- **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings`, each waiting for Core's `admin.reply`, and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report → `query.queue`. `createLink` takes `connectSettings`.
 
 ## 11. How to work this plan
 

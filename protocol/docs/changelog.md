@@ -2,12 +2,15 @@
 
 ## 0.8
 
+- No short keys: field names and `type` stay readable for good (law 6). Each link chooses its own compression; the hello and its reply are never compressed (law 12). Every change after a release is a new version, additive or not (law 10). No message changes.
 - Origin: every message carries `from` (Asset id, operator id, or `CORE`). Core forwards other creators' messages unchanged. Duplicates are `(from, seq, time)`. Replies use `reply_from` + `reply_to`. Law 2 changed on purpose (flat messages with a creator).
 - Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
 - Queue: drop `task_seq` and the gap-wait. Core owns an ordered list of `task_id`s; Asset reports the queue; Core resends missing bodies.
 - SDK how-it-works locked under `sdk/`: shared `check()`, `request`/`stream`/`subscribe`, on-demand picture with opt-in live + `stale`, bytes-only adapters, one identity module, Asset auto-resync, no operator command auto-retry.
 - Dedupe: act once, deliver always. A replayed message is not acted on again but is still delivered to streams, subscribers and the live picture; the picture upserts by `(from, seq, time)`.
 - Asset reconnect order: after each accepted hello, describe → connect `report.settings` → unacked finals → queue report → `query.queue`.
+- Acknowledgements (law 23): Core acknowledges `admin.describe` and the connect `report.settings` with `admin.reply`; the Asset resends each until acknowledged and sends nothing else first.
+- A cancel that changes no setting is answered with `run_state` unchanged. While paused, a new immediate command runs but queued tasks wait for `run_state: running`. Link loss counts on the ground; every response except `continue` keeps the Asset down and cancels its queue.
 - Offline Assets: Core counts an Asset offline after `link_loss_after_s` with nothing new from it, even with a link open. A quiet Asset sends `report.telemetry` early. Core refuses and holds nothing for an offline Asset, and stops resending Tasks it never saw confirmed once the Asset goes offline.
 - Link loss contact: any new (non-duplicate) message after the accepted hello that names this Asset in `asset_id` and was not sent by this Asset (not only `from: CORE`). Covers Core forwards of operator traffic.
 

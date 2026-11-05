@@ -20,7 +20,7 @@ Asset ──1. radio──▶ Gateway ──2. IP (GAP)──▶ Core ──3. s
 - **Bloat:**
   - `"altitude_reference":"home"` repeats in every report, though it rarely changes.
   - `ground_speed_mps` and `heading_deg` are sent even when they are 0 or unchanged.
-  - `"type":"report.telemetry"` is 24 characters. Short keys are deferred to 1.0.
+  - `"type":"report.telemetry"` is 24 characters. Link compression shrinks it; the name stays readable.
   - Radio compression (chosen later) will remove some of this, but not the repeated values.
 
 ## Battery
