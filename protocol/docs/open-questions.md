@@ -20,7 +20,6 @@ Not decided yet. Planning comes before building.
 
 The direction is in [decisions](decisions.md#plugins).
 
-- **List outputs.** What is one item in a returned list? Not every item is a geo feature; a ground elevation, for example, is a number. To be settled after reviewing example Plugins.
 - **The `plugin` messages.** The exact messages for listing, calling and answering are not defined yet.
 
 ## Earlier
