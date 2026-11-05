@@ -32,7 +32,8 @@ Each subsystem defines how it represents that evidence.
 The owner decides Atlas's data formats and data structures. Protocol follows them and adds the exact fields.
 
 - Each message has one time for the whole message. Mixed times are rare and need
-  their own case. There is no sender field; messages carry `asset_id`, `time`, and `seq`.
+  their own case. Every message carries `from` (the creator), `time`, and `seq`.
+  Messages about one Asset also carry `asset_id`.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
 - The whole data format lives in Protocol. Protocol defines both the messages and
@@ -54,8 +55,61 @@ When a subsystem rule conflicts with the operating context, surface the mismatch
 and resolve it explicitly. Neither document silently overrides the other.
 Intended behavior is not proof of implementation.
 
+## Keep judgment sharp
+
+Coding agents uphold these fundamentals before changing Atlas. Subsystem AGENTS.md
+files point here. Architecture detail lives in [design-decisions.md](design-decisions.md).
+
+Fix the real hole. Adding a new concept, field, or mechanism to paper over a bug is
+a design problem. Prefer deleting the wrong thing over layering a new one.
+
+Name important domain distinctions early so first flight does not conflate them
+(for example Observation versus Track). Keep untested shapes provisional until a
+concrete story, consumer, or prototype establishes what the contract needs. Commit
+an exact contract early only when postponing creates a specific, explainable
+obstacle. Do not let an imagined future architecture indefinitely delay first
+flight; do not let first-flight shortcuts define the whole architecture either.
+
+Matching protocol versions are required today; wire-contract changes follow the
+selected versioning rules in [design-decisions.md](design-decisions.md) and
+Protocol. Never silently reinterpret unsupported messages or conceal incompatible
+behavior. Do not invent protocol fields to paper over attribution or routing the
+link or Core already owns.
+
+Protocol is the spec. The SDK is the one implementation and front door. Core uses
+the SDK and keeps business rules only — no second validation or dedupe stack.
+See [design-decisions.md](design-decisions.md).
+
+Locked how-it-works, laws, and communication docs beat an implementation plan when
+they conflict. Change a lock on purpose with the owner; do not quietly diverge in
+code.
+
+Accepted acknowledgment and observed Asset outcomes are different facts. Asset
+reports are the observed outcome under the contract, not the same fact as
+acceptance. Preserve uncertainty when the outcome is not known — see
+[Keep evidence honest](#keep-evidence-honest). State guarantees together with
+their assumptions and recovery boundaries. Preserve message identity when
+forwarding, and separate repeated effects from repeated delivery. Exact rules live
+in Protocol (`communication.md` / SDK docs).
+
+SDK helpers report contact, queues, and outcomes. The Asset app owns motion and
+failsafes. Helpers never fly.
+
+Stress undecided ideas with small prototypes and write findings back into the docs.
+The docs stay the source.
+
+Every coding agent reads and upholds this charter and
+[design-decisions.md](design-decisions.md). The Charter is the **review standard**.
+Reading or quoting it does not prove a change meets it. A change should make clear
+what problem it solves, why this is the simplest credible fix, and what evidence
+supports the claim.
+
 ## Change Atlas deliberately
 
 The owner approves behavior and scope. Engineers choose conforming details.
 Keep selected decisions, proposals, and open questions distinct in subsystem docs.
-Generated output, reviews, and historical specifications do not approve changes.
+Coding agents and their subagents follow this charter and
+[design-decisions.md](design-decisions.md). When evidence shows an approved
+assumption is wrong, the agent explains the mismatch and proposes the smallest
+correction; the owner still decides. Generated output, reviews, and
+historical specifications do not approve changes and do not override this charter.
