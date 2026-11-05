@@ -179,7 +179,7 @@ is a link-design concern, handled in each link profile, not in the messages.
 
 ## SDK
 
-What the SDK keeps is in [sdk/README.md](../sdk/README.md).
+What the SDK keeps is in [sdk/README.md](https://github.com/atlas-field-systems/protocol/blob/main/sdk/README.md).
 
 ## Escape hatches
 
