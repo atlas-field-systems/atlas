@@ -15,7 +15,11 @@ This page records the owner's intended use. No Plugin exists yet.
   Entities and Tasks.
 - Protocol carries one thing for Plugins: a call to an action and its result.
   That is how an operator interface uses a Plugin from outside Core.
+- Operators call Plugins today. Assets will be able to call them later.
 - Plugins do not direct Assets or issue Tasks.
+- Fusion is not a Plugin. Core runs it on every Observation, and nobody calls it.
+- A feed that sends data all the time, such as an internet aircraft feed, is an
+  Asset, not a Plugin.
 
 ## Actions
 
@@ -48,8 +52,16 @@ The operator passes an area and asks for satellite imagery of it. The Plugin
 collects what imagery its tools can reach and stores it in Core, for example
 as Objects. The output refers to what it stored.
 
+### Ground elevation for an Asset (later)
+
+An Asset sends its position and asks for the ground elevation there. With it,
+the Asset can work out its height above the ground, whether it uses a
+barometer or the altitude of the place it took off from.
+
 ## Not decided
 
 How the operator application shows Plugins and their results is not decided.
+How Plugins run inside Core, such as how one is installed and started, waits
+until Core's architecture is clearer.
 The exact call and result messages are open in
 [Protocol open questions](https://github.com/atlas-field-systems/protocol/blob/main/docs/open-questions.md#plugins).
