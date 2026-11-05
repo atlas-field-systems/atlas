@@ -6,6 +6,9 @@
 - Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
 - Queue: drop `task_seq` and the gap-wait. Core owns an ordered list of `task_id`s; Asset reports the queue; Core resends missing bodies.
 - SDK how-it-works locked under `sdk/`: shared `check()`, `request`/`stream`/`subscribe`, on-demand picture with opt-in live + `stale`, bytes-only adapters, one identity module, Asset auto-resync, no operator command auto-retry.
+- Dedupe: act once, deliver always. A replayed message is not acted on again but is still delivered to streams, subscribers and the live picture; the picture upserts by `(from, seq, time)`.
+- Asset reconnect order: after each accepted hello, describe → connect `report.settings` → unacked finals → queue report → `query.queue`.
+- Link loss contact: any new (non-duplicate) message after the accepted hello that names this Asset in `asset_id` and was not sent by this Asset (not only `from: CORE`). Covers Core forwards of operator traffic.
 
 ## 0.7
 

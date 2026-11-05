@@ -30,8 +30,11 @@ One module owns:
    - Core: `from` = `CORE` when Core creates the message
 3. **Remember / dedupe** — key is `(from, seq, time)`. A retry is the same bytes
    again. Dedupe stops a message being **acted on** twice; it does not stop
-   delivery to `stream`, `subscribe` or the live picture (replays still arrive). Auth loss hard-stops stamping and sending; already-read local data may
-   stay readable.
+   delivery to `stream`, `subscribe` or the live picture (replays still arrive).
+   `subscribe` gets `{msg, raw, duplicate}` so acting code can skip replays.
+   Contact advances on non-duplicate post-hello inbound with this Asset's
+   `asset_id` whose `from` is not this Asset. Auth loss hard-stops stamping and
+   sending; already-read local data may stay readable.
 
 Core keeps a **last-answer cache** so a retried request gets the same
 `admin.reply` again. Core does **not** keep a second dedupe set that can swallow
@@ -58,8 +61,8 @@ creator — never a silent renumber of someone else's bytes.
 | Call | Behavior |
 | --- | --- |
 | `request` | Send one message; wait for matching `admin.reply` |
-| `stream` | Receive related messages until the matching `admin.reply` |
-| `subscribe` | Live filter by type/kind until unsubscribed |
+| `stream` | Receive the messages that match the query until the matching `admin.reply` |
+| `subscribe` | Live filter by type/kind until unsubscribed; callback `{msg, raw, duplicate}` |
 
 Outcomes for a finished `request` / `stream`:
 
@@ -106,11 +109,13 @@ not send or receive message objects.
 
 ## Reconnect (D8)
 
-**Asset SDK**, on accepted hello, automatically:
+**Asset SDK**, on every accepted hello, automatically:
 
-1. Resend unfinished final task reports (retries).
-2. Send the current queue report.
-3. Send `query.queue`.
+1. Send `admin.describe`.
+2. Send the connect `report.settings`.
+3. Resend unfinished final task reports (retries).
+4. Send the current queue report.
+5. Send `query.queue`.
 
 **Operator** live picture rebuilds from Core's connect push (`admin.describe` +
 latest reports). Inflight `request` → `unknown`. No auto-retry of operator
