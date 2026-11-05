@@ -140,7 +140,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - The hello must be the first message on a link. Anything before an accepted hello closes the link.
 - One link per ID. Each operator interface has its own `operator_id`. A second link with the same `asset_id` or `operator_id` replaces the older one.
 - Everything a creator sends gets a new `seq`. Core forwards other creators' messages unchanged. A deliberate repeat (including `every_s`) is a new message with a new `seq` from its creator, so the duplicate rule never drops it.
-- A command to an Asset that is not connected is refused with a reason. Core does not hold it. The operator sends it again once the Asset is back, so an Asset never runs stale work after a failsafe.
+- A command to an Asset that is not connected is refused with a reason. Core does not hold it. The operator sends it again once the Asset is back.
 - A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched.- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset ignores a resent Task it holds, and resends the final report of one it finished.)
 - Telemetry rate is the Asset setting `telemetry_every_s`.
 
