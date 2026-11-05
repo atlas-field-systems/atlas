@@ -26,7 +26,8 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
   query    asset, queue, core (kind: assets, history)
   report   status   (kind: asset, task, queue)
            failsafe (kind = trigger: link_loss, low_battery; response field)
-           gimbal, observation
+           observation (kind: coordinates, bearing)
+           gimbal
            telemetry, battery, settings
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
@@ -111,6 +112,12 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `report.gimbal` gives live gimbal pointing, often while active, never while idle.
 - `move_to` stays simple and never carries a geo feature. Cameras may give an optional roll.
 - Assets send `report.observation`, never tracks. Fusion is a separate swappable Docker module: observations in, tracks out. It alone decides when observations are the same target. The first, temporary module makes one track per observation. Tasks target tracks.
+- Observations (0.8). `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
+- One `entity_type` list names what Assets, observations and tracks are: person, ground_vehicle, airplane, helicopter, drone, aircraft (type unknown), watercraft, animal, structure, fixed_sensor, other. Left out means unknown. An Asset may give it in `admin.describe`.
+- Uncertainty is an ellipse (a circle when only `semi_major_m` is given) or a polygon of up to 32 corners, plus an optional `altitude_uncertainty_m`; bearing, elevation and range each have their own. Every bound is 95% (law 8). Left out means unknown, never exact. Observations and tracks share it.
+- A position with no altitude means the altitude was not measured. Displays draw it at ground level; fusion never reads it as "on the ground".
+- Extra facts go in `details`, a fixed list of specific details (`icao_address`, `callsign`, `squawk`, `color`), not broad groups, so tools can read and show each one. A new kind of detail is added to the list. Each stays true for its observation until replaced.
+- Target speed and direction of travel are not sent; fusion works them out from successive positions.
 - Assets self-register with a deployment enrollment key presented once, in the first hello (from 0.6). Keys are 16 random bytes (22 characters).
 
 ## Queue order, cancel and failures (0.4)

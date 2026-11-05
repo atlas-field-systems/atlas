@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/uncertainty.json",
+  "title": "uncertainty",
+  "description": "Where something may really be, around a position. Every bound is 95%: the true place is inside 95 times out of 100. The area is either an ellipse (semi_major_m alone is a circle) or a polygon of 3 to 32 corners, never both. altitude_uncertainty_m covers the position's altitudes. Leaving the uncertainty out means it is not known, never that the position is exact.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": false,
+  "not": {
+    "required": [
+      "semi_major_m",
+      "polygon"
+    ]
+  },
+  "dependentRequired": {
+    "semi_minor_m": [
+      "semi_major_m"
+    ],
+    "orientation_deg": [
+      "semi_minor_m"
+    ]
+  },
+  "properties": {
+    "semi_major_m": {
+      "$ref": "../variables/semi_major_m.json"
+    },
+    "semi_minor_m": {
+      "$ref": "../variables/semi_minor_m.json"
+    },
+    "orientation_deg": {
+      "$ref": "../variables/orientation_deg.json"
+    },
+    "polygon": {
+      "type": "array",
+      "items": {
+        "$ref": "point.json"
+      },
+      "minItems": 3,
+      "maxItems": 32
+    },
+    "altitude_uncertainty_m": {
+      "$ref": "../variables/altitude_uncertainty_m.json"
+    }
+  },
+  "examples": [
+    {
+      "semi_major_m": 15
+    },
+    {
+      "semi_major_m": 40,
+      "semi_minor_m": 12,
+      "orientation_deg": 70,
+      "altitude_uncertainty_m": 15
+    },
+    {
+      "polygon": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2765,
+          "longitude": -71.8022
+        },
+        {
+          "latitude": 42.2757,
+          "longitude": -71.8018
+        },
+        {
+          "latitude": 42.2753,
+          "longitude": -71.8027
+        }
+      ]
+    }
+  ]
+}

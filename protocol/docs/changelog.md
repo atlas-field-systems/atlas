@@ -2,6 +2,7 @@
 
 ## 0.8
 
+- Observations: `report.observation` has kinds `coordinates` (target position with `uncertainty`) and `bearing` (recorded `origin`, bearing, optional elevation and range, each with an uncertainty). New shared `entity_type` on observations and, optionally, `admin.describe`. New `details` with a fixed list (`icao_address`, `callsign`, `squawk`, `color`). New components `uncertainty` (ellipse or polygon, 95% bounds, law 8) and `point`.
 - Origin: every message carries `from` (Asset id, operator id, or `CORE`). Core forwards other creators' messages unchanged. Duplicates are `(from, seq, time)`. Replies use `reply_from` + `reply_to`. Law 2 changed on purpose (flat messages with a creator).
 - Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
 - Queue: drop `task_seq` and the gap-wait. Core owns an ordered list of `task_id`s; Asset reports the queue; Core resends missing bodies.
