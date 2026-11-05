@@ -22,7 +22,6 @@ Not decided yet. Planning comes before building.
 
 Most of these are answered in [communication.md](communication.md).
 
-- **Message envelope.** Partly answered in 0.8 for the queue: Core owns an ordered `task_id` list and sends each body once; the Asset reports the queue. A broader envelope for other contexts stays deferred.
 - **Command acknowledgement.** Answered for operators: `admin.reply` says accepted or refused; the Asset's reports give the observed result.
 - **Queue and task-list delivery.** Answered in 0.8: Core-owned ordered `task_id` list; each body once; Asset queue report; Core resends missing. No `task_seq`, no gap-wait.
 - **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
