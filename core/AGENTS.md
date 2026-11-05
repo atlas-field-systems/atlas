@@ -8,8 +8,8 @@ If you need something outside this repository, go to the one that owns it.
 | Repository | What lives there | Status |
 |---|---|---|
 | [atlas](https://github.com/atlas-field-systems/atlas) | The Charter: what Atlas is for, how it is used, project-wide design decisions | Active |
-| [protocol](https://github.com/atlas-field-systems/protocol) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `v<major.minor>.<patch>` tags: major.minor is the protocol version, and the patch counts releases that change no message. Also the SDK, in `sdk/`: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages | Spec active, SDK not built yet |
-| [core](https://github.com/atlas-field-systems/core) | Atlas Core: the server that keeps the shared picture and requests work. Now a first-flight prototype on Protocol 0.6. It moves only to Protocol release tags | Prototype |
+| [protocol](https://github.com/atlas-field-systems/protocol) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `v<major.minor>.<patch>` tags: major.minor is the protocol version, and the patch counts releases that change no message. Also the SDK, in `sdk/`: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages | Spec active, SDK how-it-works locked (0.8), runtime not built |
+| [core](https://github.com/atlas-field-systems/core) | Atlas Core: the server that keeps the shared picture and requests work. First-flight prototype; moves only to Protocol release tags. Will adopt the SDK front door once the SDK exists | Prototype |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to **atlas**.
 - Want the exact shape of a message or of stored data? Go to **protocol**.

@@ -21,3 +21,27 @@ Protocol gaps found while building the prototype. Protocol is not changed from h
 12. **Bad messages from an Asset.** Dropped and logged; the Asset never knows.
 13. **What "latest state" means on connect.** The prototype pushes each Asset's hello and newest report of each type.
 14. **Storage formats.** The prototype stores whole messages as JSON beside a few key columns.
+
+## Protocol 0.8 (SDK locks) — not adopted here yet
+
+Protocol 0.8 documents the SDK how-it-works and cuts three prototype patches.
+This Core still speaks its **pinned** Protocol release (see submodule) and still
+implements the older shapes until a protocol-bump + adapt PR:
+
+1. **Origin / no renumber.** Spec: every message carries `from`; Core forwards
+   other creators unchanged; duplicates are `(from, seq, time)`; replies use
+   `reply_from` + `reply_to`. Prototype today still stamps its own `seq` on
+   forwards.
+2. **`admin.describe` replaces `admin.asset`.** Hello is keys + version + id;
+   description is keyless. Prototype still pushes `admin.asset`.
+3. **No `task_seq` / gap-wait.** Core owns an ordered `task_id` list; Asset
+   reports the queue; Core resends missing. Prototype may still pass `task_seq`
+   through from operators.
+
+**When the SDK exists:** Core calls shared `check()` and keeps business rules
+only (online?, command listed in `admin.describe`?, duplicate `task_id`?). Core
+keeps a last-answer cache for retries — **not** a second dedupe set that can
+swallow them. Do not half-migrate the runtime ahead of the SDK thin slice.
+
+See Protocol `sdk/how-it-works.md` and the 0.8 changelog section.
+
