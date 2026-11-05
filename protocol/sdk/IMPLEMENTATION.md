@@ -5,6 +5,8 @@ contract is already locked in `sdk/how-it-works.md`, `sdk/concepts.md`,
 `docs/laws.md` and `docs/communication.md`. This file covers **how to build it**:
 the file layout, signatures, invariants, the order of PRs, and tests. If this
 plan and those docs disagree, the docs win. Stop and ask; do not invent a fix.
+Read [AGENTS.md](../AGENTS.md) first: the Charter comes before this plan, and its
+working rules (commit identity, privacy, merging, CI, no CDN) apply to every slice.
 
 Ground rules:
 
@@ -25,12 +27,10 @@ Ground rules:
 | Modules | ESM only (`"type": "module"`), `.mjs` files. |
 | Tests | `node --test`; no Jest or Mocha. Add `sdk/test/*.test.mjs` to protocol's `npm test` glob. |
 | Deps | SDK: `ajv`, `ajv-formats` (already in protocol). WebSocket adapter: `ws` (Core already uses `^8.18`), also added to protocol's root `devDependencies` and `package-lock.json` in slice 2 so CI's root `npm ci` installs it. Nothing else without asking. |
-| Network | No CDN, no remote `$ref` fetch, no network at load time. Definitions are read from disk. |
+| Network | No remote `$ref` fetch, no network at load time. Definitions are read from disk. |
 | Browser | Not a v1 target for the SDK runtime. The viewer keeps using `lib/protocol.mjs`. Keep `src/` free of `fs` except in `definitions.mjs`, so browser support stays possible later. |
 | Clock | `now()` is injectable everywhere (tests use a fake clock). Never call `Date.now()` directly outside `clock.mjs`. |
-| Commits | Author **and** committer: `the-Drunken-coder <183743141+the-Drunken-coder@users.noreply.github.com>`. Set `git config user.name/user.email` in the clone. |
-| Privacy | Never put a personal name or personal email in any file, commit message, PR body, test fixture or example. Use IDs like `A1`, `OP1`, `CORE`. |
-| Process | One PR per slice below. Run `npm run check` and `npm test` before every PR. Do not merge without the developer's approval. Do not hand-edit versions (`npm run bump` only). Do not touch Core in these PRs. |
+| Process | One PR per slice below. Do not touch Core in these PRs. |
 
 ---
 
@@ -569,7 +569,6 @@ separate Core PR, not done here:
 - [ ] Every queue, map and buffer has a bound.
 - [ ] Observer errors are swallowed.
 - [ ] No `Date.now()` outside `clock.mjs`. No network in tests except localhost WS.
-- [ ] Commit identity is the-Drunken-coder noreply. No personal names or emails anywhere.
 
 ---
 
@@ -589,4 +588,4 @@ Confirmed by the developer. These are settled; do not reopen them in a slice PR.
 ## 11. How to work this plan
 
 - One slice per PR, in order. Each PR passes its acceptance tests and the section 9 checklist.
-- The developer approves each merge. Do not merge your own slice PR or start the next slice before the previous one is merged.
+- Do not start the next slice before the previous one is merged.
