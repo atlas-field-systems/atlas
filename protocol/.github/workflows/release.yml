@@ -1,7 +1,8 @@
 name: release
-# Pushing to production makes the release: tag v<version> and a GitHub release from
-# docs/changelog.md. production only moves forward to a commit on main:
-#   git push origin main:production
+# Pushing to production makes the release: git push origin main:production
+# Tags are v<major.minor>.<patch>. major.minor is the protocol version (protocol_version.json);
+# the patch counts releases that change no message, such as SDK or tool fixes.
+# Only commits on main are released. A rerun finishes a release whose GitHub release is missing.
 on:
   push:
     branches: [production]
@@ -23,22 +24,39 @@ jobs:
       - id: plan
         run: |
           git merge-base --is-ancestor HEAD origin/main || { echo "::error::production must be a commit on main. Release with: git push origin main:production"; exit 1; }
-          v=$(node -p "require('./definitions/variables/protocol_version.json').examples[0]")
-          echo "version=$v" >> "$GITHUB_OUTPUT"
-          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then
-            if git diff --quiet "v$v" HEAD -- definitions examples storage docs sdk; then
-              echo "release=false" >> "$GITHUB_OUTPUT"; echo "v$v is already released and nothing in the protocol changed since."; exit 0
-            fi
-            echo "::error::v$v is already released and the protocol changed since. Run npm run bump on main first."; exit 1
+          wire=$(node -p "require('./definitions/variables/protocol_version.json').examples[0]")
+          latest=$(git tag -l "v$wire.*" --sort=-v:refname | grep -E "^v${wire//./\\.}\.[0-9]+$" | head -1 || true)
+          next=
+          if [ -z "$latest" ]; then
+            next="v$wire.0"
+          elif git merge-base --is-ancestor HEAD "$latest" || git diff --quiet "$latest" HEAD -- . ':!*.md' ':!docs'; then
+            echo "Nothing new since $latest."
+          elif ! git diff --quiet "$latest" HEAD -- definitions examples storage; then
+            echo "::error::The protocol changed since $latest. Run npm run bump on main first."; exit 1
+          else
+            next="v$wire.$(( ${latest##*.} + 1 ))"
           fi
-          awk -v h="## $v" '$0 == h { f = 1; next } /^## / { f = 0 } f' docs/changelog.md > "$RUNNER_TEMP/notes.md"
-          grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md" || { echo "::error::docs/changelog.md has no ## $v section"; exit 1; }
-          echo "release=true" >> "$GITHUB_OUTPUT"
-      - if: steps.plan.outputs.release == 'true'
-        env:
+          target=${next:-$latest}
+          if [ "${target##*.}" = 0 ]; then
+            awk -v h="## $wire" '$0 == h { f = 1; next } /^## / { f = 0 } f' docs/changelog.md > "$RUNNER_TEMP/notes.md"
+            grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md" || { echo "::error::docs/changelog.md has no ## $wire section"; exit 1; }
+          fi
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          echo "wire=$wire" >> "$GITHUB_OUTPUT"
+      - env:
           GH_TOKEN: ${{ github.token }}
-          V: ${{ steps.plan.outputs.version }}
+          NEXT: ${{ steps.plan.outputs.next }}
+          TARGET: ${{ steps.plan.outputs.target }}
+          WIRE: ${{ steps.plan.outputs.wire }}
         run: |
-          git -c user.name=the-Drunken-coder -c user.email=183743141+the-Drunken-coder@users.noreply.github.com tag -a "v$V" -m "Protocol $V"
-          git push origin "v$V"
-          gh release create "v$V" --verify-tag --title "Protocol $V" --notes-file "$RUNNER_TEMP/notes.md"
+          if [ -n "$NEXT" ]; then
+            git -c user.name=the-Drunken-coder -c user.email=183743141+the-Drunken-coder@users.noreply.github.com tag -a "$NEXT" -m "Protocol $NEXT"
+            git push origin "$NEXT"
+          fi
+          if gh release view "$TARGET" >/dev/null 2>&1; then echo "$TARGET already has its GitHub release."; exit 0; fi
+          if [ "${TARGET##*.}" = 0 ]; then
+            gh release create "$TARGET" --verify-tag --title "Protocol $TARGET" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release create "$TARGET" --verify-tag --title "Protocol $TARGET" --notes "No message changes; protocol version $WIRE." --generate-notes
+          fi
