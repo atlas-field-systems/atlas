@@ -7,5 +7,6 @@
   "target_altitude": {
     "altitude_m": 30,
     "altitude_reference": "home"
-  }
+  },
+  "from": "OP1"
 }

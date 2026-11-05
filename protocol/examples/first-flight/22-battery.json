@@ -1,7 +1,8 @@
 {
   "type": "report.battery",
   "time": 1793667681000,
-  "seq": 17,
+  "seq": 18,
   "asset_id": "A1",
-  "battery_percent": 84
+  "battery_percent": 84,
+  "from": "A1"
 }

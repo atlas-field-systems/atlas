@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8
+
+- Origin: every message carries `from` (Asset id, operator id, or `CORE`). Core forwards other creators' messages unchanged. Duplicates are `(from, seq, time)`. Replies use `reply_from` + `reply_to`. Law 2 changed on purpose (flat messages with a creator).
+- Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
+- Queue: drop `task_seq` and the gap-wait. Core owns an ordered list of `task_id`s; Asset reports the queue; Core resends missing bodies.
+- SDK how-it-works locked under `sdk/`: shared `check()`, `request`/`stream`/`subscribe`, on-demand picture with opt-in live + `stale`, bytes-only adapters, one identity module, Asset auto-resync, no operator command auto-retry.
+
 ## 0.7
 
 - Duplicates: a message is identified by `(sender, seq, time)`. A retry is the same message unchanged and gets the same answer again. The "lower hello means restart" rule is removed. Core keeps its `seq` across restarts. A sender's clock never goes backwards and it sends nothing before its clock is set.

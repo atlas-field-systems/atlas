@@ -2,12 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/settings.json",
   "title": "Settings",
-  "description": "From an Asset: settings, each an explicit end state. After each accepted hello it sends its connect report: every setting it supports, with its value. Core refuses changes to settings the latest connect report left out, and the Asset never reports one until its next hello. Later reports, sent when it changes a setting itself or to confirm an immediate control.settings (reply_to is that command's seq), may carry only some settings; a setting left out is unchanged. Per setting, the newest time wins; an Asset never sends two settings reports with the same time. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
+  "description": "From an Asset: settings, each an explicit end state. After each accepted hello it sends its connect report: every setting it supports, with its value. Core refuses changes to settings the latest connect report left out, and the Asset never reports one until its next hello. Later reports, sent when it changes a setting itself or to confirm an immediate control.settings (reply_from and reply_to name that command), may carry only some settings; a setting left out is unchanged. Per setting, the newest time wins; an Asset never sends two settings reports with the same time. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
+    "from",
     "asset_id"
   ],
   "additionalProperties": false,
@@ -22,8 +23,14 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
+    },
+    "reply_from": {
+      "$ref": "../../variables/reply_from.json"
     },
     "reply_to": {
       "$ref": "../../variables/reply_to.json"
@@ -61,7 +68,8 @@
       "asset_id": "A1",
       "lights": "on",
       "landing_gear": "down",
-      "telemetry_every_s": 1
+      "telemetry_every_s": 1,
+      "from": "A1"
     },
     {
       "type": "report.settings",
@@ -69,7 +77,9 @@
       "seq": 42,
       "asset_id": "A1",
       "reply_to": 9,
-      "lights": "on"
+      "lights": "on",
+      "from": "A1",
+      "reply_from": "CORE"
     }
   ],
   "anyOf": [
@@ -113,5 +123,13 @@
         "link_loss_after_s"
       ]
     }
-  ]
+  ],
+  "dependentRequired": {
+    "reply_to": [
+      "reply_from"
+    ],
+    "reply_from": [
+      "reply_to"
+    ]
+  }
 }

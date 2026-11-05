@@ -8,6 +8,7 @@
     "type",
     "time",
     "seq",
+    "from",
     "asset_id",
     "battery_percent"
   ],
@@ -23,6 +24,9 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
@@ -36,7 +40,8 @@
       "time": 1793667600000,
       "seq": 42,
       "asset_id": "A1",
-      "battery_percent": 82
+      "battery_percent": 82,
+      "from": "A1"
     }
   ]
 }

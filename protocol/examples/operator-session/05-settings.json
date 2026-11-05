@@ -8,5 +8,6 @@
   "landing_gear": "down",
   "link_loss_response": "return_to_home",
   "link_loss_after_s": 30,
-  "telemetry_every_s": 1
+  "telemetry_every_s": 1,
+  "from": "A1"
 }

@@ -4,5 +4,6 @@
   "seq": 104,
   "asset_id": "A1",
   "kind": "asset",
-  "condition": "healthy"
+  "condition": "healthy",
+  "from": "A1"
 }

@@ -1,7 +1,7 @@
 {
   "type": "report.telemetry",
   "time": 1793667652000,
-  "seq": 16,
+  "seq": 17,
   "asset_id": "A1",
   "position": {
     "latitude": 42.275,
@@ -14,5 +14,6 @@
     ]
   },
   "ground_speed_mps": 6.5,
-  "heading_deg": 238
+  "heading_deg": 238,
+  "from": "A1"
 }

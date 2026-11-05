@@ -5,5 +5,7 @@
   "asset_id": "A1",
   "reply_to": 9,
   "reply_result": "accepted",
-  "task_id": "T1"
+  "task_id": "T1",
+  "from": "CORE",
+  "reply_from": "A1"
 }

@@ -23,14 +23,14 @@
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "03-asset.json",
-      "why": "Core pushes the asset list: each Asset's latest admin.hello as admin.asset, without its keys, with Core's own seq (A1 here). Everything Core sends carries Core's seq."
+      "file": "03-describe.json",
+      "why": "Core pushes each Asset's stored admin.describe unchanged (A1 here). Same from, seq and time as the Asset sent."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
-      "file": "04-asset.json",
+      "file": "04-describe.json",
       "why": "And A2, a receive-only ADS-B receiver that accepts no commands."
     },
     {
@@ -87,7 +87,7 @@
       "from": "Core",
       "to": "Operator",
       "file": "12-reply.json",
-      "why": "A1 lists takeoff in its hello, so Core accepts and sends the command to A1 with Core's own seq."
+      "why": "A1 lists takeoff in its hello, so Core accepts and sends the command to A1 with unchanged from and seq."
     },
     {
       "branch": "main",

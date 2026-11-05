@@ -7,6 +7,6 @@
   "minLength": 1,
   "maxLength": 32,
   "examples": [
-    "0.7"
+    "0.8"
   ]
 }

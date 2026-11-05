@@ -70,20 +70,21 @@ for (const [file, s] of Object.entries(schemas)) {
 }
 
 // Laws (docs/laws.md) that can be checked mechanically.
-const header = ['type', 'time', 'seq', 'asset_id'];
+const header = ['type', 'time', 'seq', 'from'];
 const usedKinds = new Set();
 for (const [file, s] of Object.entries(schemas)) {
   const props = s.properties ?? {};
   for (const [prop, def] of Object.entries(props)) {
-    if (/^(header|sender|payload|data|body)$/.test(prop)) errors.push(`${file}: law 2: no "${prop}" wrapper or sender field`);
+    if (/^(header|sender|payload|data|body)$/.test(prop)) errors.push(`${file}: law 2: no "${prop}" wrapper field (use from for the creator id)`);
     if (def.$ref && resolve(file, def.$ref).startsWith('messages/')) errors.push(`${file}: law 2: fields never point at messages`);
   }
   if (isType(file)) {
     const [, group, type] = file.replace('.json', '').split('/');
     for (const h of header) {
-      // Law 3: asset_id is required only when the message concerns a single Asset.
-      if ((h !== 'asset_id' && !s.required?.includes(h)) || !props[h]?.$ref || resolve(file, props[h].$ref) !== `variables/${h}.json`) errors.push(`${file}: law 3: must require "${h}" from variables/${h}.json`);
+      if (!s.required?.includes(h) || !props[h]?.$ref || resolve(file, props[h].$ref) !== `variables/${h}.json`) errors.push(`${file}: law 3: must require "${h}" from variables/${h}.json`);
     }
+    // Law 3: asset_id comes from its variable when present; required only when the message concerns a single Asset.
+    if (props.asset_id && (!props.asset_id.$ref || resolve(file, props.asset_id.$ref) !== 'variables/asset_id.json')) errors.push(`${file}: law 3: asset_id must come from variables/asset_id.json`);
     if (props.type?.const !== `${group}.${type}`) errors.push(`${file}: law 7: type must be fixed to "${group}.${type}" (its folder and file name)`);
     if (s.oneOf) {
       if (s.unevaluatedProperties !== false || s.additionalProperties !== undefined) errors.push(`${file}: law 2: a type with kinds sets unevaluatedProperties to false (and no additionalProperties)`);

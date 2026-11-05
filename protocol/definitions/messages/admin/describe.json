@@ -1,15 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/asset.json",
-  "title": "Asset",
-  "description": "An Asset as Core shares it with operator interfaces: the Asset's latest admin.hello without its keys, with Core's own seq. Core sends it when an operator connects and whenever an Asset says hello. Fields mean the same as in admin.hello.",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/describe.json",
+  "title": "Describe",
+  "description": "An Asset's description after an accepted hello: which reports it sends, which command kinds it accepts (empty for a receive-only Asset), and its cameras. No keys and no protocol version. Core stores it and forwards it unchanged to operator interfaces (same from, seq and time). Core never sends a command kind the Asset does not list. Supported settings are not listed here: the Asset's report.settings on connect carries only the settings it has.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
+    "from",
     "asset_id",
-    "protocol_version",
     "reports",
     "commands"
   ],
@@ -17,7 +17,7 @@
   "properties": {
     "type": {
       "$ref": "../../variables/type.json",
-      "const": "admin.asset"
+      "const": "admin.describe"
     },
     "time": {
       "$ref": "../../variables/time.json"
@@ -25,11 +25,11 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
-    },
-    "protocol_version": {
-      "$ref": "../../variables/protocol_version.json"
     },
     "reports": {
       "type": "array",
@@ -58,11 +58,11 @@
   },
   "examples": [
     {
-      "type": "admin.asset",
-      "time": 1793667600000,
-      "seq": 101,
+      "type": "admin.describe",
+      "time": 1793667600100,
+      "seq": 43,
+      "from": "A1",
       "asset_id": "A1",
-      "protocol_version": "0.7",
       "reports": [
         "status",
         "failsafe",
@@ -88,6 +88,18 @@
           "vertical_fov_deg": 60
         }
       ]
+    },
+    {
+      "type": "admin.describe",
+      "time": 1793667600100,
+      "seq": 2,
+      "from": "R1",
+      "asset_id": "R1",
+      "reports": [
+        "status",
+        "observation"
+      ],
+      "commands": []
     }
   ]
 }

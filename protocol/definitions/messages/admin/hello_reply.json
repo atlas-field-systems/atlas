@@ -8,6 +8,7 @@
     "type",
     "time",
     "seq",
+    "from",
     "hello_result",
     "protocol_version"
   ],
@@ -22,6 +23,9 @@
     },
     "seq": {
       "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
     },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
@@ -43,7 +47,8 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "accepted",
-      "protocol_version": "0.7"
+      "protocol_version": "0.8",
+      "from": "CORE"
     },
     {
       "type": "admin.hello_reply",
@@ -51,7 +56,8 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "version_mismatch",
-      "protocol_version": "0.7"
+      "protocol_version": "0.8",
+      "from": "CORE"
     },
     {
       "type": "admin.hello_reply",
@@ -59,7 +65,8 @@
       "seq": 1,
       "operator_id": "OP1",
       "hello_result": "accepted",
-      "protocol_version": "0.7"
+      "protocol_version": "0.8",
+      "from": "OP1"
     },
     {
       "type": "admin.hello_reply",
@@ -67,7 +74,8 @@
       "seq": 42,
       "asset_id": "A1",
       "hello_result": "refused",
-      "protocol_version": "0.7"
+      "protocol_version": "0.8",
+      "from": "CORE"
     }
   ],
   "anyOf": [
