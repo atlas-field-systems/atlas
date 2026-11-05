@@ -58,10 +58,10 @@ How changes are made:
 - Internal changes, such as compression or encoding, are agreed between the two
   ends when a link opens. Programs do not see them.
 - Changes to meaning are additive: new fields and messages, not changed ones.
-- Breaking changes are rare. They are the only time the version number matters.
-  Open mismatch: Protocol refuses any version difference and any unknown field,
-  so today every change to messages needs a new version
-  ([Protocol open questions](https://github.com/atlas-field-systems/protocol/blob/main/docs/open-questions.md)).
+- Every change after a release is a new version, additive or not. A released
+  version never changes, so two ends with the same version have exactly the
+  same definitions
+  ([Protocol law 10](https://github.com/atlas-field-systems/protocol/blob/main/docs/laws.md)).
 
 How versions and releases work:
 
