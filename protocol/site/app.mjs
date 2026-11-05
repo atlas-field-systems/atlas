@@ -81,7 +81,7 @@ function show(id) {
   $('view').innerHTML = `<h2>${k ? `<code>${esc(s.properties.type.const)}</code> <code>${esc(kind)}</code>` : esc(s.title ?? file)} <small><code>${esc(file)}</code></small></h2><p>${esc(s.description)}</p>${k ? `<p><b>${esc(kind)}:</b> ${esc(protocol.schemas[k.file].description)}</p>` : ''}
     <button id="ex">Use the example</button><button id="min">Minimal (required only)</button>
     <div class="cols"><div class="fieldcol"><h3>Fields</h3><table id="fields"></table></div>
-    <div><h3>Message JSON</h3><p class="lbl" id="readlbl"></p><textarea id="json" spellcheck="false"></textarea><div id="result"></div></div>
+    <div><h3>Message JSON</h3><p class="lbl" id="readlbl"></p><textarea id="json" spellcheck="false"></textarea><div id="verdict"></div></div>
     <div><h3>Compressed</h3><div id="compact"></div><div id="packed"></div></div></div>`;
   const render = (fromText) => {
     const rows = leaves(fields, value);
@@ -107,7 +107,7 @@ function show(id) {
     $('readlbl').innerHTML = `Readable: <b>${m.readableBytes}</b> bytes`;
     $('json').rows = Math.max(m.aligned.split('\n').length, $('json').value.split('\n').length) + 1;
     renderPacked(m);
-    $('result').innerHTML = `<p class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'Valid' : 'Invalid'}</p>
+    $('verdict').innerHTML = `<p class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'Valid' : 'Invalid'}</p>
       ${v.errors.map((e) => `<div class="bad">${esc(e)}</div>`).join('')}
       <p><b>${m.bytes}</b> bytes as compact JSON, <b>${m.compressed}</b> bytes compressed (deflate)</p>
       <table><tr><th>Largest fields</th><th>Bytes</th></tr>${m.fields.slice(0, 8).map((f) => `<tr><td>${esc(f.path)}</td><td>${f.bytes}</td></tr>`).join('')}</table>`;
@@ -116,7 +116,7 @@ function show(id) {
     $('packed').innerHTML = `<p><b>${m.bytes}</b> bytes compact JSON (above) &rarr; <b>${m.compressed}</b> bytes deflate (${Math.round((100 * m.compressed) / m.bytes)}%)</p>
       <h4>Hex dump</h4><pre>${esc(m.hex)}</pre><h4>Base64</h4><pre class="wrap">${esc(m.base64)}</pre>`;
   };
-  $('json').oninput = () => { try { value = JSON.parse($('json').value); render(true); } catch { $('result').innerHTML = '<p class="bad">Not valid JSON yet</p>'; } };
+  $('json').oninput = () => { try { value = JSON.parse($('json').value); render(true); } catch { $('verdict').innerHTML = '<p class="bad">Not valid JSON yet</p>'; } };
   $('ex').onclick = () => { value = example(protocol, id); render(); };
   $('min').onclick = () => { value = generate({ ...fields, schema: {} }); render(); };
   render();

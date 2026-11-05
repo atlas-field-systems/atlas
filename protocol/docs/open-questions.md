@@ -16,12 +16,6 @@ Not decided yet. Planning comes before building.
 - **Additive changes and the version.** The Charter says changes to meaning are additive and only breaking changes matter for the version. But law 10 refuses any version difference, and every message rejects fields it does not define, so an older Core or Asset rejects a new field. Today every change to messages needs a new version. Should an end ignore unknown fields so additive changes keep the version, or should the Charter say every change is versioned?
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
-## Plugins
-
-The direction is in [decisions](decisions.md#plugins).
-
-- **The `plugin` messages.** The exact messages for listing, calling and answering are not defined yet.
-
 ## Earlier
 
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
@@ -35,4 +29,5 @@ Most of these are answered in [communication.md](communication.md).
 - **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** One of the four pillars; no definitions yet.
 - **Gateways.** Answered: routing is the link's job; see [Routing and duplicates](communication.md#routing-and-duplicates).
+- **Plugins.** Answered in 0.8: the `plugin` message group; see [decisions](decisions.md#plugins).
 - **Encode/decode library and stress testing.** Build phase: SDK under `sdk/`, how-it-works locked in 0.8; implementation next.

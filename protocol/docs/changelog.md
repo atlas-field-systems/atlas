@@ -2,6 +2,7 @@
 
 ## 0.8
 
+- Plugins: new `plugin` group. `plugin.describe` lists one Plugin's actions; Core sends one per Plugin on operator connect and in answer to new `query.core` kind `plugins`. `plugin.call` runs an action (a kind); Core answers one `plugin.result` per item (from `CORE`, naming the call with `reply_from` + `reply_to`), then `admin.reply`. New `reply_result` value `failed`: the Plugin ran and broke. New variables `plugin_id` and `action`. First action: `ground_elevation` (a position in, an altitude above mean sea level out). Law 15 and law 21 extended to Plugin actions.
 - Origin: every message carries `from` (Asset id, operator id, or `CORE`). Core forwards other creators' messages unchanged. Duplicates are `(from, seq, time)`. Replies use `reply_from` + `reply_to`. Law 2 changed on purpose (flat messages with a creator).
 - Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
 - Queue: drop `task_seq` and the gap-wait. Core owns an ordered list of `task_id`s; Asset reports the queue; Core resends missing bodies.

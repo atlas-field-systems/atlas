@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/plugin/result/ground_elevation.json",
+  "title": "ground_elevation",
+  "description": "The ground elevation at the call's position, as an altitude above mean sea level (altitude_reference msl).",
+  "type": "object",
+  "required": [
+    "kind",
+    "elevation"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "ground_elevation"
+    },
+    "elevation": {
+      "$ref": "../../../components/altitude.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "ground_elevation",
+      "elevation": {
+        "altitude_m": 143.2,
+        "altitude_reference": "msl"
+      }
+    }
+  ]
+}

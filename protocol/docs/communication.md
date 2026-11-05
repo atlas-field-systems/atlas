@@ -49,7 +49,8 @@ No user accounts or roles.
 3. Core pushes every Asset's latest `admin.describe` and each Asset's latest
    reports (settings, status, queue, telemetry, battery), **unchanged** (same
    `from`, `seq` and `time`). For settings, that is each report holding a
-   setting's newest value, oldest first (see [Settings](#settings)).
+   setting's newest value, oldest first (see [Settings](#settings)). It also
+   sends one `plugin.describe` per Plugin.
 4. From then on Core forwards each new report as it arrives: telemetry, status,
    queue changes and failsafes — still unchanged.
 5. To act, the interface sends `control.command`, `control.settings` or
@@ -63,7 +64,8 @@ No user accounts or roles.
    reply alone means nothing matched. Live forwards keep flowing meanwhile; the
    reader takes as the answer the messages that match the query's own fields.
 7. Core answers **every** operator message after the hello with one `admin.reply`:
-   `accepted` or `refused` (with `explanation`), `reply_from` + `reply_to` naming
+   `accepted` or `refused` (with `explanation`), or for a `plugin.call` also
+   `failed` (with `explanation`), `reply_from` + `reply_to` naming
    the operator message's (`from`, `seq`). Accepted only means Core passed it on.
    The Asset's own reports (task status, queue, `report.settings`) confirm the
    effect, and reach the interface like any other report.

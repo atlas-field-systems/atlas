@@ -23,11 +23,12 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
   control  command  (kind: takeoff, move_to, land, return_to_home; task_id = queued)
            settings (task_id = queued change_settings)
            cancel   (task_id, or none for the motion running now)
-  query    asset, queue, core (kind: assets, history)
+  query    asset, queue, core (kind: assets, history, plugins)
   report   status   (kind: asset, task, queue)
            failsafe (kind = trigger: link_loss, low_battery; response field)
            gimbal, observation
            telemetry, battery, settings
+  plugin   describe, call, result (kind = action: ground_elevation)
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
 - A **command** is something an Asset can do: takeoff, move_to, land. A **task** is one queued use of a command or a settings change. `control.command` and `control.settings` each take an optional `task_id`. Without it, the message runs now (a button press). With it, the message is a Task added to the end of the queue. Each kind is defined once.
@@ -44,10 +45,12 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Plugins
 - Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/atlas/blob/main/plugins.md) page.
-- Plugins get their own message group, `plugin`. Its exact messages are not defined yet.
-- Core sends the list of Plugins, their actions and each action's inputs when an operator connects. An operator can also ask for the list.
+- Plugins get their own message group, `plugin`: `plugin.describe` (one Plugin and the actions it offers), `plugin.call` and `plugin.result`.
+- Core sends one `plugin.describe` per Plugin when an operator connects. An operator can also ask with `query.core` kind `plugins`.
+- Each action is a kind of `plugin.call` and `plugin.result`, defined once in Protocol, like a command kind (law 15). A Plugin lists the actions it offers, and several Plugins may offer the same one. A new action is a Protocol change, even when it reuses existing inputs.
+- Plugin messages are from `CORE`, with `plugin_id` naming the Plugin, because Plugins are inside Core.
 - Every action input is built from Protocol variables and components, such as a box, a position or a geo feature ID. A new kind of input is a Protocol change, with a changelog line such as "Added a box component so Plugins can search an area."
-- A call is answered like a query: its results, then `admin.reply` to mark the end. A result that must outlive the call is stored in Core with an ID and returned as a reference, so closing the operator interface loses nothing.
+- A call is answered like a query: one `plugin.result` per output item, naming the call with `reply_from` and `reply_to`, then `admin.reply` to mark the end. There is no list size limit. `admin.reply` says `accepted` when the call finished, `refused` when it never ran, or `failed` when the Plugin ran and broke; results already sent still stand. A long call sends nothing until it has results; progress and cancel wait until a real Plugin needs them. A result that must outlive the call is stored in Core with an ID and returned as a reference, so closing the operator interface loses nothing.
 - An action's output is a list returned to the caller, or a reference to what the Plugin created in Core (an Object, a Track, a geo feature or another Entity).
 - Outputs follow the same rule as inputs. Each action says what one list item is, built from Protocol variables and components, such as an altitude for a ground elevation or an unsaved geo feature for a building. A new kind of output is a Protocol change. Plugin data varies more than the rest of Atlas, so these additions are expected often.
 - Only operator interfaces call Plugins for now. Assets will be allowed to later.
