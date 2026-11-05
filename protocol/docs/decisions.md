@@ -177,6 +177,6 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 
 ## Offline Assets (0.8)
 
-- Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset sends `admin.alive` when it has been quiet for a third of that. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
+- Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset that has been quiet for a third of that sends `report.telemetry` early, so its check-in carries data. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
 - Commands, settings changes and cancels for an offline Asset are refused and not held. The operator sends them again once the Asset is back.
 - Core never carries work across a disconnect. When an Asset goes offline, Core stops resending the Tasks it never saw confirmed and records no final state for them.

@@ -191,9 +191,10 @@ a gateway can be out of radio range while the gateway's link to Core stays open.
   has heard a new (non-duplicate) message from it (`from` is its id) within its
   `link_loss_after_s`, timed on Core's clock. Otherwise it is **offline**. It is
   connected again as soon as Core hears something new from it.
-- So a quiet Asset is not mistaken for a lost one, an Asset sends `admin.alive`
-  (`from` is its own id) when it has sent nothing new for a third of its
-  `link_loss_after_s`. Its telemetry usually keeps it from being that quiet.
+- So a quiet Asset is not mistaken for a lost one, an Asset that has sent nothing
+  new for a third of its `link_loss_after_s` sends `report.telemetry` early. The
+  check-in carries useful data instead of an empty heartbeat. An Asset that lists
+  no telemetry sends another report it lists, such as `report.status` kind `asset`.
 - Core refuses `control.command`, `control.settings` and `control.cancel` for an
   offline Asset and holds nothing. The operator sends again once it is back.
 - **Core never carries work across a disconnect.** When an Asset goes offline,
