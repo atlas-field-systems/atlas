@@ -16,6 +16,16 @@ Not decided yet. Planning comes before building.
 - **Additive changes and the version.** The Charter says changes to meaning are additive and only breaking changes matter for the version. But law 10 refuses any version difference, and every message rejects fields it does not define, so an older Core or Asset rejects a new field. Today every change to messages needs a new version. Should an end ignore unknown fields so additive changes keep the version, or should the Charter say every change is versioned?
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
+## Plugins
+
+The direction is in [decisions](decisions.md#plugins). The protocol carries only calls to Plugin actions and their results.
+
+- **Listing actions.** How does an operator learn which Plugins and actions exist and what inputs each takes? One way is a list Core sends on connect, like `admin.describe` for an Asset.
+- **Inputs.** Is every input built from protocol variables and components (a box, a position, a geo feature ID), so Protocol still defines every format? Or does each action bring its own schema? There is no area or box component yet.
+- **List outputs.** What is one item in a returned list, such as a building found through Overpass that is not stored in Core?
+- **Long calls.** Gathering imagery may take minutes. Is a call a `query` answered as a stream that ends with `admin.reply`, or does it need progress, cancel, and a result that survives the caller disconnecting?
+- **Callers.** Only operator interfaces, or Assets too?
+
 ## Earlier
 
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
@@ -29,5 +39,4 @@ Most of these are answered in [communication.md](communication.md).
 - **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** One of the four pillars; no definitions yet.
 - **Gateways.** Answered: routing is the link's job; see [Routing and duplicates](communication.md#routing-and-duplicates).
-- **Plugins.** Deferred; the system may be reimagined.
 - **Encode/decode library and stress testing.** Build phase: SDK under `sdk/`, how-it-works locked in 0.8; implementation next.

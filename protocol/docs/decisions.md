@@ -41,6 +41,10 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `from`: who created the message (Asset `asset_id`, operator `operator_id`, or `CORE`). Stays on the message end to end; Core forwards unchanged.
 - `asset_id`: the Asset a command is for, or the Asset a report is from.
 - Replies name the original with `reply_from` + `reply_to` (= that message's `from` and `seq`).
+
+## Plugins
+- Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/atlas/blob/main/plugins.md) page.
+- Each action takes its own inputs. Its output is a list returned to the caller, or a reference to what the Plugin created in Core (an Object, a Track, a geo feature or another Entity).
 - For now, plugins do not act on their own to direct Assets or issue Tasks. This may change later.
 
 ## Values
