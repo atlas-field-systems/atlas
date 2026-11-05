@@ -2,6 +2,7 @@
 
 ## 0.8
 
+- No short keys: field names and `type` stay readable for good (law 6). Each link chooses its own compression; the hello and its reply are never compressed (law 12). Every change after a release is a new version, additive or not (law 10). No message changes.
 - Observations: `report.observation` has kinds `coordinates` (target position with `uncertainty`) and `bearing` (recorded `origin`, bearing, optional elevation and range, each with an uncertainty). New shared `entity_type` on observations and, optionally, `admin.describe`. New `details` with a fixed list (`icao_address`, `callsign`, `squawk`, `color`). New components `uncertainty` (ellipse or polygon, 95% bounds, law 8) and `point`.
 - Origin: every message carries `from` (Asset id, operator id, or `CORE`). Core forwards other creators' messages unchanged. Duplicates are `(from, seq, time)`. Replies use `reply_from` + `reply_to`. Law 2 changed on purpose (flat messages with a creator).
 - Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
@@ -9,6 +10,8 @@
 - SDK how-it-works locked under `sdk/`: shared `check()`, `request`/`stream`/`subscribe`, on-demand picture with opt-in live + `stale`, bytes-only adapters, one identity module, Asset auto-resync, no operator command auto-retry.
 - Dedupe: act once, deliver always. A replayed message is not acted on again but is still delivered to streams, subscribers and the live picture; the picture upserts by `(from, seq, time)`.
 - Asset reconnect order: after each accepted hello, describe → connect `report.settings` → unacked finals → queue report → `query.queue`.
+- Acknowledgements (law 23): Core acknowledges `admin.describe` and the connect `report.settings` with `admin.reply`; the Asset resends each until acknowledged and sends nothing else first.
+- A cancel that changes no setting is answered with `run_state` unchanged. While paused, a new immediate command runs but queued tasks wait for `run_state: running`. Link loss counts on the ground; every response except `continue` keeps the Asset down and cancels its queue.
 - Link loss contact: any new (non-duplicate) message after the accepted hello that names this Asset in `asset_id` and was not sent by this Asset (not only `from: CORE`). Covers Core forwards of operator traffic.
 
 ## 0.7

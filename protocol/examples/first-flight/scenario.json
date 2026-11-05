@@ -29,10 +29,24 @@
     },
     {
       "branch": "main",
+      "from": "Core",
+      "to": "Drone",
+      "file": "01c-reply.json",
+      "why": "Core stores the description and acknowledges it. Until it does, the drone resends the description and sends nothing else."
+    },
+    {
+      "branch": "main",
       "from": "Drone",
       "to": "Core",
       "file": "03-settings.json",
-      "why": "The drone reports its current settings, so Core knows what it will do if the link drops."
+      "why": "The drone reports its current settings, so Core knows what it will do if the link drops. This connect report lists every setting it supports."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Drone",
+      "file": "03b-reply.json",
+      "why": "Core acknowledges the connect report. Only now does the drone send its other reports."
     },
     {
       "branch": "main",

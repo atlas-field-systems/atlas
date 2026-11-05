@@ -14,12 +14,14 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 | 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says hello: its id, protocol version, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe. | 177 | 152 |
 | 02 | Core → Drone | [`admin.hello_reply`](../examples/first-flight/02-hello_reply.json) | Core accepts the drone and confirms the version both sides will use. | 138 | 118 |
 | 01b | Drone → Core | [`admin.describe`](../examples/first-flight/01b-describe.json) | After the hello is accepted, the drone describes itself: reports, commands and cameras. No keys. Core stores this and will forward it unchanged to operators. | 349 | 227 |
-| 03 | Drone → Core | [`report.settings`](../examples/first-flight/03-settings.json) | The drone reports its current settings, so Core knows what it will do if the link drops. | 225 | 156 |
+| 01c | Core → Drone | [`admin.reply`](../examples/first-flight/01c-reply.json) | Core stores the description and acknowledges it. Until it does, the drone resends the description and sends nothing else. | 138 | 108 |
+| 03 | Drone → Core | [`report.settings`](../examples/first-flight/03-settings.json) | The drone reports its current settings, so Core knows what it will do if the link drops. This connect report lists every setting it supports. | 225 | 156 |
+| 03b | Core → Drone | [`admin.reply`](../examples/first-flight/03b-reply.json) | Core acknowledges the connect report. Only now does the drone send its other reports. | 138 | 108 |
 | 04 | Drone → Core | [`report.status asset`](../examples/first-flight/04-status-asset.json) | The drone reports it is healthy and ready. | 118 | 100 |
 | 05 | Drone → Core | [`report.telemetry`](../examples/first-flight/05-telemetry.json) | The drone reports where it is on the ground. | 233 | 165 |
 | 06 | Drone → Core | [`report.battery`](../examples/first-flight/06-battery.json) | The drone reports its battery, on its own schedule. | 103 | 88 |
 | 07 | Core → Drone | [`control.command takeoff`](../examples/first-flight/07-command-takeoff.json) | Core queues Task T1: climb straight up to 30 m above home. | 181 | 138 |
-| 08 | Core → Drone | [`control.command move_to`](../examples/first-flight/08-command-move_to.json) | Core queues Task T2 straight away: fly to a position, keeping the current altitude. | 173 | 138 |
+| 08 | Core → Drone | [`control.command move_to`](../examples/first-flight/08-command-move_to.json) | Core queues Task T2 straight away: fly to a position, keeping the current altitude. | 173 | 139 |
 | 09 | Core → Drone | [`control.command land`](../examples/first-flight/09-command-land.json) | Core queues Task T3: go to 20 m, fly back over the landing spot and land. | 240 | 171 |
 | 10 | Drone → Core | [`report.status queue`](../examples/first-flight/10-status-queue.json) | Tasks were added, so the drone reports its queue. Core sees all 3 arrived; a missing one would be resent. | 124 | 104 |
 | 11 | Drone → Core | [`report.status task`](../examples/first-flight/11-status-task.json) | The drone reports it started T1 (Takeoff). | 132 | 104 |
@@ -108,6 +110,23 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 </details>
 
+<details><summary>01c-reply.json</summary>
+
+```json
+{
+  "type": "admin.reply",
+  "time": 1793667600300,
+  "seq": 2,
+  "from": "CORE",
+  "asset_id": "A1",
+  "reply_from": "A1",
+  "reply_to": 2,
+  "reply_result": "accepted"
+}
+```
+
+</details>
+
 <details><summary>03-settings.json</summary>
 
 ```json
@@ -123,6 +142,23 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "link_loss_response": "return_to_home",
   "link_loss_after_s": 30,
   "telemetry_every_s": 1
+}
+```
+
+</details>
+
+<details><summary>03b-reply.json</summary>
+
+```json
+{
+  "type": "admin.reply",
+  "time": 1793667600500,
+  "seq": 3,
+  "from": "CORE",
+  "asset_id": "A1",
+  "reply_from": "A1",
+  "reply_to": 3,
+  "reply_result": "accepted"
 }
 ```
 
@@ -191,7 +227,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "control.command",
   "time": 1793667605000,
-  "seq": 2,
+  "seq": 4,
   "from": "CORE",
   "asset_id": "A1",
   "kind": "takeoff",
@@ -211,7 +247,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "control.command",
   "time": 1793667605050,
-  "seq": 3,
+  "seq": 5,
   "from": "CORE",
   "asset_id": "A1",
   "kind": "move_to",
@@ -231,7 +267,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "control.command",
   "time": 1793667605100,
-  "seq": 4,
+  "seq": 6,
   "from": "CORE",
   "asset_id": "A1",
   "kind": "land",
@@ -335,7 +371,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "admin.reply",
   "time": 1793667613100,
-  "seq": 5,
+  "seq": 7,
   "from": "CORE",
   "asset_id": "A1",
   "reply_from": "A1",
@@ -586,7 +622,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-27 messages, 4661 bytes minified, 3519 bytes if each is deflated on its own.
+29 messages, 4937 bytes minified, 3736 bytes if each is deflated on its own.
 
 The header (`type`, `time`, `seq`, `asset_id`) is 38% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
 
@@ -596,14 +632,14 @@ Where the bytes go (each field summed across every message):
 
 | Field | Times | Bytes | Share |
 |---|---|---|---|
-| `type` | 27 | 623 | 13% |
-| `time` | 27 | 540 | 12% |
-| `asset_id` | 27 | 405 | 9% |
-| `from` | 27 | 307 | 7% |
-| `seq` | 27 | 202 | 4% |
+| `type` | 29 | 663 | 13% |
+| `time` | 29 | 580 | 12% |
+| `asset_id` | 29 | 435 | 9% |
+| `from` | 29 | 333 | 7% |
+| `seq` | 29 | 216 | 4% |
 | `kind` | 14 | 195 | 4% |
 | `task_state` | 8 | 180 | 4% |
-| `task_id` | 12 | 168 | 4% |
+| `task_id` | 12 | 168 | 3% |
 | `position.altitudes[].altitude_reference` | 5 | 135 | 3% |
 | `ground_speed_mps` | 5 | 104 | 2% |
 
