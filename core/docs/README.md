@@ -3,13 +3,13 @@
 ## Prototype layout
 
 - Stack: Node 24, `ws` for WebSockets, Ajv for checking messages, built-in `node:sqlite` for storage. No build step, no browser dependencies.
-- `protocol/`: the protocol repository as a git submodule, pinned to a commit. Messages are checked against its `definitions/`; nothing is defined here.
+- `protocol/`: the protocol repository as a git submodule, pinned to a Protocol release tag (`v<major.minor>`). Messages are checked against its `definitions/`; nothing is defined here.
 - `src/core.mjs`: one WebSocket per Asset (`/asset`) or operator interface (`/operator`). Credentials go in the first message (admin.hello or admin.operator_hello), never the URL. Operators get each Asset's hello as admin.asset, without keys. A newer link for the same ID replaces the older one.
 - `src/store.mjs`: tables `assets`, `tasks`, `telemetry`, `history`, plus the newest report of each kind per Asset.
 - `src/dedupe.mjs`: each `(sender, seq)` is handled once.
 - `sim/asset.mjs`: a simulated drone. Default failsafes: link loss returns home, low battery (below its threshold, while flying) lands in place. It sends telemetry every `telemetry_every_s` (0.5 s by default, in sim time), on the ground too. Reports other than telemetry wait in an outbox while the link is down. `src/operator.mjs`: a small operator client. `public/index.html`: the operator page.
 - Core refuses a repeated `task_id` from an operator with a reason (Protocol decisions, 0.6).
 - `test/`: end to end over real sockets.
-- `.github/workflows/protocol-bump.yml`: moves `protocol/` to Protocol's newest main, runs the tests, and opens or updates the `protocol-bump` PR.
+- `.github/workflows/protocol-bump.yml`: when Protocol has a newer release tag, moves `protocol/` to it, runs the tests, and opens or updates the `protocol-bump` PR. Core never follows Protocol's main.
 
 [findings.md](findings.md) lists protocol gaps found while building.
