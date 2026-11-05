@@ -4,7 +4,6 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
-import { fillVersion, wireVersion } from '../lib/protocol.mjs';
 
 const root = 'definitions';
 const ajv = new Ajv({ strict: true, strictRequired: false, allErrors: true });
@@ -23,19 +22,18 @@ const files = ['variables', 'components', 'messages'].flatMap((k) =>
   readdirSync(join(root, k), { recursive: true }).filter((f) => f.endsWith('.json')).map((f) => `${k}/${f}`)).sort();
 const schemas = Object.fromEntries(files.map((f) => [f, JSON.parse(readFileSync(join(root, f), 'utf8'))]));
 
-// Law 10: the version lives only in package.json. Definitions and examples never write it.
-const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
-if (!/^\d+\.\d+\.\d+$/.test(version)) errors.push(`package.json: version must be major.minor.patch, not "${version}"`);
+// Law 10: the version is written once, in variables/protocol_version.json. Every copy must match it.
 const pv = schemas['variables/protocol_version.json'];
-if (pv.examples || pv.const !== undefined || pv.enum) errors.push('variables/protocol_version.json: law 10: no examples, const or enum; loading fills the version in from package.json');
+const version = pv.examples?.[0];
+if (pv.examples?.length !== 1 || !/^\d+\.\d+$/.test(version) || pv.const !== undefined || pv.enum) errors.push('variables/protocol_version.json: law 10: exactly one example, the version as major.minor, and no const or enum');
+const wrongCopy = (m) => m?.protocol_version !== undefined && m.protocol_version !== version;
 for (const [file, s] of Object.entries(schemas)) {
-  if (s.examples?.some((e) => e?.protocol_version !== undefined)) errors.push(`${file}: law 10: examples leave out protocol_version; loading fills it in from package.json`);
-  if (s.properties?.protocol_version && Object.keys(s.properties.protocol_version).join() !== '$ref') errors.push(`${file}: law 10: "protocol_version" is only a $ref; the version lives in package.json`);
+  if (s.examples?.some(wrongCopy)) errors.push(`${file}: law 10: an example's protocol_version is not ${version}; run npm run bump -- ${version}`);
+  if (s.properties?.protocol_version && Object.keys(s.properties.protocol_version).join() !== '$ref') errors.push(`${file}: law 10: "protocol_version" is only a $ref`);
 }
 for (const f of readdirSync('examples', { recursive: true }).filter((f) => f.endsWith('.json'))) {
-  if (JSON.parse(readFileSync(join('examples', f), 'utf8')).protocol_version !== undefined) errors.push(`examples/${f}: law 10: leave out protocol_version; loading fills it in from package.json`);
+  if (wrongCopy(JSON.parse(readFileSync(join('examples', f), 'utf8')))) errors.push(`examples/${f}: law 10: protocol_version is not ${version}; run npm run bump -- ${version}`);
 }
-fillVersion(schemas, wireVersion(version));
 for (const s of Object.values(schemas)) ajv.addSchema(s);
 const resolve = (file, ref) => posix.normalize(posix.join(posix.dirname(file), ref));
 

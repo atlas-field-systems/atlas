@@ -2,8 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/protocol_version.json",
   "title": "protocol_version",
-  "description": "Which protocol version a device runs: major.minor of the version in package.json, so 1.4.2 runs as \"1.4\". Both ends must match exactly. No definition or example writes it; loading fills it in.",
+  "description": "Which protocol version a device runs, as major.minor. Both ends must match exactly. This file's one example is the version of this protocol; npm run bump sets it and every copy.",
   "type": "string",
   "minLength": 1,
-  "maxLength": 32
+  "maxLength": 32,
+  "examples": [
+    "0.7"
+  ]
 }

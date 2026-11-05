@@ -9,9 +9,7 @@ import { loadProtocol } from '../lib/protocol.mjs';
 export const definitionsDir = resolve(
   process.env.ATLAS_DEFINITIONS ?? join(fileURLToPath(import.meta.url), '../../definitions'));
 
-const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-
 export const load = () =>
-  loadProtocol(async (f) => JSON.parse(await readFile(join(definitionsDir, f), 'utf8')), Ajv, addFormats, version);
+  loadProtocol(async (f) => JSON.parse(await readFile(join(definitionsDir, f), 'utf8')), Ajv, addFormats);
 
 export const compress = (bytes) => deflateSync(bytes, { level: 9 });

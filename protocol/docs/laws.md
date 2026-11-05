@@ -16,7 +16,7 @@ or the law gets changed on purpose first.
 7. **Messages are grouped like folders.** A message's `type` is its group and type joined by a dot, matching its file `messages/<group>/<type>.json` (for example `control.command`). A type with several kinds requires `kind`, and each kind is its own file `messages/<group>/<type>/<kind>.json` whose name is the `kind` value. Kinds are unique within a type. *Checked.*
 8. **Fixed units.** Metres, metres per second, degrees from true north. Every altitude says what it is measured from.
 9. **Settings are end states.** A setting says what it should be (`lights: on`), never "toggle" or "switch".
-10. **No versions.** No backward-compatibility layers. Both ends check they have the same protocol when they connect and refuse a mismatch. The version lives only in `package.json`; `protocol_version` is its major.minor. No definition or example writes it: loading fills it in.
+10. **No versions.** No backward-compatibility layers. Both ends check they have the same protocol when they connect and refuse a mismatch. The version is written once, as the one example in `variables/protocol_version.json`. `npm run bump -- <major.minor>` copies it into every example, and `npm run check` fails on a copy that differs.
 11. **Tools only display.** The CLI and the viewer read everything from `definitions/`, never name a message, and never send anything. *Checked by tests.*
 12. **No size cap or chunking in the protocol.** Atlas runs over many links. Each link handles its own size limits, splitting, and compression.
 13. **Easy to compress and split.** Keep structure predictable and fields small: text and lists have length limits, and there are no giant single fields such as embedded files. *Limits checked.*

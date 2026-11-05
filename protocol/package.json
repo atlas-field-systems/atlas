@@ -1,6 +1,5 @@
 {
   "name": "@atlas/protocol",
-  "version": "0.7.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +8,8 @@
     "cli": "node cli/cli.mjs",
     "site": "node scripts/build-site.mjs && node scripts/serve.mjs",
     "build:site": "node scripts/build-site.mjs",
-    "scenarios": "node scripts/scenarios.mjs"
+    "scenarios": "node scripts/scenarios.mjs",
+    "bump": "node scripts/bump.mjs"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.7.5",

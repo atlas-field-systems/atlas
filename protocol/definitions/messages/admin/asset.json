@@ -62,6 +62,7 @@
       "time": 1793667600000,
       "seq": 101,
       "asset_id": "A1",
+      "protocol_version": "0.7",
       "reports": [
         "status",
         "failsafe",

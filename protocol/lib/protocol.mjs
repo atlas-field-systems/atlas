@@ -1,29 +1,15 @@
 // Shared viewer logic. Runs in Node and the browser.
 // Knows only JSON Schema, never any specific Atlas message.
 
-export async function loadProtocol(readJson, Ajv, addFormats, packageVersion) {
+export async function loadProtocol(readJson, Ajv, addFormats) {
   const index = await readJson('index.json');
   const files = index.groups.flatMap((g) => g.files);
   const schemas = {};
   for (const f of files) schemas[f] = await readJson(f);
-  const version = wireVersion(packageVersion);
-  fillVersion(schemas, version);
   const ajv = new Ajv({ strict: false, allErrors: true });
   if (addFormats) addFormats(ajv);
   for (const s of Object.values(schemas)) ajv.addSchema(s);
-  return { index, schemas, ajv, version };
-}
-
-// The version lives only in package.json. On the wire it is major.minor: 0.7.2 runs as "0.7".
-export const wireVersion = (packageVersion) => packageVersion.split('.').slice(0, 2).join('.');
-
-// No definition or example writes protocol_version, so a message whose type has it gets it here.
-export const withVersion = (schema, message, version) =>
-  (schema?.properties?.protocol_version ? { ...message, protocol_version: version } : message);
-
-export function fillVersion(schemas, version) {
-  schemas['variables/protocol_version.json'].examples = [version];
-  for (const s of Object.values(schemas)) if (s.examples) s.examples = s.examples.map((e) => withVersion(s, e, version));
+  return { index, schemas, ajv };
 }
 
 function join(base, ref) {
