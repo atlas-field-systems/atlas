@@ -46,6 +46,8 @@ Their current intended role does not include controlling Assets.
 
 Core runs in Docker as a set of modules, such as the API and data storage.
 One module is the Plugins module. Plugins are small and run inside it.
+Core starts before any other part of an operation and stops after all of them,
+so the parts are not designed for Core restarting mid-operation.
 An Asset's [settings](settings.md) are its current configuration, kept in its entry.
 
 Each subsystem's documentation defines its behavior. Authentication and
