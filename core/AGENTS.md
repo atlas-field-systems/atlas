@@ -8,7 +8,7 @@ If you need something outside this repository, go to the one that owns it.
 | Repository | What lives there | Status |
 |---|---|---|
 | [atlas](https://github.com/atlas-field-systems/atlas) | The Charter: what Atlas is for, how it is used, project-wide design decisions | Active |
-| [protocol](https://github.com/atlas-field-systems/protocol) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `v<major.minor>` tags. Also the SDK, in `sdk/`: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages | Spec active, SDK not built yet |
+| [protocol](https://github.com/atlas-field-systems/protocol) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `v<major.minor>.<patch>` tags: major.minor is the protocol version, and the patch counts releases that change no message. Also the SDK, in `sdk/`: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages | Spec active, SDK not built yet |
 | [core](https://github.com/atlas-field-systems/core) | Atlas Core: the server that keeps the shared picture and requests work. Now a first-flight prototype on Protocol 0.6. It moves only to Protocol release tags | Prototype |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to **atlas**.
@@ -25,3 +25,4 @@ If you need something outside this repository, go to the one that owns it.
 - How clients talk to Core lives in **protocol**, in `sdk/`.
 - Prototypes are approved: build small, learn, and write findings to [docs/findings.md](docs/findings.md) so they can go back into Protocol and the Charter. Do not change Protocol from here.
 - Run `npm test` before every PR. Do not merge without the developer's approval.
+- Releases: raise `version` in `package.json` on main, then `git push origin main:production` once the developer approves. Core releases only on a Protocol release tag.
