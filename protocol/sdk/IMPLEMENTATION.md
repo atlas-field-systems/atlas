@@ -1,8 +1,8 @@
 # Atlas SDK implementation plan (protocol 0.8)
 
 For a coding agent building the SDK runtime in `protocol/sdk/`. The behavior
-contract is already locked in `sdk/how-it-works.md`, `sdk/concepts.md`,
-`docs/laws.md` and `docs/communication.md`. This file covers **how to build it**:
+contract is already locked in `sdk/how-it-works.md`, `docs/laws.md` and
+`docs/communication.md`. This file covers **how to build it**:
 the file layout, signatures, invariants, the order of PRs, and tests. If this
 plan and those docs disagree, the docs win. Stop and ask; do not invent a fix.
 Read [AGENTS.md](../AGENTS.md) first: the Charter comes before this plan, and its
@@ -42,7 +42,6 @@ protocol/
   sdk/
     README.md               update the status line and layout per slice
     how-it-works.md         locked contract (do not edit unless the developer changes a lock)
-    concepts.md             locked
     IMPLEMENTATION.md       this plan
     package.json            name "@atlas/sdk", private, type module, exports "./src/index.mjs"
     src/

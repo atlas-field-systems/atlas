@@ -16,7 +16,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Every message
 - Messages are flat: every field sits directly in the message, with no header or wrapper.
-- **Adopted:** messages are grouped like nested folders, because one flat list of types is hard to read and to maintain. This reverses "each command is its own message type". See [proposals/broad-types.md](proposals/broad-types.md) for the reasoning and size comparison.
+- **Adopted:** messages are grouped like nested folders, because one flat list of types is hard to read and to maintain. This reverses "each command is its own message type". The cost is about 7 bytes per message for the group in `type`, plus the `kind` field where a type has kinds; sending `type` as a number from a fixed table would win most of it back, and waits with short keys for 1.0.
 
   ```text
   admin    hello, hello_reply, operator_hello, reply
@@ -80,7 +80,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 Radio links will use a proven existing compression method, chosen later.
 
 ## Storage
-The protocol also defines the storage layout, so the whole data format lives here. Storage formats are not planned yet ([storage/](../storage/README.md)).
+The protocol also defines the storage layout, so the whole data format lives here. Core's tables are in [Storage](storage.md); stored record formats are not defined yet.
 
 ## Late reports
 An older time never overwrites newer state. There is no "history-only" message.

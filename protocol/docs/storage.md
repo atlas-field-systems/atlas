@@ -6,7 +6,7 @@ How Core stores what it knows. A normal store with one table per kind of thing. 
 
 | Table | One row per | Holds |
 | --- | --- | --- |
-| assets | Asset | `asset_id`, key hash, `reports` it supports, `cameras`, last heard time |
+| assets | Asset | `asset_id`, key hash, `reports` and `commands` it supports, `cameras`, last heard time |
 | tasks | Task | `asset_id`, `task_id`, the command or settings message that carried the `task_id`, its latest state (and `explanation` if it failed), whether the Asset has shown it holds it |
 | geofeatures | geo feature | `geofeature_id`, kind, geometry (a point, line or area) |
 | observations | observation | `asset_id`, `observation_id`, latest position and time, `track_id` |
@@ -18,7 +18,7 @@ Latest status, battery and gimbal pointing are kept on the asset row or beside i
 
 ## Assets
 
-An Asset row is created when the Asset first registers (see [Registration](#registration)). Its supported reports and cameras come from `admin.hello`. Each camera says whether it is `fixed` or on a `gimbal`, which way it faces relative to the nose (`yaw_deg`, `pitch_deg`; for a gimbal, its rest direction) and its field of view, so an interface can draw what it sees. Live gimbal pointing comes from `report.gimbal`, which an Asset sends often while the gimbal is active and not at all while it is idle.
+An Asset row is created when the Asset first registers (see [Registration](#registration)). Its supported reports, commands and cameras come from `admin.describe`. Each camera says whether it is `fixed` or on a `gimbal`, which way it faces relative to the nose (`yaw_deg`, `pitch_deg`; for a gimbal, its rest direction) and its field of view, so an interface can draw what it sees. Live gimbal pointing comes from `report.gimbal`, which an Asset sends often while the gimbal is active and not at all while it is idle.
 
 ## Tasks
 
@@ -44,7 +44,7 @@ Assets register themselves. No operator adds them first.
 
 1. The deployment has one **enrollment key**, set in Core and given to the fleet.
 2. A new Asset picks its own 4-character `asset_id` and makes its own random **asset key**.
-3. When the link opens, the Asset presents its `asset_id`, its asset key and (the first time only) the enrollment key. These travel in its opening `admin.hello` and nowhere else; the hello Core stores leaves them out.
+3. When the link opens, the Asset presents its `asset_id`, its asset key and (the first time only) the enrollment key. These travel in its opening `admin.hello` and nowhere else.
 4. If the enrollment key is right and the ID is free, Core stores the ID with a hash of the asset key. A taken ID is refused, and the Asset picks another.
 5. From then on only that asset key works for that ID. A wrong key, or an unknown ID without the enrollment key, is refused.
 6. Removing an Asset deletes its row. Changing the enrollment key stops new Assets from joining without affecting existing ones.
@@ -56,7 +56,7 @@ Assets register themselves. No operator adds them first.
 History is first-class. `telemetry` and `history` are append-only and ordered by time: rows are added, never edited or removed during a run. An Asset's past path is its telemetry rows over a time range, asked for with one `query.core`:
 
 ```json
-{"type":"query.core","time":1793667600000,"seq":43,"asset_id":"A1","kind":"history","report":"telemetry","since":1793664000000,"until":1793667600000}
+{"type":"query.core","time":1793667600000,"seq":43,"from":"OP1","asset_id":"A1","kind":"history","report":"telemetry","since":1793664000000,"until":1793667600000}
 ```
 
 Core answers with the stored `report.telemetry` messages, oldest first.

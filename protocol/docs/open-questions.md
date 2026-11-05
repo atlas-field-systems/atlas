@@ -20,8 +20,7 @@ Not decided yet. Planning comes before building.
 
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
 
-A draft answer to several of these (envelope, acknowledgement, queue delivery,
-version check) is in [communication.md](communication.md).
+Most of these are answered in [communication.md](communication.md).
 
 - **Message envelope.** Partly answered in 0.8 for the queue: Core owns an ordered `task_id` list and sends each body once; the Asset reports the queue. A broader envelope for other contexts stays deferred.
 - **Command acknowledgement.** Answered for operators: `admin.reply` says accepted or refused; the Asset's reports give the observed result.

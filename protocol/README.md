@@ -25,8 +25,9 @@ field to see the effect. Both tools only display; they never send anything.
 - `definitions/`: variables, components, messages, and `index.json`
 - `docs/laws.md`: the rules every message must follow
 - `docs/decisions.md`: the decisions behind the format
+- `docs/communication.md`: how parts behave on a link. `docs/storage.md`: how Core stores what it knows
 - `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer
 - `scripts/check.mjs`: checks every definition and example (`npm ci && npm run check && npm test`)
 - `sdk/`: the [SDK](sdk/README.md), the one implementation every program uses. Not built yet.
 
-Communication proposal (draft): [docs/communication.md](docs/communication.md). AI agents: read [AGENTS.md](AGENTS.md). Undecided items: [docs/open-questions.md](docs/open-questions.md).
+AI agents: read [AGENTS.md](AGENTS.md). Undecided items: [docs/open-questions.md](docs/open-questions.md).
