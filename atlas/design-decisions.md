@@ -65,7 +65,12 @@ How versions and releases work:
 
 - Protocol's main carries the version being worked on. It can still change until
   it is released.
-- A release is a `v<major.minor>` git tag. Nothing is published as a package.
+- A release is a `v<version>` git tag. Nothing is published as a package.
+  Protocol's tags are `v<major.minor>.<patch>`: major.minor is the protocol
+  version, and the patch counts releases that change no message, such as SDK fixes.
+- Protocol and Core each release by pushing main to their `production` branch
+  (`git push origin main:production`). That runs the checks and makes the tag
+  and a GitHub release. Only commits on main are released.
 - Core has its own repository and moves only to release tags, never to
   Protocol's main, so spec work in progress never breaks it.
 
