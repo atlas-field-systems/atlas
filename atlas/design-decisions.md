@@ -39,17 +39,17 @@ definitions or docs. Programs load the definitions as data instead.
 
 Atlas is split into three layers, so each can change without breaking the others.
 
-- **Protocol is the spec only.** Definitions, laws, examples and docs, with no
-  implementation code. It is what carries the version number, and its package
-  version is the only place that number is written. A release is a git tag.
+- **Protocol is the spec.** Definitions, laws, examples and docs. It carries the
+  version number, written once in Protocol and copied everywhere by a script.
 - **The SDK is the one implementation** and the stable front door every program
   uses: Core, bridges and operator apps. It builds, validates and parses
   messages, and handles keys, queueing and retry, and duplicates. Programs never
-  touch bytes, compression or framing.
-- **Transport adapters** are small plug-in packages under the SDK (WebSocket,
+  touch bytes, compression or framing. It lives in the Protocol repository, in
+  `sdk/`, so a change to the spec and its implementation land together.
+- **Transport adapters** are small plug-in packages beside the SDK (WebSocket,
   Meshtastic, FLRC, and others). They only move bytes, plus any compression or
-  splitting a link needs. Swapping one never changes the SDK's front door or
-  the spec.
+  splitting a link needs. Each is its own package, so a program installs only
+  the links it uses. Swapping one never changes the SDK's front door or the spec.
 
 How changes are made:
 
@@ -57,14 +57,23 @@ How changes are made:
   ends when a link opens. Programs do not see them.
 - Changes to meaning are additive: new fields and messages, not changed ones.
 - Breaking changes are rare. They are the only time the version number matters.
+  Open mismatch: Protocol refuses any version difference and any unknown field,
+  so today every change to messages needs a new version
+  ([Protocol open questions](https://github.com/atlas-field-systems/protocol/blob/main/docs/open-questions.md)).
+
+How versions and releases work:
+
+- Protocol's main carries the version being worked on. It can still change until
+  it is released.
+- A release is a `v<major.minor>` git tag. Nothing is published as a package.
+- Core has its own repository and moves only to release tags, never to
+  Protocol's main, so spec work in progress never breaks it.
 
 How drift is prevented:
 
-- Each SDK release depends on one exact Protocol release and loads its JSON
-  definitions from it when it runs. Moving to a new Protocol is a deliberate
-  SDK change.
-- Protocol's examples run as SDK tests in CI.
-- Every Protocol PR runs the SDK tests.
+- Protocol's examples run as SDK tests, in the same repository.
+- A program outside the Protocol repository, such as Core, pins one release and
+  loads its JSON definitions from it.
 
 Plan: Core's message handling moves into the SDK later, so Core uses the same
 front door as every other program.
