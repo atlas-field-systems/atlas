@@ -1,26 +1,27 @@
 name: protocol-bump
-# Keeps protocol/ on Protocol's newest main. Runs hourly, by hand, or when Protocol
-# sends a "protocol-main" repository_dispatch (that needs a token on Protocol's side).
+# Moves protocol/ to Protocol's newest release tag (v<major.minor>), never to its main,
+# so Core changes Protocol version only on purpose. Runs hourly or by hand.
 on:
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
-  repository_dispatch:
-    types: [protocol-main]
 permissions:
   contents: write
   pull-requests: write
 jobs:
   bump:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
       - id: bump
         run: |
-          git -C protocol fetch -q origin main
-          git -C protocol checkout -q origin/main
+          git -C protocol fetch -q --tags origin
+          tag=$(git -C protocol tag -l 'v*' --sort=-v:refname | head -1)
+          [ -n "$tag" ] && git -C protocol checkout -q "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
           if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
       - if: steps.bump.outputs.changed == 'true'
         uses: actions/setup-node@v4
@@ -31,8 +32,8 @@ jobs:
       - if: steps.bump.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.bump.outputs.tag }}
         run: |
-          sha=$(git -C protocol rev-parse --short HEAD)
-          git -c user.name=the-Drunken-coder -c user.email=183743141+the-Drunken-coder@users.noreply.github.com commit -qam "Bump protocol to $sha"
+          git -c user.name=the-Drunken-coder -c user.email=183743141+the-Drunken-coder@users.noreply.github.com commit -qam "Bump protocol to $TAG"
           git push -f origin HEAD:protocol-bump
-          gh pr view protocol-bump >/dev/null 2>&1 || gh pr create --head protocol-bump --base main --title "Bump protocol" --body "Automatic: protocol/ moved to Protocol main. Tests passed in the protocol-bump workflow. Do not merge without approval."
+          gh pr view protocol-bump >/dev/null 2>&1 || gh pr create --head protocol-bump --base main --title "Bump protocol to a new release" --body "Automatic: protocol/ moved to Protocol release $TAG. Tests passed in the protocol-bump workflow. Do not merge without approval."
