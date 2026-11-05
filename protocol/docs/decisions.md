@@ -16,7 +16,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Every message
 - Messages are flat: every field sits directly in the message, with no header or wrapper.
-- **Adopted:** messages are grouped like nested folders, because one flat list of types is hard to read and to maintain. This reverses "each command is its own message type". The cost is about 7 bytes per message for the group in `type`, plus the `kind` field where a type has kinds; sending `type` as a number from a fixed table would win most of it back, and waits with short keys for 1.0.
+- **Adopted:** messages are grouped like nested folders, because one flat list of types is hard to read and to maintain. This reverses "each command is its own message type". The cost is about 7 bytes per message for the group in `type`, plus the `kind` field where a type has kinds. Link compression wins most of it back; see [Compact JSON](#compact-json).
 
   ```text
   admin    hello, hello_reply, operator_hello, reply
@@ -74,10 +74,11 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Compact JSON
 - Compact JSON is the message minified: same keys, same structure, no extra spaces.
-- Short keys (such as `time` -> `t`) are deferred to protocol 1.0. They are not implemented now, to avoid tangling the definitions.
+- No short keys (such as `time` -> `t`) and no type numbers, now or at 1.0. Names stay readable in the definitions, in messages and in storage.
+- Compression does the work short keys would. On the first-flight run, deflating each message with a dictionary of the definitions' names takes 4661 bytes to 2041 (largest message 117); short keys on top save only 3% more.
 
 ## Radio compression
-Radio links will use a proven existing compression method, chosen later.
+Each link chooses its own compression in its link profile: a proven existing method, chosen later. A link that compresses with a dictionary can build it from the definitions, because both ends run the same protocol version.
 
 ## Storage
 The protocol also defines the storage layout, so the whole data format lives here. Core's tables are in [Storage](storage.md); stored record formats are not defined yet.
