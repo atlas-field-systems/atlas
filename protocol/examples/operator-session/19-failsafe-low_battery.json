@@ -5,5 +5,6 @@
   "asset_id": "A1",
   "kind": "low_battery",
   "response": "land",
-  "explanation": "Battery at 15%"
+  "explanation": "Battery at 15%",
+  "from": "A1"
 }

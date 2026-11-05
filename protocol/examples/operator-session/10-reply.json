@@ -4,5 +4,7 @@
   "seq": 107,
   "asset_id": "A1",
   "reply_to": 1,
-  "reply_result": "accepted"
+  "reply_result": "accepted",
+  "from": "CORE",
+  "reply_from": "OP1"
 }

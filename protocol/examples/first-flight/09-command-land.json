@@ -5,7 +5,6 @@
   "asset_id": "A1",
   "kind": "land",
   "task_id": "T3",
-  "task_seq": 3,
   "landing_position": {
     "latitude": 42.2746,
     "longitude": -71.8063
@@ -13,5 +12,6 @@
   "transit_altitude": {
     "altitude_m": 20,
     "altitude_reference": "home"
-  }
+  },
+  "from": "CORE"
 }

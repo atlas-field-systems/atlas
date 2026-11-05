@@ -5,5 +5,6 @@
   "asset_id": "A1",
   "kind": "task",
   "task_id": "T4",
-  "task_state": "cancelled"
+  "task_state": "cancelled",
+  "from": "A1"
 }

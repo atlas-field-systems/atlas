@@ -8,6 +8,7 @@
     "type",
     "time",
     "seq",
+    "from",
     "asset_id"
   ],
   "additionalProperties": false,
@@ -22,6 +23,9 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     }
@@ -31,7 +35,8 @@
       "type": "admin.alive",
       "time": 1793667600000,
       "seq": 42,
-      "asset_id": "A1"
+      "asset_id": "A1",
+      "from": "CORE"
     }
   ]
 }

@@ -2,12 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/reply.json",
   "title": "Reply",
-  "description": "From Core. To an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in its hello. reply_to is the operator message's seq. For a query, Core sends the answer first and the reply last, so the reply marks the end of the answer. Refusals include a command to an Asset that is not connected (Core does not hold it). asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect. To an Asset, accepted acknowledges a final task report (completed, failed or cancelled): reply_to that report's seq and task_id its Task, so the Asset matches both. The Asset resends the report until it gets this. A retried message gets the same reply again, unchanged.",
+  "description": "From Core (from is CORE). To an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in admin.describe. reply_from and reply_to name the operator message's (from, seq). For a query, Core sends the answer first and the reply last, so the reply marks the end of the answer. Refusals include a command to an Asset that is not connected (Core does not hold it). asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect. To an Asset, accepted acknowledges a final task report (completed, failed or cancelled): reply_from and reply_to name that report's (from, seq) and task_id its Task, so the Asset matches both. The Asset resends the report until it gets this. A retried message gets the same reply again, unchanged.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
+    "from",
+    "reply_from",
     "reply_to",
     "reply_result"
   ],
@@ -23,8 +25,14 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
+    },
+    "reply_from": {
+      "$ref": "../../variables/reply_from.json"
     },
     "reply_to": {
       "$ref": "../../variables/reply_to.json"
@@ -58,7 +66,9 @@
       "seq": 42,
       "asset_id": "A1",
       "reply_to": 7,
-      "reply_result": "accepted"
+      "reply_result": "accepted",
+      "from": "CORE",
+      "reply_from": "OP1"
     },
     {
       "type": "admin.reply",
@@ -67,7 +77,9 @@
       "asset_id": "A2",
       "reply_to": 8,
       "reply_result": "refused",
-      "explanation": "A2 does not accept takeoff"
+      "explanation": "A2 does not accept takeoff",
+      "from": "CORE",
+      "reply_from": "OP1"
     },
     {
       "type": "admin.reply",
@@ -76,7 +88,17 @@
       "asset_id": "A1",
       "reply_to": 9,
       "reply_result": "accepted",
-      "task_id": "T1"
+      "task_id": "T1",
+      "from": "CORE",
+      "reply_from": "A1"
     }
-  ]
+  ],
+  "dependentRequired": {
+    "reply_to": [
+      "reply_from"
+    ],
+    "reply_from": [
+      "reply_to"
+    ]
+  }
 }

@@ -11,7 +11,7 @@
       "from": "Drone",
       "to": "Core",
       "file": "01-hello.json",
-      "why": "The drone opens the link through the gateway and says hello: its protocol version, its key and, this first time, the enrollment key."
+      "why": "The drone opens the link through the gateway and says hello: its id, protocol version, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe."
     },
     {
       "branch": "main",
@@ -19,6 +19,13 @@
       "to": "Drone",
       "file": "02-hello_reply.json",
       "why": "Core accepts the drone and confirms the version both sides will use."
+    },
+    {
+      "branch": "main",
+      "from": "Drone",
+      "to": "Core",
+      "file": "01b-describe.json",
+      "why": "After the hello is accepted, the drone describes itself: reports, commands and cameras. No keys. Core stores this and will forward it unchanged to operators."
     },
     {
       "branch": "main",

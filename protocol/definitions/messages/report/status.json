@@ -8,6 +8,7 @@
     "type",
     "time",
     "seq",
+    "from",
     "asset_id",
     "kind"
   ],
@@ -34,6 +35,9 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
@@ -49,7 +53,8 @@
       "asset_id": "A1",
       "kind": "asset",
       "condition": "degraded",
-      "explanation": "Navigation receiver unavailable"
+      "explanation": "Navigation receiver unavailable",
+      "from": "A1"
     },
     {
       "type": "report.status",
@@ -58,7 +63,8 @@
       "asset_id": "A1",
       "kind": "task",
       "task_id": "T7",
-      "task_state": "active"
+      "task_state": "active",
+      "from": "A1"
     },
     {
       "type": "report.status",
@@ -70,7 +76,8 @@
         "T1",
         "T2",
         "T3"
-      ]
+      ],
+      "from": "A1"
     }
   ]
 }

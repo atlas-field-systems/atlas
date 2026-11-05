@@ -2,17 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/hello.json",
   "title": "Hello",
-  "description": "First message from an Asset when a link opens: which Asset it is, which protocol version it runs, and which reports it sends and which command kinds it accepts (an empty list for a receive-only Asset, such as an ADS-B receiver). Core never sends a command kind the Asset does not list. Supported settings are not listed here: the Asset's report.settings on connect carries only the settings it has, and Core never sends others. It must be the first message on the link and carries the asset key (required) and, the first time only, the enrollment_key. Keys appear in no other message: Core shares an Asset's hello with operators as admin.asset, which leaves both out. The cameras list gives each camera, how it is mounted and its field of view; leave it out if the Asset has none.",
+  "description": "First message from an Asset when a link opens: which Asset it is (asset_id and from, the same id), which protocol version it runs, and its keys. It must be the first message on the link and carries the asset key (required) and, the first time only, the enrollment_key. Keys appear in no other message. Reports, commands and cameras are not here: the Asset sends them next as admin.describe, which Core stores and forwards unchanged.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
+    "from",
     "asset_id",
     "protocol_version",
-    "key",
-    "reports",
-    "commands"
+    "key"
   ],
   "additionalProperties": false,
   "properties": {
@@ -26,6 +25,9 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
@@ -37,30 +39,6 @@
     },
     "enrollment_key": {
       "$ref": "../../variables/enrollment_key.json"
-    },
-    "reports": {
-      "type": "array",
-      "items": {
-        "$ref": "../../variables/report.json"
-      },
-      "minItems": 1,
-      "maxItems": 7
-    },
-    "commands": {
-      "type": "array",
-      "items": {
-        "$ref": "../../variables/command.json"
-      },
-      "minItems": 0,
-      "maxItems": 4
-    },
-    "cameras": {
-      "type": "array",
-      "items": {
-        "$ref": "../../components/camera.json"
-      },
-      "minItems": 1,
-      "maxItems": 4
     }
   },
   "examples": [
@@ -68,46 +46,20 @@
       "type": "admin.hello",
       "time": 1793667600000,
       "seq": 42,
+      "from": "A1",
       "asset_id": "A1",
-      "protocol_version": "0.7",
-      "reports": [
-        "status",
-        "failsafe",
-        "telemetry",
-        "battery",
-        "settings"
-      ],
-      "commands": [
-        "takeoff",
-        "move_to",
-        "land",
-        "return_to_home"
-      ],
-      "cameras": [
-        {
-          "camera_id": "C1",
-          "mount": "gimbal",
-          "yaw_deg": 0,
-          "pitch_deg": -45,
-          "horizontal_fov_deg": 80,
-          "vertical_fov_deg": 60
-        }
-      ],
+      "protocol_version": "0.8",
       "key": "q3J8vR2xT0bN5mK7wY1cZg"
     },
     {
       "type": "admin.hello",
       "time": 1793667600000,
       "seq": 1,
+      "from": "R1",
       "asset_id": "R1",
-      "protocol_version": "0.7",
+      "protocol_version": "0.8",
       "key": "q3J8vR2xT0bN5mK7wY1cZg",
-      "enrollment_key": "H4sLp9Qe2Vd6Fu0Ka8Tn3w",
-      "reports": [
-        "status",
-        "observation"
-      ],
-      "commands": []
+      "enrollment_key": "H4sLp9Qe2Vd6Fu0Ka8Tn3w"
     }
   ]
 }

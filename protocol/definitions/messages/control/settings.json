@@ -2,12 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/settings.json",
   "title": "Settings change",
-  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_to is this seq. With task_id it is a change_settings Task in the queue, confirmed by its task status. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
+  "description": "From Core or an operator interface (Core checks operator messages and passes them on unchanged): set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_from and reply_to name this message. With task_id it is a change_settings Task in Core's ordered queue, confirmed by its task status. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
+    "from",
     "asset_id"
   ],
   "additionalProperties": false,
@@ -22,14 +23,14 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
     "task_id": {
       "$ref": "../../variables/task_id.json"
-    },
-    "task_seq": {
-      "$ref": "../../variables/task_seq.json"
     },
     "run_state": {
       "$ref": "../../variables/run_state.json"
@@ -104,7 +105,8 @@
       "time": 1793667600000,
       "seq": 42,
       "asset_id": "A1",
-      "lights": "on"
+      "lights": "on",
+      "from": "A1"
     },
     {
       "type": "control.settings",
@@ -112,8 +114,8 @@
       "seq": 42,
       "asset_id": "A1",
       "task_id": "T3",
-      "task_seq": 3,
-      "landing_gear": "up"
+      "landing_gear": "up",
+      "from": "A1"
     },
     {
       "type": "control.settings",
@@ -124,22 +126,16 @@
       "land_at_position": {
         "latitude": 42.2751,
         "longitude": -71.8049
-      }
+      },
+      "from": "A1"
     },
     {
       "type": "control.settings",
       "time": 1793667600000,
       "seq": 44,
       "asset_id": "A1",
-      "telemetry_every_s": 0.5
+      "telemetry_every_s": 0.5,
+      "from": "A1"
     }
-  ],
-  "dependentRequired": {
-    "task_id": [
-      "task_seq"
-    ],
-    "task_seq": [
-      "task_id"
-    ]
-  }
+  ]
 }

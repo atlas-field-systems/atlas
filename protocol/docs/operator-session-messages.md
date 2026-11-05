@@ -11,28 +11,28 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Operator → Core | [`admin.operator_hello`](../examples/operator-session/01-operator_hello.json) | The operator interface opens its WebSocket and says hello with its operator_id and key, the only message that carries the key. | 136 | 120 |
-| 02 | Core → Operator | [`admin.hello_reply`](../examples/operator-session/02-hello_reply.json) | Core checks the key against its stored hash and accepts. | 130 | 109 |
-| 03 | Core → Operator | [`admin.asset`](../examples/operator-session/03-asset.json) | Core pushes the asset list: each Asset's latest admin.hello as admin.asset, without its keys, with Core's own seq (A1 here). Everything Core sends carries Core's seq. | 361 | 234 |
-| 04 | Core → Operator | [`admin.asset`](../examples/operator-session/04-asset.json) | And A2, a receive-only ADS-B receiver that accepts no commands. | 143 | 117 |
-| 05 | Core → Operator | [`report.settings`](../examples/operator-session/05-settings.json) | Core pushes A1's latest state: settings, | 215 | 152 |
-| 06 | Core → Operator | [`report.status asset`](../examples/operator-session/06-status-asset.json) | health, | 108 | 94 |
-| 07 | Core → Operator | [`report.telemetry`](../examples/operator-session/07-telemetry.json) | and position. From here on Core forwards new reports as they arrive; nothing is polled. | 223 | 163 |
-| 08 | Operator → Core | [`query.asset`](../examples/operator-session/08-query-asset.json) | The operator asks for A1's battery every 30 s. | 99 | 87 |
-| 09 | Core → Operator | [`report.battery`](../examples/operator-session/09-battery.json) | Core sends its latest battery copy with its own seq, and again every 30 s, each with a new seq. | 93 | 84 |
-| 10 | Core → Operator | [`admin.reply`](../examples/operator-session/10-reply.json) | Then Core accepts the query. A query's reply comes after its answer, so it marks the end. | 108 | 91 |
-| 11 | Operator → Core | [`control.command takeoff`](../examples/operator-session/11-command-takeoff.json) | The operator queues a takeoff for A1. | 180 | 132 |
-| 12 | Core → Operator | [`admin.reply`](../examples/operator-session/12-reply.json) | A1 lists takeoff in its hello, so Core accepts and sends the command to A1 with Core's own seq. | 108 | 92 |
-| 13 | Core → Operator | [`report.status queue`](../examples/operator-session/13-status-queue.json) | A1's queue report, forwarded live, confirms the Task arrived. | 104 | 94 |
-| 14 | Operator → Core | [`control.command takeoff`](../examples/operator-session/14-command-takeoff.json) | A mistaken takeoff for A2. | 152 | 120 |
-| 15 | Core → Operator | [`admin.reply`](../examples/operator-session/15-reply.json) | A2 lists no commands, so Core refuses with a reason and sends nothing to A2. | 150 | 120 |
-| 16 | Operator → Core | [`control.cancel`](../examples/operator-session/16-cancel.json) | The operator cancels T4. | 85 | 78 |
-| 17 | Core → Operator | [`admin.reply`](../examples/operator-session/17-reply.json) | Core accepts and passes the cancel to A1. | 108 | 92 |
-| 18 | Core → Operator | [`report.status task`](../examples/operator-session/18-status-task.json) | A1's own report, forwarded, confirms the effect. | 125 | 99 |
-| 19 | Core → Operator | [`report.failsafe low_battery`](../examples/operator-session/19-failsafe-low_battery.json) | A failsafe is forwarded the moment it arrives. | 143 | 119 |
-| 20 | Operator → Core | [`query.core history`](../examples/operator-session/20-query-history.json) | The operator asks for A1's path over the first 100 s. | 148 | 111 |
-| 21 | Core → Operator | [`report.telemetry`](../examples/operator-session/21-telemetry.json) | Core sends each stored telemetry report, oldest first (one here). | 223 | 162 |
-| 22 | Core → Operator | [`admin.reply`](../examples/operator-session/22-reply.json) | The reply marks the end of the answer. Had nothing matched, this reply would come alone. | 108 | 93 |
+| 01 | Operator → Core | [`admin.operator_hello`](../examples/operator-session/01-operator_hello.json) | The operator interface opens its WebSocket and says hello with its operator_id and key, the only message that carries the key. | 149 | 127 |
+| 02 | Core → Operator | [`admin.hello_reply`](../examples/operator-session/02-hello_reply.json) | Core checks the key against its stored hash and accepts. | 144 | 121 |
+| 03 | Core → Operator | [`admin.describe`](../examples/operator-session/03-describe.json) | Core pushes each Asset's stored admin.describe unchanged (A1 here). Same from, seq and time as the Asset sent. | 351 | 227 |
+| 04 | Core → Operator | [`admin.describe`](../examples/operator-session/04-describe.json) | And A2, a receive-only ADS-B receiver that accepts no commands. | 133 | 111 |
+| 05 | Core → Operator | [`report.settings`](../examples/operator-session/05-settings.json) | Core pushes A1's latest state: settings, | 227 | 158 |
+| 06 | Core → Operator | [`report.status asset`](../examples/operator-session/06-status-asset.json) | health, | 120 | 99 |
+| 07 | Core → Operator | [`report.telemetry`](../examples/operator-session/07-telemetry.json) | and position. From here on Core forwards new reports as they arrive; nothing is polled. | 235 | 169 |
+| 08 | Operator → Core | [`query.asset`](../examples/operator-session/08-query-asset.json) | The operator asks for A1's battery every 30 s. | 112 | 96 |
+| 09 | Core → Operator | [`report.battery`](../examples/operator-session/09-battery.json) | Core sends its latest battery copy with its own seq, and again every 30 s, each with a new seq. | 105 | 89 |
+| 10 | Core → Operator | [`admin.reply`](../examples/operator-session/10-reply.json) | Then Core accepts the query. A query's reply comes after its answer, so it marks the end. | 141 | 109 |
+| 11 | Operator → Core | [`control.command takeoff`](../examples/operator-session/11-command-takeoff.json) | The operator queues a takeoff for A1. | 180 | 138 |
+| 12 | Core → Operator | [`admin.reply`](../examples/operator-session/12-reply.json) | A1 lists takeoff in its hello, so Core accepts and sends the command to A1 with unchanged from and seq. | 141 | 113 |
+| 13 | Core → Operator | [`report.status queue`](../examples/operator-session/13-status-queue.json) | A1's queue report, forwarded live, confirms the Task arrived. | 116 | 101 |
+| 14 | Operator → Core | [`control.command takeoff`](../examples/operator-session/14-command-takeoff.json) | A mistaken takeoff for A2. | 165 | 130 |
+| 15 | Core → Operator | [`admin.reply`](../examples/operator-session/15-reply.json) | A2 lists no commands, so Core refuses with a reason and sends nothing to A2. | 183 | 139 |
+| 16 | Operator → Core | [`control.cancel`](../examples/operator-session/16-cancel.json) | The operator cancels T4. | 98 | 89 |
+| 17 | Core → Operator | [`admin.reply`](../examples/operator-session/17-reply.json) | Core accepts and passes the cancel to A1. | 141 | 113 |
+| 18 | Core → Operator | [`report.status task`](../examples/operator-session/18-status-task.json) | A1's own report, forwarded, confirms the effect. | 137 | 104 |
+| 19 | Core → Operator | [`report.failsafe low_battery`](../examples/operator-session/19-failsafe-low_battery.json) | A failsafe is forwarded the moment it arrives. | 155 | 125 |
+| 20 | Operator → Core | [`query.core history`](../examples/operator-session/20-query-history.json) | The operator asks for A1's path over the first 100 s. | 161 | 121 |
+| 21 | Core → Operator | [`report.telemetry`](../examples/operator-session/21-telemetry.json) | Core sends each stored telemetry report, oldest first (one here). | 235 | 169 |
+| 22 | Core → Operator | [`admin.reply`](../examples/operator-session/22-reply.json) | The reply marks the end of the answer. Had nothing matched, this reply would come alone. | 141 | 114 |
 
 <details><summary>01-operator_hello.json</summary>
 
@@ -42,8 +42,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667700000,
   "seq": 0,
   "operator_id": "OP1",
-  "protocol_version": "0.7",
-  "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e"
+  "protocol_version": "0.8",
+  "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e",
+  "from": "OP1"
 }
 ```
 
@@ -58,21 +59,21 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 100,
   "operator_id": "OP1",
   "hello_result": "accepted",
-  "protocol_version": "0.7"
+  "protocol_version": "0.8",
+  "from": "CORE"
 }
 ```
 
 </details>
 
-<details><summary>03-asset.json</summary>
+<details><summary>03-describe.json</summary>
 
 ```json
 {
-  "type": "admin.asset",
+  "type": "admin.describe",
   "time": 1793667600000,
   "seq": 101,
   "asset_id": "A1",
-  "protocol_version": "0.7",
   "reports": [
     "status",
     "failsafe",
@@ -97,26 +98,27 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
       "horizontal_fov_deg": 80,
       "vertical_fov_deg": 60
     }
-  ]
+  ],
+  "from": "A1"
 }
 ```
 
 </details>
 
-<details><summary>04-asset.json</summary>
+<details><summary>04-describe.json</summary>
 
 ```json
 {
-  "type": "admin.asset",
+  "type": "admin.describe",
   "time": 1793667500000,
   "seq": 102,
   "asset_id": "A2",
-  "protocol_version": "0.7",
   "reports": [
     "status",
     "observation"
   ],
-  "commands": []
+  "commands": [],
+  "from": "A2"
 }
 ```
 
@@ -135,7 +137,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "landing_gear": "down",
   "link_loss_response": "return_to_home",
   "link_loss_after_s": 30,
-  "telemetry_every_s": 1
+  "telemetry_every_s": 1,
+  "from": "A1"
 }
 ```
 
@@ -150,7 +153,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 104,
   "asset_id": "A1",
   "kind": "asset",
-  "condition": "healthy"
+  "condition": "healthy",
+  "from": "A1"
 }
 ```
 
@@ -175,7 +179,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
     ]
   },
   "ground_speed_mps": 0,
-  "heading_deg": 0
+  "heading_deg": 0,
+  "from": "A1"
 }
 ```
 
@@ -190,7 +195,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 1,
   "asset_id": "A1",
   "report": "battery",
-  "every_s": 30
+  "every_s": 30,
+  "from": "OP1"
 }
 ```
 
@@ -204,7 +210,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667631000,
   "seq": 106,
   "asset_id": "A1",
-  "battery_percent": 91
+  "battery_percent": 91,
+  "from": "A1"
 }
 ```
 
@@ -219,7 +226,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 107,
   "asset_id": "A1",
   "reply_to": 1,
-  "reply_result": "accepted"
+  "reply_result": "accepted",
+  "from": "CORE",
+  "reply_from": "OP1"
 }
 ```
 
@@ -235,11 +244,11 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "asset_id": "A1",
   "kind": "takeoff",
   "task_id": "T4",
-  "task_seq": 1,
   "target_altitude": {
     "altitude_m": 30,
     "altitude_reference": "home"
-  }
+  },
+  "from": "OP1"
 }
 ```
 
@@ -254,7 +263,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 108,
   "asset_id": "A1",
   "reply_to": 2,
-  "reply_result": "accepted"
+  "reply_result": "accepted",
+  "from": "CORE",
+  "reply_from": "OP1"
 }
 ```
 
@@ -271,7 +282,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "kind": "queue",
   "task_ids": [
     "T4"
-  ]
+  ],
+  "from": "A1"
 }
 ```
 
@@ -289,7 +301,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "target_altitude": {
     "altitude_m": 30,
     "altitude_reference": "home"
-  }
+  },
+  "from": "OP1"
 }
 ```
 
@@ -305,7 +318,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "asset_id": "A2",
   "reply_to": 3,
   "reply_result": "refused",
-  "explanation": "A2 does not accept takeoff"
+  "explanation": "A2 does not accept takeoff",
+  "from": "CORE",
+  "reply_from": "OP1"
 }
 ```
 
@@ -319,7 +334,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "time": 1793667704000,
   "seq": 4,
   "asset_id": "A1",
-  "task_id": "T4"
+  "task_id": "T4",
+  "from": "OP1"
 }
 ```
 
@@ -334,7 +350,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 111,
   "asset_id": "A1",
   "reply_to": 4,
-  "reply_result": "accepted"
+  "reply_result": "accepted",
+  "from": "CORE",
+  "reply_from": "OP1"
 }
 ```
 
@@ -350,7 +368,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "asset_id": "A1",
   "kind": "task",
   "task_id": "T4",
-  "task_state": "cancelled"
+  "task_state": "cancelled",
+  "from": "A1"
 }
 ```
 
@@ -366,7 +385,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "asset_id": "A1",
   "kind": "low_battery",
   "response": "land",
-  "explanation": "Battery at 15%"
+  "explanation": "Battery at 15%",
+  "from": "A1"
 }
 ```
 
@@ -383,7 +403,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "kind": "history",
   "report": "telemetry",
   "since": 1793667600000,
-  "until": 1793667700000
+  "until": 1793667700000,
+  "from": "OP1"
 }
 ```
 
@@ -408,7 +429,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
     ]
   },
   "ground_speed_mps": 0,
-  "heading_deg": 0
+  "heading_deg": 0,
+  "from": "A1"
 }
 ```
 
@@ -423,7 +445,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 115,
   "asset_id": "A1",
   "reply_to": 5,
-  "reply_result": "accepted"
+  "reply_result": "accepted",
+  "from": "CORE",
+  "reply_from": "OP1"
 }
 ```
 
@@ -431,9 +455,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-22 messages, 3250 bytes minified, 2563 bytes if each is deflated on its own.
+22 messages, 3570 bytes minified, 2762 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 44% of all bytes. Field names, quotes and punctuation are 59%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 40% of all bytes. Field names, quotes and punctuation are 59%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 
@@ -441,16 +465,16 @@ Where the bytes go (each field summed across every message):
 
 | Field | Times | Bytes | Share |
 |---|---|---|---|
-| `type` | 22 | 492 | 15% |
-| `time` | 22 | 440 | 14% |
-| `asset_id` | 20 | 300 | 9% |
-| `seq` | 22 | 186 | 6% |
+| `type` | 22 | 498 | 14% |
+| `time` | 22 | 440 | 12% |
+| `asset_id` | 20 | 300 | 8% |
+| `from` | 22 | 260 | 7% |
+| `seq` | 22 | 186 | 5% |
 | `reports[]` | 9 | 126 | 4% |
-| `reply_result` | 5 | 124 | 4% |
+| `reply_result` | 5 | 124 | 3% |
 | `kind` | 7 | 109 | 3% |
-| `protocol_version` | 4 | 96 | 3% |
+| `reply_from` | 5 | 90 | 3% |
 | `explanation` | 2 | 72 | 2% |
-| `reply_to` | 5 | 60 | 2% |
 
 Longest single fields:
 

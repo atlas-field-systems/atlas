@@ -8,6 +8,7 @@
     "type",
     "time",
     "seq",
+    "from",
     "asset_id",
     "kind",
     "response"
@@ -32,6 +33,9 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
@@ -53,7 +57,8 @@
       "asset_id": "A1",
       "kind": "link_loss",
       "response": "return_to_home",
-      "explanation": "No contact with Core for 30 s"
+      "explanation": "No contact with Core for 30 s",
+      "from": "A1"
     },
     {
       "type": "report.failsafe",
@@ -62,7 +67,8 @@
       "asset_id": "A1",
       "kind": "low_battery",
       "response": "return_to_home",
-      "explanation": "Battery at 18 %"
+      "explanation": "Battery at 18 %",
+      "from": "A1"
     }
   ]
 }

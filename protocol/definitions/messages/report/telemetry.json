@@ -8,6 +8,7 @@
     "type",
     "time",
     "seq",
+    "from",
     "asset_id",
     "position"
   ],
@@ -22,6 +23,9 @@
     },
     "seq": {
       "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
     },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
@@ -57,7 +61,8 @@
         ]
       },
       "ground_speed_mps": 4.2,
-      "heading_deg": 90
+      "heading_deg": 90,
+      "from": "A1"
     }
   ]
 }

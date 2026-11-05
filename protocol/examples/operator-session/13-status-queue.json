@@ -6,5 +6,6 @@
   "kind": "queue",
   "task_ids": [
     "T4"
-  ]
+  ],
+  "from": "A1"
 }

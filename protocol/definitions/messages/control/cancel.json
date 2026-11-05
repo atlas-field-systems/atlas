@@ -2,12 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/cancel.json",
   "title": "Cancel",
-  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): stop a command. It never creates a Task. With task_id, Core passes it on only for a Task that has not finished, and refuses an unknown or finished one. A queued Task is dropped and the running one carries on; an active one stops. Without task_id, stop whatever motion is running now. When motion stops, the Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed. It reports the Task cancelled, then its queue, and answers every cancel with report.settings (reply_to this seq). For a Task it already finished it changes nothing and resends that Task's final report; for one it has not received yet, it remembers it as cancelled, reports it cancelled and never runs it.",
+  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): stop a command. It never creates a Task. With task_id, Core passes it on only for a Task that has not finished, and refuses an unknown or finished one. A queued Task is dropped and the running one carries on; an active one stops. Without task_id, stop whatever motion is running now. When motion stops, the Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed. It reports the Task cancelled, then its queue, and answers every cancel with report.settings (reply_from and reply_to naming this message). For a Task it already finished it changes nothing and resends that Task's final report; for one it has not received yet, it remembers it as cancelled, reports it cancelled and never runs it.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
+    "from",
     "asset_id"
   ],
   "additionalProperties": false,
@@ -22,6 +23,9 @@
     "seq": {
       "$ref": "../../variables/seq.json"
     },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
     },
@@ -35,13 +39,15 @@
       "time": 1793667600000,
       "seq": 42,
       "asset_id": "A1",
-      "task_id": "T3"
+      "task_id": "T3",
+      "from": "A1"
     },
     {
       "type": "control.cancel",
       "time": 1793667600000,
       "seq": 43,
-      "asset_id": "A1"
+      "asset_id": "A1",
+      "from": "A1"
     }
   ]
 }

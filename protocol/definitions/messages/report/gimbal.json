@@ -8,6 +8,7 @@
     "type",
     "time",
     "seq",
+    "from",
     "asset_id",
     "camera_id",
     "yaw_deg",
@@ -24,6 +25,9 @@
     },
     "seq": {
       "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
     },
     "asset_id": {
       "$ref": "../../variables/asset_id.json"
@@ -46,7 +50,8 @@
       "asset_id": "A1",
       "camera_id": "C1",
       "yaw_deg": 35,
-      "pitch_deg": -30
+      "pitch_deg": -30,
+      "from": "A1"
     }
   ]
 }
