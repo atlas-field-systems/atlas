@@ -9,7 +9,6 @@
 - Dedupe: act once, deliver always. A replayed message is not acted on again but is still delivered to streams, subscribers and the live picture; the picture upserts by `(from, seq, time)`.
 - Asset reconnect order: after each accepted hello, describe → connect `report.settings` → unacked finals → queue report → `query.queue`.
 - Link loss contact: any new (non-duplicate) message after the accepted hello that names this Asset in `asset_id` and was not sent by this Asset (not only `from: CORE`). Covers Core forwards of operator traffic.
-- Query answers on an operator link: Core does not forward live reports between a query's answer and its `admin.reply`; deferred forwards go out after the reply, in order.
 
 ## 0.7
 

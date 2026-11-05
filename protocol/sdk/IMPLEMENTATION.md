@@ -231,7 +231,7 @@ Link = {
 Hello state machine (client):
 1. `open` → `hello_sent`: build `admin.hello` (asset) or `admin.operator_hello` (operator). `protocol_version = defs.version`.
 2. Wait for `admin.hello_reply` (not `admin.reply`).
-   - `accepted` → `ready`. An Asset then runs the full post-accepted-hello sequence (section 3.10), including `admin.describe` from `opts.describe` (D9).
+   - `accepted` → an Asset sends `admin.describe` (D9) and its connect `report.settings`, then → `ready` (section 3.10).
    - `version_mismatch` → state `version_mismatch`, close, and reject `open()` with `SdkError('version_mismatch', {peer: protocol_version})`. No retry loop (strict breaks are intended).
    - `refused` → `identity.stop('refused')`, state `auth_lost`, close. Network sends stop. Local reads stay.
    - timeout → close, `SdkError('timeout')`, eligible for reconnect.
@@ -276,15 +276,17 @@ Which reply closes a pending entry depends on who is calling:
   `report.settings` with `reply_from`/`reply_to` closes it.
 Map `reply_result: 'refused'` to `rejected`.
 
-`stream`: between send and the matching reply, items count as answers when they
-arrive on that link and are not replies. For `query.core`, Core sends stored
-messages unchanged, so the SDK cannot tie them by reply fields. The protocol
-guarantees (communication.md) that on that operator link Core does **not**
-interleave live forwards between a query's answer and its `admin.reply`; those
-forwards are deferred and sent after the reply, in order, to subscribers and the
-picture (not into the finished stream). Stream items are therefore trustworthy.
-Only one `query.core` stream may be open per link at a time (queue others FIFO;
-P1 in section 10). No correlation field.
+`stream`: between send and the matching reply, an inbound message on that link
+that is not a reply is a stream item when it matches the query's own fields,
+yielded once per `(from, seq, time)`. Every inbound message still goes to
+subscribers and the picture as usual. Matching: `query.core kind history` takes
+`report.<report>` (any report when `report` is left out) with
+`since <= time <= until` where set; `kind assets` takes `admin.describe`;
+`query.asset` takes `report.<report>`; each also takes only the query's
+`asset_id` when set. A matching message is a true answer whether Core sent it in
+the answer, forwarded it live meanwhile, or had it in flight when the query was
+sent. So Core needs no ordering rule, the SDK needs no correlation field, and
+streams on one link may overlap.
 
 Pending-request table, per link: `Map<seq, {msg, resolve, timer, kind:'request'|'stream', items[]}>`.
 The key is just `seq`, because `from` is always this identity.
@@ -324,29 +326,23 @@ AssetQueue = {
   ids(): string[]
 }
 
-TaskStore = {                       // injectable; in-memory default; source of truth for finals + ack
-  finished(taskId): Uint8Array | null   // stored final report bytes
-  finish(taskId, finalRaw): void        // keeps the newest >= 1024 finished task_ids, oldest evicted; marks unacked
-  isAcked(taskId): boolean
-  ack(taskId): void                     // matching Core admin.reply; stop retrying
-  unacked(): Iterable<{taskId, raw: Uint8Array}>  // finals still awaiting ack (survives restart with a persistent store)
-  isCancelledUnseen(taskId): boolean
-  cancelUnseen(taskId): void            // bounded the same way
-  takeCancelledUnseen(taskId): void
-  answers: { get(key): Uint8Array|null, put(key, raw): void }  // key "from:seq:time" of the request; bounded (>= 1024)
-}
+TaskStore = Map-like { get(key), set(key, value), delete(key), keys() }  // default: new Map()
+//   "task:<task_id>"          -> { final: Uint8Array, acked: boolean }  one record per finished task
+//   "answer:<from:seq:time>"  -> Uint8Array                             the Asset's report.settings answer
+// keys() is in insertion order; the helper keeps the newest >= 1024 of each prefix and deletes older ones.
 ```
+A persistent store is anything with those four methods. All queue logic stays in
+the helper.
 Invariants (law 18, communication.md):
 - A task is any `control.command` **or** `control.settings` carrying `task_id`.
 - The order is arrival order of task bodies (Core sends in its list order, once). The helper **never** waits on gaps and has no `task_seq`.
 - Resent body for a task it **holds** (queued or running): ignored.
-- Resent body for a task it has **finished**: nothing changes, and it resends that task's stored final report bytes (`store.finished`).
-- A body for a task in the cancelled-not-seen set: reported `cancelled` (a final, retried like any final), never run.
+- Resent body for a task it has **finished**: nothing changes, and it resends that task's stored `final` bytes.
 - A **motion** `control.command` without `task_id` runs now and clears the list. Each cleared task gets reported `cancelled`, then an empty queue report. A `control.settings` without `task_id` runs now beside the queue and does **not** clear it.
-- `control.cancel` with `task_id`: a queued task is dropped and reported cancelled; the running one is emitted to `onImmediate` (don't fly anything, concept 10); a finished one changes nothing and its final report is resent; an unknown one goes into cancelled-not-seen and is reported cancelled. In every case the queue reports the new list, and the cancel is answered.
+- `control.cancel` with `task_id`: a queued task is dropped and reported cancelled; the running one is emitted to `onImmediate` (don't fly anything, concept 10); a finished one changes nothing and its final report is resent; an unknown one is finished at once as `cancelled` (built, stored and retried like any final), so its body, if it arrives later, is a finished task: the cancelled report is resent and it never runs. In every case the queue reports the new list, and the cancel is answered.
 - `control.cancel` **without** `task_id` stops the motion running now and is emitted to `onImmediate` (hold/pause); it never creates a task. The cancel is answered like any other.
 - Every `control.cancel` and `control.settings` is answered with `report.settings` (`reply_from`/`reply_to` naming it). The helper builds the answer frame through `answer()`; the app supplies the settings fields. The answer bytes are stored; a duplicate request (via `onDuplicate`) gets the same bytes again, unchanged. This is Asset-side answer replay, not Core's last-answer cache.
-- Final reports (`completed|failed|cancelled`) live in `TaskStore` with a per-task `acked` flag (false until an `admin.reply` matches by `reply_from/reply_to` **and** `task_id`). Retry the **same bytes** on each new link and every 10 s (`finalRetryMs`), **until** acked. No attempt cap. Observer event `final_report_retry` on each retry. A persistent store keeps unacked finals across an Asset restart so retries continue; there is no separate in-memory-only `unacked` map as the source of truth.
+- Final reports (`completed|failed|cancelled`) are stored as `task:<task_id>` with `acked: false` until an `admin.reply` matches by `reply_from/reply_to` **and** `task_id`. Retry the **same bytes** on each new link and every 10 s (`finalRetryMs`) until acked, with no attempt cap. Observer event `final_report_retry` on each retry. With a persistent store, retries continue after an Asset restart.
 - There is no queue cap and no "reject a task": the protocol gives an Asset no way to refuse one, so Core would resend forever. (Open question if a bound is ever needed.)
 - After adding tasks, send `queueReport()`.
 
@@ -356,7 +352,7 @@ Invariants (law 18, communication.md):
 export function createReconnector(link factory, opts: { backoff?: {minMs:500,maxMs:30000,factor:2,jitter:0.2} })
 ```
 - Reconnect on transport close or hello timeout. Stop on `auth_lost` and `version_mismatch`.
-- **Asset**, after **every** accepted hello (first connect and each reconnect), **one helper** runs all five steps in order (communication.md, After reconnecting): (1) `admin.describe` from `opts.describe`, (2) the connect `report.settings` from `opts.connectSettings()` (every setting it supports; Core refuses changes to any setting it leaves out), (3) resend unacked final reports from the TaskStore, (4) `queueReport()`, (5) `query.queue`. The link calls this helper on the first accepted hello; the reconnector does not own a separate partial path — both use the same helper.
+- **Asset**, after **every** accepted hello (first connect and each reconnect), in order (communication.md, After reconnecting): the link sends (1) `admin.describe` from `opts.describe` and (2) the connect `report.settings` from `opts.connectSettings()` (every setting it supports; Core refuses changes to any setting it leaves out), then sets state `ready`. The Asset queue listens with `onState` and on `ready` sends (3) unacked final reports, (4) `queueReport()`, (5) `query.queue`. The reconnector only reopens the link and has no resync steps of its own; `link.mjs` never imports `asset-queue.mjs`.
 - **Operator**: pending → `unknown/disconnected`. No command retry. The live picture (if on) goes `stale:true` and then rebuilds from Core's connect push. Those messages are mostly duplicates of what it saw before; they are delivered anyway (section 3.6).
 - The seq counter continues across reconnects (same identity object).
 
@@ -393,8 +389,10 @@ Picture = {
 These are the only message types the SDK may name: `admin.hello`,
 `admin.operator_hello`, `admin.hello_reply`, `admin.describe`, `admin.reply`,
 `report.settings` (reply matching), `report.status` kinds `task`/`queue`,
-`control.command`, `control.settings`, `control.cancel`, `query.queue`. Everything
-else (commands, reports, query kinds) flows through generic `build`/`check` and
+`control.command`, `control.settings`, `control.cancel`, `query.queue`, and, for
+stream matching only (section 3.7), `query.core` kinds `history`/`assets` and
+`query.asset`. Everything
+else (commands, reports, other query kinds) flows through generic `build`/`check` and
 must need **zero** SDK code. Add a test that builds an example of every type and
 kind in `definitions/` through `build` with no per-type branches.
 
@@ -436,7 +434,7 @@ Acceptance:
 ### Slice 3: Link + hello + describe (D9)
 Files: `link.mjs`, inbound pipeline without dedupe (dedupe lands in slice 4), observer basics.
 Acceptance (fake transport plus a test server built from `createLink({side:'server'})`):
-- Asset hello accepted → `ready` → the post-accepted-hello helper runs (describe from `opts.describe`, then connect `report.settings` from `opts.connectSettings` when provided); describe carries no key and no version.
+- Asset hello accepted → describe from `opts.describe`, then connect `report.settings` from `opts.connectSettings` when provided, then `ready`; describe carries no key and no version.
 - Operator hello accepted → `ready`, with no describe.
 - A message before the hello is accepted is refused locally (`not_ready`). A server receiving a non-hello first closes.
 - `version_mismatch` → `open()` rejects, state set, no reconnect.
@@ -465,7 +463,9 @@ Acceptance:
 - Operator `control.settings` resolves on Core's `admin.reply`; the Asset's later `report.settings` is **not** the close and reaches subscribers. Core-side `control.settings` to an Asset resolves on `report.settings` with reply fields.
 - A late reply after timeout reaches subscribers.
 - A `query.core kind history` answer for telemetry already seen live is still yielded by the stream.
-- Live telemetry that arrives while a `query.core kind history` stream is open is **not** in the stream result; Core defers live forwards on that link until after `admin.reply`, and subscribers/picture get them then.
+- Live telemetry that the test server forwards after the reply is **not** in the stream result; subscribers and the picture get it.
+- The test server forwards A2 telemetry and A1 telemetry, then answers an A1 history query (no `until`) that includes that same A1 message. The stream yields the A1 message once and no A2 message. With `until` before that message's `time`, it is not an item. Subscribers get both forwards.
+- Two overlapping streams on one link each yield their own matches.
 - `stream` timeout resets on each item. `retry(result)` resends byte-equal stored bytes.
 
 ### Slice 6: Asset queue helper (D6)
@@ -474,8 +474,8 @@ Acceptance:
 - T1, T2, T3 bodies give run order T1, T2, T3. A duplicate T2 body while held is ignored. A body for a finished task resends its stored final report bytes. T1+T3 with T2 missing runs T1, T3 and does **not** wait (Core resends; order is Core's job).
 - A finished `task_id` is never emitted again, including after a simulated restart with a store. The store keeps ≥1024 finished ids and evicts the oldest.
 - A motion command without `task_id` cancels the queue, reports each task cancelled, then sends an empty queue report. An immediate `control.settings` does not touch the queue. A queued `control.settings` with `task_id` is a task.
-- Cancel before arrival: reported cancelled, the later body is never run. Every cancel and settings request gets a `report.settings` answer; a duplicate request gets the identical answer bytes.
-- A final report is retried with identical bytes every 10 s (fake clock) with no attempt cap, until a matching `admin.reply` (+ `task_id`) arrives, then stops. Ack state lives in the TaskStore (`acked`); after a simulated restart with a persistent store, unacked finals keep retrying.
+- Cancel before arrival: reported cancelled; the later body is never run and gets the cancelled report again. Every cancel and settings request gets a `report.settings` answer; a duplicate request gets the identical answer bytes.
+- A final report is retried with identical bytes every 10 s (fake clock) with no attempt cap, until a matching `admin.reply` (+ `task_id`) arrives, then stops. Ack state lives in the store (`acked`); after a simulated restart with a persistent store, unacked finals keep retrying.
 - A `control.cancel` without `task_id` (stop motion now) is emitted to `onImmediate`.
 
 ### Slice 7: Reconnect (D8)
@@ -513,8 +513,7 @@ separate Core PR, not done here:
 - Replace Core's Ajv loader with `check`. Replace the socket code with `wsServer` + `createLink({side:'server'})`.
 - Core identity is `createIdentity({id:'CORE', role:'core', seqStore: <persisted>})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
-- Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.
-- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check, command listed in describe, `task_id` duplicate, ordered task list, `every_s` repeats (a new Core-created message each time, with a new seq).
+- Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check, command listed in describe, `task_id` duplicate, ordered task list, `every_s` repeats (a new Core-created message each time, with a new seq).
 - Pin Core to the protocol release tag that contains the SDK.
 
 ---
@@ -529,7 +528,7 @@ separate Core PR, not done here:
 | stream buffer | calls (SDK) | array per stream | `maxItems` 10000 |
 | subscribers | Link (SDK) | `Set<{filter,cb}>` | caller-owned |
 | asset task list | AssetQueue (SDK, Asset side) | `string[]` | none (no protocol way to refuse; open question) |
-| finished tasks + final bytes + `acked`, cancelled-not-seen, Asset answers | TaskStore (injectable, in-memory default) | see 3.9 | ≥1024 each, oldest evicted |
+| finished tasks (final bytes + `acked`, cancel-before-arrival included), Asset answers | TaskStore (Map-like, `new Map()` default) | `task:<id>`, `answer:<from:seq:time>` | ≥1024 each, oldest deleted |
 | **last-answer cache** (forwarded traffic) | **Core (not SDK)** | `Map<"from:seq:time", replyBytes>` | Core's choice |
 | Core ordered task_id list | **Core** | per Asset | Core |
 | live picture | Picture (SDK, optional) | maps per asset | memory only |
@@ -580,13 +579,12 @@ Confirmed by the developer. These are settled; do not reopen them in a slice PR.
 
 - **Dedupe (all slices):** act once, deliver always. Dedupe stops a message being acted on again; streams, subscribers and the picture still receive replays. The picture upserts by `(from, seq, time)`, newest `time` wins.
 - **Contact (slice 4):** `lastContact` / `contact()` advances on non-duplicate post-hello inbound with `asset_id === this id && from !== this id` (not only `from: CORE`).
-- **P1 (slice 5):** one open `query.core` stream per link. Further `query.core` requests on that link queue FIFO until the open one gets its `admin.reply`.
-- **No live interleave (slice 5):** on that operator link, Core does not forward live reports between a query's answer and its `admin.reply`; deferred forwards go out after the reply, in order.
+- **Streams (slice 5, replaces P1):** a stream's items are the inbound messages that match its query's fields, once per `(from, seq, time)`, until its reply (section 3.7). No Core ordering rule and no one-stream-per-link limit.
 - **Subscribe (slice 5):** callback is `{msg, raw, duplicate}` (same as `onMessage`); acting code skips duplicates.
 - **P2 (slice 9):** the live picture issues its own `query.core kind assets` on connect and reconnect, and is `ready` when that request's `admin.reply` arrives. It does not try to detect the end of Core's connect push.
 - **P3 (slice 2):** each transport adapter is a sibling package with its own `package.json`. No npm workspaces.
-- **P4 (slice 6, widened):** the Asset queue takes an injectable `TaskStore` (section 3.9); the default is in-memory. It holds final-report bytes for finished tasks (with per-task `acked`), the cancelled-not-yet-seen set and the Asset's answer bytes, each bounded at ≥1024 `task_id`s/entries. Finals retry every 10 s until Core answers; a persistent store keeps unacked finals across restart.
-- **Post-hello sequence (slices 3/7):** one helper runs describe → connect `report.settings` → unacked finals → queue report → `query.queue` after every accepted hello, including the first. `createLink` takes `connectSettings`.
+- **P4 (slice 6):** the Asset queue takes a Map-like store (`get`/`set`/`delete`/`keys`, default `new Map()`), section 3.9. One record per finished task (final bytes + `acked`) and one per answer, newest ≥1024 of each kept. A cancel before arrival is a finished task whose final is `cancelled`.
+- **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings` and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report → `query.queue`. `createLink` takes `connectSettings`.
 
 ## 11. How to work this plan
 

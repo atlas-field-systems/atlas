@@ -61,7 +61,7 @@ creator — never a silent renumber of someone else's bytes.
 | Call | Behavior |
 | --- | --- |
 | `request` | Send one message; wait for matching `admin.reply` |
-| `stream` | Receive related messages until the matching `admin.reply` (Core does not interleave live forwards on that link during the answer) |
+| `stream` | Receive the messages that match the query until the matching `admin.reply` |
 | `subscribe` | Live filter by type/kind until unsubscribed; callback `{msg, raw, duplicate}` |
 
 Outcomes for a finished `request` / `stream`:

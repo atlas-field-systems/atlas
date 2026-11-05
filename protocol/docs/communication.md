@@ -58,10 +58,8 @@ No user accounts or roles.
 6. To read, it uses `query.core` and `query.asset`; `every_s` repeats an answer
    as a **new** message (new `seq` from its creator). Core sends a query's answer
    first and its `admin.reply` last, so the reply marks the end; an accepted
-   reply alone means nothing matched. On that operator link, while Core is
-   answering a query whose answer is a sequence of messages, Core does **not**
-   forward live reports between the answer and its `admin.reply`. Live forwards
-   for that link are deferred and sent after the reply, in order.
+   reply alone means nothing matched. Live forwards keep flowing meanwhile; the
+   reader takes as the answer the messages that match the query's own fields.
 7. Core answers **every** operator message after the hello with one `admin.reply`:
    `accepted` or `refused` (with `explanation`), `reply_from` + `reply_to` naming
    the operator message's (`from`, `seq`). Accepted only means Core passed it on.

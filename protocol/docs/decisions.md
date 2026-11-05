@@ -141,8 +141,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - One link per ID. Each operator interface has its own `operator_id`. A second link with the same `asset_id` or `operator_id` replaces the older one.
 - Everything a creator sends gets a new `seq`. Core forwards other creators' messages unchanged. A deliberate repeat (including `every_s`) is a new message with a new `seq` from its creator, so the duplicate rule never drops it.
 - A command to an Asset that is not connected is refused with a reason. Core does not hold it.
-- A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched. On that operator link, Core does not forward live reports between the answer and the reply; deferred forwards go out after the reply, in order (0.8).
-- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset ignores a resent Task it holds, and resends the final report of one it finished.)
+- A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched.- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset ignores a resent Task it holds, and resends the final report of one it finished.)
 - Telemetry rate is the Asset setting `telemetry_every_s`.
 
 ## Recovery (0.7)
@@ -172,6 +171,6 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 - **Queue:** drop `task_seq` and gap-wait; Core-owned ordered `task_id` list.
 - **Identity:** one SDK module for keys-on-hello, `from`/`seq`/`time` stamp, and remember/dedupe; Core keeps a last-answer cache only.
 - **Contact:** new post-hello messages with this Asset's `asset_id` whose `from` is not this Asset (not only `from: CORE`).
-- **Query no-interleave:** on that operator link, Core defers live forwards between a query's answer and its `admin.reply`.
+- **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no ordering rule and no correlation field.
 - **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` → unacked finals → queue report → `query.queue`; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
 - **Handshake vs description:** hello = keys + version + id; `admin.describe` is keyless; `admin.asset` is removed.
