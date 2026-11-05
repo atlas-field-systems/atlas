@@ -18,6 +18,20 @@ If you need something outside this repository, go to the one that owns it.
 
 [atlas-core](https://github.com/atlas-field-systems/atlas-core) and [atlas-core-archive](https://github.com/atlas-field-systems/atlas-core-archive) are the old Core. They are temporary read-only references to mine for docs and will be deleted. Nothing there is decided for the new parts; write what is kept into the owning repo. The [sdk](https://github.com/atlas-field-systems/sdk) repository is archived; the SDK lives in protocol's `sdk/`.
 
+## Charter first
+
+Before changing code or docs, read [the charter](CHARTER.md) and
+[design decisions](design-decisions.md). Shared fundamentals of coding across
+Atlas live there — always uphold them. This repository's rules below add local
+detail; they do not replace the Charter.
+
+## Subagents
+
+When you direct a subagent, hand off a slice, or spawn parallel work, put the
+Charter fundamentals (judgment + design decisions that apply) and this repo's
+local rules into that agent's brief. Do not assume it already knows them. The
+Charter is how Atlas keeps code quality.
+
 ## This repository
 
 - **Bloat is the enemy, but good organization is not bloat.** Keep data, docs and code lean, and define nothing twice. For example, the same command kinds listed under two message types is bloat. Grouping things clearly is not.
@@ -48,7 +62,8 @@ product changes and do not merge without approval.
 Working rules for every Atlas repository:
 
 - Commit as `the-Drunken-coder` with `183743141+the-Drunken-coder@users.noreply.github.com`.
-- Merge only after the owner approves, with `git merge --no-ff`, then push main.
+- Never put a personal name or personal email in any file, commit message, PR body, test fixture or example. In prose refer to the owner as "the developer" or "the owner".
+- Merge only after the developer approves, with `git merge --no-ff`, then push main.
 - CI must be green before any merge.
 - No CDN dependencies: pages and tools load nothing from third-party servers at run time; ship what they need in the repo or the package.
 

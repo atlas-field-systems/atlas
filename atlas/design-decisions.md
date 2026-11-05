@@ -2,6 +2,8 @@
 
 Project-wide choices that every Atlas part follows.
 
+Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in [Keep judgment sharp](CHARTER.md#keep-judgment-sharp).
+
 ## Two layers of documentation
 
 Each part has short pages a person can read, backed by exact definitions,
