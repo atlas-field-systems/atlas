@@ -78,7 +78,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - Compression does the work short keys would. On the first-flight run, deflating each message with a dictionary of the definitions' names takes 4661 bytes to 2041 (largest message 117); short keys on top save only 3% more.
 
 ## Radio compression
-Each link chooses its own compression in its link profile: a proven existing method, chosen later. A link that compresses with a dictionary can build it from the definitions, because both ends run the same protocol version.
+Each link chooses its own compression in its link profile: a proven existing method, chosen later. A link that compresses with a dictionary can build it from the definitions, because one version always means the same definitions (law 10). The hello and its reply are never compressed (law 12).
 
 ## Storage
 The protocol also defines the storage layout, so the whole data format lives here. Core's tables are in [Storage](storage.md); stored record formats are not defined yet.
@@ -97,6 +97,7 @@ An older time never overwrites newer state. There is no "history-only" message.
 ## Versions
 - Everything is assumed up to date. There is no backward compatibility.
 - There is one version check, at connect. A mismatch is rejected with a clear "update this device" error.
+- Every change after a release is a new version, even an additive one (law 10).
 
 ## Tools
 The CLI and web viewer only display messages. They never send to a live Core.

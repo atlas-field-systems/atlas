@@ -2,7 +2,7 @@
 
 ## 0.8
 
-- No short keys: field names and `type` stay readable for good (law 6). Each link chooses its own compression. No message changes.
+- No short keys: field names and `type` stay readable for good (law 6). Each link chooses its own compression; the hello and its reply are never compressed (law 12). Every change after a release is a new version, additive or not (law 10). No message changes.
 - Origin: every message carries `from` (Asset id, operator id, or `CORE`). Core forwards other creators' messages unchanged. Duplicates are `(from, seq, time)`. Replies use `reply_from` + `reply_to`. Law 2 changed on purpose (flat messages with a creator).
 - Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
 - Queue: drop `task_seq` and the gap-wait. Core owns an ordered list of `task_id`s; Asset reports the queue; Core resends missing bodies.
