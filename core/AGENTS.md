@@ -25,3 +25,4 @@ If you need something outside this repository, go to the one that owns it.
 - How clients talk to Core lives in **protocol**, in `sdk/`.
 - Prototypes are approved: build small, learn, and write findings to [docs/findings.md](docs/findings.md) so they can go back into Protocol and the Charter. Do not change Protocol from here.
 - Run `npm test` before every PR. Do not merge without the developer's approval.
+- Releases: raise `version` in `package.json` on main, then `git push origin main:production` once the developer approves. Core releases only on a Protocol release tag.

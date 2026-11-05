@@ -1,0 +1,51 @@
+name: release
+# Pushing to production makes the release: tag v<version> from package.json and a GitHub
+# release. Core must be pinned to a Protocol release tag. production only moves forward
+# to a commit on main:
+#   git push origin main:production
+on:
+  push:
+    branches: [production]
+permissions:
+  contents: write
+concurrency: release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - id: plan
+        run: |
+          git merge-base --is-ancestor HEAD origin/main || { echo "::error::production must be a commit on main. Release with: git push origin main:production"; exit 1; }
+          git -C protocol fetch -q --tags origin
+          p=$(git -C protocol tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+$' | head -1 || true)
+          [ -n "$p" ] || { echo "::error::protocol/ is not on a Protocol release tag. Core releases only on a released Protocol."; exit 1; }
+          v=$(node -p "require('./package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "protocol=$p" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then
+            if git diff --quiet "v$v" HEAD -- . ':!*.md' ':!docs'; then
+              echo "release=false" >> "$GITHUB_OUTPUT"; echo "v$v is already released and no code changed since."; exit 0
+            fi
+            echo "::error::v$v is already released and Core changed since. Raise the version in package.json on main first."; exit 1
+          fi
+          echo "release=true" >> "$GITHUB_OUTPUT"
+      - if: steps.plan.outputs.release == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - if: steps.plan.outputs.release == 'true'
+        run: npm ci && npm test
+      - if: steps.plan.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.plan.outputs.version }}
+          P: ${{ steps.plan.outputs.protocol }}
+        run: |
+          git -c user.name=the-Drunken-coder -c user.email=183743141+the-Drunken-coder@users.noreply.github.com tag -a "v$V" -m "Core $V on Protocol $P"
+          git push origin "v$V"
+          gh release create "v$V" --verify-tag --title "Core $V" --notes "Speaks Protocol $P." --generate-notes

@@ -11,5 +11,6 @@
 - Core refuses a repeated `task_id` from an operator with a reason (Protocol decisions, 0.6).
 - `test/`: end to end over real sockets.
 - `.github/workflows/protocol-bump.yml`: when Protocol has a newer release tag, moves `protocol/` to it, runs the tests, and opens or updates the `protocol-bump` PR. Core never follows Protocol's main.
+- `.github/workflows/release.yml`: `git push origin main:production` releases Core. It checks that `protocol/` is on a Protocol release tag, runs the tests, tags `v<version>` from `package.json`, and writes a GitHub release. `production` only ever moves forward to a commit on main.
 
 [findings.md](findings.md) lists protocol gaps found while building.
