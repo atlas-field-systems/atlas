@@ -31,6 +31,7 @@ jobs:
             if ! git merge-base --is-ancestor HEAD "$v" && ! git diff --quiet "$v" HEAD -- . ':!*.md' ':!docs'; then
               echo "::error::$v is already released and Core changed since. Raise the version in package.json on main first."; exit 1
             fi
+            git merge-base --is-ancestor "$v" origin/main || { echo "::error::$v is not on main, so it is not released."; exit 1; }
             echo "Nothing new since $v."
           fi
           echo "next=$next" >> "$GITHUB_OUTPUT"
