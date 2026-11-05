@@ -1,6 +1,8 @@
 # How Atlas parts communicate
 
-These rules match the [SDK locks](../sdk/README.md) and [laws](laws.md) from protocol 0.8.
+How every part of Atlas behaves on a link, for protocol 0.8. It spells out the
+[laws](laws.md) in full. The SDK implements these rules; what it adds on top is in
+[SDK how it works](../sdk/how-it-works.md).
 
 ## One model for every link
 
@@ -181,7 +183,7 @@ open socket, a radio acknowledgement, or other Assets overheard on the mesh.
 
 ## After reconnecting (Asset)
 
-On an accepted hello the Asset SDK, without waiting for the program:
+After each accepted hello the Asset, in this order:
 
 1. Sends `admin.describe`.
 2. Sends its connect `report.settings` (every setting it supports; see above).
@@ -189,12 +191,5 @@ On an accepted hello the Asset SDK, without waiting for the program:
 4. Sends its current queue report.
 5. Sends `query.queue` so Core can resend anything missing.
 
-Inflight operator `request`s across a drop become **`unknown`**, not failed. The
-SDK does not auto-retry operator commands.
-
-## Operator picture after reconnect
-
-An operator live picture **rebuilds** from Core's connect push (describe + latest
-reports). It does not resume a local cache without that replay. Those messages are
-replays the operator may already have seen; they are delivered to the picture
-anyway (see Routing and duplicates).
+An operator interface rebuilds what it knows from Core's connect push (see
+[Operator interfaces](#operator-interfaces)).

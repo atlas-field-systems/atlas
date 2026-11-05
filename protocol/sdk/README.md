@@ -19,8 +19,8 @@ and the developer approves each merge before the next slice starts.
 | Doc | What it covers |
 | --- | --- |
 | [Implementation plan](IMPLEMENTATION.md) | Layout, signatures, build slices, tests, decided points |
-| [How it works](how-it-works.md) | Front door, identity, queue, picture, reconnect, Core-as-user |
-| [Concepts](concepts.md) | The kept concepts, rewritten to match the locks |
+| [How it works](how-it-works.md) | Front door, identity, caller surface, picture, adapters, reconnect |
+| [Communication](../docs/communication.md) | The wire rules the SDK implements |
 | This README | Scope, non-goals, where code will live |
 
 ## Non-goals (for v1)
@@ -37,7 +37,7 @@ and the developer approves each merge before the next slice starts.
 sdk/
   README.md           this file
   how-it-works.md     behavior contract
-  concepts.md         concept list (locked)
+  IMPLEMENTATION.md   build plan
   # later: package source that loads ../definitions
 ```
 
