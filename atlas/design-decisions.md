@@ -40,7 +40,8 @@ definitions or docs. Programs load the definitions as data instead.
 Atlas is split into three layers, so each can change without breaking the others.
 
 - **Protocol is the spec only.** Definitions, laws, examples and docs, with no
-  implementation code. It is what carries the version number.
+  implementation code. It is what carries the version number, and its package
+  version is the only place that number is written. A release is a git tag.
 - **The SDK is the one implementation** and the stable front door every program
   uses: Core, bridges and operator apps. It builds, validates and parses
   messages, and handles keys, queueing and retry, and duplicates. Programs never
@@ -59,7 +60,9 @@ How changes are made:
 
 How drift is prevented:
 
-- The SDK pins a Protocol version and loads its JSON definitions when it runs.
+- Each SDK release depends on one exact Protocol release and loads its JSON
+  definitions from it when it runs. Moving to a new Protocol is a deliberate
+  SDK change.
 - Protocol's examples run as SDK tests in CI.
 - Every Protocol PR runs the SDK tests.
 
