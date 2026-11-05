@@ -58,7 +58,10 @@ No user accounts or roles.
 6. To read, it uses `query.core` and `query.asset`; `every_s` repeats an answer
    as a **new** message (new `seq` from its creator). Core sends a query's answer
    first and its `admin.reply` last, so the reply marks the end; an accepted
-   reply alone means nothing matched.
+   reply alone means nothing matched. On that operator link, while Core is
+   answering a query whose answer is a sequence of messages, Core does **not**
+   forward live reports between the answer and its `admin.reply`. Live forwards
+   for that link are deferred and sent after the reply, in order.
 7. Core answers **every** operator message after the hello with one `admin.reply`:
    `accepted` or `refused` (with `explanation`), `reply_from` + `reply_to` naming
    the operator message's (`from`, `seq`). Accepted only means Core passed it on.
@@ -161,9 +164,12 @@ Core does not send the task again.
 
 ## Losing the link
 
-An Asset is **in contact** with Core while it hears new messages from Core (not
-duplicates) after its accepted hello. Nothing else counts: not an open socket, not a
-radio acknowledgement, not hearing the gateway or other Assets.
+An Asset is **in contact** with Core while it hears **new** (non-duplicate) messages
+**after its accepted hello** that name **this Asset** in `asset_id` and were **not**
+sent by this Asset (`from` is not this Asset's id). That covers messages Core creates
+(`admin.alive`, Core's final-report `admin.reply`) and messages Core forwards
+unchanged (operator commands, settings, cancels, task bodies). It does not count an
+open socket, a radio acknowledgement, or other Assets overheard on the mesh.
 
 - So silence means something, Core is never quiet for long. When it has sent an Asset
   nothing new for a third of that Asset's `link_loss_after_s` (repeated answers to
