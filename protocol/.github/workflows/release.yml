@@ -26,8 +26,11 @@ jobs:
           git merge-base --is-ancestor HEAD origin/main || { echo "::error::production must be a commit on main. Release with: git push origin main:production"; exit 1; }
           wire=$(node -p "require('./definitions/variables/protocol_version.json').examples[0]")
           latest=$(git tag -l "v$wire.*" --sort=-v:refname | grep -E "^v${wire//./\\.}\.[0-9]+$" | head -1 || true)
+          at_head=$(git tag --points-at HEAD | grep -E "^v${wire//./\\.}\.[0-9]+$" | sort -rV | head -1 || true)
           next=
-          if [ -z "$latest" ]; then
+          if [ -n "$at_head" ]; then
+            latest=$at_head; echo "Nothing new: $at_head is this commit."
+          elif [ -z "$latest" ]; then
             next="v$wire.0"
           elif git merge-base --is-ancestor HEAD "$latest" || git diff --quiet "$latest" HEAD -- . ':!*.md' ':!docs'; then
             echo "Nothing new since $latest."
@@ -37,6 +40,7 @@ jobs:
             next="v$wire.$(( ${latest##*.} + 1 ))"
           fi
           target=${next:-$latest}
+          [ -n "$next" ] || git merge-base --is-ancestor "$target" origin/main || { echo "::error::$target is not on main, so it is not released."; exit 1; }
           if [ "${target##*.}" = 0 ]; then
             awk -v h="## $wire" '$0 == h { f = 1; next } /^## / { f = 0 } f' docs/changelog.md > "$RUNNER_TEMP/notes.md"
             grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md" || { echo "::error::docs/changelog.md has no ## $wire section"; exit 1; }
