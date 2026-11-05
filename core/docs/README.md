@@ -4,7 +4,7 @@
 
 - Stack: Node 24, `ws` for WebSockets, Ajv for checking messages, built-in `node:sqlite` for storage. No build step, no browser dependencies.
 - `protocol/`: the protocol repository as a git submodule, pinned to a Protocol release tag (`v<major.minor>.<patch>`). Messages are checked against its `definitions/`; nothing is defined here.
-- `src/core.mjs`: one WebSocket per Asset (`/asset`) or operator interface (`/operator`). Credentials go in the first message (admin.hello or admin.operator_hello), never the URL. Operators get each Asset's hello as admin.asset, without keys. A newer link for the same ID replaces the older one.
+- `src/core.mjs`: one WebSocket per Asset (`/asset`) or operator interface (`/operator`). Credentials go in the first message (admin.hello or admin.operator_hello), never the URL. Operators get each Asset's description (today as `admin.asset` without keys; Protocol 0.8 replaces that with keyless `admin.describe` — see [findings](findings.md)). A newer link for the same ID replaces the older one.
 - `src/store.mjs`: tables `assets`, `tasks`, `telemetry`, `history`, plus the newest report of each kind per Asset.
 - `src/dedupe.mjs`: each `(sender, seq)` is handled once.
 - `sim/asset.mjs`: a simulated drone. Default failsafes: link loss returns home, low battery (below its threshold, while flying) lands in place. It sends telemetry every `telemetry_every_s` (0.5 s by default, in sim time), on the ground too. Reports other than telemetry wait in an outbox while the link is down. `src/operator.mjs`: a small operator client. `public/index.html`: the operator page.
