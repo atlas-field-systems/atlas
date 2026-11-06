@@ -33,7 +33,9 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
 
 - Each message has one time for the whole message. Mixed times are rare and need
   their own case. Every message carries `from` (the creator), `time`, and `seq`.
-  Messages about one Asset also carry `asset_id`.
+  Messages about one Asset also carry `asset_id`. The two often hold the same
+  ID but are not a repeat: `from` is who made the message and `asset_id` is who it
+  is about, as when Core reports that a drone's Task was undelivered.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
 - The whole data format lives in Protocol. Protocol defines both the messages and
@@ -48,7 +50,10 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
 - Subsystem documentation owns its behavior, failure cases, and planning decisions.
 - Protocol owns exact shared contracts within the charter's
   [shared data rules](#keep-shared-data-simple). Core owns server mechanisms.
-  SDK owns client behavior. Other components own their runtime details.
+  SDK owns client behavior. [Asset](https://github.com/atlas-field-systems/asset)
+  owns how an Asset behaves, and
+  [Command Interface](https://github.com/atlas-field-systems/command-interface)
+  owns how the operator application works. Other components own their runtime details.
 
 Keep each rule with its owner and link to it from other documents.
 When a subsystem rule conflicts with the operating context, surface the mismatch

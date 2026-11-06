@@ -8,7 +8,7 @@ Design so Atlas works well at these sizes and does not break just past them.
 - Because of this, an Asset ID is 1 to 4 letters or digits (such as `A1`). That gives millions of IDs and keeps every message short. Every other ID follows the same 4-character rule.
 
 ## Setup
-- **One site, one Core, one gateway.** A Core runs one site at a time, and each site has exactly one gateway.
+- **One site, one Core, one gateway.** A Core runs one site at a time, and each site has exactly one gateway at a time. Different sites, or later radio systems, may use different gateway designs ([Environment](environment.md)).
 - **One operator.** Realistically one person runs Atlas at a time.
 
 ## Radio

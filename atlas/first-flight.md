@@ -50,9 +50,11 @@ operator resumes it, so a Task that arrives late does not start on its own.
 
 Each Asset has [settings](settings.md) for how it responds to events such as
 losing its radio link. Each trigger has its own response: continue the mission,
-return to home, or land at a chosen point. Losing the link can be set to continue,
-for example when Core rides in a car through a tunnel and the drone should keep
-its mission and resync later. Return to home is done by an Atlas layer above the
+hold, land, or return to home. Losing the link can be set to continue, for example
+when Core rides in a car through a tunnel and the drone should keep its mission.
+The drone keeps the Tasks it already holds. If the tunnel outlasts the link-loss
+time, Tasks Core had not yet handed over are marked undelivered, and the operator
+queues that work again afterwards as new Tasks. Return to home is done by an Atlas layer above the
 flight controller or by ArduPilot's return-to-home mode.
 
 Failure always wins. Every failure has a defined safe response, and it applies

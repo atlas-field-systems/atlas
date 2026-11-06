@@ -36,6 +36,10 @@ or a required network topology.
 | Asset runtime | Equipment control, local execution, and reports of its effects |
 | Plugin subsystem within Core | Acquiring, analyzing, and publishing information |
 
+The Asset runtime is planned in [asset](https://github.com/atlas-field-systems/asset)
+and the operator application in
+[command-interface](https://github.com/atlas-field-systems/command-interface).
+
 ## The four pillars
 
 Entities describe Assets, their Observations, shared Tracks, and authored Geofeatures.
