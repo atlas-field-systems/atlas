@@ -6,15 +6,15 @@ Not decided yet. Planning comes before building.
 
 - **Tasks and geo features.** How a Task links to a geo feature (not through `move_to`) is open.
 - **What else registration contains.** `admin.describe` lists reports, commands and cameras; [Storage](storage.md) keeps them. Answered in 0.8: an Asset may say what it is with `entity_type`.
-- **Future Asset data.** New kinds of Asset data each get a new fixed report, listed in `reports`. Who decides when one is added is open.
-- **Queued settings confirmation.** When a queued `control.settings` Task runs, does the Asset also send `report.settings` with `reply_to`, or is the task status enough? And if a newer immediate change already set that setting, the queued one changes nothing: is it still `completed`?
-- **Errors back to an Asset.** An Asset gets no reply (except Core's acknowledgement of a final task report), so an invalid report is dropped and logged by Core and the Asset never learns. Should there be an error message to Assets?
 - **`reply_to` through Core.** Answered in 0.8: every message carries `from`; Core forwards unchanged; replies use `reply_from` + `reply_to` naming (`from`, `seq`).
-- **What "latest state" includes.** Partly answered in 0.8: on connect Core pushes each Asset's `admin.describe` and newest reports. The SDK live picture is opt-in; on disconnect the last snapshot stays readable as `stale: true`. Whether the queue is always in the connect push stays open.
-- **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
 ## Earlier
 
+- **Future Asset data.** Answered: each new fixed report is a Protocol change the owner approves.
+- **Queued settings confirmation.** Answered in 0.8: the Asset sends `report.settings` naming the Task, like an immediate change. One overtaken by a newer change is still `completed`.
+- **Errors back to an Asset.** Not yet: Core drops and logs an invalid report, and the Asset gets only acknowledgements. Revisit after first flight.
+- **What "latest state" includes.** Answered in 0.8: Core's connect push has each Asset's `admin.describe` and newest reports, its queue report included. The SDK live picture is opt-in; on disconnect the last snapshot stays readable as `stale: true`.
+- **One level deeper?** Answered: no. `kind` stays its own field.
 - **Additive changes and the version.** Answered: every change after a release is a new version, additive or not (law 10). Ends never ignore unknown fields.
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
 - **Holding commands for offline Assets.** Answered in 0.8: Core refuses and holds nothing, counts an Asset offline by contact rather than an open link, and never carries work across a disconnect (see [communication.md](communication.md#when-core-counts-an-asset-offline)). Revisit only if it becomes a real problem.

@@ -2,13 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/task_state.json",
   "title": "task_state",
-  "description": "Where a Task stands: queued, active, completed, failed, or cancelled. Only the Asset's reports move it, and only forward: queued, active, then one final state (completed, failed or cancelled), which never changes.",
+  "description": "Where a Task stands: queued, active, completed, failed, cancelled, or undelivered. The Asset's reports move it, and only forward: queued, active, then one final state (completed, failed or cancelled), which never changes. undelivered is the one state Core sets, for a Task it gave up delivering (dropped unsent, or never shown before the Asset went offline). It is not final: a later report from the Asset replaces it.",
   "enum": [
     "queued",
     "active",
     "completed",
     "failed",
-    "cancelled"
+    "cancelled",
+    "undelivered"
   ],
   "examples": [
     "active"

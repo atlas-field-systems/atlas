@@ -134,13 +134,17 @@ Sending a whole queue at once could fail on a slow link. Instead:
    least its last 1024 finished `task_id`s.
 7. When the Asset reports a task `cancelled` that Core passed on no
    `control.cancel` for, its queue was cleared (by an immediate command, a failsafe or a failed
-   task). Core then drops the tasks it has not sent yet and records no final
-   state for them, so a held task never starts after the queue was cleared.
+   task). Core then drops the tasks it has not sent yet and marks each `undelivered`,
+   so a held task never starts after the queue was cleared.
 8. When a task fails, or a failsafe triggers with any response except `continue`,
    the Asset cancels the rest of its queue, reports each cancelled task and its
    empty queue, and sets `run_state` paused (in a `report.settings`). A task that
    arrives later, such as one Core had already sent, waits until
    `run_state: running`, so the operator decides whether it runs.
+9. **`undelivered`** is the one task state Core sets, for a task it gave up
+   delivering. Core tells operators with `report.status` kind `task` (`from` is
+   `CORE`). It is not final: if the Asset later lists or reports on the task, that
+   report replaces it.
 
 ### Final reports are acknowledged
 
@@ -157,7 +161,7 @@ Core does not send the task again.
 
 ## Immediate commands and cancel
 
-- A motion command without `task_id` (takeoff, move_to, land, return_to_home) runs now and **cancels the rest of the queue**. The Asset reports each cancelled task (`report.status` kind `task`, `cancelled`) and then its empty queue. When Core passes one on, it drops the tasks it has not sent yet and sends a `control.cancel` (`from` is `CORE`) for each task it sent that the Asset has not shown it holds, so a task still on its way is never run after the command.
+- A motion command without `task_id` (takeoff, move_to, land, return_to_home) runs now and **cancels the rest of the queue**. The Asset reports each cancelled task (`report.status` kind `task`, `cancelled`) and then its empty queue. When Core passes one on, it drops the tasks it has not sent yet (marking each `undelivered`) and sends a `control.cancel` (`from` is `CORE`) for each task it sent that the Asset has not shown it holds, so a task still on its way is never run after the command.
 - A `control.settings` without `task_id` runs now beside the queue and does not cancel it.
 - `control.cancel` stops a command partway, for example a landing. It never creates a task.
   - Core passes on a cancel with `task_id` only for a task that has not finished. It refuses an unknown `task_id` ("A1 has no task T9") and a finished one ("T3 is already completed").
@@ -179,6 +183,10 @@ Core does not send the task again.
 - Per setting, the newest `time` wins, wherever the report comes from (Core forwards
   reports unchanged). An Asset never sends two settings reports with the same
   `time`. An older report is kept in history and changes nothing.
+- A `control.settings` Task is confirmed like an immediate one: when it runs, the Asset
+  sends `report.settings` with `reply_from`/`reply_to` naming it. If a newer change
+  already set that setting, it changes nothing, is still `completed`, and the report
+  shows the value kept.
 
 ## Losing the link
 
@@ -219,9 +227,9 @@ a gateway can be out of radio range while the gateway's link to Core stays open.
   offline Asset and holds nothing. The operator sends again once it is back.
 - **Core never carries work across a disconnect.** When an Asset goes offline,
   Core stops resending every Task the Asset has not shown it holds, drops the
-  Tasks it has not sent yet, and never sends any of them again. Core records no
-  final state for them, because it does not know whether they arrived. If the Asset later lists or reports on one, that
-  report is the record.
+  Tasks it has not sent yet, and never sends any of them again. It marks each
+  `undelivered`, so operators know. If the Asset later lists or reports on one,
+  that report replaces it.
 
 ## After reconnecting (Asset)
 
@@ -235,7 +243,9 @@ After each accepted hello the Asset, in this order:
 
 3. Resends any unacknowledged final task reports (retries, same bytes).
 4. Sends its current queue report.
-5. Sends `query.queue` so Core can resend anything missing.
+5. Sends `query.queue`. After a short dropout Core resends anything missing; once
+   Core has counted the Asset offline, it resends nothing (see
+   [When Core counts an Asset offline](#when-core-counts-an-asset-offline)).
 
 An operator interface rebuilds what it knows from Core's connect push (see
 [Operator interfaces](#operator-interfaces)).
