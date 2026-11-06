@@ -43,8 +43,9 @@ returns them as a list.
 
 The operator picks a building and asks the Plugin to analyze it. The Plugin
 runs whatever open-source tools it has. It creates a geo feature on the
-building and puts its findings in the geo feature or in an Object attached to
-it. The output is a reference to that geo feature.
+building. Its findings never go on the geo feature. Depending on the action,
+they come back as a list or as Objects attached to the geo feature. The output
+is a reference to that geo feature.
 
 ### Gather imagery for an intelligence package
 
