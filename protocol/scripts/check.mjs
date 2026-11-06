@@ -6,7 +6,7 @@ import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
 const root = 'definitions';
-const ajv = new Ajv({ strict: true, strictRequired: false, allErrors: true });
+const ajv = new Ajv({ strict: true, strictRequired: false, allowUnionTypes: true, allErrors: true });
 addFormats(ajv);
 
 const errors = [];
@@ -111,7 +111,7 @@ for (const [file, s] of Object.entries(schemas)) {
   if (/^variables\/.*_id\.json$/.test(file) && s.pattern !== '^[A-Za-z0-9]{1,4}$') {
     errors.push(`${file}: IDs are 1 to 4 letters or digits (pattern ^[A-Za-z0-9]{1,4}$)`);
   }
-  if (file.startsWith('variables/') && s.type === 'string' && !s.enum && s.maxLength === undefined) {
+  if (file.startsWith('variables/') && [s.type].flat().includes('string') && !s.enum && s.maxLength === undefined) {
     errors.push(`${file}: law 13: text needs a maxLength`);
   }
   for (const [prop, def] of Object.entries(props)) {

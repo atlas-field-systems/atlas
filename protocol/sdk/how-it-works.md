@@ -56,16 +56,18 @@ retries.
 | Call | Behavior |
 | --- | --- |
 | `request` | Send one message; wait for matching `admin.reply` |
-| `stream` | Receive the messages that match the query until the matching `admin.reply` |
+| `stream` | Receive the messages that match the query until the matching `admin.reply`; the finished result lists them oldest first |
 | `subscribe` | Live filter by type/kind until unsubscribed; callback `{msg, raw, duplicate}` |
 
 Outcomes for a finished `request` / `stream`:
 
 - **`accepted`**: peer accepted (Core passed it on, or hello accepted). Not the
   same as a Task being done; done arrives on `subscribe` to `report.status`.
-- **`rejected`**: peer refused with an explanation.
-- **`unknown`**: timeout or disconnect before a reply. **Not** "failed". Do not
-  auto-retry non-idempotent operator commands.
+- **`rejected`**: peer refused with an explanation. Nothing ran.
+- **`failed`**: only for a `plugin.call`. The Plugin ran and broke, with an
+  explanation. Results that arrived before it stand.
+- **`unknown`**: timeout or disconnect before a reply. **Not** `failed`: it may
+  have run. Do not auto-retry non-idempotent operator commands.
 
 An empty query that matches nothing is `accepted` with zero items (reply alone).
 

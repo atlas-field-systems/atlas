@@ -15,7 +15,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 | 02 | Core → Operator | [`admin.hello_reply`](../examples/plugin-call/02-hello_reply.json) | Core accepts. | 144 | 122 |
 | 03 | Core → Operator | [`plugin.describe`](../examples/plugin-call/03-plugin-describe.json) | Core pushes one plugin.describe per Plugin with the Asset descriptions: Plugin DEM offers ground_elevation. | 120 | 109 |
 | 04 | Operator → Core | [`plugin.call ground_elevation`](../examples/plugin-call/04-call-ground_elevation.json) | The operator asks DEM for the ground elevation at a point. | 161 | 131 |
-| 05 | Core → Operator | [`plugin.result ground_elevation`](../examples/plugin-call/05-result-ground_elevation.json) | One result item, naming the call by reply_from and reply_to. Plugins are inside Core, so from is CORE. | 205 | 149 |
+| 05 | Core → Operator | [`plugin.result ground_elevation`](../examples/plugin-call/05-result-ground_elevation.json) | One result item, naming the call by reply_from and reply_to. Plugins are inside Core, so from is CORE. | 191 | 145 |
 | 06 | Core → Operator | [`admin.reply`](../examples/plugin-call/06-reply.json) | The reply comes last and marks the end: the call finished. | 125 | 98 |
 | 07 | Operator → Core | [`query.core plugins`](../examples/plugin-call/07-query-core-plugins.json) | Later the operator asks again which Plugins Core has. | 80 | 77 |
 | 08 | Core → Operator | [`plugin.describe`](../examples/plugin-call/08-plugin-describe.json) | One plugin.describe per Plugin, | 120 | 109 |
@@ -101,10 +101,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "plugin_id": "DEM",
   "reply_from": "OP1",
   "reply_to": 1,
-  "elevation": {
-    "altitude_m": 143.2,
-    "altitude_reference": "msl"
-  }
+  "altitude_m": 143.2,
+  "altitude_reference": "msl"
 }
 ```
 
@@ -218,7 +216,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-11 messages, 1557 bytes minified, 1277 bytes if each is deflated on its own.
+11 messages, 1543 bytes minified, 1273 bytes if each is deflated on its own.
 
 The header (`type`, `time`, `seq`, `asset_id`) is 36% of all bytes. Field names, quotes and punctuation are 55%; the values themselves are the rest.
 
@@ -233,7 +231,7 @@ Where the bytes go (each field summed across every message):
 | `from` | 11 | 139 | 9% |
 | `seq` | 11 | 91 | 6% |
 | `kind` | 4 | 91 | 6% |
-| `plugin_id` | 5 | 85 | 5% |
+| `plugin_id` | 5 | 85 | 6% |
 | `reply_result` | 3 | 73 | 5% |
 | `reply_from` | 4 | 72 | 5% |
 | `explanation` | 1 | 51 | 3% |
@@ -247,5 +245,5 @@ Longest single fields:
 | 01-operator_hello.json | `key` | 30 |
 | 01-operator_hello.json | `type` | 29 |
 | 02-hello_reply.json | `type` | 26 |
-| 05-result-ground_elevation.json | `elevation.altitude_reference` | 26 |
+| 05-result-ground_elevation.json | `altitude_reference` | 26 |
 | 02-hello_reply.json | `hello_result` | 25 |

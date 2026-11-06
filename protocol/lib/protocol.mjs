@@ -85,9 +85,9 @@ function node(protocol, s, file, name, required) {
 
 export function describeType(n) {
   const s = n.schema;
-  if (n.kind === 'enum') return n.options.join(' | ');
+  if (n.kind === 'enum') return n.options.map(String).join(' | ');
   if (n.kind === 'object' || n.kind === 'array') return n.kind;
-  const bits = [s.format ?? n.kind];
+  const bits = [s.format ?? [n.kind].flat().join(' | ')];
   if (s.minimum !== undefined) bits.push(`>= ${s.minimum}`);
   if (s.exclusiveMaximum !== undefined) bits.push(`< ${s.exclusiveMaximum}`);
   if (s.maximum !== undefined) bits.push(`<= ${s.maximum}`);

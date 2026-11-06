@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/color.json",
   "title": "color",
-  "description": "The main colour a sensor sees on the target.",
+  "description": "The main colour a sensor sees on the target. null means no longer known.",
   "enum": [
     "black",
     "white",
@@ -14,7 +14,8 @@
     "green",
     "blue",
     "purple",
-    "brown"
+    "brown",
+    null
   ],
   "examples": [
     "red"

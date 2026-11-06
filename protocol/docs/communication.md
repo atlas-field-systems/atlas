@@ -116,7 +116,10 @@ Sending a whole queue at once could fail on a slow link. Instead:
 
 1. Core owns an **ordered list of `task_id`s** for each Asset.
 2. Core sends **each task as its own message** (a `control.command` or
-   `control.settings` with a `task_id`), once.
+   `control.settings` with a `task_id`), once, and only after the Asset has shown
+   it holds the task before it (listed it in a queue report or reported on it).
+   So a lost task is resent before the next one goes, and tasks reach the Asset
+   in Core's order.
 3. The Asset reports its **queue**: the list of task IDs it has not finished, the
    running one included, in order (`report.status` kind `queue`).
 4. Core resends a task only while the Asset has never shown it holds it: never
@@ -124,11 +127,15 @@ Sending a whole queue at once could fail on a slow link. Instead:
    never sends it again. Core also stops for good when the Asset goes
    [offline](#when-core-counts-an-asset-offline). Either side can ask for the queue at any time with
    `query.queue`, for example an Asset after reconnecting.
-5. The Asset runs tasks in the order of the queue list it holds. There is no
-   `task_seq` and no gap-wait timer.
+5. The Asset runs tasks in the order they arrive, which is Core's order. There is
+   no `task_seq` and no gap-wait timer.
 6. An Asset never runs a `task_id` twice. A task it holds is ignored. For a task
    it has finished, it sends that task's final report again. It remembers at
    least its last 1024 finished `task_id`s.
+7. When the Asset reports a task `cancelled` that Core passed on no
+   `control.cancel` for, its queue was cleared (by an immediate command, a failsafe or a failed
+   task). Core then drops the tasks it has not sent yet and records no final
+   state for them, so a held task never starts after the queue was cleared.
 
 ### Final reports are acknowledged
 
@@ -206,9 +213,9 @@ a gateway can be out of radio range while the gateway's link to Core stays open.
 - Core refuses `control.command`, `control.settings` and `control.cancel` for an
   offline Asset and holds nothing. The operator sends again once it is back.
 - **Core never carries work across a disconnect.** When an Asset goes offline,
-  Core stops resending every Task the Asset has not shown it holds, and never
-  sends those Tasks again. Core records no final state for them, because it does
-  not know whether they arrived. If the Asset later lists or reports on one, that
+  Core stops resending every Task the Asset has not shown it holds, drops the
+  Tasks it has not sent yet, and never sends any of them again. Core records no
+  final state for them, because it does not know whether they arrived. If the Asset later lists or reports on one, that
   report is the record.
 
 ## After reconnecting (Asset)
