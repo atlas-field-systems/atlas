@@ -11,7 +11,11 @@ for the ground elevation at its position.
 Because the Asset is on the ground, that elevation is its altitude above sea level.
 From then on, the Asset can report altitude above sea level as well as above home.
 
-Open questions: where Core gets elevation data in the field, and how accurate it must be.
+The elevation comes from a Plugin that offers the `ground_elevation` action
+(see [Plugins](plugins.md#ground-elevation-for-an-asset-later)). Only operators
+can call Plugins for now, so this waits until Assets can.
+
+Open question: how accurate the elevation must be.
 
 ## Links, not just messages
 
