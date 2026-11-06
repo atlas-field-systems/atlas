@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Atlas Protocol viewer for the terminal. Everything shown comes from definitions/.
 import { select, input } from '@inquirer/prompts';
-import { load, compress } from './node-protocol.mjs';
+import { load, compress } from '../lib/node-protocol.mjs';
 import { fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, messageTree, splitId } from '../lib/protocol.mjs';
 
 const protocol = await load();

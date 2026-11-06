@@ -4,8 +4,8 @@ import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { deflateSync } from 'fflate';
 import { marked } from 'marked';
-import { loadScenario } from './lib/scenario.mjs';
-import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, messageTree, messageFile, splitId } from './lib/protocol.mjs';
+import { loadScenario } from '../lib/scenario.mjs';
+import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, messageTree, messageFile, splitId } from '../lib/protocol.mjs';
 
 const readJson = async (f) => (await fetch(`definitions/${f}`)).json();
 const protocol = await loadProtocol(readJson, Ajv, addFormats);
@@ -51,8 +51,8 @@ async function branchBanner() {
   const root = m ? m[1] : location.pathname.replace(/[^/]*$/, '');
   const here = m ? Number(m[2]) : null;
   let prs = [];
-  try { prs = await (await fetch('https://api.github.com/repos/atlas-field-systems/protocol/pulls?state=open&per_page=50')).json(); } catch {}
-  if (!Array.isArray(prs)) prs = [];
+  try { prs = await (await fetch('pull-requests.json')).json(); } catch {}
+  prs = Array.isArray(prs) ? prs.filter((p) => Number.isInteger(p?.number) && p.number > 0 && typeof p.title === 'string') : [];
   const link = (href, label, on) => on ? `<b>${esc(label)}</b>` : `<a href="${esc(href)}">${esc(label)}</a>`;
   const cur = prs.find((p) => p.number === here);
   $('branch').className = here ? 'branch' : 'branch main';

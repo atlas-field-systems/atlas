@@ -23,6 +23,17 @@ jobs:
         with:
           node-version: 22
       - if: github.event.action != 'closed'
+        name: Snapshot pull request previews
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.repo.full_name == .base.repo.full_name) | {number, title}' \
+            | jq -s . > "$RUNNER_TEMP/pull-requests.json"
+      - if: github.event.action != 'closed'
+        env:
+          SITE_PULL_REQUESTS: ${{ runner.temp }}/pull-requests.json
         run: npm ci && npm run check && npm run build:site
       - if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4

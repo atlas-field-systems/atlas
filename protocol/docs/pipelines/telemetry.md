@@ -5,9 +5,9 @@ How one telemetry report moves from an Asset to the operator, hop by hop. It use
 **Bloat is the enemy, but good organization is not bloat.** Telemetry is the most frequent message, so every byte here counts most.
 
 ```text
-Asset ──1. radio──▶ Gateway ──2. IP (GAP)──▶ Core ──3. store──▶ Core storage
-                                              │
-                                              └──4. to operator──▶ Operator interface
+Asset ──1. radio──▶ Gateway ──2. IP──▶ Core ──3. store──▶ Core storage
+                                        │
+                                        └──4. to operator──▶ Operator interface
 ```
 
 ## 1. Asset → gateway
@@ -31,7 +31,7 @@ The battery is its own fixed report, `report.battery` (103 / 88), sent on its ow
 ```
 
 ## 2. Gateway → Core
-- **Link:** IP. **GAP:** the Core-to-gateway API (in the SDK) is not defined.
+- **Link:** IP, through the [SDK front door](https://github.com/atlas-field-systems/protocol/blob/main/sdk/how-it-works.md#one-front-door). Its behavior is locked for 0.8; the SDK runtime is not built yet. Each medium's transport adapter and link profile own how bytes cross that link ([Communication](../communication.md#one-model-for-every-link)).
 - **Bloat:** the gateway should pass the message on unchanged. It should not wrap it or add fields Core can work out itself.
 
 ## 3. Core stores it
