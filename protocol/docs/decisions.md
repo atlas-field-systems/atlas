@@ -42,6 +42,16 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `from`: who created the message (Asset `asset_id`, operator `operator_id`, or `CORE`). Stays on the message end to end; Core forwards unchanged.
 - `asset_id`: the Asset a command is for, or the Asset a report is from.
 - Replies name the original with `reply_from` + `reply_to` (= that message's `from` and `seq`).
+
+## Plugins
+- Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/atlas/blob/main/plugins.md) page.
+- Plugins get their own message group, `plugin`. Its exact messages are not defined yet.
+- Core sends the list of Plugins, their actions and each action's inputs when an operator connects. An operator can also ask for the list.
+- Every action input is built from Protocol variables and components, such as a box, a position or a geo feature ID. A new kind of input is a Protocol change, with a changelog line such as "Added a box component so Plugins can search an area."
+- A call is answered like a query: its results, then `admin.reply` to mark the end. A result that must outlive the call is stored in Core with an ID and returned as a reference, so closing the operator interface loses nothing.
+- An action's output is a list returned to the caller, or a reference to what the Plugin created in Core (an Object, a Track, a geo feature or another Entity).
+- Outputs follow the same rule as inputs. Each action says what one list item is, built from Protocol variables and components, such as an altitude for a ground elevation or an unsaved geo feature for a building. A new kind of output is a Protocol change. Plugin data varies more than the rest of Atlas, so these additions are expected often.
+- Only operator interfaces call Plugins for now. Assets will be allowed to later.
 - For now, plugins do not act on their own to direct Assets or issue Tasks. This may change later.
 
 ## Values

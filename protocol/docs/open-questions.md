@@ -13,6 +13,12 @@ Not decided yet. Planning comes before building.
 - **What "latest state" includes.** Partly answered in 0.8: on connect Core pushes each Asset's `admin.describe` and newest reports. The SDK live picture is opt-in; on disconnect the last snapshot stays readable as `stale: true`. Whether the queue is always in the connect push stays open.
 - **One level deeper?** Should `kind` be folded into the path (`"type": "control.command.move_to"`), making one field instead of two?
 
+## Plugins
+
+The direction is in [decisions](decisions.md#plugins).
+
+- **The `plugin` messages.** The exact messages for listing, calling and answering are not defined yet.
+
 ## Earlier
 
 - **Additive changes and the version.** Answered: every change after a release is a new version, additive or not (law 10). Ends never ignore unknown fields.
@@ -28,5 +34,4 @@ Most of these are answered in [communication.md](communication.md).
 - **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** One of the four pillars; no definitions yet.
 - **Gateways.** Answered: routing is the link's job; see [Routing and duplicates](communication.md#routing-and-duplicates).
-- **Plugins.** Deferred; the system may be reimagined.
 - **Encode/decode library and stress testing.** Build phase: SDK under `sdk/`, how-it-works locked in 0.8; implementation next.
