@@ -2,7 +2,7 @@
 // pages are the .md files, and the nav is the README's numbered reading list.
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { marked } from 'marked';
+import { marked, TextRenderer } from 'marked';
 
 const root = '..';
 const out = process.env.SITE_OUT ?? '_site';
@@ -15,9 +15,18 @@ const nav = [{ title: 'Home', file: 'README.md' },
 
 const page = (f) => (f === 'README.md' ? 'index.html' : f.replace(/\.md$/, '.html'));
 const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+const headingIds = new Set();
 
 marked.use({
   renderer: {
+    heading({ tokens, depth }) {
+      const text = this.parser.parseInline(tokens, new TextRenderer()).replace(/<[^>]*>/g, '');
+      const base = text.toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu, '').replace(/\s/g, '-');
+      let id = base;
+      for (let suffix = 1; headingIds.has(id); suffix++) id = `${base}-${suffix}`;
+      headingIds.add(id);
+      return `<h${depth} id="${esc(id)}">${this.parser.parseInline(tokens)}</h${depth}>\n`;
+    },
     code({ text, lang }) {
       return lang === 'mermaid' ? `<pre class="mermaid">${esc(text)}</pre>` : `<pre><code>${esc(text)}</code></pre>`;
     },
@@ -29,6 +38,7 @@ marked.use({
 });
 
 for (const f of readdirSync(root).filter((x) => x.endsWith('.md'))) {
+  headingIds.clear();
   const md = readFileSync(join(root, f), 'utf8');
   const title = md.match(/^#\s+(.+)$/m)?.[1] ?? f;
   const links = nav.map((n) => `<a href="${page(n.file)}"${n.file === f ? ' class="on"' : ''}>${esc(n.title)}</a>`).join('');
@@ -39,6 +49,8 @@ for (const f of readdirSync(root).filter((x) => x.endsWith('.md'))) {
 }
 cpSync('style.css', join(out, 'style.css'));
 cpSync('branch.js', join(out, 'branch.js'));
+const prs = process.env.SITE_PULL_REQUESTS ? JSON.parse(readFileSync(process.env.SITE_PULL_REQUESTS, 'utf8')) : [];
+writeFileSync(join(out, 'pull-requests.json'), JSON.stringify(prs));
 // Mermaid is served from this site, not a CDN.
 const dist = 'node_modules/mermaid/dist';
 cpSync(join(dist, 'mermaid.esm.min.mjs'), join(out, 'mermaid.esm.min.mjs'));

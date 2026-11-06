@@ -4,8 +4,8 @@
   const root = m ? m[1] : location.pathname.replace(/[^/]*$/, '');
   const here = m ? Number(m[2]) : null;
   let prs = [];
-  try { prs = await (await fetch('https://api.github.com/repos/atlas-field-systems/atlas/pulls?state=open&per_page=50')).json(); } catch {}
-  if (!Array.isArray(prs)) prs = [];
+  try { prs = await (await fetch('pull-requests.json')).json(); } catch {}
+  prs = Array.isArray(prs) ? prs.filter((p) => Number.isInteger(p?.number) && p.number > 0 && typeof p.title === 'string') : [];
   if (!here && !prs.length) return;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
   const link = (href, label, on) => (on ? `<b>${esc(label)}</b>` : `<a href="${esc(href)}">${esc(label)}</a>`);
