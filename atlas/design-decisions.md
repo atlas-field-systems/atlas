@@ -46,7 +46,7 @@ Atlas is split into three layers, so each can change without breaking the others
 - **The SDK is the one implementation** and the stable front door every program
   uses: Core, bridges and operator apps. It builds, validates and parses
   messages, and handles keys, queueing and retry, and duplicates. Programs never
-  touch bytes, compression or framing. It lives in the Protocol repository, in
+  touch bytes, compression or framing. It lives in Protocol, in
   `sdk/`, so a change to the spec and its implementation land together.
 - **Transport adapters** are small plug-in packages beside the SDK (WebSocket,
   Meshtastic, FLRC, and others). They only move bytes, plus any compression or
@@ -61,29 +61,30 @@ How changes are made:
 - Every change after a release is a new version, additive or not. A released
   version never changes, so two ends with the same version have exactly the
   same definitions
-  ([Protocol law 10](https://github.com/atlas-field-systems/protocol/blob/main/docs/laws.md)).
+  ([Protocol law 10](https://github.com/atlas-field-systems/monorepo/blob/main/protocol/docs/laws.md)).
 
 How versions and releases work:
 
 - Protocol's main carries the version being worked on. It can still change until
   it is released.
-- A release is a `v<version>` git tag. Nothing is published as a package.
-  Protocol's tags are `v<major.minor>.<patch>`: major.minor is the protocol
-  version, and the patch counts releases that change no message, such as SDK fixes.
-- Protocol and Core each release by pushing main to their `production` branch
-  (`git push origin main:production`). That runs the checks and makes the tag
-  and a GitHub release. Only commits on main are released.
-- Core has its own repository and moves only to release tags, never to
-  Protocol's main, so spec work in progress never breaks it.
+- All of Atlas is one repository. A release is a git tag named for its part.
+  Nothing is published as a package. Protocol's tags are
+  `protocol-v<major.minor>.<patch>`: major.minor is the protocol version, and the
+  patch counts releases that change no message, such as SDK fixes.
+- Releasing is pushing main to the `prod` branch (`git push origin main:prod`).
+  That runs the checks and makes a tag and a GitHub release for each part that
+  changed. Only commits on main are released.
+- Core moves only to Protocol release tags, never to Protocol's main, so spec
+  work in progress never breaks it.
 
 How drift is prevented:
 
-- Protocol's examples run as SDK tests, in the same repository.
-- A program outside the Protocol repository, such as Core, pins one release and
-  loads its JSON definitions from it.
+- Protocol's examples run as SDK tests, in the same folder.
+- A program outside Protocol, such as Core, pins one release and loads its JSON
+  definitions from it.
 
 **SDK how-it-works is locked** for protocol 0.8 (see
-[protocol `sdk/how-it-works.md`](https://github.com/atlas-field-systems/protocol/blob/main/sdk/how-it-works.md)
+[protocol `sdk/how-it-works.md`](https://github.com/atlas-field-systems/monorepo/blob/main/protocol/sdk/how-it-works.md)
 once 0.8 is on main; until then the PR that lands it). Highlights that bind Core
 and Assets:
 

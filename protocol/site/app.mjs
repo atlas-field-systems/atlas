@@ -47,17 +47,19 @@ async function showDoc(name) {
 
 // Which version this is (main or a pull request preview), with links to the others.
 async function branchBanner() {
-  const m = location.pathname.match(/^(.*?\/)pr\/pr-(\d+)\//);
-  const root = m ? m[1] : location.pathname.replace(/[^/]*$/, '');
-  const here = m ? Number(m[2]) : null;
+  // The viewer sits at protocol/ of the shared site, or at the root when served alone.
+  const m = location.pathname.match(/^(.*?\/)(?:pr\/pr-(\d+)\/)?(protocol\/)?[^/]*$/);
+  const root = m[1];
+  const sub = m[3] ?? '';
+  const here = m[2] ? Number(m[2]) : null;
   let prs = [];
   try { prs = await (await fetch('pull-requests.json')).json(); } catch {}
   prs = Array.isArray(prs) ? prs.filter((p) => Number.isInteger(p?.number) && p.number > 0 && typeof p.title === 'string') : [];
   const link = (href, label, on) => on ? `<b>${esc(label)}</b>` : `<a href="${esc(href)}">${esc(label)}</a>`;
   const cur = prs.find((p) => p.number === here);
   $('branch').className = here ? 'branch' : 'branch main';
-  $('branch').innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/protocol/pull/${here}">#${here}</a>${cur ? `: ${esc(cur.title)}` : ''} (work in progress, not on main). ` : 'Showing main. ') +
-    'Versions: ' + link(root, 'main', !here) + prs.map((p) => link(`${root}pr/pr-${p.number}/`, `#${p.number} ${p.title}`, p.number === here)).join('');
+  $('branch').innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/monorepo/pull/${here}">#${here}</a>${cur ? `: ${esc(cur.title)}` : ''} (work in progress, not on main). ` : 'Showing main. ') +
+    'Versions: ' + link(`${root}${sub}`, 'main', !here) + prs.map((p) => link(`${root}pr/pr-${p.number}/${sub}`, `#${p.number} ${p.title}`, p.number === here)).join('');
 }
 
 async function showScenario(name) {

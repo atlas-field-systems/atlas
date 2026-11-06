@@ -13,9 +13,8 @@ They only display what the definitions say, so changing the protocol never means
 changing the tools.
 
 ## Try it
-- **Web viewer:** https://atlas-field-systems.github.io/protocol/
-- **CLI, one command (Node 22+):** `npx -y github:atlas-field-systems/protocol`
-- **From a clone:** `npm ci && npm run cli`. Use `npm run site` for the web viewer at http://localhost:8080.
+- **Web viewer:** https://atlas-field-systems.github.io/monorepo/protocol/
+- **From a clone (Node 22+), in `protocol/`:** `npm ci && npm run cli`. Use `npm run site` for the web viewer at http://localhost:8080.
 
 Pick a definition, and you'll see its description, its fields, an example, whether
 it's valid, its size (compact and compressed), and its largest fields. Edit any

@@ -3,7 +3,7 @@
 Atlas helps operators understand field systems, request work, and retain evidence.
 
 Repeated rebuilds produced documentation the project owner could not keep reading.
-This repository gives Atlas a short, readable account of what it is for and the
+This folder gives Atlas a short, readable account of what it is for and the
 environment in which its parts work together.
 
 ## Read the operating picture

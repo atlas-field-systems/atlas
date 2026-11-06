@@ -1,16 +1,21 @@
-name: test
+name: core
 on:
   push:
     branches: [main]
+    paths: ['core/**', '.github/workflows/core.yml']
   pull_request:
+    paths: ['core/**', '.github/workflows/core.yml']
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: core
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24

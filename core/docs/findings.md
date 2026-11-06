@@ -25,7 +25,7 @@ Protocol gaps found while building the prototype. Protocol is not changed from h
 ## Protocol 0.8 (SDK locks) — not adopted here yet
 
 Protocol 0.8 documents the SDK how-it-works and cuts three prototype patches.
-This Core still speaks its **pinned** Protocol release (see submodule) and still
+This Core still speaks its **pinned** Protocol release (`"protocol"` in `package.json`) and still
 implements the older shapes until a protocol-bump + adapt PR:
 
 1. **Origin / no renumber.** Spec: every message carries `from`; Core forwards

@@ -50,9 +50,9 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
 - Subsystem documentation owns its behavior, failure cases, and planning decisions.
 - Protocol owns exact shared contracts within the charter's
   [shared data rules](#keep-shared-data-simple). Core owns server mechanisms.
-  SDK owns client behavior. [Asset](https://github.com/atlas-field-systems/asset)
+  SDK owns client behavior. [Asset](https://github.com/atlas-field-systems/monorepo/tree/main/asset)
   owns how an Asset behaves, and
-  [Command Interface](https://github.com/atlas-field-systems/command-interface)
+  [Command Interface](https://github.com/atlas-field-systems/monorepo/tree/main/command-interface)
   owns how the operator application works. Other components own their runtime details.
 
 Keep each rule with its owner and link to it from other documents.

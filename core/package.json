@@ -1,12 +1,17 @@
 {
   "name": "@atlas/core",
   "version": "0.1.0",
+  "protocol": "v0.6.0",
   "private": true,
   "type": "module",
   "engines": { "node": ">=22.13" },
   "scripts": {
+    "protocol": "node scripts/protocol.mjs",
+    "prestart": "npm run -s protocol",
     "start": "node src/main.mjs",
+    "predemo": "npm run -s protocol",
     "demo": "node src/demo.mjs",
+    "pretest": "npm run -s protocol",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
