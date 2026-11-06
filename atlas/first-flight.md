@@ -45,7 +45,8 @@ or executed it.
 
 If a Task in the queue fails, the drone cancels the remaining Tasks and follows
 its emergency behavior. Core marks those Tasks cancelled once the drone reports
-it, so the records match what happened.
+it, so the records match what happened. The drone then waits, paused, until an
+operator resumes it, so a Task that arrives late does not start on its own.
 
 Each Asset has [settings](settings.md) for how it responds to events such as
 losing its radio link. Each trigger has its own response: continue the mission,
