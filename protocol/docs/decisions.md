@@ -141,7 +141,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `admin.describe` `commands` may be empty, for a receive-only Asset such as an ADS-B receiver.
 - An immediate motion command (no `task_id`) cancels the rest of the queue; the Asset reports each cancelled Task and its empty queue. Settings stay immediate beside the queue.
 - `control.cancel` stops a Task (by `task_id`) or the motion running now (no `task_id`). When motion stops, the Asset holds and sets `run_state` paused; cancelling a queued Task only drops it (0.7). It reports the Task cancelled plus `report.settings` with `reply_from` and `reply_to`.
-- When a Task fails, or a failsafe triggers with any response except `continue`, the Asset cancels the rest of the queue and reports each cancelled Task and its empty queue.
+- When a Task fails, or a failsafe triggers with any response except `continue`, the Asset cancels the rest of the queue, reports each cancelled Task and its empty queue, and sets `run_state` paused.
 - `return_to_home` is a command, and the same name is a failsafe response.
 - Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps its mission and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
@@ -220,6 +220,8 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 From an outside review of 0.8 before the SDK is built.
 
 - **Tasks arrive in Core's order.** Core sends a task only after the Asset has shown it holds the one before. A lost task is resent before the next one goes, so the Asset's arrival order is Core's order with no `task_seq` and no gap-wait. When the Asset reports a task cancelled that Core passed on no cancel for, its queue was cleared, and Core drops the tasks it has not sent. Details: [communication.md](communication.md#delivering-a-task-queue).
+- **A failure pauses the Asset.** A failed Task or a failsafe (except `continue`) clears the queue and sets `run_state` paused, so a Task Core had already sent waits for `run_state: running` instead of starting on its own. Immediate commands still run.
+- **An immediate command cancels Tasks on their way.** When Core passes on a motion command without `task_id`, it drops its unsent Tasks and cancels each sent one the Asset has not shown it holds. The Asset already never runs a Task cancelled before it arrived.
 - **Facts can be cleared.** On an observation, `entity_type` or a detail set to `null` is no longer known. Left out still means unchanged.
 - **Ellipses have a direction.** An uncertainty with `semi_minor_m` also gives `orientation_deg`. `semi_minor_m` is never larger than `semi_major_m`; the SDK's `check()` enforces that, because a schema can't compare two fields.
 - **Ground elevation is above mean sea level.** The `ground_elevation` result is flat `altitude_m` with `altitude_reference` fixed to `msl`.

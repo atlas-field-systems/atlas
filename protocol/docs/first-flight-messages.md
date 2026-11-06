@@ -579,7 +579,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 | 23 | Drone → Core | [`report.failsafe link_loss`](../examples/first-flight/23-failsafe-link_loss.json) | Partway through Move To, the drone has heard nothing new from Core for 30 s (its link_loss_after_s), so it loses contact (the trigger) and returns to home (its link_loss_response setting). It sends this as soon as it can be heard again. | 177 | 137 |
 | 24 | Drone → Core | [`report.status task`](../examples/first-flight/24-status-task.json) | The drone reports T2 failed, so Core's record matches what happened. | 175 | 134 |
 | 25 | Drone → Core | [`report.status task`](../examples/first-flight/25-status-task.json) | The drone cancels the rest of its queue, so T3 (Land) is reported cancelled. | 136 | 103 |
-| 26 | Drone → Core | [`report.telemetry`](../examples/first-flight/26-telemetry.json) | The drone reports its position on the way home. | 238 | 170 |
+| 25b | Drone → Core | [`report.settings`](../examples/first-flight/25b-settings.json) | Clearing its queue also pauses the drone. A Task that arrives late waits until Core sets run_state running. | 105 | 92 |
+| 26 | Drone → Core | [`report.telemetry`](../examples/first-flight/26-telemetry.json) | The drone reports its position on the way home. | 238 | 168 |
 
 <details><summary>23-failsafe-link_loss.json</summary>
 
@@ -633,13 +634,28 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 </details>
 
+<details><summary>25b-settings.json</summary>
+
+```json
+{
+  "type": "report.settings",
+  "time": 1793667640300,
+  "seq": 19,
+  "from": "A1",
+  "asset_id": "A1",
+  "run_state": "paused"
+}
+```
+
+</details>
+
 <details><summary>26-telemetry.json</summary>
 
 ```json
 {
   "type": "report.telemetry",
   "time": 1793667652000,
-  "seq": 19,
+  "seq": 20,
   "from": "A1",
   "asset_id": "A1",
   "position": {
@@ -661,9 +677,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-31 messages, 5172 bytes minified, 3934 bytes if each is deflated on its own.
+32 messages, 5277 bytes minified, 4024 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 39% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 40% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 
@@ -671,11 +687,11 @@ Where the bytes go (each field summed across every message):
 
 | Field | Times | Bytes | Share |
 |---|---|---|---|
-| `type` | 31 | 707 | 14% |
-| `time` | 31 | 620 | 12% |
-| `asset_id` | 31 | 465 | 9% |
-| `from` | 31 | 355 | 7% |
-| `seq` | 31 | 232 | 4% |
+| `type` | 32 | 731 | 14% |
+| `time` | 32 | 640 | 12% |
+| `asset_id` | 32 | 480 | 9% |
+| `from` | 32 | 366 | 7% |
+| `seq` | 32 | 240 | 5% |
 | `kind` | 16 | 223 | 4% |
 | `task_state` | 8 | 180 | 3% |
 | `task_id` | 12 | 168 | 3% |

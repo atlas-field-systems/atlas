@@ -220,6 +220,13 @@
       "branch": "failsafe",
       "from": "Drone",
       "to": "Core",
+      "file": "25b-settings.json",
+      "why": "Clearing its queue also pauses the drone. A Task that arrives late waits until Core sets run_state running."
+    },
+    {
+      "branch": "failsafe",
+      "from": "Drone",
+      "to": "Core",
       "file": "26-telemetry.json",
       "why": "The drone reports its position on the way home."
     },

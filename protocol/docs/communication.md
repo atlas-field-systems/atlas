@@ -136,6 +136,11 @@ Sending a whole queue at once could fail on a slow link. Instead:
    `control.cancel` for, its queue was cleared (by an immediate command, a failsafe or a failed
    task). Core then drops the tasks it has not sent yet and records no final
    state for them, so a held task never starts after the queue was cleared.
+8. When a task fails, or a failsafe triggers with any response except `continue`,
+   the Asset cancels the rest of its queue, reports each cancelled task and its
+   empty queue, and sets `run_state` paused (in a `report.settings`). A task that
+   arrives later, such as one Core had already sent, waits until
+   `run_state: running`, so the operator decides whether it runs.
 
 ### Final reports are acknowledged
 
@@ -152,7 +157,7 @@ Core does not send the task again.
 
 ## Immediate commands and cancel
 
-- A motion command without `task_id` (takeoff, move_to, land, return_to_home) runs now and **cancels the rest of the queue**. The Asset reports each cancelled task (`report.status` kind `task`, `cancelled`) and then its empty queue.
+- A motion command without `task_id` (takeoff, move_to, land, return_to_home) runs now and **cancels the rest of the queue**. The Asset reports each cancelled task (`report.status` kind `task`, `cancelled`) and then its empty queue. When Core passes one on, it drops the tasks it has not sent yet and sends a `control.cancel` (`from` is `CORE`) for each task it sent that the Asset has not shown it holds, so a task still on its way is never run after the command.
 - A `control.settings` without `task_id` runs now beside the queue and does not cancel it.
 - `control.cancel` stops a command partway, for example a landing. It never creates a task.
   - Core passes on a cancel with `task_id` only for a task that has not finished. It refuses an unknown `task_id` ("A1 has no task T9") and a finished one ("T3 is already completed").
@@ -194,8 +199,8 @@ open socket, a radio acknowledgement, or other Assets overheard on the mesh.
   It can trigger again only after contact returns and is lost again.
 - With `link_loss_response: continue` the Asset keeps its Task and queue.
 - Link loss counts on the ground too. There every response except `continue` keeps the
-  Asset on the ground and cancels its queue, so no queued takeoff starts while Core
-  can't see it.
+  Asset on the ground, cancels its queue and pauses it, so no queued takeoff starts
+  while Core can't see it.
 
 ### When Core counts an Asset offline
 
