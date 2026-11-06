@@ -1,0 +1,57 @@
+name: release
+# Pushing to production makes the release: git push origin main:production
+# It tags v<version> from package.json and writes a GitHub release. Core must be pinned to a
+# Protocol release tag. Only commits on main are released. A rerun finishes a release whose
+# GitHub release is missing.
+on:
+  push:
+    branches: [production]
+permissions:
+  contents: write
+concurrency: release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - id: plan
+        run: |
+          git merge-base --is-ancestor HEAD origin/main || { echo "::error::production must be a commit on main. Release with: git push origin main:production"; exit 1; }
+          git -C protocol fetch -q --tags origin
+          p=$(git -C protocol tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -rV | head -1 || true)
+          [ -n "$p" ] || { echo "::error::protocol/ is not on a Protocol release tag. Core releases only on a released Protocol."; exit 1; }
+          v=v$(node -p "require('./package.json').version")
+          next=$v
+          if git rev-parse -q --verify "refs/tags/$v" >/dev/null; then
+            next=
+            if ! git merge-base --is-ancestor HEAD "$v" && ! git diff --quiet "$v" HEAD -- . ':!*.md' ':!docs'; then
+              echo "::error::$v is already released and Core changed since. Raise the version in package.json on main first."; exit 1
+            fi
+            git merge-base --is-ancestor "$v" origin/main || { echo "::error::$v is not on main, so it is not released."; exit 1; }
+            echo "Nothing new since $v."
+          fi
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "target=$v" >> "$GITHUB_OUTPUT"
+          echo "protocol=$p" >> "$GITHUB_OUTPUT"
+      - if: steps.plan.outputs.next != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - if: steps.plan.outputs.next != ''
+        run: npm ci && npm test
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT: ${{ steps.plan.outputs.next }}
+          TARGET: ${{ steps.plan.outputs.target }}
+          P: ${{ steps.plan.outputs.protocol }}
+        run: |
+          if [ -n "$NEXT" ]; then
+            git -c user.name=the-Drunken-coder -c user.email=183743141+the-Drunken-coder@users.noreply.github.com tag -a "$NEXT" -m "Core $NEXT on Protocol $P"
+            git push origin "$NEXT"
+          fi
+          if gh release view "$TARGET" >/dev/null 2>&1; then echo "$TARGET already has its GitHub release."; exit 0; fi
+          gh release create "$TARGET" --verify-tag --title "Core $TARGET" --notes "Speaks Protocol $P." --generate-notes
