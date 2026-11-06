@@ -141,7 +141,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `admin.describe` `commands` may be empty, for a receive-only Asset such as an ADS-B receiver.
 - An immediate motion command (no `task_id`) cancels the rest of the queue; the Asset reports each cancelled Task and its empty queue. Settings stay immediate beside the queue.
 - `control.cancel` stops a Task (by `task_id`) or the motion running now (no `task_id`). When motion stops, the Asset holds and sets `run_state` paused; cancelling a queued Task only drops it (0.7). It reports the Task cancelled plus `report.settings` with `reply_from` and `reply_to`.
-- When a Task fails, or a failsafe triggers with any response except `continue`, the Asset cancels the rest of the queue and reports each cancelled Task and its empty queue.
+- When a Task fails, or a failsafe triggers with any response except `continue`, the Asset cancels the rest of the queue, reports each cancelled Task and its empty queue, and sets `run_state` paused.
 - `return_to_home` is a command, and the same name is a failsafe response.
 - Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps its mission and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
@@ -198,14 +198,14 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 - **Origin:** every message has `from`; Core forwards unchanged; replies use `reply_from` + `reply_to`; duplicates are `(from, seq, time)`.
 - **Dedupe:** act once, deliver always; streams, subscribers and the picture still receive replays; the picture upserts by `(from, seq, time)`.
 - **Core uses the SDK:** one shared `check()`; Core owns business rules only (no second schema engine).
-- **Caller surface:** `request` / `stream` / `subscribe` with outcomes `accepted` | `rejected` | `unknown`.
+- **Caller surface:** `request` / `stream` / `subscribe` with outcomes `accepted` | `rejected` | `failed` | `unknown` (`failed` only for a `plugin.call`).
 - **Subscribe:** callback is `{msg, raw, duplicate}` (same as `onMessage`); acting code skips duplicates.
 - **Live picture:** on-demand by default; opt-in live; on disconnect last snapshot readable as `stale: true` (ready may stay true).
 - **Transports:** bytes-only adapters (`open` / `send` / `onData` / `onClose` / `close`).
-- **Queue:** drop `task_seq` and gap-wait; Core-owned ordered `task_id` list.
+- **Queue:** drop `task_seq` and gap-wait; Core-owned ordered `task_id` list, each task sent once the Asset holds the one before.
 - **Identity:** one SDK module for keys-on-hello, `from`/`seq`/`time` stamp, and remember/dedupe; Core keeps a last-answer cache only.
 - **Contact:** new post-hello messages with this Asset's `asset_id` whose `from` is not this Asset (not only `from: CORE`).
-- **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no ordering rule and no correlation field.
+- **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no correlation field. Core sends a history answer oldest first, and the finished result lists its items oldest first.
 - **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` (each waiting for Core's `admin.reply`) → unacked finals → queue report → `query.queue`; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
 - **Handshake vs description:** hello = keys + version + id; `admin.describe` is keyless; `admin.asset` is removed.
 
@@ -213,4 +213,17 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 
 - Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset that has been quiet for a third of that sends `report.telemetry` early, so its check-in carries data. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
 - Commands, settings changes and cancels for an offline Asset are refused and not held. The operator sends them again once the Asset is back.
-- Core never carries work across a disconnect. When an Asset goes offline, Core stops resending the Tasks it never saw confirmed and records no final state for them.
+- Core never carries work across a disconnect. When an Asset goes offline, Core stops resending the Tasks it never saw confirmed, drops the ones it has not sent, and records no final state for them.
+
+## Review fixes (0.8)
+
+From an outside review of 0.8 before the SDK is built.
+
+- **Tasks arrive in Core's order.** Core sends a task only after the Asset has shown it holds the one before. A lost task is resent before the next one goes, so the Asset's arrival order is Core's order with no `task_seq` and no gap-wait. When the Asset reports a task cancelled that Core passed on no cancel for, its queue was cleared, and Core drops the tasks it has not sent. Details: [communication.md](communication.md#delivering-a-task-queue).
+- **A failure pauses the Asset.** A failed Task or a failsafe (except `continue`) clears the queue and sets `run_state` paused, so a Task Core had already sent waits for `run_state: running` instead of starting on its own. Immediate commands still run.
+- **An immediate command cancels Tasks on their way.** When Core passes on a motion command without `task_id`, it drops its unsent Tasks and cancels each sent one the Asset has not shown it holds. The Asset already never runs a Task cancelled before it arrived.
+- **Facts can be cleared.** On an observation, `entity_type` or a detail set to `null` is no longer known. Left out still means unchanged.
+- **Ellipses have a direction.** An uncertainty with `semi_minor_m` also gives `orientation_deg`. `semi_minor_m` is never larger than `semi_major_m`; the SDK's `check()` enforces that, because a schema can't compare two fields.
+- **Ground elevation is above mean sea level.** The `ground_elevation` result is flat `altitude_m` with `altitude_reference` fixed to `msl`.
+- **History in order.** Core sends a history answer oldest first, and the SDK's finished `stream` result lists its items by `time`. Live items may still arrive between them; they are true answers (see Stream items above).
+- **Plugin calls in the SDK.** A `plugin.call` is a `stream`: its `plugin.result` items, then Core's `admin.reply`. A `failed` reply is its own outcome, and the items before it stand. Refused is `rejected`; no reply is `unknown`.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/uncertainty.json",
   "title": "uncertainty",
-  "description": "Where something may really be, around a position. Every bound is 95%: the true place is inside 95 times out of 100. The area is either an ellipse (semi_major_m alone is a circle) or a polygon of 3 to 32 corners, never both. altitude_uncertainty_m covers the position's altitudes. Leaving the uncertainty out means it is not known, never that the position is exact.",
+  "description": "Where something may really be, around a position. Every bound is 95%: the true place is inside 95 times out of 100. The area is either an ellipse (semi_major_m alone is a circle; an ellipse with semi_minor_m also gives orientation_deg) or a polygon of 3 to 32 corners, never both. altitude_uncertainty_m covers the position's altitudes. Leaving the uncertainty out means it is not known, never that the position is exact.",
   "type": "object",
   "minProperties": 1,
   "additionalProperties": false,
@@ -14,7 +14,8 @@
   },
   "dependentRequired": {
     "semi_minor_m": [
-      "semi_major_m"
+      "semi_major_m",
+      "orientation_deg"
     ],
     "orientation_deg": [
       "semi_minor_m"

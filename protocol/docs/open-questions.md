@@ -23,7 +23,7 @@ Not decided yet. Planning comes before building.
 Most of these are answered in [communication.md](communication.md).
 
 - **Command acknowledgement.** Answered for operators: `admin.reply` says accepted or refused; the Asset's reports give the observed result.
-- **Queue and task-list delivery.** Answered in 0.8: Core-owned ordered `task_id` list; each body once; Asset queue report; Core resends missing. No `task_seq`, no gap-wait.
+- **Queue and task-list delivery.** Answered in 0.8: Core-owned ordered `task_id` list; each body once, after the Asset holds the one before; Asset queue report; Core resends missing. No `task_seq`, no gap-wait.
 - **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
 - **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** One of the four pillars; no definitions yet.

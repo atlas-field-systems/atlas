@@ -57,10 +57,8 @@
       "plugin_id": "DEM",
       "reply_from": "OP1",
       "reply_to": 3,
-      "elevation": {
-        "altitude_m": 143.2,
-        "altitude_reference": "msl"
-      }
+      "altitude_m": 143.2,
+      "altitude_reference": "msl"
     }
   ]
 }
