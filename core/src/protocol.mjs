@@ -1,4 +1,4 @@
-// Validates messages against the pinned protocol definitions (protocol/ submodule).
+// Validates messages against the pinned protocol definitions (protocol/, see scripts/protocol.mjs).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';

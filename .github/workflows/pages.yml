@@ -1,6 +1,7 @@
 name: pages
-# main is published at the site root; each open pull request from this repo gets a preview
-# at pr/pr-<number>/, removed when the pull request closes. Both go to the gh-pages branch.
+# One site: the Charter at the root, the Protocol viewer at protocol/. main is published at the
+# site root; each open pull request from this repo gets a preview at pr/pr-<number>/, removed
+# when the pull request closes. Both go to the gh-pages branch.
 on:
   push:
     branches: [main]
@@ -32,19 +33,28 @@ jobs:
             --jq '.[] | select(.head.repo.full_name == .base.repo.full_name) | {number, title}' \
             | jq -s . > "$RUNNER_TEMP/pull-requests.json"
       - if: github.event.action != 'closed'
+        name: Build the Charter
         env:
           SITE_PULL_REQUESTS: ${{ runner.temp }}/pull-requests.json
-        working-directory: site
+          SITE_OUT: ${{ github.workspace }}/_site
+        working-directory: atlas/site
         run: npm ci && npm run check && npm run build
+      - if: github.event.action != 'closed'
+        name: Build the Protocol viewer
+        env:
+          SITE_PULL_REQUESTS: ${{ runner.temp }}/pull-requests.json
+          SITE_OUT: ${{ github.workspace }}/_site/protocol
+        working-directory: protocol
+        run: npm ci && npm run check && npm run build:site
       - if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: site/_site
+          folder: _site
           branch: gh-pages
           clean-exclude: pr/
       - if: github.event_name == 'pull_request'
         uses: rossjrw/pr-preview-action@v1
         with:
-          source-dir: site/_site
+          source-dir: _site
           preview-branch: gh-pages
           umbrella-dir: pr

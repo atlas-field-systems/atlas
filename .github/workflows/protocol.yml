@@ -1,0 +1,21 @@
+name: protocol
+on:
+  push:
+    branches: [main]
+    paths: ['protocol/**', '.github/workflows/protocol.yml']
+  pull_request:
+    paths: ['protocol/**', '.github/workflows/protocol.yml']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: protocol
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run check
+      - run: npm test

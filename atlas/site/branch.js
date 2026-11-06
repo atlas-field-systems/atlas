@@ -11,7 +11,7 @@
   const link = (href, label, on) => (on ? `<b>${esc(label)}</b>` : `<a href="${esc(href)}">${esc(label)}</a>`);
   const div = document.createElement('div');
   div.className = here ? 'branch' : 'branch main';
-  div.innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/atlas/pull/${here}">#${here}</a> (work in progress, not on main). ` : 'Showing main. ') +
+  div.innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/monorepo/pull/${here}">#${here}</a> (work in progress, not on main). ` : 'Showing main. ') +
     'Versions: ' + link(root, 'main', !here) + prs.map((p) => link(`${root}pr/pr-${p.number}/`, `#${p.number} ${p.title}`, p.number === here)).join(' ');
   document.body.prepend(div);
 })();
