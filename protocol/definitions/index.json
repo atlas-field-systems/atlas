@@ -22,7 +22,10 @@
         "messages/report/battery.json",
         "messages/report/settings.json",
         "messages/report/gimbal.json",
-        "messages/report/observation.json"
+        "messages/report/observation.json",
+        "messages/plugin/describe.json",
+        "messages/plugin/call.json",
+        "messages/plugin/result.json"
       ]
     },
     {
@@ -34,13 +37,16 @@
         "messages/control/command/return_to_home.json",
         "messages/query/core/assets.json",
         "messages/query/core/history.json",
+        "messages/query/core/plugins.json",
         "messages/report/status/asset.json",
         "messages/report/status/task.json",
         "messages/report/status/queue.json",
         "messages/report/failsafe/link_loss.json",
         "messages/report/failsafe/low_battery.json",
         "messages/report/observation/coordinates.json",
-        "messages/report/observation/bearing.json"
+        "messages/report/observation/bearing.json",
+        "messages/plugin/call/ground_elevation.json",
+        "messages/plugin/result/ground_elevation.json"
       ]
     },
     {
@@ -114,7 +120,9 @@
         "variables/icao_address.json",
         "variables/callsign.json",
         "variables/squawk.json",
-        "variables/color.json"
+        "variables/color.json",
+        "variables/plugin_id.json",
+        "variables/action.json"
       ]
     }
   ]

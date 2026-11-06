@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/reply.json",
   "title": "Reply",
-  "description": "From Core (from is CORE). To an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in admin.describe. reply_from and reply_to name the operator message's (from, seq). For a query, Core sends the answer first and the reply last, so the reply marks the end of the answer. Refusals include a command to an Asset that is not connected (Core does not hold it). asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect. To an Asset, accepted acknowledges its admin.describe, its connect report.settings, or a final task report (completed, failed or cancelled): reply_from and reply_to name that message's (from, seq); for a final report task_id names its Task, so the Asset matches both. The Asset resends the message until it gets this. A retried message gets the same reply again, unchanged.",
+  "description": "From Core (from is CORE). To an operator interface, once for every message the operator sends (after its hello): accepted, or refused with an explanation, such as a command kind the Asset does not list in admin.describe. reply_from and reply_to name the operator message's (from, seq). For a query or a plugin.call, Core sends the answer first and the reply last, so the reply marks the end of the answer. For a plugin.call, failed means the Plugin ran and broke; it carries an explanation. Refusals include a command to an Asset that is not connected (Core does not hold it). asset_id is set when that message concerned one Asset. Accepted means Core passed it on; the Asset's reports (task status, report.settings) confirm the effect. To an Asset, accepted acknowledges its admin.describe, its connect report.settings, or a final task report (completed, failed or cancelled): reply_from and reply_to name that message's (from, seq); for a final report task_id names its Task, so the Asset matches both. The Asset resends the message until it gets this. A retried message gets the same reply again, unchanged.",
   "type": "object",
   "required": [
     "type",
@@ -50,7 +50,10 @@
   "if": {
     "properties": {
       "reply_result": {
-        "const": "refused"
+        "enum": [
+          "refused",
+          "failed"
+        ]
       }
     }
   },
@@ -91,6 +94,16 @@
       "task_id": "T1",
       "from": "CORE",
       "reply_from": "A1"
+    },
+    {
+      "type": "admin.reply",
+      "time": 1793667702100,
+      "seq": 104,
+      "from": "CORE",
+      "reply_from": "OP1",
+      "reply_to": 4,
+      "reply_result": "failed",
+      "explanation": "No elevation data for this position"
     }
   ],
   "dependentRequired": {

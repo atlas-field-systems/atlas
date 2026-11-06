@@ -17,6 +17,9 @@
     },
     {
       "$ref": "core/history.json"
+    },
+    {
+      "$ref": "core/plugins.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -70,6 +73,13 @@
       "since": 1793664000000,
       "until": 1793667600000,
       "from": "A1"
+    },
+    {
+      "type": "query.core",
+      "time": 1793667600000,
+      "seq": 44,
+      "kind": "plugins",
+      "from": "OP1"
     }
   ]
 }

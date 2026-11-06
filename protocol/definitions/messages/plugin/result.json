@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/plugin/result.json",
+  "title": "Plugin result",
+  "description": "From Core (from is CORE) to the operator interface that sent a plugin.call: one output item. kind is the call's action, and reply_from and reply_to name the call's (from, seq). A call with many items gets one plugin.result for each, then one admin.reply that marks the end.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "kind",
+    "plugin_id",
+    "reply_from",
+    "reply_to"
+  ],
+  "oneOf": [
+    {
+      "$ref": "result/ground_elevation.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "plugin.result"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    },
+    "plugin_id": {
+      "$ref": "../../variables/plugin_id.json"
+    },
+    "reply_from": {
+      "$ref": "../../variables/reply_from.json"
+    },
+    "reply_to": {
+      "$ref": "../../variables/reply_to.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "plugin.result",
+      "time": 1793667701200,
+      "seq": 102,
+      "from": "CORE",
+      "kind": "ground_elevation",
+      "plugin_id": "DEM",
+      "reply_from": "OP1",
+      "reply_to": 3,
+      "elevation": {
+        "altitude_m": 143.2,
+        "altitude_reference": "msl"
+      }
+    }
+  ]
+}
