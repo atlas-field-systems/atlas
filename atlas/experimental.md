@@ -5,11 +5,11 @@ Nothing here is a requirement until it moves into another Charter page.
 
 ## Ground elevation at connect
 
-Some Assets know their height above home but not above sea level.
+Some Assets know their height above their launch point but not above sea level.
 When an Asset connects to Core and knows it is on the ground, it can ask Core
 for the ground elevation at its position.
 Because the Asset is on the ground, that elevation is its altitude above sea level.
-From then on, the Asset can report altitude above sea level as well as above home.
+From then on, the Asset can report altitude above sea level as well as above its launch point.
 
 The elevation comes from a Plugin that offers the `ground_elevation` action
 (see [Plugins](plugins.md#ground-elevation-for-an-asset-later)). Only operators

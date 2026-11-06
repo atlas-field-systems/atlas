@@ -18,6 +18,9 @@ It does not wait in a queue or go through a Task's steps.
   someone resumes it, for example: fly here, pause, wait for the operator, continue.
 - A failure overrides any setting, including paused, and the Asset carries out
   that failure's defined safe response.
+- Home is a setting. Every Asset has GPS, and it sets home to where it starts up.
+  An operator can move home, and return to home always goes to the current home.
+  There is no separate backup landing point.
 
 How an Asset responds when something goes wrong is in [First flight](first-flight.md#when-something-goes-wrong).
 
