@@ -189,6 +189,8 @@ Owner answers to the edges a throwaway Core prototype of 0.7 found.
 - **Same-millisecond settings changes.** Two changes to one setting with the same `time` can tie. Accepted as too rare for a rule.
 - **A cancel that changes no setting** is answered with `run_state` unchanged.
 - **Paused waits.** A new immediate command runs while paused, but queued tasks wait for `run_state: running`.
+- **Undelivered tasks.** A task Core gives up delivering (dropped unsent, or never shown before the Asset went offline) is marked `undelivered`, the one task state Core sets. It is not final: the Asset's later report replaces it.
+- **Queued settings are confirmed** with `report.settings` naming the Task, like immediate ones. One overtaken by a newer change is still `completed`.
 - **Link loss on the ground.** It counts there too; every response except `continue` keeps the Asset down and cancels its queue.
 
 ## SDK locks (0.8)
@@ -213,7 +215,7 @@ Locked for the SDK how-it-works docs and the matching protocol cuts. Details: [s
 
 - Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset that has been quiet for a third of that sends `report.telemetry` early, so its check-in carries data. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
 - Commands, settings changes and cancels for an offline Asset are refused and not held. The operator sends them again once the Asset is back.
-- Core never carries work across a disconnect. When an Asset goes offline, Core stops resending the Tasks it never saw confirmed, drops the ones it has not sent, and records no final state for them.
+- Core never carries work across a disconnect. When an Asset goes offline, Core stops resending the Tasks it never saw confirmed, drops the ones it has not sent, and marks them `undelivered` so operators know. An Asset's later report on one replaces it.
 
 ## Review fixes (0.8)
 

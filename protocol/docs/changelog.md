@@ -20,6 +20,7 @@
 - Observation facts: `entity_type`, `icao_address`, `callsign`, `squawk` and `color` accept `null`, meaning no longer known. Uncertainty: `semi_minor_m` requires `orientation_deg`.
 - `plugin.result` kind `ground_elevation` is flat `altitude_m` with `altitude_reference` fixed to `msl` (was an `elevation` object that accepted any reference).
 - History: Core sends a history answer oldest first.
+- New task state `undelivered`, set only by Core for a task it gave up delivering (dropped unsent, or never shown before the Asset went offline). Not final; the Asset's later report replaces it. A queued `control.settings` is confirmed with `report.settings` naming it.
 
 ## 0.7
 

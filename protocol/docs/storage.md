@@ -22,7 +22,7 @@ An Asset row is created when the Asset first registers (see [Registration](#regi
 
 ## Tasks
 
-Core records what was asked; the Asset does it. A Task is the stored `control.command` or `control.settings` that carried a `task_id`, plus its latest `report.status` of kind `task`. Its state only moves forward, and finished states (completed, failed, cancelled) are final. A failed Task carries a reason. A `control.cancel` is never stored as a Task.
+Core records what was asked; the Asset does it. A Task is the stored `control.command` or `control.settings` that carried a `task_id`, plus its latest `report.status` of kind `task`. Its state only moves forward, and finished states (completed, failed, cancelled) are final. `undelivered`, set by Core, is replaced by any later report from the Asset. A failed Task carries a reason. A `control.cancel` is never stored as a Task.
 
 ## Geo features
 
