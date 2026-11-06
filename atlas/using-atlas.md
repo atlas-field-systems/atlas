@@ -41,8 +41,8 @@ or a required network topology.
 Entities describe Assets, their Observations, shared Tracks, and authored Geofeatures.
 Tasks describe requested work and reported outcomes.
 Objects hold files and their metadata.
-Plugins bring information into Atlas, such as aircraft data or research about an area.
-Their current intended role does not include controlling Assets.
+[Plugins](plugins.md) run inside Core and offer actions, such as finding every
+building in an area. They do not control Assets.
 
 Core runs in Docker as a set of modules, such as the API and data storage.
 One module is the Plugins module. Plugins are small and run inside it.
@@ -66,9 +66,8 @@ aircraft to observe it through Atlas.
 
 ### Research a place
 
-An operator selects a building or area and requests research from a Plugin within
-Core. The Plugin publishes its findings through Entities and any files through
-Objects. The operator can find those results in Atlas afterward.
-The Plugin's request handling belongs in its subsystem documentation.
+An operator selects a building or area and runs a Plugin action on it. The Plugin
+returns a list, or publishes its findings through Entities and any files through
+Objects. [Plugins](plugins.md) has the examples.
 
 [First flight](first-flight.md) follows one complete use of these parts.
