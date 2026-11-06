@@ -54,7 +54,7 @@ hold, land, or return to home. Losing the link can be set to continue, for examp
 when Core rides in a car through a tunnel and the drone should keep its mission.
 The drone keeps the Tasks it already holds. If the tunnel outlasts the link-loss
 time, Tasks Core had not yet handed over are marked undelivered, and the operator
-sends them again afterwards. Return to home is done by an Atlas layer above the
+queues that work again afterwards as new Tasks. Return to home is done by an Atlas layer above the
 flight controller or by ArduPilot's return-to-home mode.
 
 Failure always wins. Every failure has a defined safe response, and it applies
