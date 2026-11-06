@@ -22,6 +22,11 @@
 - History: Core sends a history answer oldest first.
 - Geo features and Objects: new `geofeature` group, `geofeature.set` (kinds `point`, `line`, `area`; whole end state; no ID creates one) and `geofeature.delete`. New `object` group, `object.describe` (a file Core holds; the file is fetched over HTTP, never in a message). Core picks `geofeature_id` and `object_id` and never reuses one in a run; `admin.reply` gains `geofeature_id`. Core pushes every geo feature and Object on operator connect. An Object names at most one geo feature. `move_to` and `land` take an optional `geofeature_id` as a record of where the position came from; the Asset ignores it. New components `line` and `area` (`uncertainty` polygons are an `area` now), new variables `name`, `content_type`, `size_bytes`.
 - New task state `undelivered`, set only by Core for a task it gave up delivering (dropped unsent, or never shown before the Asset went offline). Not final; the Asset's later report replaces it. A queued `control.settings` is confirmed with `report.settings` naming it.
+- Home: new setting `home_position`, where `return_to_home` goes. The Asset sets it to where it starts up (every Asset has GPS) and an operator can move it. `land_at_position` and the failsafe response `land_at` are removed. `altitude_reference` `home` is renamed `launch` (where the Asset last took off), so moving home never changes what an altitude means.
+- Settings are grouped: `report.settings` and `control.settings` carry them in one `settings` object, the new `settings` component, which lists each setting once. Law 2 says a component may group fields that belong together.
+- Ready: Core counts an Asset ready once it has acknowledged the connect report. Until then Core sends it no Task and refuses `control.*` for it (law 23).
+- Examples no longer need a version bump; only definitions and storage do (law 10).
+- `task_id`: the operator interface picks it; Core refuses one that Asset already had in the run, and the interface picks another.
 
 ## 0.7
 

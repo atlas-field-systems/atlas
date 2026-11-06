@@ -10,7 +10,7 @@
     "altitudes": [
       {
         "altitude_m": 15,
-        "altitude_reference": "home"
+        "altitude_reference": "launch"
       }
     ]
   },

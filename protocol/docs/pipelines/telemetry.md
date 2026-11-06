@@ -12,13 +12,13 @@ Asset ──1. radio──▶ Gateway ──2. IP──▶ Core ──3. store�
 
 ## 1. Asset → gateway
 - **Who:** the Asset sends it, and the gateway receives it over radio.
-- **Message** (234 / 168):
+- **Message** (236 / 170):
 
   ```json
-  {"type":"report.telemetry","time":1793667609000,"seq":9,"from":"A1","asset_id":"A1","position":{"latitude":42.2746,"longitude":-71.8063,"altitudes":[{"altitude_m":15,"altitude_reference":"home"}]},"ground_speed_mps":0,"heading_deg":0}
+  {"type":"report.telemetry","time":1793667609000,"seq":9,"from":"A1","asset_id":"A1","position":{"latitude":42.2746,"longitude":-71.8063,"altitudes":[{"altitude_m":15,"altitude_reference":"launch"}]},"ground_speed_mps":0,"heading_deg":0}
   ```
 - **Bloat:**
-  - `"altitude_reference":"home"` repeats in every report, though it rarely changes.
+  - `"altitude_reference":"launch"` repeats in every report, though it rarely changes.
   - `ground_speed_mps` and `heading_deg` are sent even when they are 0 or unchanged.
   - `"type":"report.telemetry"` is 24 characters. Link compression shrinks it; the name stays readable.
   - Radio compression (chosen later) will remove some of this, but not the repeated values.

@@ -212,7 +212,7 @@ export function createLink(opts: {
   side: 'client' | 'server',
   helloTimeoutMs?: number,      // default 10000
   describe?: object,            // Asset only: fields for admin.describe
-  connectSettings?: () => object // Asset only: fields for the connect report.settings
+  connectSettings?: () => object // Asset only: the settings object for the connect report.settings
 }): Link
 
 Link = {
@@ -327,7 +327,7 @@ AssetQueue = {
   onImmediate(cb: (msg: Message) => void): () => void // immediate command/settings; control.cancel without task_id (stop motion now) and cancel of the running task
   next(): Message | null                           // head of list the Asset should run
   report(taskId, state: task_state, fields?)       // builds report.status kind task; finals kept for retry
-  answer(request: Message, settingsFields): Message // builds report.settings with reply_from/reply_to; kept for replay
+  answer(request: Message, settings): Message      // builds report.settings with reply_from/reply_to; kept for replay
   queueReport(): Message                           // builds report.status kind queue with current task_ids
   clear(): void                                    // cancels every held task (each reported cancelled, then an empty queue report)
   ids(): string[]
@@ -349,7 +349,7 @@ Invariants (law 18, communication.md):
 - A **motion** `control.command` without `task_id` runs now and clears the list. Each cleared task gets reported `cancelled`, then an empty queue report. A `control.settings` without `task_id` runs now beside the queue and does **not** clear it.
 - `control.cancel` with `task_id`: a queued task is dropped and reported cancelled; the running one is emitted to `onImmediate` (don't fly anything, concept 10); a finished one changes nothing and its final report is resent; an unknown one is finished at once as `cancelled` (built, stored and retried like any final), so its body, if it arrives later, is a finished task: the cancelled report is resent and it never runs. In every case the queue reports the new list, and the cancel is answered.
 - `control.cancel` **without** `task_id` stops the motion running now and is emitted to `onImmediate` (hold/pause); it never creates a task. The cancel is answered like any other.
-- Every `control.cancel` and `control.settings` is answered with `report.settings` (`reply_from`/`reply_to` naming it). The helper builds the answer frame through `answer()`; the app supplies the settings fields. The answer bytes are stored; a duplicate request (via `onDuplicate`) gets the same bytes again, unchanged. This is Asset-side answer replay, not Core's last-answer cache.
+- Every `control.cancel` and `control.settings` is answered with `report.settings` (`reply_from`/`reply_to` naming it). The helper builds the answer frame through `answer()`; the app supplies the `settings` object. The answer bytes are stored; a duplicate request (via `onDuplicate`) gets the same bytes again, unchanged. This is Asset-side answer replay, not Core's last-answer cache.
 - Final reports (`completed|failed|cancelled`) are stored as `task:<task_id>` with `acked: false` until an `admin.reply` matches by `reply_from/reply_to` **and** `task_id`. Retry the **same bytes** on each new link and every 10 s (`finalRetryMs`) until acked, with no attempt cap. Observer event `final_report_retry` on each retry. With a persistent store, retries continue after an Asset restart.
 - There is no queue cap and no "reject a task": the protocol gives an Asset no way to refuse one, so Core would resend forever. (Open question if a bound is ever needed.)
 - After adding tasks, send `queueReport()`.
@@ -526,7 +526,7 @@ separate Core PR, not done here:
 - Replace Core's Ajv loader with `check`. Replace the socket code with `wsServer` + `createLink({side:'server'})`.
 - Core identity is `createIdentity({id:'CORE', role:'core', seqStore: <persisted>})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
-- Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), stop resending Tasks once an Asset goes offline and mark each Task it gave up `undelivered`, command listed in describe, `task_id` duplicate, ordered task list (send a task only after the Asset shows it holds the one before; drop unsent tasks when the Asset reports a task cancelled that Core passed on no cancel for, or goes offline; on passing on a motion command without `task_id`, drop unsent tasks and cancel each sent one the Asset has not shown it holds), `every_s` repeats (a new Core-created message each time, with a new seq).
+- Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), stop resending Tasks once an Asset goes offline and mark each Task it gave up `undelivered`, command listed in describe, `task_id` duplicate, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its connect report), ordered task list (send a task only after the Asset shows it holds the one before; drop unsent tasks when the Asset reports a task cancelled that Core passed on no cancel for, or goes offline; on passing on a motion command without `task_id`, drop unsent tasks and cancel each sent one the Asset has not shown it holds), `every_s` repeats (a new Core-created message each time, with a new seq).
 - Pin Core to the protocol release tag that contains the SDK.
 
 ---

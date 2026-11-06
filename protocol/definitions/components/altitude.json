@@ -10,5 +10,5 @@
     "altitude_m": { "$ref": "../variables/altitude_m.json" },
     "altitude_reference": { "$ref": "../variables/altitude_reference.json" }
   },
-  "examples": [{ "altitude_m": 30, "altitude_reference": "home" }]
+  "examples": [{ "altitude_m": 30, "altitude_reference": "launch" }]
 }

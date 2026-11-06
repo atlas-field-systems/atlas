@@ -74,7 +74,7 @@
       "from": "Core",
       "to": "Drone",
       "file": "07-command-takeoff.json",
-      "why": "Core sends Task T1: climb straight up to 30 m above home. It sends each Task only after the drone has shown it holds the one before, so Tasks arrive in Core's order."
+      "why": "Core sends Task T1: climb straight up to 30 m above its launch point. It sends each Task only after the drone has shown it holds the one before, so Tasks arrive in Core's order."
     },
     {
       "branch": "main",

@@ -34,7 +34,7 @@ jobs:
             next="v$wire.0"
           elif git merge-base --is-ancestor HEAD "$latest" || git diff --quiet "$latest" HEAD -- . ':!*.md' ':!docs'; then
             echo "Nothing new since $latest."
-          elif ! git diff --quiet "$latest" HEAD -- definitions examples storage; then
+          elif ! git diff --quiet "$latest" HEAD -- definitions storage; then
             echo "::error::The protocol changed since $latest. Run npm run bump on main first."; exit 1
           else
             next="v$wire.$(( ${latest##*.} + 1 ))"

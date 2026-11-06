@@ -85,7 +85,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `admin.hello`: an Asset's first message on a link: `asset_id`, `from`, `protocol_version`, and keys only (`key` required; `enrollment_key` the first time). Reports, commands and cameras follow in `admin.describe`.
 - `admin.hello_reply`: Core answers `accepted` or `version_mismatch`, with the version to run.
 - `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
-- `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`continue`, `hold`, `land`, `return_to_home` or `land_at`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
+- `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`continue`, `hold`, `land` or `return_to_home`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
 - `report.battery`: the battery, on its own schedule, separate from telemetry, because it changes even when the Asset does not move.
 - **Asset data reports are fixed and standard.** Every Asset reports battery, position and the rest with the same defined report and components. There are no free-form or "misc" fields. New kinds of Asset data get a new defined report.
 - `task_id` is 1 to 4 letters or digits, like every ID.
@@ -111,10 +111,10 @@ The protocol also defines the storage layout, so the whole data format lives her
 An older time never overwrites newer state. There is no "history-only" message.
 
 ## Settings
-- `report.settings`, sent at connect or when the Asset changes a setting itself, is a report and needs no confirmation.
+- `report.settings`, sent when the Asset changes a setting itself, is a report and needs no confirmation. The connect report is the exception: Core acknowledges it with `admin.reply` (law 23).
 - When Core changes a setting, it is either immediate or queued. An immediate change is a `control.settings` without `task_id` (the easy default, a button press), confirmed by a `report.settings` whose `reply_from` and `reply_to` name the command. A queued change is a `control.settings` with `task_id`, for example placed after a move_to,, confirmed by its task status.
-- Settings are only variables, used by `report.settings` and `control.settings`; no setting has its own message.
-- Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (continue/hold/land/return_to_home/land_at) and `low_battery_response` (the same list without continue), and `land_at_position`, the point `land_at` goes to (not necessarily the takeoff point).
+- Settings are variables, grouped once in the `settings` component that `report.settings` and `control.settings` both carry; no setting has its own message.
+- Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (continue/hold/land/return_to_home) and `low_battery_response` (the same list without continue), and `home_position`, where `return_to_home` goes. The Asset sets it to where it starts up and an operator can move it, so there is no separate landing-point setting.
 - Each change is an explicit end state, never a toggle. The most recent time wins.
 - No custom per-Asset settings yet.
 
@@ -153,7 +153,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `control.cancel` stops a Task (by `task_id`) or the motion running now (no `task_id`). When motion stops, the Asset holds and sets `run_state` paused; cancelling a queued Task only drops it (0.7). It reports the Task cancelled plus `report.settings` with `reply_from` and `reply_to`.
 - When a Task fails, or a failsafe triggers with any response except `continue`, the Asset cancels the rest of the queue, reports each cancelled Task and its empty queue, and sets `run_state` paused.
 - `return_to_home` is a command, and the same name is a failsafe response.
-- Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps its mission and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel.
+- Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps the Tasks it holds and resyncs (`query.queue`) when the link returns, as when Core drives through a tunnel. Tasks Core had not delivered when it counted the Asset offline stay `undelivered`.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
 - Link bandwidth is a link-design concern (link profiles), not a message concern.
 

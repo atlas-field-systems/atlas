@@ -4,5 +4,7 @@
   "seq": 19,
   "from": "A1",
   "asset_id": "A1",
-  "run_state": "paused"
+  "settings": {
+    "run_state": "paused"
+  }
 }

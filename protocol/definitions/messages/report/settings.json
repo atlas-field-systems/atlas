@@ -2,14 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/settings.json",
   "title": "Settings",
-  "description": "From an Asset: settings, each an explicit end state. After each accepted hello it sends its connect report: every setting it supports, with its value. Core acknowledges it with admin.reply; the Asset resends it until then and sends nothing else first. Core refuses changes to settings the latest connect report left out, and the Asset never reports one until its next hello. Later reports, sent when it changes a setting itself or to confirm a control.settings, immediate or a queued Task when it runs (reply_from and reply_to name that command), may carry only some settings; a setting left out is unchanged. Per setting, the newest time wins; an Asset never sends two settings reports with the same time. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
+  "description": "From an Asset: settings, each an explicit end state. After each accepted hello it sends its connect report: every setting it supports, with its value. Core acknowledges it with admin.reply; the Asset resends it until then and sends nothing else first. Core refuses changes to settings the latest connect report left out, and the Asset never reports one until its next hello. Later reports, sent when it changes a setting itself or to confirm a control.settings, immediate or a queued Task when it runs (reply_from and reply_to name that command), may carry only some settings; a setting left out is unchanged. Per setting, the newest time wins; an Asset never sends two settings reports with the same time.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
     "from",
-    "asset_id"
+    "asset_id",
+    "settings"
   ],
   "additionalProperties": false,
   "properties": {
@@ -35,29 +36,8 @@
     "reply_to": {
       "$ref": "../../variables/reply_to.json"
     },
-    "run_state": {
-      "$ref": "../../variables/run_state.json"
-    },
-    "lights": {
-      "$ref": "../../variables/lights.json"
-    },
-    "landing_gear": {
-      "$ref": "../../variables/landing_gear.json"
-    },
-    "link_loss_response": {
-      "$ref": "../../variables/link_loss_response.json"
-    },
-    "link_loss_after_s": {
-      "$ref": "../../variables/link_loss_after_s.json"
-    },
-    "low_battery_response": {
-      "$ref": "../../variables/low_battery_response.json"
-    },
-    "land_at_position": {
-      "$ref": "../../components/position.json"
-    },
-    "telemetry_every_s": {
-      "$ref": "../../variables/telemetry_every_s.json"
+    "settings": {
+      "$ref": "../../components/settings.json"
     }
   },
   "examples": [
@@ -65,63 +45,25 @@
       "type": "report.settings",
       "time": 1793667600000,
       "seq": 42,
+      "from": "A1",
       "asset_id": "A1",
-      "lights": "on",
-      "landing_gear": "down",
-      "telemetry_every_s": 1,
-      "from": "A1"
+      "settings": {
+        "lights": "on",
+        "landing_gear": "down",
+        "telemetry_every_s": 1
+      }
     },
     {
       "type": "report.settings",
       "time": 1793667600000,
       "seq": 42,
-      "asset_id": "A1",
-      "reply_to": 9,
-      "lights": "on",
       "from": "A1",
-      "reply_from": "CORE"
-    }
-  ],
-  "anyOf": [
-    {
-      "required": [
-        "run_state"
-      ]
-    },
-    {
-      "required": [
-        "lights"
-      ]
-    },
-    {
-      "required": [
-        "landing_gear"
-      ]
-    },
-    {
-      "required": [
-        "link_loss_response"
-      ]
-    },
-    {
-      "required": [
-        "low_battery_response"
-      ]
-    },
-    {
-      "required": [
-        "land_at_position"
-      ]
-    },
-    {
-      "required": [
-        "telemetry_every_s"
-      ]
-    },
-    {
-      "required": [
-        "link_loss_after_s"
-      ]
+      "asset_id": "A1",
+      "reply_from": "CORE",
+      "reply_to": 9,
+      "settings": {
+        "lights": "on"
+      }
     }
   ],
   "dependentRequired": {

@@ -8,6 +8,6 @@
   "task_id": "T4",
   "target_altitude": {
     "altitude_m": 30,
-    "altitude_reference": "home"
+    "altitude_reference": "launch"
   }
 }

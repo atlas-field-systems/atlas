@@ -22,7 +22,7 @@
       "kind": "takeoff",
       "target_altitude": {
         "altitude_m": 30,
-        "altitude_reference": "home"
+        "altitude_reference": "launch"
       }
     }
   ]

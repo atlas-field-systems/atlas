@@ -2,14 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/settings.json",
   "title": "Settings change",
-  "description": "From Core or an operator interface (Core checks operator messages and passes them on unchanged): set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_from and reply_to name this message. With task_id it is a change_settings Task in Core's ordered queue, confirmed by its task status. land_at_position is where land_at goes; it need not be the takeoff point. At least one setting must be present.",
+  "description": "From Core or an operator interface (Core checks operator messages and passes them on unchanged): set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_from and reply_to name this message. With task_id it is a change_settings Task in Core's ordered queue, confirmed by its task status.",
   "type": "object",
   "required": [
     "type",
     "time",
     "seq",
     "from",
-    "asset_id"
+    "asset_id",
+    "settings"
   ],
   "additionalProperties": false,
   "properties": {
@@ -32,110 +33,55 @@
     "task_id": {
       "$ref": "../../variables/task_id.json"
     },
-    "run_state": {
-      "$ref": "../../variables/run_state.json"
-    },
-    "lights": {
-      "$ref": "../../variables/lights.json"
-    },
-    "landing_gear": {
-      "$ref": "../../variables/landing_gear.json"
-    },
-    "link_loss_response": {
-      "$ref": "../../variables/link_loss_response.json"
-    },
-    "link_loss_after_s": {
-      "$ref": "../../variables/link_loss_after_s.json"
-    },
-    "low_battery_response": {
-      "$ref": "../../variables/low_battery_response.json"
-    },
-    "land_at_position": {
-      "$ref": "../../components/position.json"
-    },
-    "telemetry_every_s": {
-      "$ref": "../../variables/telemetry_every_s.json"
+    "settings": {
+      "$ref": "../../components/settings.json"
     }
   },
-  "anyOf": [
-    {
-      "required": [
-        "run_state"
-      ]
-    },
-    {
-      "required": [
-        "lights"
-      ]
-    },
-    {
-      "required": [
-        "landing_gear"
-      ]
-    },
-    {
-      "required": [
-        "link_loss_response"
-      ]
-    },
-    {
-      "required": [
-        "low_battery_response"
-      ]
-    },
-    {
-      "required": [
-        "land_at_position"
-      ]
-    },
-    {
-      "required": [
-        "telemetry_every_s"
-      ]
-    },
-    {
-      "required": [
-        "link_loss_after_s"
-      ]
-    }
-  ],
   "examples": [
     {
       "type": "control.settings",
       "time": 1793667600000,
       "seq": 42,
+      "from": "A1",
       "asset_id": "A1",
-      "lights": "on",
-      "from": "A1"
+      "settings": {
+        "lights": "on"
+      }
     },
     {
       "type": "control.settings",
       "time": 1793667600000,
       "seq": 42,
+      "from": "A1",
       "asset_id": "A1",
       "task_id": "T3",
-      "landing_gear": "up",
-      "from": "A1"
+      "settings": {
+        "landing_gear": "up"
+      }
     },
     {
       "type": "control.settings",
       "time": 1793667600000,
       "seq": 43,
+      "from": "A1",
       "asset_id": "A1",
-      "low_battery_response": "land_at",
-      "land_at_position": {
-        "latitude": 42.2751,
-        "longitude": -71.8049
-      },
-      "from": "A1"
+      "settings": {
+        "low_battery_response": "return_to_home",
+        "home_position": {
+          "latitude": 42.2751,
+          "longitude": -71.8049
+        }
+      }
     },
     {
       "type": "control.settings",
       "time": 1793667600000,
       "seq": 44,
+      "from": "A1",
       "asset_id": "A1",
-      "telemetry_every_s": 0.5,
-      "from": "A1"
+      "settings": {
+        "telemetry_every_s": 0.5
+      }
     }
   ]
 }

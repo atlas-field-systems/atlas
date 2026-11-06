@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/describe.json",
   "title": "Describe",
-  "description": "An Asset's description after an accepted hello: what it is (entity_type, optional), which reports it sends, which command kinds it accepts (empty for a receive-only Asset), and its cameras. No keys and no protocol version. Core stores it, acknowledges it with admin.reply (the Asset resends it until then and sends nothing else first), and forwards it unchanged to operator interfaces (same from, seq and time). Core never sends a command kind the Asset does not list. Supported settings are not listed here: the Asset's report.settings on connect carries only the settings it has.",
+  "description": "An Asset's description after an accepted hello: what it is (entity_type, optional), which reports it sends, which command kinds it accepts (empty for a receive-only Asset), and its cameras. No keys and no protocol version. Core stores it, acknowledges it with admin.reply (the Asset resends it until then and sends nothing else first), and forwards it unchanged to operator interfaces (same from, seq and time). Core never sends a command kind the Asset does not list. Supported settings are not listed here: the Asset's connect report.settings carries only the settings it has.",
   "type": "object",
   "required": [
     "type",
