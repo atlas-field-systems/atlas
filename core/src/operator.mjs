@@ -1,21 +1,23 @@
 // A minimal operator client: connects, says hello, sends messages, collects what Core pushes.
 import WebSocket from 'ws';
-import { VERSION } from './protocol.mjs';
+import { VERSION } from './version.mjs';
 
 export function connectOperator({ url, operator_id, key }) {
   const ws = new WebSocket(`${url}/operator`);
   let seq = 0;
   const received = [];
-  const waiters = [];
+  const waiters = new Set();
   const send = (m) => { const out = { type: m.type, time: Date.now(), seq: seq++, ...m }; ws.send(JSON.stringify(out)); return out.seq; };
   ws.on('message', (d) => {
     const m = JSON.parse(d); received.push(m);
-    for (const w of [...waiters]) if (w.test(m)) { waiters.splice(waiters.indexOf(w), 1); w.resolve(m); }
+    for (const w of [...waiters]) if (w.test(m)) w.resolve(m);
   });
   const until = (test, ms = 10000) => new Promise((resolve, reject) => {
     const hit = received.find(test); if (hit) return resolve(hit);
-    const t = setTimeout(() => reject(new Error('timed out waiting for a message')), ms);
-    waiters.push({ test, resolve: (m) => { clearTimeout(t); resolve(m); } });
+    const settle = (complete, value) => { clearTimeout(timer); waiters.delete(waiter); complete(value); };
+    const waiter = { test, resolve: (m) => settle(resolve, m) };
+    const timer = setTimeout(() => settle(reject, new Error('timed out waiting for a message')), ms);
+    waiters.add(waiter);
   });
   const ready = new Promise((r, j) => { ws.on('open', r); ws.on('error', j); })
     .then(() => { send({ type: 'admin.operator_hello', operator_id, protocol_version: VERSION, key }); return until((m) => m.type === 'admin.hello_reply'); });
