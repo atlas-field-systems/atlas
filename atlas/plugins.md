@@ -97,5 +97,6 @@ These cases are borderline and need a decision before such a Plugin is built:
   would direct Assets.
 - **Repeating a call,** such as weather every 10 minutes. This starts to look
   like a Plugin running in the background.
-The exact call and result messages are open in
-[Protocol open questions](https://github.com/atlas-field-systems/protocol/blob/main/docs/open-questions.md#plugins).
+
+The call and result messages are defined in
+[Protocol decisions](https://github.com/atlas-field-systems/protocol/blob/main/docs/decisions.md#plugins).
