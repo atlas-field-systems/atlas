@@ -111,7 +111,7 @@ The protocol also defines the storage layout, so the whole data format lives her
 An older time never overwrites newer state. There is no "history-only" message.
 
 ## Settings
-- `report.settings`, sent at connect or when the Asset changes a setting itself, is a report and needs no confirmation.
+- `report.settings`, sent when the Asset changes a setting itself, is a report and needs no confirmation. The connect report is the exception: Core acknowledges it with `admin.reply` (law 23).
 - When Core changes a setting, it is either immediate or queued. An immediate change is a `control.settings` without `task_id` (the easy default, a button press), confirmed by a `report.settings` whose `reply_from` and `reply_to` name the command. A queued change is a `control.settings` with `task_id`, for example placed after a move_to,, confirmed by its task status.
 - Settings are variables, grouped once in the `settings` component that `report.settings` and `control.settings` both carry; no setting has its own message.
 - Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (continue/hold/land/return_to_home) and `low_battery_response` (the same list without continue), and `home_position`, where `return_to_home` goes. The Asset sets it to where it starts up and an operator can move it, so there is no separate landing-point setting.

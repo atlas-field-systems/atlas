@@ -242,8 +242,8 @@ a gateway can be out of radio range while the gateway's link to Core stays open.
   that report replaces it.
 - So in a tunnel longer than `link_loss_after_s`, a drone set to `continue` keeps
   flying the Tasks it already holds, but the rest of a queue still being handed
-  over one Task at a time stays in Core as `undelivered`. The operator sends it
-  again after the tunnel.
+  over one Task at a time stays in Core as `undelivered`. After the tunnel the
+  operator queues that work again as new Tasks, with new `task_id`s.
 
 ## After reconnecting (Asset)
 
@@ -256,9 +256,11 @@ After each accepted hello the Asset, in this order:
    It resends each unchanged every 10 s until answered, and sends nothing else first.
 
    Core counts the Asset **ready** once it has acknowledged the connect report
-   and then received any other message from it. Because the Asset sends nothing
-   else until both acknowledgements arrive, that message proves the last one got
-   through, even if Core had to send it twice. Until then Core sends the Asset no
+   and then received another message from it with a later `time` than that
+   report. Because the Asset sends nothing else until both acknowledgements
+   arrive, and its clock never goes backwards, that message proves the last one
+   got through, even if Core had to send it twice. A late message from before
+   the hello has an earlier `time`, so it proves nothing. Until then Core sends the Asset no
    Task and passes nothing on to it; it refuses `control.command`, `control.settings` and
    `control.cancel` for it ("A1 is still connecting"), so a command is never sent while the Asset would drop it.
 

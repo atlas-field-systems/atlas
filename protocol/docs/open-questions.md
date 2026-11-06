@@ -7,7 +7,7 @@ Not decided yet. Planning comes before building.
 - **Tasks and geo features.** Answered in 0.8: a command carries a copy of the shape and `geofeature_id` as a record. See [decisions](decisions.md#geo-features-and-objects).
 - **Fetching an Object's file.** An operator interface fetches it from Core over HTTP by `object_id`. The exact request, and how it is authorized when keys travel only in the hello (law 17), are open.
 - **Uploads and other attachments.** Only Plugins make Objects. Uploads from operators or Assets, and Objects attached to an Asset, Task or Track, wait for a story.
-- **Core picks `task_id` too?** Core picks geo feature and Object IDs. Picking `task_id` as well would mean Core no longer passes an operator's command on unchanged, and a queued command would need another way to say so. Not decided.
+- **Core picks `task_id` too?** Answered in 0.8: no. The operator interface picks it, so Core still passes commands on unchanged. Core refuses a `task_id` that Asset already had in the run, and the interface picks another. See [communication.md](communication.md#operator-interfaces).
 - **What else registration contains.** `admin.describe` lists reports, commands and cameras; [Storage](storage.md) keeps them. Answered in 0.8: an Asset may say what it is with `entity_type`.
 - **`reply_to` through Core.** Answered in 0.8: every message carries `from`; Core forwards unchanged; replies use `reply_from` + `reply_to` naming (`from`, `seq`).
 

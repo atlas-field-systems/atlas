@@ -24,8 +24,9 @@
 - New task state `undelivered`, set only by Core for a task it gave up delivering (dropped unsent, or never shown before the Asset went offline). Not final; the Asset's later report replaces it. A queued `control.settings` is confirmed with `report.settings` naming it.
 - Home: new setting `home_position`, where `return_to_home` goes. The Asset sets it to where it starts up (every Asset has GPS) and an operator can move it. `land_at_position` and the failsafe response `land_at` are removed. `altitude_reference` `home` is renamed `launch` (where the Asset last took off), so moving home never changes what an altitude means.
 - Settings are grouped: `report.settings` and `control.settings` carry them in one `settings` object, the new `settings` component, which lists each setting once. Law 2 says a component may group fields that belong together.
-- Ready: Core counts an Asset ready once it has acknowledged the connect report and then heard any other message from it. Until then Core sends it no Task and refuses `control.*` for it, so a command is never dropped by an Asset still connecting (law 23).
+- Ready: Core counts an Asset ready once it has acknowledged the connect report and then heard another message from it with a later `time` than that report. Until then Core sends it no Task and refuses `control.*` for it, so a command is never dropped by an Asset still connecting (law 23).
 - Examples no longer need a version bump; only definitions and storage do (law 10).
+- `task_id`: the operator interface picks it; Core refuses one that Asset already had in the run, and the interface picks another.
 
 ## 0.7
 
