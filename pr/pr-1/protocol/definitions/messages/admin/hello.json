@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/hello.json",
+  "title": "Hello",
+  "description": "First message from an Asset when a link opens: which Asset it is (asset_id and from, the same id), which protocol version it runs, and its keys. It must be the first message on the link and carries the asset key (required) and, the first time only, the enrollment_key. Keys appear in no other message. Reports, commands and cameras are not here: the Asset sends them next as admin.describe, which Core stores and forwards unchanged.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "asset_id",
+    "protocol_version",
+    "key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "admin.hello"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "protocol_version": {
+      "$ref": "../../variables/protocol_version.json"
+    },
+    "key": {
+      "$ref": "../../variables/key.json"
+    },
+    "enrollment_key": {
+      "$ref": "../../variables/enrollment_key.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "admin.hello",
+      "time": 1793667600000,
+      "seq": 42,
+      "from": "A1",
+      "asset_id": "A1",
+      "protocol_version": "0.8",
+      "key": "q3J8vR2xT0bN5mK7wY1cZg"
+    },
+    {
+      "type": "admin.hello",
+      "time": 1793667600000,
+      "seq": 1,
+      "from": "R1",
+      "asset_id": "R1",
+      "protocol_version": "0.8",
+      "key": "q3J8vR2xT0bN5mK7wY1cZg",
+      "enrollment_key": "H4sLp9Qe2Vd6Fu0Ka8Tn3w"
+    }
+  ]
+}

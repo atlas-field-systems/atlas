@@ -1,0 +1,10 @@
+{
+  "type": "report.failsafe",
+  "time": 1793667640000,
+  "seq": 16,
+  "from": "A1",
+  "asset_id": "A1",
+  "kind": "link_loss",
+  "response": "return_to_home",
+  "explanation": "No contact with Core for 30 s"
+}

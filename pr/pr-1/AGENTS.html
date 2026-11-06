@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Working on the Atlas charter</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="working-on-the-atlas-charter">Working on the Atlas charter</h1>
+<p>Read the <a href="https://github.com/atlas-field-systems/monorepo/blob/main/AGENTS.md">root AGENTS.md</a> first: the parts of Atlas, Charter first,
+branches and releases, and the working rules live there.</p>
+<h2 id="this-folder">This folder</h2>
+<p>Read <a href="index.html">README</a>, <a href="CHARTER.html">the charter</a>, and the affected story first.
+This folder explains Atlas&#39;s purpose, operating environment, and how its parts
+fit together.</p>
+<h2 id="ownership">Ownership</h2>
+<p>Follow <a href="CHARTER.html#document-ownership">document ownership</a>. Keep subsystem behavior,
+failure rules, and implementation plans with the owning system. Link to those docs
+from the charter instead of importing them. Keep examples here focused on complete
+uses of Atlas and the responsibilities of its parts.</p>
+<p>The other folders must point their agent instructions and overview here.
+A pending proposal is not an approved contract. If subsystem docs conflict with the
+operating context, identify the mismatch and resolve it explicitly with the owner.
+Do not silently adopt old behavior or claim intended behavior is implemented.</p>
+<h2 id="changes">Changes</h2>
+<p>Keep selected direction, proposals, and open questions distinct. Preserve the
+owner&#39;s testing simplifications. Do not turn a review suggestion into a scheduler,
+Plugin platform, or other unrequested scope. Obtain the owner&#39;s agreement for
+product changes and do not merge without approval.</p>
+<p>Keep pages short and concrete. Put review transcripts and temporary plans in the
+PR rather than the charter. Check relative links, anchors, whitespace, and diagram
+consistency; report checks actually run. Documentation checks do not qualify runtime
+behavior. Do not claim new capabilities exist merely because a story describes them.</p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

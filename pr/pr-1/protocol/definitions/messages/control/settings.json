@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/settings.json",
+  "title": "Settings change",
+  "description": "From Core or an operator interface (Core checks operator messages and passes them on unchanged): set one or more settings, each to an explicit end state. Without task_id it is done now (a button press) and confirmed by report.settings whose reply_from and reply_to name this message. With task_id it is a change_settings Task in Core's ordered queue, confirmed by its task status.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "asset_id",
+    "settings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "control.settings"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "task_id": {
+      "$ref": "../../variables/task_id.json"
+    },
+    "settings": {
+      "$ref": "../../components/settings.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "control.settings",
+      "time": 1793667600000,
+      "seq": 42,
+      "from": "A1",
+      "asset_id": "A1",
+      "settings": {
+        "lights": "on"
+      }
+    },
+    {
+      "type": "control.settings",
+      "time": 1793667600000,
+      "seq": 42,
+      "from": "A1",
+      "asset_id": "A1",
+      "task_id": "T3",
+      "settings": {
+        "landing_gear": "up"
+      }
+    },
+    {
+      "type": "control.settings",
+      "time": 1793667600000,
+      "seq": 43,
+      "from": "A1",
+      "asset_id": "A1",
+      "settings": {
+        "low_battery_response": "return_to_home",
+        "home_position": {
+          "latitude": 42.2751,
+          "longitude": -71.8049
+        }
+      }
+    },
+    {
+      "type": "control.settings",
+      "time": 1793667600000,
+      "seq": 44,
+      "from": "A1",
+      "asset_id": "A1",
+      "settings": {
+        "telemetry_every_s": 0.5
+      }
+    }
+  ]
+}
