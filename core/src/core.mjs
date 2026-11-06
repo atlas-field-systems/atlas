@@ -3,7 +3,8 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
-import { check, VERSION } from './protocol.mjs';
+import { check } from './protocol.mjs';
+import { VERSION } from './version.mjs';
 import { openStore } from './store.mjs';
 import { dedupe } from './dedupe.mjs';
 
@@ -108,7 +109,7 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
       if (!asset) return reply(`${m.asset_id} is not connected`);
       if (m.type === 'control.command' && !asset.hello.commands.includes(m.kind)) return reply(`${m.asset_id} does not accept ${m.kind}`);
       if (m.type === 'control.settings') {
-        const have = store.latestOne(m.asset_id, 'report.settings') ?? {};
+        const have = store.latestReport(m.asset_id, 'settings') ?? {};
         const missing = Object.keys(m).find((k) => !SETTINGS_FIELDS.has(k) && !(k in have));
         if (missing) return reply(`${m.asset_id} has no setting ${missing}`);
       }
@@ -126,8 +127,7 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
       return reply();
     }
     if (m.type === 'query.asset') {
-      const slot = `report.${m.report}`;
-      const latest = () => store.latestOne(m.asset_id, slot) ?? store.latestOne(m.asset_id, `${slot}.asset`);
+      const latest = () => store.latestReport(m.asset_id, m.report);
       if (!store.asset(m.asset_id)) return reply(`unknown asset ${m.asset_id}`);
       for (const r of repeats) if (r.ws === ws && r.key === `${m.asset_id}.${m.report}`) { clearInterval(r.timer); repeats.delete(r); }
       const l = latest(); if (l) send(ws, l);
@@ -139,9 +139,15 @@ export async function startCore({ port = 8080, db, enrollmentKey, operators = {}
   }
 
   await new Promise((r) => http.listen(port, r));
+  let closing;
   return {
     port: http.address().port,
     store,
-    close: () => new Promise((r) => { for (const x of repeats) clearInterval(x.timer); for (const c of wss.clients) c.terminate(); http.close(r); }),
+    close: () => closing ??= (async () => {
+      for (const x of repeats) clearInterval(x.timer);
+      for (const c of wss.clients) c.terminate();
+      await new Promise((r) => http.close(r));
+      store.close();
+    })(),
   };
 }

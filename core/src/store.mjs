@@ -31,14 +31,18 @@ export function openStore(path = ':memory:') {
   };
   const rows = (st, ...a) => st.all(...a).map((r) => JSON.parse(r.message ?? r.hello));
   return {
-    db,
+    close: () => db.close(),
     asset: (id) => s.asset.get(id),
     addAsset: (id, hash) => s.addAsset.run(id, hash),
     saveHello: (m, now) => s.hello.run(JSON.stringify(m), now, m.asset_id),
     heard: (id, now) => s.heard.run(now, id),
     hellos: () => rows(s.hellos),
     latest: (id) => rows(s.latest, id),
-    latestOne: (id, slot) => { const r = s.latestOne.get(id, slot); return r && JSON.parse(r.message); },
+    latestReport(id, report) {
+      const slot = `report.${report}`;
+      const r = s.latestOne.get(id, slot) ?? s.latestOne.get(id, `${slot}.asset`);
+      return r && JSON.parse(r.message);
+    },
     addTask: (m) => s.addTask.run(m.asset_id, m.task_id, JSON.stringify(m)),
     task: (id, t) => s.task.get(id, t),
     openTasks: (id) => rows(s.openTasks, id),

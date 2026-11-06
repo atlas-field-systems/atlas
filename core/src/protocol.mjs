@@ -11,7 +11,6 @@ addFormats(ajv);
 const files = read('index.json').groups.flatMap((g) => g.files);
 for (const f of files) ajv.addSchema(read(f));
 
-export const VERSION = read('variables/protocol_version.json').examples[0];
 const base = 'https://atlas-field-systems.github.io/protocol/definitions/';
 
 // Returns null if the message is valid, or a short reason.

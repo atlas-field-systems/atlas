@@ -15,10 +15,9 @@ await op.ready;
 await op.until((m) => m.type === 'admin.asset' && m.asset_id === 'A1');
 await new Promise((r) => setTimeout(r, 3000));
 for (const f of ['07-command-takeoff.json', '08-command-move_to.json', '09-command-land.json']) {
-  const { type, asset_id, kind, task_id, task_seq, ...rest } = ex(f);
-  delete rest.time; delete rest.seq;
-  const r = await op.request({ type, asset_id, kind, task_id, task_seq, ...rest });
-  console.log(`${kind} ${task_id}: ${r.reply_result}`);
+  const { time, seq, ...command } = ex(f);
+  const r = await op.request(command);
+  console.log(`${command.kind} ${command.task_id}: ${r.reply_result}`);
 }
 await op.until((m) => m.type === 'report.status' && m.task_id === 'T3' && m.task_state === 'completed', 600000);
 console.log('First flight done. Core keeps running; Ctrl+C to stop.');

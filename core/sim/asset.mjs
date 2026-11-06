@@ -2,7 +2,7 @@
 // with the link-loss and low-battery failsafes.
 // speed: how much faster than real time it flies (tests use a large value).
 import WebSocket from 'ws';
-import { VERSION } from '../src/protocol.mjs';
+import { VERSION } from '../src/version.mjs';
 
 const M_PER_DEG = 111320;
 const LOW_BATTERY = 20;
