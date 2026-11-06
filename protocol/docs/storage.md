@@ -36,11 +36,11 @@ Assets report observations (`report.observation`), never tracks. An Asset reuses
 Asset ── report.observation ──▶ Core ──▶ [ fusion ] ──▶ tracks
 ```
 
-Fusion is its own swappable module, run in Docker like the other Core pillars. Core passes observations in and tracks come out; what happens inside is up to the module, including when one Asset gives a target two IDs or several Assets see the same thing. The first iteration uses a temporary fusion module that turns every new `asset_id` + `observation_id` pair into its own track (listing its source), to find the Core/fusion boundary and make debugging easy. Tasks that aim at a target name the track.
+Fusion decides when observations describe the same target, including when one Asset gives a target two IDs or several Assets see the same thing. Tasks that aim at a target name the track. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/core/blob/main/docs/fusion.md).
 
 An observation's `kind` says what the sensor measured. `coordinates` gives the target's position and its `uncertainty`. `bearing` gives the `origin` the sensor recorded when it saw the target, the bearing, and optionally elevation and range, each with its own uncertainty. `entity_type` and `details` stay true for an observation until a new value arrives, so Core keeps the latest of each.
 
-A track holds what fusion decided: its `entity_type`, and a position with an `uncertainty` area once fusion can place it. As fusion combines observations, the area shrinks; it is often a polygon. Source-specific facts, such as a callsign, are not copied onto the track: displays read them from the track's latest source observation. The temporary module copies a `coordinates` observation's position and uncertainty onto its track, and leaves a `bearing` observation's track without a position, so displays draw the bearing from the observation.
+A track holds what fusion decided: its `entity_type`, and a position with an `uncertainty` area once fusion can place it. As fusion combines observations, the area shrinks; it is often a polygon. Source-specific facts, such as a callsign, are not copied onto the track: displays read them from the track's latest source observation.
 
 ## Registration
 

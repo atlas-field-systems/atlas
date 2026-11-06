@@ -2,11 +2,11 @@
 // in a temporary copy of definitions/, and both tools must pick it up unchanged.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { runInNewContext } from 'node:vm';
 
 const tmp = mkdtempSync(join(tmpdir(), 'atlas-'));
 const defs = join(tmp, 'definitions');
@@ -54,20 +54,41 @@ test('CLI lists and renders the new definition', () => {
   assert.ok(shown.size.bytes > 0);
 });
 
-test('site build ships the new definition and its lib renders it', async () => {
+test('site bundle renders and validates the new definition without external imports', async () => {
   const out = join(tmp, '_site');
-  execFileSync('node', ['scripts/build-site.mjs'], { env: { ...env, SITE_OUT: out } });
-  const lib = await import(pathToFileURL(join(out, 'lib/protocol.mjs')));
-  const { default: Ajv } = await import('ajv/dist/2020.js');
-  const { default: addFormats } = await import('ajv-formats');
-  const p = await lib.loadProtocol((f) => JSON.parse(readFileSync(join(out, 'definitions', f), 'utf8')), Ajv, addFormats);
-  assert.equal(p.schemas['messages/zz_probe/dummy.json'].title, 'Dummy Probe');
-  const tree = lib.messageTree(p).find((g) => g.name === 'zz_probe');
-  assert.deepEqual(tree.types[0].kinds.map((k) => k.name), ['ping']);
-  const value = lib.example(p, 'messages/zz_probe/dummy.json@ping');
+  execFileSync('node', ['scripts/build-site.mjs'], { env: { ...env, SITE_OUT: out, SITE_PULL_REQUESTS: '' } });
+  assert.equal(existsSync(join(out, 'lib')), false);
+  assert.deepEqual(JSON.parse(readFileSync(join(out, 'pull-requests.json'), 'utf8')), []);
+  const elements = {};
+  const requests = [];
+  const bundle = readFileSync(join(out, 'app.mjs'), 'utf8');
+  await runInNewContext(`(async () => { ${bundle}\n })()`, {
+    document: {
+      getElementById: (id) => elements[id] ??= {},
+      querySelectorAll: () => [],
+    },
+    location: { pathname: '/', hash: '#messages/zz_probe/dummy.json@ping' },
+    window: {},
+    TextEncoder,
+    TextDecoder,
+    structuredClone,
+    btoa,
+    fetch: async (path) => {
+      requests.push(path);
+      const body = readFileSync(join(out, path), 'utf8');
+      return { json: async () => JSON.parse(body), text: async () => body };
+    },
+  });
+  assert.ok(requests.every((path) => !/^https?:/.test(path)), 'site must load local files only');
+  assert.match(elements.nav.innerHTML, /messages\/zz_probe\/dummy\.json@ping/);
+  const value = JSON.parse(elements.json.value);
+  assert.equal(value.type, 'zz_probe.dummy');
   assert.equal(value.kind, 'ping');
-  assert.equal(lib.validate(p, 'messages/zz_probe/dummy.json@ping', value).ok, true);
-  assert.equal(lib.validate(p, 'messages/zz_probe/dummy.json', { ...value, extra: 1 }).ok, false);
+  assert.equal(value.probe_level, 7);
+  assert.match(elements.verdict.innerHTML, /\bValid\b/);
+  elements.json.value = JSON.stringify({ ...value, extra: 1 });
+  elements.json.oninput();
+  assert.match(elements.verdict.innerHTML, /\bInvalid\b/);
 });
 
 test('no tool source names any definition', () => {

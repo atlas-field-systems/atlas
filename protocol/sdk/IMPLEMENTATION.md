@@ -401,7 +401,7 @@ kind in `definitions/` through `build` with no per-type branches.
 
 - `loadDefinitions({dir})` defaults to `new URL('../../definitions/', import.meta.url)`, reads `index.json`, then every file listed (the same as `loadProtocol` with an fs `readJson`).
 - Ajv: `new Ajv({strict:false, allErrors:true})` + `ajv-formats`, as in lib. Compile lazily per `$id`, then memoize.
-- Type → file: `messageFile(msg)` (`control.command` → `messages/control/command.json`). Kinds are validated by the schema's `oneOf`, whose errors are noisy, so `check` picks the kind branch first: unknown `kind` → one error naming the allowed kinds; known `kind` → validate against that branch only and report its errors. `check` reports `kind` when present.
+- Type → file: `messageFile(msg)` (`control.command` → `messages/control/command.json`). Validate the whole message against that type schema, including its `oneOf`. A kind schema alone does not check the common fields or reject extra fields. An unknown `kind` gets one error naming the allowed kinds; error formatting must not skip full-message validation. `check` reports `kind` when present.
 - `defs.version`: `schemas['variables/protocol_version.json'].examples[0]`.
 - A test asserts every file under `definitions/` is listed in `index.json`, and that the SDK loads it all in under 500 ms.
 - Changing a JSON definition changes SDK behavior with no rebuild step. That is the point.

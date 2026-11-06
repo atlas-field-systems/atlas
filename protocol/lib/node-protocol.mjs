@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { deflateSync } from 'fflate';
-import { loadProtocol } from '../lib/protocol.mjs';
+import { loadProtocol } from './protocol.mjs';
 
 export const definitionsDir = resolve(
   process.env.ATLAS_DEFINITIONS ?? join(fileURLToPath(import.meta.url), '../../definitions'));

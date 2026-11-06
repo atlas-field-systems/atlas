@@ -1,6 +1,6 @@
 // Writes docs/<name>-messages.md from examples/<name>/. Run: npm run scenarios
 import { readFile, writeFile } from 'node:fs/promises';
-import { load, compress } from '../cli/node-protocol.mjs';
+import { load, compress } from '../lib/node-protocol.mjs';
 import { loadScenario, verbosity } from '../lib/scenario.mjs';
 
 const readExample = async (f) => JSON.parse(await readFile(`examples/${f}`, 'utf8'));
