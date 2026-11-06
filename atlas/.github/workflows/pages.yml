@@ -1,0 +1,50 @@
+name: pages
+# main is published at the site root; each open pull request from this repo gets a preview
+# at pr/pr-<number>/, removed when the pull request closes. Both go to the gh-pages branch.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: pages-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: github.event.action != 'closed'
+        name: Snapshot pull request previews
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.repo.full_name == .base.repo.full_name) | {number, title}' \
+            | jq -s . > "$RUNNER_TEMP/pull-requests.json"
+      - if: github.event.action != 'closed'
+        env:
+          SITE_PULL_REQUESTS: ${{ runner.temp }}/pull-requests.json
+        working-directory: site
+        run: npm ci && npm run check && npm run build
+      - if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: site/_site
+          branch: gh-pages
+          clean-exclude: pr/
+      - if: github.event_name == 'pull_request'
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: site/_site
+          preview-branch: gh-pages
+          umbrella-dir: pr

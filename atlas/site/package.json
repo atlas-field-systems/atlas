@@ -1,0 +1,7 @@
+{
+  "name": "atlas-charter-site",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs", "check": "node --test site.test.mjs" },
+  "dependencies": { "marked": "^15.0.0", "mermaid": "^11.4.0" }
+}
