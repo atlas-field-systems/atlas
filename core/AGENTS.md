@@ -9,11 +9,15 @@ If you need something outside this repository, go to the one that owns it.
 |---|---|---|
 | [atlas](https://github.com/atlas-field-systems/atlas) | The Charter: what Atlas is for, how it is used, project-wide design decisions | Active |
 | [protocol](https://github.com/atlas-field-systems/protocol) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `v<major.minor>.<patch>` tags: major.minor is the protocol version, and the patch counts releases that change no message. Also the SDK, in `sdk/`: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages. How-it-works is locked for protocol 0.8 (`sdk/how-it-works.md`); runtime code is not built yet | Spec active, SDK how-it-works locked, runtime not built |
-| [core](https://github.com/atlas-field-systems/core) | Atlas Core: the server that keeps the shared picture and requests work. First-flight prototype; moves only to Protocol release tags. Will adopt the SDK front door once the SDK exists | Prototype |
+| [core](https://github.com/atlas-field-systems/core) | Atlas Core: the server that keeps the shared picture and requests work. First-flight prototype; moves only to Protocol release tags. Will adopt the SDK front door (shared `check()`, no second validation engine) once the SDK exists | Prototype |
+| [asset](https://github.com/atlas-field-systems/asset) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
+| [command-interface](https://github.com/atlas-field-systems/command-interface) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to **atlas**.
 - Want the exact shape of a message or of stored data? Go to **protocol**.
 - Want how Core works inside? Go to **core**.
+- Want how an Asset behaves? Go to **asset**.
+- Want how the command interface works? Go to **command-interface**.
 - Want how a gateway, Asset or app talks to Core, or how bytes cross a link? Go to **protocol**, in `sdk/`.
 
 [atlas-core](https://github.com/atlas-field-systems/atlas-core) and [atlas-core-archive](https://github.com/atlas-field-systems/atlas-core-archive) are the old Core. They are temporary read-only references to mine for docs and will be deleted. Nothing there is decided for the new parts; write what is kept into the owning repo. The [sdk](https://github.com/atlas-field-systems/sdk) repository is archived; the SDK lives in protocol's `sdk/`.
