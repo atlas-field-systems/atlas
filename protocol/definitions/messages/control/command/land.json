@@ -32,7 +32,7 @@
       },
       "transit_altitude": {
         "altitude_m": 20,
-        "altitude_reference": "home"
+        "altitude_reference": "launch"
       }
     },
     {
@@ -43,7 +43,7 @@
       },
       "transit_altitude": {
         "altitude_m": 20,
-        "altitude_reference": "home"
+        "altitude_reference": "launch"
       },
       "geofeature_id": "G2"
     }

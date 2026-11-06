@@ -58,7 +58,11 @@ No user accounts or roles.
    `control.cancel` with `asset_id` and its own `from`/`seq`. Core checks it
    against that Asset's describe (and its connect settings report) and passes it
    on **unchanged**, or refuses it with a reason. Anything sent to an Asset that
-   is [offline](#when-core-counts-an-asset-offline) is refused; Core does not hold it.
+   is [offline](#when-core-counts-an-asset-offline) or not yet
+   [ready](#after-reconnecting-asset) is refused; Core does not hold it. The
+   interface picks each Task's `task_id`. Core refuses one that Asset has already
+   had in this run ("A1 already has task T3"), so after a refresh, or with two
+   interfaces open, the interface picks another and sends again.
 6. To read, it uses `query.core` and `query.asset`; `every_s` repeats an answer
    as a **new** message (new `seq` from its creator). Core sends a query's answer
    first and its `admin.reply` last, so the reply marks the end; an accepted
@@ -173,6 +177,11 @@ Core does not send the task again.
 
 ## Settings
 
+- Settings travel together in one `settings` object, the same in `report.settings`
+  and `control.settings`, so each setting is listed once.
+- `home_position` is where `return_to_home` goes. Every Asset has GPS. It sets
+  `home_position` to where it starts up, before its hello, so the connect report
+  always carries it. An operator can move it like any other setting.
 - After each accepted hello the Asset sends its **connect report**: a `report.settings`
   with every setting it supports and its value. Core refuses changes to any setting the
   latest connect report left out, and the Asset never reports one until its next hello.
@@ -231,6 +240,10 @@ a gateway can be out of radio range while the gateway's link to Core stays open.
   Tasks it has not sent yet, and never sends any of them again. It marks each
   `undelivered`, so operators know. If the Asset later lists or reports on one,
   that report replaces it.
+- So in a tunnel longer than `link_loss_after_s`, a drone set to `continue` keeps
+  flying the Tasks it already holds, but the rest of a queue still being handed
+  over one Task at a time stays in Core as `undelivered`. The operator sends it
+  again after the tunnel.
 
 ## After reconnecting (Asset)
 
@@ -241,6 +254,13 @@ After each accepted hello the Asset, in this order:
    for Core's `admin.reply`.
 
    It resends each unchanged every 10 s until answered, and sends nothing else first.
+
+   Core counts the Asset **ready** once it has acknowledged the connect report
+   and then received any other message from it. Because the Asset sends nothing
+   else until both acknowledgements arrive, that message proves the last one got
+   through, even if Core had to send it twice. Until then Core sends the Asset no
+   Task and passes nothing on to it; it refuses `control.command`, `control.settings` and
+   `control.cancel` for it ("A1 is still connecting"), so a command is never sent while the Asset would drop it.
 
 3. Resends any unacknowledged final task reports (retries, same bytes).
 4. Sends its current queue report.

@@ -65,7 +65,8 @@
         "components/uncertainty.json",
         "components/details.json",
         "components/line.json",
-        "components/area.json"
+        "components/area.json",
+        "components/settings.json"
       ]
     },
     {

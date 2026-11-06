@@ -32,7 +32,7 @@
       "altitudes": [
         {
           "altitude_m": 30,
-          "altitude_reference": "home"
+          "altitude_reference": "launch"
         },
         {
           "altitude_m": 215.4,

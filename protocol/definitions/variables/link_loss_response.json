@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/link_loss_response.json",
   "title": "link_loss_response",
-  "description": "Setting: which failsafe_response the Asset uses if it loses its link to Core. continue keeps the mission (for example Core in a car going through a tunnel); the Asset resyncs when the link returns.",
+  "description": "Setting: which failsafe_response the Asset uses if it loses its link to Core. continue keeps the mission (for example Core in a car going through a tunnel); the Asset keeps the Tasks it already holds. If Core counts it offline meanwhile, Tasks Core had not yet delivered stay undelivered and are not sent when the link returns.",
   "$ref": "failsafe_response.json",
   "examples": [
     "continue"
