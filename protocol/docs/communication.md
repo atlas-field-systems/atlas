@@ -50,7 +50,8 @@ No user accounts or roles.
    reports (settings, status, queue, telemetry, battery), **unchanged** (same
    `from`, `seq` and `time`). For settings, that is each report holding a
    setting's newest value, oldest first (see [Settings](#settings)). It also
-   sends one `plugin.describe` per Plugin.
+   sends one `plugin.describe` per Plugin, one `geofeature.set` per geo feature and
+   one `object.describe` per Object.
 4. From then on Core forwards each new report as it arrives: telemetry, status,
    queue changes and failsafes — still unchanged.
 5. To act, the interface sends `control.command`, `control.settings` or

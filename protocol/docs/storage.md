@@ -8,7 +8,8 @@ How Core stores what it knows. A normal store with one table per kind of thing. 
 | --- | --- | --- |
 | assets | Asset | `asset_id`, `entity_type`, key hash, `reports` and `commands` it supports, `cameras`, last heard time |
 | tasks | Task | `asset_id`, `task_id`, the command or settings message that carried the `task_id`, its latest state (and `explanation` if it failed), whether the Asset has shown it holds it |
-| geofeatures | geo feature | `geofeature_id`, kind, geometry (a point, line or area) |
+| geofeatures | geo feature | the latest `geofeature.set` Core sent for it: `geofeature_id`, `kind`, `name`, its shape |
+| objects | Object | its `object.describe`: `object_id`, `name`, `content_type`, `size_bytes`, `plugin_id`, `geofeature_id`; the file itself is stored beside the table |
 | observations | observation | `asset_id`, `observation_id`, `kind`, the latest measurement (that kind's fields) and its time, `entity_type`, the latest value of each detail, `track_id` |
 | tracks | track | `track_id`, `entity_type`, latest position and `uncertainty` if known, and time, its source observations |
 | telemetry | telemetry report | `asset_id`, time, position, speed, heading (a time series) |
@@ -26,7 +27,13 @@ Core records what was asked; the Asset does it. A Task is the stored `control.co
 
 ## Geo features
 
-A geo feature is `{geofeature_id, kind, geometry}`, made by an operator in Core. `move_to` stays simple and never names a geo feature; how Tasks link to geo features is an open question. Editing a geo feature never changes a command already sent. Geo features are not sent over the Asset link on their own.
+A geo feature is a point, line or area made in Core by an operator or a Plugin: `geofeature_id`, `kind`, an optional `name` and its shape. Its row is the latest `geofeature.set` Core sent for it; a delete removes the row. Core picks the ID and never reuses one in a run, so it remembers the IDs it has used.
+
+A command that uses a geo feature carries a copy of its shape and `geofeature_id` as a record (see [decisions](decisions.md#geo-features-and-objects)). The Task row keeps that record, and editing or deleting the geo feature never changes it. Geo features are not sent to Assets.
+
+## Objects
+
+An Object is a file Core holds, with its `object.describe`. Core picks the `object_id`, stores the file, then announces it; there is no half-stored Object. The file never changes: a different file is a new Object. An Object names at most one geo feature with `geofeature_id`, and the link is kept only there. A geo feature's Objects are the rows that name it. Objects are kept until Reset.
 
 ## Observations and tracks
 

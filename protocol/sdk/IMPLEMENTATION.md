@@ -561,7 +561,7 @@ separate Core PR, not done here:
 
 ## 8. Not now
 
-- Fusion, tracks, objects or geo-feature messages and any SDK support for them (no wire types exist).
+- Fusion and track messages (no wire types exist). Fetching an Object's file. Geo feature and Object messages go through the generic front door with no SDK code.
 - Meshtastic and FLRC adapters. The interface exists; write no implementation and no framing profile.
 - Byte-stream framing, compression and chunking (link profile work, law 12).
 - Rewriting or adapting Core (only `core-adopt.md` notes). No Core submodule bump.
