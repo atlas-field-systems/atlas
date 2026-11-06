@@ -255,14 +255,12 @@ After each accepted hello the Asset, in this order:
 
    It resends each unchanged every 10 s until answered, and sends nothing else first.
 
-   Core counts the Asset **ready** once it has acknowledged the connect report
-   and then received another message from it with a later `time` than that
-   report. Because the Asset sends nothing else until both acknowledgements
-   arrive, and its clock never goes backwards, that message proves the last one
-   got through, even if Core had to send it twice. A late message from before
-   the hello has an earlier `time`, so it proves nothing. Until then Core sends the Asset no
-   Task and passes nothing on to it; it refuses `control.command`, `control.settings` and
-   `control.cancel` for it ("A1 is still connecting"), so a command is never sent while the Asset would drop it.
+   Core counts the Asset **ready** once it has acknowledged the connect report.
+   Until then Core sends the Asset no Task and passes nothing on to it; it refuses
+   `control.command`, `control.settings` and `control.cancel` for it ("A1 is still
+   connecting"). If that acknowledgement is lost, the link is failing: the Asset
+   drops anything that arrives before it, a Task is resent after step 5, and an
+   immediate command shows no result, so the operator sends it again.
 
 3. Resends any unacknowledged final task reports (retries, same bytes).
 4. Sends its current queue report.
