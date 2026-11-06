@@ -32,12 +32,7 @@
       "$ref": "../variables/orientation_deg.json"
     },
     "polygon": {
-      "type": "array",
-      "items": {
-        "$ref": "point.json"
-      },
-      "minItems": 3,
-      "maxItems": 32
+      "$ref": "area.json"
     },
     "altitude_uncertainty_m": {
       "$ref": "../variables/altitude_uncertainty_m.json"

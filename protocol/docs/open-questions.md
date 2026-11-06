@@ -4,7 +4,10 @@ Not decided yet. Planning comes before building.
 
 ## Message groups and the queue
 
-- **Tasks and geo features.** How a Task links to a geo feature (not through `move_to`) is open.
+- **Tasks and geo features.** Answered in 0.8: a command carries a copy of the shape and `geofeature_id` as a record. See [decisions](decisions.md#geo-features-and-objects).
+- **Fetching an Object's file.** An operator interface fetches it from Core over HTTP by `object_id`. The exact request, and how it is authorized when keys travel only in the hello (law 17), are open.
+- **Uploads and other attachments.** Only Plugins make Objects. Uploads from operators or Assets, and Objects attached to an Asset, Task or Track, wait for a story.
+- **Core picks `task_id` too?** Core picks geo feature and Object IDs. Picking `task_id` as well would mean Core no longer passes an operator's command on unchanged, and a queued command would need another way to say so. Not decided.
 - **What else registration contains.** `admin.describe` lists reports, commands and cameras; [Storage](storage.md) keeps them. Answered in 0.8: an Asset may say what it is with `entity_type`.
 - **`reply_to` through Core.** Answered in 0.8: every message carries `from`; Core forwards unchanged; replies use `reply_from` + `reply_to` naming (`from`, `seq`).
 
@@ -26,7 +29,7 @@ Most of these are answered in [communication.md](communication.md).
 - **Queue and task-list delivery.** Answered in 0.8: Core-owned ordered `task_id` list; each body once, after the Asset holds the one before; Asset queue report; Core resends missing. No `task_seq`, no gap-wait.
 - **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
 - **Failure reporting.** Answered by `report.failsafe`.
-- **Objects.** One of the four pillars; no definitions yet.
+- **Objects.** Answered in 0.8: files Core holds, described by `object.describe`. See [decisions](decisions.md#geo-features-and-objects).
 - **Gateways.** Answered: routing is the link's job; see [Routing and duplicates](communication.md#routing-and-duplicates).
 - **Plugins.** Answered in 0.8: the `plugin` message group; see [decisions](decisions.md#plugins).
 - **Encode/decode library and stress testing.** Build phase: SDK under `sdk/`, how-it-works locked in 0.8; implementation next.

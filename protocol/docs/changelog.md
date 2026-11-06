@@ -20,6 +20,7 @@
 - Observation facts: `entity_type`, `icao_address`, `callsign`, `squawk` and `color` accept `null`, meaning no longer known. Uncertainty: `semi_minor_m` requires `orientation_deg`.
 - `plugin.result` kind `ground_elevation` is flat `altitude_m` with `altitude_reference` fixed to `msl` (was an `elevation` object that accepted any reference).
 - History: Core sends a history answer oldest first.
+- Geo features and Objects: new `geofeature` group, `geofeature.set` (kinds `point`, `line`, `area`; whole end state; no ID creates one) and `geofeature.delete`. New `object` group, `object.describe` (a file Core holds; the file is fetched over HTTP, never in a message). Core picks `geofeature_id` and `object_id` and never reuses one in a run; `admin.reply` gains `geofeature_id`. Core pushes every geo feature and Object on operator connect. An Object names at most one geo feature. `move_to` and `land` take an optional `geofeature_id` as a record of where the position came from; the Asset ignores it. New components `line` and `area` (`uncertainty` polygons are an `area` now), new variables `name`, `content_type`, `size_bytes`.
 - New task state `undelivered`, set only by Core for a task it gave up delivering (dropped unsent, or never shown before the Asset went offline). Not final; the Asset's later report replaces it. A queued `control.settings` is confirmed with `report.settings` naming it.
 
 ## 0.7

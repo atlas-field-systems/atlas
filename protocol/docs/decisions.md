@@ -30,6 +30,8 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
            gimbal
            telemetry, battery, settings
   plugin   describe, call, result (kind = action: ground_elevation)
+  geofeature set (kind: point, line, area), delete
+  object   describe
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
 - A **command** is something an Asset can do: takeoff, move_to, land. A **task** is one queued use of a command or a settings change. `control.command` and `control.settings` each take an optional `task_id`. Without it, the message runs now (a button press). With it, the message is a Task added to the end of the queue. Each kind is defined once.
@@ -56,6 +58,14 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - Outputs follow the same rule as inputs. Each action says what one list item is, built from Protocol variables and components, such as an altitude for a ground elevation or an unsaved geo feature for a building. A new kind of output is a Protocol change. Plugin data varies more than the rest of Atlas, so these additions are expected often.
 - Only operator interfaces call Plugins for now. Assets will be allowed to later.
 - For now, plugins do not act on their own to direct Assets or issue Tasks. This may change later.
+
+## Geo features and Objects
+- A **geo feature** is a point, line or area made in Core, by an operator or a Plugin. It is `geofeature_id`, `kind` (its shape: `point`, `line` or `area`) and an optional `name`, plus its shape: a `position`, a `line` (2 to 32 points) or an `area` (3 to 32 corners). There is no list of meanings, such as building or no-fly zone, until something reads one. Findings never go on a geo feature; each Plugin action says whether its output is a result list or Objects.
+- `geofeature.set` carries the whole geo feature, so a change is an end state and the newest `time` wins. Without `geofeature_id` it creates one; with it, it replaces that one. `geofeature.delete` removes one. Core answers each with `admin.reply` and sends the result to every operator interface as its own message (`from` is `CORE`). On connect, Core pushes every geo feature. Geo features are not sent to Assets.
+- An **Object** is a file Core holds. `object.describe` says what it is: `object_id`, `name`, `content_type`, `size_bytes`, and optionally `plugin_id` and `geofeature_id`. Core sends it once the file is stored and pushes every Object on connect. The file never travels in a message (law 13). An operator interface fetches it from Core over HTTP by `object_id`, only when it needs it. Only Plugins make Objects for now; there are no uploads.
+- An Object is attached to at most one geo feature, by `geofeature_id` on the Object. A geo feature can have many Objects. The link is stored once, on the Object; an operator interface lists a geo feature's Objects from the `object.describe`s it holds. Deleting a geo feature leaves its Objects, which keep its ID as a record.
+- **Core picks** `geofeature_id` and `object_id`, so no creator retries against a taken ID over a slow link. For a create, Core's `admin.reply` carries the new `geofeature_id`. Neither ID is reused in a run, even after a delete.
+- **Tasks copy shapes.** A command that uses a geo feature's shape carries its own copy, plus `geofeature_id` as a record of where it came from. The Asset ignores the ID and never looks the geo feature up, so editing or deleting a geo feature never changes a command already sent. `move_to` and `land` take it today; the first command that takes a line or an area will too.
 
 ## Values
 - `asset_id` is 1 to 4 letters or digits (`A-Z`, `a-z`, `0-9`), such as `A1`. That is over 15 million IDs, far more than the roughly 20 Assets we expect (see the Charter's scale page). Every ID, not only `asset_id`, is 1 to 4 letters or digits. Any new `*_id` variable must use the same pattern; the check script enforces this.
@@ -122,10 +132,10 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 
 ## Storage, sensors and registration
 
-- Core uses a normal store with one table per kind of thing: assets, tasks, observations, tracks, geo features and telemetry. No raw message store. See [Storage](storage.md).
+- Core uses a normal store with one table per kind of thing: assets, tasks, observations, tracks, geo features, Objects and telemetry. No raw message store. See [Storage](storage.md).
 - `admin.describe` declares cameras once: fixed or gimbal, direction from the nose, field of view. No zoom, no revision fields.
 - `report.gimbal` gives live gimbal pointing, often while active, never while idle.
-- `move_to` stays simple and never carries a geo feature. Cameras may give an optional roll.
+- A command never depends on a geo feature. Cameras may give an optional roll.
 - Assets send `report.observation`, never tracks. Fusion alone decides when observations are the same target. Tasks target tracks. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/core/blob/main/docs/fusion.md).
 - Observations (0.8). `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
 - One `entity_type` list names what Assets, observations and tracks are: person, ground_vehicle, airplane, helicopter, drone, aircraft (type unknown), watercraft, animal, structure, fixed_sensor, other. Left out means unknown. An Asset may give it in `admin.describe`.

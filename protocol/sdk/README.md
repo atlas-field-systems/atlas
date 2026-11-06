@@ -25,7 +25,7 @@ and the developer approves each merge before the next slice starts.
 
 ## Non-goals (for v1)
 
-- Object / track / fusion / geo-feature messages (storage notes may exist; no wire types yet)
+- Track and fusion messages (no wire types yet). Geo feature and Object messages need no SDK code; fetching an Object's file is not in v1
 - Generated clients or OpenAPI
 - Message-aware transports
 - Auto-retry of operator commands after disconnect
