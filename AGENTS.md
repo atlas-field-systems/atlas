@@ -10,12 +10,17 @@ code for every part is written, reviewed and merged here, through PRs into `main
 There is no other repository to change. Any per-part repository made later is a
 read-only copy published from `prod`; never edit one.
 
+**Everything here is a draft.** Atlas is greenfield and deployed nowhere. Any
+decision, law, message, plan or code may be reworked, rewritten or removed; nothing
+is locked. Propose changes to the owner rather than making them quietly. See
+[Everything is a draft](atlas/CHARTER.md#everything-is-a-draft).
+
 ## The parts
 
 | Folder | What lives there | Status |
 |---|---|---|
 | [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide design decisions | Active |
-| [protocol/](protocol/) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `protocol-v<major.minor>.<patch>` tags: major.minor is the protocol version, and the patch counts releases that change no message. Also the SDK, in `sdk/`: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages. How-it-works is locked for protocol 0.8 (`sdk/how-it-works.md`); runtime code is not built yet | Spec active, SDK how-it-works locked, runtime not built |
+| [protocol/](protocol/) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `protocol-v<major.minor>.<patch>` tags: major.minor is the protocol version, and the patch counts releases that change no message. Also the SDK, in `sdk/`: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages. How-it-works is drafted for protocol 0.8 (`sdk/how-it-works.md`); runtime code is not built yet | Spec draft, SDK how-it-works draft, runtime not built |
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and requests work. First-flight prototype; pins a Protocol release tag. Will adopt the SDK front door (shared `check()`, no second validation engine) once the SDK exists | Prototype |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |

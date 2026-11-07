@@ -2,6 +2,7 @@
 
 Read the [root AGENTS.md](https://github.com/atlas-field-systems/atlas/blob/main/AGENTS.md) first: the parts of Atlas, Charter first,
 branches and releases, and the working rules live there.
+Everything here, the Charter included, is a [draft](CHARTER.md#everything-is-a-draft).
 
 ## This folder
 

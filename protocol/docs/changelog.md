@@ -8,7 +8,7 @@
 - Origin: every message carries `from` (Asset id, operator id, or `CORE`). Core forwards other creators' messages unchanged. Duplicates are `(from, seq, time)`. Replies use `reply_from` + `reply_to`. Law 2 changed on purpose (flat messages with a creator).
 - Handshake split: `admin.hello` is keys + version + id only. New keyless `admin.describe` carries reports, commands and cameras. `admin.asset` removed.
 - Queue: drop `task_seq` and the gap-wait. Core owns an ordered list of `task_id`s; Asset reports the queue; Core resends missing bodies.
-- SDK how-it-works locked under `sdk/`: shared `check()`, `request`/`stream`/`subscribe`, on-demand picture with opt-in live + `stale`, bytes-only adapters, one identity module, Asset auto-resync, no operator command auto-retry.
+- SDK how-it-works drafted under `sdk/`: shared `check()`, `request`/`stream`/`subscribe`, on-demand picture with opt-in live + `stale`, bytes-only adapters, one identity module, Asset auto-resync, no operator command auto-retry.
 - Dedupe: act once, deliver always. A replayed message is not acted on again but is still delivered to streams, subscribers and the live picture; the picture upserts by `(from, seq, time)`.
 - Asset reconnect order: after each accepted hello, describe → connect `report.settings` → unacked finals → queue report → `query.queue`.
 - Acknowledgements (law 23): Core acknowledges `admin.describe` and the connect `report.settings` with `admin.reply`; the Asset resends each until acknowledged and sends nothing else first.
