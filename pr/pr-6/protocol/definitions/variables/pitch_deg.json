@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/pitch_deg.json",
+  "title": "pitch_deg",
+  "description": "Up-down angle from the Asset's level body, in degrees. 0 is level, -90 is straight down, 90 straight up.",
+  "type": "number",
+  "minimum": -90,
+  "maximum": 90,
+  "examples": [
+    -45
+  ]
+}

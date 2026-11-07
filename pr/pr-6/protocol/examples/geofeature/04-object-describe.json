@@ -1,0 +1,12 @@
+{
+  "type": "object.describe",
+  "time": 1793667800070,
+  "seq": 202,
+  "from": "CORE",
+  "object_id": "F1",
+  "name": "north-field.jpg",
+  "content_type": "image/jpeg",
+  "size_bytes": 2483117,
+  "geofeature_id": "G1",
+  "plugin_id": "IMG"
+}

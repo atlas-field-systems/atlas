@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/link_loss_response.json",
+  "title": "link_loss_response",
+  "description": "Setting: which failsafe_response the Asset uses if it loses its link to Core. continue keeps the mission (for example Core in a car going through a tunnel): the Asset keeps its task list, which is always fully on board.",
+  "$ref": "failsafe_response.json",
+  "examples": [
+    "continue"
+  ]
+}
