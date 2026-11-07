@@ -1,7 +1,7 @@
 # Fusion
 
 Selected direction, not implemented in the first-flight prototype.
-[Protocol storage](https://github.com/atlas-field-systems/monorepo/blob/main/protocol/docs/storage.md#observations-and-tracks)
+[Protocol storage](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/storage.md#observations-and-tracks)
 owns observation and track data. This page owns how Core processes them.
 
 Fusion is a replaceable module, run in Docker like the other Core pillars.

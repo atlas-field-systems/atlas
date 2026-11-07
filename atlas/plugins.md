@@ -100,4 +100,4 @@ These cases are borderline and need a decision before such a Plugin is built:
   like a Plugin running in the background.
 
 The call and result messages are defined in
-[Protocol decisions](https://github.com/atlas-field-systems/monorepo/blob/main/protocol/docs/decisions.md#plugins).
+[Protocol decisions](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#plugins).

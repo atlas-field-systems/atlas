@@ -36,9 +36,9 @@ or a required network topology.
 | Asset runtime | Equipment control, local execution, and reports of its effects |
 | Plugin subsystem within Core | Acquiring, analyzing, and publishing information |
 
-The Asset runtime is planned in [asset](https://github.com/atlas-field-systems/monorepo/tree/main/asset)
+The Asset runtime is planned in [asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
 and the operator application in
-[command-interface](https://github.com/atlas-field-systems/monorepo/tree/main/command-interface).
+[command-interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface).
 
 ## The four pillars
 

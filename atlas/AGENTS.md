@@ -1,6 +1,6 @@
 # Working on the Atlas charter
 
-Read the [root AGENTS.md](https://github.com/atlas-field-systems/monorepo/blob/main/AGENTS.md) first: the parts of Atlas, Charter first,
+Read the [root AGENTS.md](https://github.com/atlas-field-systems/atlas/blob/main/AGENTS.md) first: the parts of Atlas, Charter first,
 branches and releases, and the working rules live there.
 
 ## This folder

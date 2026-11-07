@@ -10,7 +10,7 @@ This repository holds every part of it, one folder each:
 - [command-interface/](command-interface/): the operator interface. Planning.
 
 The Charter and the Protocol viewer are published at
-https://atlas-field-systems.github.io/monorepo/ (the viewer is under `protocol/`).
+https://atlas-field-systems.github.io/atlas/ (the viewer is under `protocol/`).
 
 Work lands on `main`. Pushing `main` to `prod` releases the parts that changed.
 AI agents: read [AGENTS.md](AGENTS.md).
