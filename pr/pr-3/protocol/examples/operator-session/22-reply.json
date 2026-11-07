@@ -1,0 +1,10 @@
+{
+  "type": "admin.reply",
+  "time": 1793667710010,
+  "seq": 105,
+  "from": "CORE",
+  "asset_id": "A1",
+  "reply_from": "OP1",
+  "reply_to": 5,
+  "reply_result": "accepted"
+}
