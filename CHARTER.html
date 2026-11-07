@@ -3,6 +3,13 @@
 <link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
 <p>Atlas helps operators understand field systems, request work, and retain evidence.
 Read the <a href="environment.html">operating environment</a> before designing a subsystem.</p>
+<h2 id="everything-is-a-draft">Everything is a draft</h2>
+<p>Atlas is greenfield. It is deployed nowhere and has no users to stay compatible with.
+Every part of this repository, this Charter included, is a draft: any decision, law,
+message, plan or piece of code may be reworked, rewritten or removed, and new ideas
+are welcome. Nothing is locked. When something has a problem, consider reworking it
+from the ground up before patching it.</p>
+<p>Draft does not mean quiet change. Propose the change and its reason; the owner decides.</p>
 <h2 id="keep-atlas-understandable">Keep Atlas understandable</h2>
 <p>The owner must be able to read the docs whenever they change.
 Use short user stories and visible data flows to expose mismatches with intended use.
@@ -27,7 +34,7 @@ Each subsystem defines how it represents that evidence.</p>
 their own case. Every message carries <code>from</code> (the creator), <code>time</code>, and <code>seq</code>.
 Messages about one Asset also carry <code>asset_id</code>. The two often hold the same
 ID but are not a repeat: <code>from</code> is who made the message and <code>asset_id</code> is who it
-is about, as when Core reports that a drone&#39;s Task was undelivered.</li>
+is about, as when Core asks a drone for its task list.</li>
 <li>Times are in milliseconds. Only specialized radio data uses nanosecond timing.</li>
 <li>Counters are ordinary numbers, not long numbers written as text.</li>
 <li>The whole data format lives in Protocol. Protocol defines both the messages and
@@ -70,8 +77,8 @@ link or Core already owns.</p>
 <p>Protocol is the spec. The SDK is the one implementation and front door. Core uses
 the SDK and keeps business rules only — no second validation or dedupe stack.
 See <a href="design-decisions.html">design-decisions.md</a>.</p>
-<p>Locked how-it-works, laws, and communication docs beat an implementation plan when
-they conflict. Change a lock on purpose with the owner; do not quietly diverge in
+<p>How-it-works, laws, and communication docs beat an implementation plan when
+they conflict. Change them on purpose with the owner; do not quietly diverge in
 code.</p>
 <p>Accepted acknowledgment and observed Asset outcomes are different facts. Asset
 reports are the observed outcome under the contract, not the same fact as

@@ -35,20 +35,20 @@ Operator interface ──1. operator WebSocket──▶ Core ──2. store─�
   {"type":"control.command","time":1793667605150,"seq":5,"from":"CORE","asset_id":"A1","kind":"move_to","task_id":"T2","destination":{"latitude":42.2761,"longitude":-71.8031}}
   ```
 - **Bloat:**
-  - Removed: `plan_id` and `task_count`, which repeated in every Task (27 bytes each). The queue report below now catches lost Tasks.
+  - Removed: `plan_id` and `task_count`, which repeated in every Task (27 bytes each). The order travels once, in `control.queue`.
   - `"type":"control.command"` is 23 characters in every command. Link compression shrinks it; the name stays readable.
   - The gateway should relay the message unchanged. Any wrapper it adds is pure bloat.
 
 ## 5. Asset → Core: task status
-- **Message** (133 / 102, the first status for T1):
+- **Message** (132 / 106, the first status for T1):
 
   ```json
-  {"type":"report.status","time":1793667605400,"seq":10,"from":"A1","asset_id":"A1","kind":"task","task_id":"T1","task_state":"active"}
+  {"type":"report.status","time":1793667605400,"seq":8,"from":"A1","asset_id":"A1","kind":"task","task_id":"T1","task_state":"active"}
   ```
-- Each time a Task is added, the Asset sends its queue (124 / 103, after T3). Core sends the next Task only once the queue lists the one before, and resends any Task it sent that the Asset has never listed or reported on:
+- Every body goes out at once, then a `control.queue` gives the order (129 / 116). The Asset answers with its queue (175 / 95); a body it lacks is named in `missing_task_ids` and Core resends it ([communication.md](../communication.md#delivering-a-task-queue)):
 
   ```json
-  {"type":"report.status","time":1793667605300,"seq":9,"from":"A1","asset_id":"A1","kind":"queue","task_ids":["T1","T2","T3"]}
+  {"type":"report.status","time":1793667605300,"seq":7,"from":"A1","asset_id":"A1","kind":"queue","queue_version":1,"task_ids":["T1","T2","T3"],"reply_from":"CORE","reply_to":7}
   ```
 - **Bloat:** one status per state change, with no repeat of the task's fields. Good as is.
 - `task_id` is unique per Asset, so the status needs nothing else to say which Task it means.

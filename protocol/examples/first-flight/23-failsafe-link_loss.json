@@ -1,7 +1,7 @@
 {
   "type": "report.failsafe",
   "time": 1793667640000,
-  "seq": 16,
+  "seq": 14,
   "from": "A1",
   "asset_id": "A1",
   "kind": "link_loss",
