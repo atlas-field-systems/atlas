@@ -2,7 +2,7 @@
 
 How every part of Atlas behaves on a link, for protocol 0.8. It spells out the
 [laws](laws.md) in full. The SDK implements these rules; what it adds on top is in
-[SDK how it works](../sdk/how-it-works.md).
+the [SDK docs](../../sdk/README.md).
 
 ## One model for every link
 

@@ -205,7 +205,7 @@ Owner answers to the edges a throwaway Core prototype of 0.7 found.
 
 ## SDK choices (0.8)
 
-Drafted for the SDK how-it-works docs and the matching protocol cuts. Details: [sdk/README.md](../sdk/README.md).
+Drafted for the SDK docs and the matching protocol cuts. Details: [SDK](../../sdk/README.md).
 
 - **Origin:** every message has `from`; Core forwards unchanged; replies use `reply_from` + `reply_to`; duplicates are `(from, seq, time)`.
 - **Dedupe:** act once, deliver always; streams, subscribers and the picture still receive replays; the picture upserts by `(from, seq, time)`.

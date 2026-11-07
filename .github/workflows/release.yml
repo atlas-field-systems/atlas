@@ -2,7 +2,7 @@ name: release
 # Pushing to prod makes the releases: git push origin main:prod
 # Only commits on main are released. Each part releases only if it changed since its last tag.
 # Protocol tags protocol-v<major.minor>.<patch>: major.minor is the protocol version
-# (protocol_version.json); the patch counts releases that change no message, such as SDK fixes.
+# (protocol_version.json); the patch counts releases that change no message, such as tool fixes.
 # Core tags core-v<version> from core/package.json, and only on the Protocol release it pins.
 # A rerun finishes a release whose GitHub release is missing.
 on:
