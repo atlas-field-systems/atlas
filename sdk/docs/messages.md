@@ -68,7 +68,7 @@ event `decode_error`. Never throw into the transport.
 These are the only message types the SDK may name: `admin.hello`,
 `admin.operator_hello`, `admin.hello_reply`, `admin.describe`, `admin.reply`,
 `report.settings` (reply matching), `report.status` kinds `task`/`queue`,
-`control.command`, `control.settings`, `control.cancel`, `query.queue`, and, for
+`control.command`, `control.settings`, `control.queue`, `control.cancel`, and, for
 stream matching only ([Calls](calls.md#module-callsmjs)), `query.core` kinds `history`/`assets`/`plugins`,
 `query.asset`, `plugin.call`, `plugin.result` and `plugin.describe`. Everything
 else (commands, reports, other query kinds) flows through generic `build`/`check` and

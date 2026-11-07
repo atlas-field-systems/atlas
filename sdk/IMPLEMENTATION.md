@@ -177,18 +177,18 @@ Acceptance:
 ### Slice 6: Asset queue helper (D6)
 Files: `asset-queue.mjs`.
 Acceptance:
-- T1, T2, T3 bodies give run order T1, T2, T3. A duplicate T2 body while held is ignored. A body for a finished task resends its stored final report bytes. T1+T3 with T2 missing runs T1, T3 and does **not** wait (a correct Core never sends T3 before the Asset shows T2; order is Core's job).
-- A finished `task_id` is never emitted again, including after a simulated restart with a store. The store keeps ≥1024 finished ids and evicts the oldest.
-- `clear()` reports each held task cancelled, then an empty queue report. A body that arrives after `clear()` is held, not dropped (the app's pause keeps it from running).
-- A motion command without `task_id` cancels the queue, reports each task cancelled, then sends an empty queue report. An immediate `control.settings` does not touch the queue. A queued `control.settings` with `task_id` is a task.
-- Cancel before arrival: reported cancelled; the later body is never run and gets the cancelled report again. Every cancel and settings request gets a `report.settings` answer; a duplicate request gets the identical answer bytes.
+- Bodies T3, T1, T2 in any order, then a list [T1, T2, T3]: run order T1, T2, T3. A duplicate body while held is ignored. A body for a finished task resends its stored final report bytes.
+- A list naming T4 before T4's body arrives: the old list keeps running, the queue report names T4 in `missing_task_ids`, and the list takes effect when T4 arrives.
+- A list built on an old `queue_version` is ignored and answered with the current queue report. A list that drops a queued Task reports it cancelled.
+- A finished `task_id` is never emitted again, including after a simulated restart with a store. The list and version survive the restart. The store keeps ≥1024 finished ids and evicts the oldest.
+- `clear()` reports each listed task cancelled, raises the version, then sends an empty queue report. A motion command without `task_id` clears; an immediate `control.settings` does not. A `control.settings` with `task_id` is a task.
+- Every cancel and settings request gets a `report.settings` answer; a duplicate request gets the identical answer bytes. `control.cancel` is emitted to `onImmediate`.
 - A final report is retried with identical bytes every 10 s (fake clock) with no attempt cap, until a matching `admin.reply` (+ `task_id`) arrives, then stops. Ack state lives in the store (`acked`); after a simulated restart with a persistent store, unacked finals keep retrying.
-- A `control.cancel` without `task_id` (stop motion now) is emitted to `onImmediate`.
 
 ### Slice 7: Reconnect (D8)
 Files: `reconnect.mjs`.
 Acceptance:
-- Asset: drop the transport mid-task. On the next accepted hello, the order on the wire is describe → connect `report.settings` → unacked final reports → queue report → `query.queue`.
+- Asset: drop the transport mid-task. On the next accepted hello, the order on the wire is describe → connect `report.settings` → unacked final reports → queue report.
 - Operator: an in-flight request resolves `unknown/disconnected`. A command is **not** resent after reconnect.
 - Backoff grows and is capped. No reconnect after `auth_lost` or `version_mismatch`.
 - Seq stays continuous across reconnects.
@@ -196,13 +196,13 @@ Acceptance:
 ### Slice 8: First-flight path, end to end in-process
 Files: `test/first-flight.test.mjs`, `test/helpers/mini-core.mjs`.
 `mini-core` is a ~150-line test double built **only** from SDK calls (server
-links, `check`, dedupe hook, a last-answer Map, an ordered task list, forward
+links, `check`, dedupe hook, a last-answer Map, resending missing bodies, forward
 unchanged). It proves that Core can be written on the SDK. It is **not** the real
 Core and does not ship. Acceptance:
 - Replay `protocol/examples/first-flight/scenario.json` (sim Asset A1 + operator OP1 + mini-core over fake transports, with duplicate and reorder knobs on).
 - Forwarded messages arrive with the same `from/seq/time` (byte-equal), so nothing is renumbered.
 - The operator gets one `admin.reply` per message. A retried command gets the same reply bytes (last-answer cache in mini-core).
-- mini-core sends each task only after A1 lists the one before. With T2's first copy dropped, A1 still runs takeoff → move_to → land in that order.
+- mini-core sends every body, then the list. With T2's first copy dropped, A1 names it missing, mini-core resends it, and A1 runs takeoff → move_to → land in that order.
 - The Asset runs takeoff → move_to → land once each. Final reports are acked. A mid-run link loss recovers via slice 7. mini-core forwards with `forward(raw)` and sends `admin.alive` when quiet.
 - Repeat the run with 10% drop and 10% duplicate (seeded): still exactly-once task execution.
 
@@ -222,7 +222,7 @@ separate Core PR, not done here:
 - Core identity is `createIdentity({id:'CORE', role:'core', seqStore: <persisted>})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
 - Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.
-- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), stop resending Tasks once an Asset goes offline and mark each Task it gave up `undelivered`, command listed in describe, `task_id` duplicate, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its connect report), ordered task list (send a task only after the Asset shows it holds the one before; drop unsent tasks when the Asset reports a task cancelled that Core passed on no cancel for, or goes offline; on passing on a motion command without `task_id`, drop unsent tasks and cancel each sent one the Asset has not shown it holds), `every_s` repeats (a new Core-created message each time, with a new seq).
+- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), command listed in describe, `task_id` duplicate, a list naming only bodies Core has, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its connect report), resending a list until a queue report names it and each body a queue report names as missing, `every_s` repeats (a new Core-created message each time, with a new seq).
 - Pin Core to the release that contains the SDK.
 
 ---
@@ -236,10 +236,8 @@ separate Core PR, not done here:
 | pending requests | Link/calls (SDK) | `Map<seq, Pending>` per link | `maxPending` 256 |
 | stream buffer | calls (SDK) | array per stream | `maxItems` 10000 |
 | subscribers | Link (SDK) | `Set<{filter,cb}>` | caller-owned |
-| asset task list | AssetQueue (SDK, Asset side) | `string[]` | none (no protocol way to refuse; open question) |
-| finished tasks (final bytes + `acked`, cancel-before-arrival included), Asset answers | TaskStore (Map-like, `new Map()` default) | `task:<id>`, `answer:<from:seq:time>` | ≥1024 each, oldest deleted |
+| task list, bodies, finished tasks (final bytes + `acked`), Asset answers | TaskStore (Map-like, `new Map()` default) | `list`, `body:<id>`, `task:<id>`, `answer:<from:seq:time>` | list 64; finished and answers ≥1024 each, oldest deleted |
 | **last-answer cache** (forwarded traffic) | **Core (not SDK)** | `Map<"from:seq:time", replyBytes>` | Core's choice |
-| Core ordered task_id list | **Core** | per Asset | Core |
 | live picture | Picture (SDK, optional) | maps per asset | memory only |
 
 ---
@@ -292,8 +290,8 @@ the developer instead of changing it inside a slice.
 - **Subscribe (slice 5):** callback is `{msg, raw, duplicate}` (same as `onMessage`); acting code skips duplicates.
 - **P2 (slice 9):** the live picture issues its own `query.core kind assets` on connect and reconnect, and is `ready` when that request's `admin.reply` arrives. It does not try to detect the end of Core's connect push.
 - **P3 (slice 2):** each transport adapter is a sibling package with its own `package.json`. No npm workspaces.
-- **P4 (slice 6):** the Asset queue takes a Map-like store (`get`/`set`/`delete`/`keys`, default `new Map()`), see [Task queue](docs/task-queue.md). One record per finished task (final bytes + `acked`) and one per answer, newest ≥1024 of each kept. A cancel before arrival is a finished task whose final is `cancelled`.
-- **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings`, each waiting for Core's `admin.reply`, and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report → `query.queue`. `createLink` takes `connectSettings`.
+- **P4 (slice 6):** the Asset queue takes a Map-like store (`get`/`set`/`delete`/`keys`, default `new Map()`), see [Task queue](docs/task-queue.md). One record for the list, one per held body, one per finished task (final bytes + `acked`) and one per answer; the newest ≥1024 finished tasks and answers are kept.
+- **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings`, each waiting for Core's `admin.reply`, and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report. `createLink` takes `connectSettings`.
 
 ## 10. How to work this plan
 

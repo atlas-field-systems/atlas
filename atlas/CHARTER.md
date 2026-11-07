@@ -45,7 +45,7 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
   their own case. Every message carries `from` (the creator), `time`, and `seq`.
   Messages about one Asset also carry `asset_id`. The two often hold the same
   ID but are not a repeat: `from` is who made the message and `asset_id` is who it
-  is about, as when Core reports that a drone's Task was undelivered.
+  is about, as when Core asks a drone for its task list.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
 - The whole data format lives in Protocol. Protocol defines both the messages and

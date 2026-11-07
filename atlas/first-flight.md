@@ -43,18 +43,17 @@ or executed it.
 
 ## When something goes wrong
 
-If a Task in the queue fails, the drone cancels the remaining Tasks and follows
-its emergency behavior. Core marks those Tasks cancelled once the drone reports
-it, so the records match what happened. The drone then waits, paused, until an
-operator resumes it, so a Task that arrives late does not start on its own.
+The drone carries its whole task list before it leaves, so losing the link never
+strands part of the mission on the ground. Any failure on the drone, a failed Task
+included, triggers its configured failsafe. Unless that failsafe is set to
+continue, the drone cancels the remaining Tasks, and Core marks them cancelled once
+the drone reports it, so the records match what happened.
 
 Each Asset has [settings](settings.md) for how it responds to events such as
 losing its radio link. Each trigger has its own response: continue the mission,
 hold, land, or return to home. Losing the link can be set to continue, for example
 when Core rides in a car through a tunnel and the drone should keep its mission.
-The drone keeps the Tasks it already holds. If the tunnel outlasts the link-loss
-time, Tasks Core had not yet handed over are marked undelivered, and the operator
-queues that work again afterwards as new Tasks. Return to home is done by an Atlas layer above the
+Return to home is done by an Atlas layer above the
 flight controller or by ArduPilot's return-to-home mode.
 
 Failure always wins. Every failure has a defined safe response, and it applies
