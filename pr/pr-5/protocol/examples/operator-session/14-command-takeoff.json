@@ -1,7 +1,7 @@
 {
   "type": "control.command",
   "time": 1793667703000,
-  "seq": 3,
+  "seq": 4,
   "from": "OP1",
   "asset_id": "A2",
   "kind": "takeoff",

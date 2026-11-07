@@ -7,7 +7,7 @@ How Core stores what it knows. A normal store with one table per kind of thing. 
 | Table | One row per | Holds |
 | --- | --- | --- |
 | assets | Asset | `asset_id`, `entity_type`, key hash, `reports` and `commands` it supports, `cameras`, last heard time |
-| tasks | Task | `asset_id`, `task_id`, the command or settings message that carried the `task_id`, its latest state (and `explanation` if it failed), whether the Asset has shown it holds it |
+| tasks | Task | `asset_id`, `task_id`, the command or settings message that carried the `task_id`, its latest state (and `explanation` if it failed) |
 | geofeatures | geo feature | the latest `geofeature.set` Core sent for it: `geofeature_id`, `kind`, `name`, its shape |
 | objects | Object | its `object.describe`: `object_id`, `name`, `content_type`, `size_bytes`, `plugin_id`, `geofeature_id`; the file itself is stored beside the table |
 | observations | observation | `asset_id`, `observation_id`, `kind`, the latest measurement (that kind's fields) and its time, `entity_type`, the latest value of each detail, `track_id` |
@@ -15,7 +15,7 @@ How Core stores what it knows. A normal store with one table per kind of thing. 
 | telemetry | telemetry report | `asset_id`, time, position, speed, heading (a time series) |
 | history | stored report | `asset_id`, time, the report as received (status, failsafe, settings, battery) |
 
-Latest status, battery and gimbal pointing are kept on the asset row or beside it, newest only. Settings are kept per setting: the report holding that setting's newest value, and which settings the latest connect report listed. No row has a revision or version counter.
+Latest status (the queue report included), battery and gimbal pointing are kept on the asset row or beside it, newest only. Settings are kept per setting: the report holding that setting's newest value, and which settings the latest connect report listed. No row has a revision or version counter.
 
 ## Assets
 
@@ -23,7 +23,7 @@ An Asset row is created when the Asset first registers (see [Registration](#regi
 
 ## Tasks
 
-Core records what was asked; the Asset does it. A Task is the stored `control.command` or `control.settings` that carried a `task_id`, plus its latest `report.status` of kind `task`. Its state only moves forward, and finished states (completed, failed, cancelled) are final. `undelivered`, set by Core, is replaced by any later report from the Asset. A failed Task carries a reason. A `control.cancel` is never stored as a Task.
+Core records what was asked; the Asset does it. A Task is the stored `control.command` or `control.settings` that carried a `task_id`, plus its latest `report.status` of kind `task`. Its state only moves forward, and finished states (completed, failed, cancelled) are final. A failed Task carries a reason. The order lives on the Asset; Core keeps its latest queue report. A `control.cancel` or `control.queue` is never stored as a Task.
 
 ## Geo features
 

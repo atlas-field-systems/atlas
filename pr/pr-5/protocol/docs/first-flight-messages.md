@@ -20,24 +20,23 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 | 04 | Drone → Core | [`report.status asset`](../examples/first-flight/04-status-asset.json) | The drone reports it is healthy and ready. | 118 | 100 |
 | 05 | Drone → Core | [`report.telemetry`](../examples/first-flight/05-telemetry.json) | The drone reports where it is on the ground. | 235 | 167 |
 | 06 | Drone → Core | [`report.battery`](../examples/first-flight/06-battery.json) | The drone reports its battery, on its own schedule. | 103 | 88 |
-| 07 | Core → Drone | [`control.command takeoff`](../examples/first-flight/07-command-takeoff.json) | Core sends Task T1: climb straight up to 30 m above its launch point. It sends each Task only after the drone has shown it holds the one before, so Tasks arrive in Core's order. | 183 | 142 |
-| 07b | Drone → Core | [`report.status queue`](../examples/first-flight/07b-status-queue.json) | A Task was added, so the drone reports its queue. Core sees T1 arrived; had it not, Core would resend it. | 114 | 99 |
-| 08 | Core → Drone | [`control.command move_to`](../examples/first-flight/08-command-move_to.json) | T1 is listed, so Core sends Task T2: fly to a position, keeping the current altitude. | 173 | 139 |
-| 08b | Drone → Core | [`report.status queue`](../examples/first-flight/08b-status-queue.json) | The drone reports its queue again. Core sees T2 arrived. | 119 | 104 |
-| 09 | Core → Drone | [`control.command land`](../examples/first-flight/09-command-land.json) | T2 is listed, so Core sends Task T3: go to 20 m, fly back over the landing spot and land. | 242 | 172 |
-| 10 | Drone → Core | [`report.status queue`](../examples/first-flight/10-status-queue.json) | The drone reports its queue. Core sees all 3 arrived, in its order. | 124 | 103 |
-| 11 | Drone → Core | [`report.status task`](../examples/first-flight/11-status-task.json) | The drone reports it started T1 (Takeoff). | 133 | 102 |
-| 12 | Drone → Core | [`report.telemetry`](../examples/first-flight/12-telemetry.json) | The drone reports its climb. | 237 | 169 |
+| 07 | Core → Drone | [`control.command takeoff`](../examples/first-flight/07-command-takeoff.json) | Core sends Task T1's body: climb straight up to 30 m above its launch point. Every body goes out at once; arrival order does not matter. | 183 | 142 |
+| 08 | Core → Drone | [`control.command move_to`](../examples/first-flight/08-command-move_to.json) | T2's body: fly to a position, keeping the current altitude. | 173 | 139 |
+| 09 | Core → Drone | [`control.command land`](../examples/first-flight/09-command-land.json) | T3's body: go to 20 m, fly back over the landing spot and land. | 242 | 172 |
+| 09b | Core → Drone | [`control.queue`](../examples/first-flight/09b-queue.json) | The task list: the order, by ID only. The drone takes it only once every Task in it is on board. | 129 | 116 |
+| 10 | Drone → Core | [`report.status queue`](../examples/first-flight/10-status-queue.json) | All three bodies are on board, so the list takes effect at version 1. Had a body been lost, the report would name it in missing_task_ids and Core would resend it. | 175 | 136 |
+| 11 | Drone → Core | [`report.status task`](../examples/first-flight/11-status-task.json) | The drone reports it started T1 (Takeoff). | 132 | 104 |
+| 12 | Drone → Core | [`report.telemetry`](../examples/first-flight/12-telemetry.json) | The drone reports its climb. | 236 | 170 |
 | 13 | Drone → Core | [`report.status task`](../examples/first-flight/13-status-task.json) | The drone reports T1 done: it is holding at 30 m. | 136 | 106 |
-| 14 | Core → Drone | [`admin.reply`](../examples/first-flight/14-reply.json) | Core acknowledges the final report. Until it does, the drone resends T1's report unchanged; every final report gets this answer (not shown again below). | 153 | 118 |
+| 14 | Core → Drone | [`admin.reply`](../examples/first-flight/14-reply.json) | Core acknowledges the final report. Until it does, the drone resends T1's report unchanged; every final report gets this answer (not shown again below). | 154 | 120 |
 | 15 | Drone → Core | [`report.status task`](../examples/first-flight/15-status-task.json) | The drone reports it started T2 (Move To), the next Task in its queue. | 133 | 100 |
 | 16 | Drone → Core | [`report.telemetry`](../examples/first-flight/16-telemetry.json) | The drone reports its position and speed on the way. | 240 | 172 |
 | 17 | Drone → Core | [`report.battery`](../examples/first-flight/17-battery.json) | The drone reports its battery. | 104 | 89 |
 | 18 | Drone → Core | [`report.status task`](../examples/first-flight/18-status-task.json) | The drone reports T2 done: it is over the destination. | 136 | 105 |
-| 19 | Drone → Core | [`report.status task`](../examples/first-flight/19-status-task.json) | The drone reports it started T3 (Land), the last Task in its queue. | 133 | 100 |
-| 20 | Drone → Core | [`report.telemetry`](../examples/first-flight/20-telemetry.json) | The drone reports it is back on the ground. | 237 | 167 |
-| 21 | Drone → Core | [`report.status task`](../examples/first-flight/21-status-task.json) | The drone reports T3 done. Its queue is now empty, so the run is over. | 136 | 104 |
-| 22 | Drone → Core | [`report.battery`](../examples/first-flight/22-battery.json) | The drone reports its battery after landing. | 104 | 90 |
+| 19 | Drone → Core | [`report.status task`](../examples/first-flight/19-status-task.json) | The drone reports it started T3 (Land), the last Task in its queue. | 133 | 101 |
+| 20 | Drone → Core | [`report.telemetry`](../examples/first-flight/20-telemetry.json) | The drone reports it is back on the ground. | 237 | 166 |
+| 21 | Drone → Core | [`report.status task`](../examples/first-flight/21-status-task.json) | The drone reports T3 done. Its queue is now empty, so the run is over. | 136 | 103 |
+| 22 | Drone → Core | [`report.battery`](../examples/first-flight/22-battery.json) | The drone reports its battery after landing. | 104 | 89 |
 | — | | **GAP: Run end and Reset** | The last Task finishing (an empty queue) marks the end of the run, but nothing covers the Reset ZIP yet. Not needed on the wire yet; listed so it is not forgotten. | | |
 
 <details><summary>01-hello.json</summary>
@@ -249,24 +248,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 </details>
 
-<details><summary>07b-status-queue.json</summary>
-
-```json
-{
-  "type": "report.status",
-  "time": 1793667605100,
-  "seq": 7,
-  "from": "A1",
-  "asset_id": "A1",
-  "kind": "queue",
-  "task_ids": [
-    "T1"
-  ]
-}
-```
-
-</details>
-
 <details><summary>08-command-move_to.json</summary>
 
 ```json
@@ -282,25 +263,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
     "latitude": 42.2761,
     "longitude": -71.8031
   }
-}
-```
-
-</details>
-
-<details><summary>08b-status-queue.json</summary>
-
-```json
-{
-  "type": "report.status",
-  "time": 1793667605200,
-  "seq": 8,
-  "from": "A1",
-  "asset_id": "A1",
-  "kind": "queue",
-  "task_ids": [
-    "T1",
-    "T2"
-  ]
 }
 ```
 
@@ -330,21 +292,44 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 </details>
 
+<details><summary>09b-queue.json</summary>
+
+```json
+{
+  "type": "control.queue",
+  "time": 1793667605260,
+  "seq": 7,
+  "from": "CORE",
+  "asset_id": "A1",
+  "queue_version": 0,
+  "task_ids": [
+    "T1",
+    "T2",
+    "T3"
+  ]
+}
+```
+
+</details>
+
 <details><summary>10-status-queue.json</summary>
 
 ```json
 {
   "type": "report.status",
   "time": 1793667605300,
-  "seq": 9,
+  "seq": 7,
   "from": "A1",
   "asset_id": "A1",
   "kind": "queue",
+  "queue_version": 1,
   "task_ids": [
     "T1",
     "T2",
     "T3"
-  ]
+  ],
+  "reply_from": "CORE",
+  "reply_to": 7
 }
 ```
 
@@ -356,7 +341,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667605400,
-  "seq": 10,
+  "seq": 8,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
@@ -373,7 +358,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.telemetry",
   "time": 1793667609000,
-  "seq": 11,
+  "seq": 9,
   "from": "A1",
   "asset_id": "A1",
   "position": {
@@ -399,7 +384,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667613000,
-  "seq": 12,
+  "seq": 10,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
@@ -416,11 +401,11 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "admin.reply",
   "time": 1793667613100,
-  "seq": 7,
+  "seq": 8,
   "from": "CORE",
   "asset_id": "A1",
   "reply_from": "A1",
-  "reply_to": 9,
+  "reply_to": 10,
   "reply_result": "accepted",
   "task_id": "T1"
 }
@@ -434,7 +419,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667613200,
-  "seq": 13,
+  "seq": 11,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
@@ -451,7 +436,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.telemetry",
   "time": 1793667630000,
-  "seq": 14,
+  "seq": 12,
   "from": "A1",
   "asset_id": "A1",
   "position": {
@@ -477,7 +462,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.battery",
   "time": 1793667631000,
-  "seq": 15,
+  "seq": 13,
   "from": "A1",
   "asset_id": "A1",
   "battery_percent": 91
@@ -492,7 +477,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667648000,
-  "seq": 16,
+  "seq": 14,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
@@ -509,7 +494,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667648200,
-  "seq": 17,
+  "seq": 15,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
@@ -526,7 +511,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.telemetry",
   "time": 1793667680000,
-  "seq": 18,
+  "seq": 16,
   "from": "A1",
   "asset_id": "A1",
   "position": {
@@ -552,7 +537,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667680300,
-  "seq": 19,
+  "seq": 17,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
@@ -569,7 +554,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.battery",
   "time": 1793667681000,
-  "seq": 20,
+  "seq": 18,
   "from": "A1",
   "asset_id": "A1",
   "battery_percent": 84
@@ -582,11 +567,10 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 23 | Drone → Core | [`report.failsafe link_loss`](../examples/first-flight/23-failsafe-link_loss.json) | Partway through Move To, the drone has heard nothing new from Core for 30 s (its link_loss_after_s), so it loses contact (the trigger) and returns to home (its link_loss_response setting). It sends this as soon as it can be heard again. | 177 | 137 |
-| 24 | Drone → Core | [`report.status task`](../examples/first-flight/24-status-task.json) | The drone reports T2 failed, so Core's record matches what happened. | 175 | 134 |
-| 25 | Drone → Core | [`report.status task`](../examples/first-flight/25-status-task.json) | The drone cancels the rest of its queue, so T3 (Land) is reported cancelled. | 136 | 103 |
-| 25b | Drone → Core | [`report.settings`](../examples/first-flight/25b-settings.json) | Clearing its queue also pauses the drone. A Task that arrives late waits until Core sets run_state running. | 118 | 97 |
-| 26 | Drone → Core | [`report.telemetry`](../examples/first-flight/26-telemetry.json) | The drone reports its position on the way home. | 240 | 170 |
+| 23 | Drone → Core | [`report.failsafe link_loss`](../examples/first-flight/23-failsafe-link_loss.json) | Partway through Move To, the drone has heard nothing new from Core for 30 s (its link_loss_after_s), so it loses contact (the trigger) and returns to home (its link_loss_response setting). It sends this as soon as it can be heard again. | 177 | 138 |
+| 24 | Drone → Core | [`report.status task`](../examples/first-flight/24-status-task.json) | The drone reports T2 failed, so Core's record matches what happened. | 175 | 135 |
+| 25 | Drone → Core | [`report.status task`](../examples/first-flight/25-status-task.json) | The failsafe clears the rest of its list and raises queue_version, so T3 (Land) is reported cancelled and a list built before the clear is ignored. | 136 | 103 |
+| 26 | Drone → Core | [`report.telemetry`](../examples/first-flight/26-telemetry.json) | The drone reports its position on the way home. | 240 | 172 |
 
 <details><summary>23-failsafe-link_loss.json</summary>
 
@@ -594,7 +578,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.failsafe",
   "time": 1793667640000,
-  "seq": 16,
+  "seq": 14,
   "from": "A1",
   "asset_id": "A1",
   "kind": "link_loss",
@@ -611,7 +595,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667640100,
-  "seq": 17,
+  "seq": 15,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
@@ -629,29 +613,12 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.status",
   "time": 1793667640200,
-  "seq": 18,
+  "seq": 16,
   "from": "A1",
   "asset_id": "A1",
   "kind": "task",
   "task_id": "T3",
   "task_state": "cancelled"
-}
-```
-
-</details>
-
-<details><summary>25b-settings.json</summary>
-
-```json
-{
-  "type": "report.settings",
-  "time": 1793667640300,
-  "seq": 19,
-  "from": "A1",
-  "asset_id": "A1",
-  "settings": {
-    "run_state": "paused"
-  }
 }
 ```
 
@@ -663,7 +630,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 {
   "type": "report.telemetry",
   "time": 1793667652000,
-  "seq": 20,
+  "seq": 17,
   "from": "A1",
   "asset_id": "A1",
   "position": {
@@ -685,9 +652,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-32 messages, 5375 bytes minified, 4086 bytes if each is deflated on its own.
+30 messages, 5203 bytes minified, 3942 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 39% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 38% of all bytes. Field names, quotes and punctuation are 62%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 
@@ -695,12 +662,12 @@ Where the bytes go (each field summed across every message):
 
 | Field | Times | Bytes | Share |
 |---|---|---|---|
-| `type` | 32 | 731 | 14% |
-| `time` | 32 | 640 | 12% |
-| `asset_id` | 32 | 480 | 9% |
-| `from` | 32 | 366 | 7% |
-| `seq` | 32 | 240 | 4% |
-| `kind` | 16 | 223 | 4% |
+| `type` | 30 | 685 | 13% |
+| `time` | 30 | 600 | 12% |
+| `asset_id` | 30 | 450 | 9% |
+| `from` | 30 | 346 | 7% |
+| `seq` | 30 | 223 | 4% |
+| `kind` | 14 | 195 | 4% |
 | `task_state` | 8 | 180 | 3% |
 | `task_id` | 12 | 168 | 3% |
 | `position.altitudes[].altitude_reference` | 5 | 145 | 3% |

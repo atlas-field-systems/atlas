@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command.json",
   "title": "Command",
-  "description": "From Core or an operator interface (Core checks operator messages and passes them on unchanged): tell an Asset to do something. kind says what, and the Asset must list it in admin.describe commands. With task_id it is a Task; Core owns the ordered list of task_ids for that Asset. Without task_id it runs now: it cancels every Task still in the queue, and the Asset reports each one cancelled and then its empty queue. Settings changes use control.settings and do not touch the queue.",
+  "description": "From Core or an operator interface (Core checks operator messages and passes them on unchanged): tell an Asset to do something. kind says what, and the Asset must list it in admin.describe commands. With task_id it is a Task's body, sent once; control.queue says when it runs. Without task_id it runs now: it clears the Asset's task list, and the Asset reports each cleared Task cancelled and then its empty queue. Settings changes use control.settings and do not touch the queue.",
   "type": "object",
   "required": [
     "type",

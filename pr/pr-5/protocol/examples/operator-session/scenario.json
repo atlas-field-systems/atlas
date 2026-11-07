@@ -80,21 +80,28 @@
       "from": "Operator",
       "to": "Core",
       "file": "11-command-takeoff.json",
-      "why": "The operator queues a takeoff for A1."
+      "why": "The operator adds a takeoff Task, T4, for A1: its body first."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
       "file": "12-reply.json",
-      "why": "A1 lists takeoff in its hello, so Core accepts and sends the command to A1 with unchanged from and seq."
+      "why": "A1 lists takeoff in its describe, so Core accepts and passes the body to A1 unchanged."
+    },
+    {
+      "branch": "main",
+      "from": "Operator",
+      "to": "Core",
+      "file": "12b-queue.json",
+      "why": "Then A1's new task list, built on the version it last saw. Core checks it and passes it on unchanged (its admin.reply is not shown)."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
       "file": "13-status-queue.json",
-      "why": "A1's queue report, forwarded live, confirms the Task arrived."
+      "why": "A1 holds T4's body, so the list takes effect; its queue report names the list it answers."
     },
     {
       "branch": "main",
@@ -114,22 +121,22 @@
       "branch": "main",
       "from": "Operator",
       "to": "Core",
-      "file": "16-cancel.json",
-      "why": "The operator cancels T4."
+      "file": "16-queue.json",
+      "why": "The operator removes T4 by sending A1 an empty list."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
       "file": "17-reply.json",
-      "why": "Core accepts and passes the cancel to A1."
+      "why": "Core accepts and passes the list on to A1."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Operator",
       "file": "18-status-task.json",
-      "why": "A1's own report, forwarded, confirms the effect."
+      "why": "T4 left the list without starting, so A1 reports it cancelled."
     },
     {
       "branch": "main",

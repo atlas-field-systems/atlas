@@ -34,7 +34,7 @@ Each subsystem defines how it represents that evidence.</p>
 their own case. Every message carries <code>from</code> (the creator), <code>time</code>, and <code>seq</code>.
 Messages about one Asset also carry <code>asset_id</code>. The two often hold the same
 ID but are not a repeat: <code>from</code> is who made the message and <code>asset_id</code> is who it
-is about, as when Core reports that a drone&#39;s Task was undelivered.</li>
+is about, as when Core asks a drone for its task list.</li>
 <li>Times are in milliseconds. Only specialized radio data uses nanosecond timing.</li>
 <li>Counters are ordinary numbers, not long numbers written as text.</li>
 <li>The whole data format lives in Protocol. Protocol defines both the messages and
