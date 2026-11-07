@@ -34,8 +34,8 @@ implements the older shapes until a protocol-bump + adapt PR:
    forwards.
 2. **`admin.describe` replaces `admin.asset`.** Hello is keys + version + id;
    description is keyless. Prototype still pushes `admin.asset`.
-3. **No `task_seq` / gap-wait.** Core owns an ordered `task_id` list; Asset
-   reports the queue; Core resends missing. Prototype may still pass `task_seq`
+3. **The Asset owns its queue.** Bodies once, the order in `control.queue`; Core
+   resends the bodies the Asset names as missing. Prototype may still pass `task_seq`
    through from operators.
 
 **When the SDK exists:** Core calls shared `check()` and keeps business rules

@@ -4,6 +4,8 @@ Not decided yet. Planning comes before building.
 
 ## Message groups and the queue
 
+- **Who owns the task queue.** Answered in 0.8: the Asset, which always carries its whole list. See [communication.md](communication.md#delivering-a-task-queue).
+
 - **Tasks and geo features.** Answered in 0.8: a command carries a copy of the shape and `geofeature_id` as a record. See [decisions](decisions.md#geo-features-and-objects).
 - **Fetching an Object's file.** An operator interface fetches it from Core over HTTP by `object_id`. The exact request, and how it is authorized when keys travel only in the hello (law 17), are open.
 - **Uploads and other attachments.** Only Plugins make Objects. Uploads from operators or Assets, and Objects attached to an Asset, Task or Track, wait for a story.
@@ -20,13 +22,13 @@ Not decided yet. Planning comes before building.
 - **One level deeper?** Answered: no. `kind` stays its own field.
 - **Additive changes and the version.** Answered: every change after a release is a new version, additive or not (law 10). Ends never ignore unknown fields.
 - **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
-- **Holding commands for offline Assets.** Answered in 0.8: Core refuses and holds nothing, counts an Asset offline by contact rather than an open link, and never carries work across a disconnect (see [communication.md](communication.md#when-core-counts-an-asset-offline)). Revisit only if it becomes a real problem.
+- **Holding commands for offline Assets.** Answered in 0.8: Core refuses and holds nothing, and counts an Asset offline by contact rather than an open link (see [communication.md](communication.md#when-core-counts-an-asset-offline)). Revisit only if it becomes a real problem.
 - **Observation types.** Answered in 0.8: observation kinds `coordinates` and `bearing`, a shared `entity_type`, uncertainty areas, and a fixed list of `details`. See [decisions](decisions.md#storage-sensors-and-registration).
 
 Most of these are answered in [communication.md](communication.md).
 
 - **Command acknowledgement.** Answered for operators: `admin.reply` says accepted or refused; the Asset's reports give the observed result.
-- **Queue and task-list delivery.** Answered in 0.8: Core-owned ordered `task_id` list; each body once, after the Asset holds the one before; Asset queue report; Core resends missing. No `task_seq`, no gap-wait.
+- **Queue and task-list delivery.** Answered in 0.8: bodies once, all at once; the order in `control.queue`; Core resends the bodies the Asset names as missing. No `task_seq`, no gap-wait.
 - **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
 - **Failure reporting.** Answered by `report.failsafe`.
 - **Objects.** Answered in 0.8: files Core holds, described by `object.describe`. See [decisions](decisions.md#geo-features-and-objects).

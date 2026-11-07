@@ -74,42 +74,35 @@
       "from": "Core",
       "to": "Drone",
       "file": "07-command-takeoff.json",
-      "why": "Core sends Task T1: climb straight up to 30 m above its launch point. It sends each Task only after the drone has shown it holds the one before, so Tasks arrive in Core's order."
-    },
-    {
-      "branch": "main",
-      "from": "Drone",
-      "to": "Core",
-      "file": "07b-status-queue.json",
-      "why": "A Task was added, so the drone reports its queue. Core sees T1 arrived; had it not, Core would resend it."
+      "why": "Core sends Task T1's body: climb straight up to 30 m above its launch point. Every body goes out at once; arrival order does not matter."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Drone",
       "file": "08-command-move_to.json",
-      "why": "T1 is listed, so Core sends Task T2: fly to a position, keeping the current altitude."
-    },
-    {
-      "branch": "main",
-      "from": "Drone",
-      "to": "Core",
-      "file": "08b-status-queue.json",
-      "why": "The drone reports its queue again. Core sees T2 arrived."
+      "why": "T2's body: fly to a position, keeping the current altitude."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Drone",
       "file": "09-command-land.json",
-      "why": "T2 is listed, so Core sends Task T3: go to 20 m, fly back over the landing spot and land."
+      "why": "T3's body: go to 20 m, fly back over the landing spot and land."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Drone",
+      "file": "09b-queue.json",
+      "why": "The task list: the order, by ID only. The drone takes it only once every Task in it is on board."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
       "file": "10-status-queue.json",
-      "why": "The drone reports its queue. Core sees all 3 arrived, in its order."
+      "why": "All three bodies are on board, so the list takes effect at version 1. Had a body been lost, the report would name it in missing_task_ids and Core would resend it."
     },
     {
       "branch": "main",
@@ -214,14 +207,7 @@
       "from": "Drone",
       "to": "Core",
       "file": "25-status-task.json",
-      "why": "The drone cancels the rest of its queue, so T3 (Land) is reported cancelled."
-    },
-    {
-      "branch": "failsafe",
-      "from": "Drone",
-      "to": "Core",
-      "file": "25b-settings.json",
-      "why": "Clearing its queue also pauses the drone. A Task that arrives late waits until Core sets run_state running."
+      "why": "The failsafe clears the rest of its list and raises queue_version, so T3 (Land) is reported cancelled and a list built before the clear is ignored."
     },
     {
       "branch": "failsafe",
