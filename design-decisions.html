@@ -27,8 +27,9 @@ definitions or docs. Programs load the definitions as data instead.</p>
 <h2 id="spec-sdk-and-transports">Spec, SDK and transports</h2>
 <p>Atlas is split into three layers, so each can change without breaking the others.</p>
 <ul>
-<li><strong>Protocol is the spec.</strong> Definitions, laws, examples and docs. It carries the
-version number, written once in Protocol and copied everywhere by a script.</li>
+<li><strong>Protocol is the spec.</strong> Definitions, laws, examples and docs. Its published
+package version is its only version; no version is embedded in definitions or
+messages.</li>
 <li><strong>The SDK is the one implementation</strong> and the stable front door every program
 uses: Core, bridges and operator apps. It builds, validates and parses
 messages, and handles keys, queueing and retry, and duplicates. Programs never
@@ -44,34 +45,29 @@ the links it uses. Swapping one never changes the SDK&#39;s front door or the sp
 <li>Internal changes, such as compression or encoding, are agreed between the two
 ends when a link opens. Programs do not see them.</li>
 <li>Changes to meaning are additive: new fields and messages, not changed ones.</li>
-<li>Every change after a release is a new version, additive or not. A released
-version never changes, so two ends with the same version have exactly the
-same definitions
-(<a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/laws.md">Protocol law 10</a>).</li>
+<li>Published packages are immutable. Changes are released through the package
+version, with no separate wire-version counter or handshake negotiation.</li>
 </ul>
-<p>How versions and releases work:</p>
+<p>How releases work:</p>
 <ul>
-<li>Protocol&#39;s main carries the version being worked on. It can still change until
-it is released.</li>
-<li>All of Atlas is one repository. A release is a git tag named for its part.
-Nothing is published as a package. Protocol&#39;s tags are
-<code>protocol-v&lt;major.minor&gt;.&lt;patch&gt;</code>: major.minor is the protocol version, and the
-patch counts releases that change no message, such as tool fixes.</li>
-<li>Releasing is pushing main to the <code>prod</code> branch (<code>git push origin main:prod</code>).
-That runs the checks and makes a tag and a GitHub release for each part that
-changed. Only commits on main are released.</li>
-<li>Core moves only to Protocol release tags, never to Protocol&#39;s main, so spec
-work in progress never breaks it.</li>
+<li>Protocol is an unpublished draft. Package publishing is not configured yet.
+When published, the package version is the protocol version. No draft protocol
+number or version-bump script is maintained in the spec.</li>
+<li>Programs select Protocol through their package dependency. Protocol&#39;s JSON
+definitions, examples, and messages contain no protocol-version metadata.</li>
+<li>All Atlas work lands in this repository through <code>main</code>. Only approved commits
+on <code>main</code> are released through <code>prod</code>.</li>
+<li>The retained Core prototype uses a historical Protocol snapshot. Its pin keeps
+that older runtime separate from current spec work until it is rebuilt or removed.</li>
 </ul>
 <p>How drift is prevented:</p>
 <ul>
 <li>Protocol&#39;s examples run as SDK tests.</li>
-<li>A program outside Protocol, such as Core, pins one release and loads its JSON
-definitions from it.</li>
+<li>Programs pin the Protocol package they use and load its JSON definitions.</li>
 </ul>
-<p>How the SDK works is drafted for protocol 0.8 in the
+<p>How the SDK works is drafted in the
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md">SDK docs</a>.
-Runtime SDK code is not started; Core stays on its pinned Protocol release until
-a protocol-bump adopt PR.</p>
+Runtime SDK code is not started. The retained Core prototype is not an
+implementation of the current docs.</p>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

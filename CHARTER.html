@@ -37,9 +37,10 @@ ID but are not a repeat: <code>from</code> is who made the message and <code>ass
 is about, as when Core asks a drone for its task list.</li>
 <li>Times are in milliseconds. Only specialized radio data uses nanosecond timing.</li>
 <li>Counters are ordinary numbers, not long numbers written as text.</li>
-<li>The whole data format lives in Protocol. Protocol defines both the messages and
-the storage layout. Core, the SDK cache, and Assets store data in those formats,
-built from the same variables, names, units, and shapes.</li>
+<li>Shared domain data lives in Protocol, including messages and domain-storage
+records. Core, the SDK cache, and Assets use the same variables, names, units,
+and shapes. Local process configuration and diagnostic logs belong to the
+component that uses them; they are not Protocol contracts.</li>
 <li>Every ID is 1 to 4 letters or digits.</li>
 </ul>
 <h2 id="document-ownership">Document ownership</h2>
@@ -69,11 +70,11 @@ concrete story, consumer, or prototype establishes what the contract needs. Comm
 an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.</p>
-<p>Matching protocol versions are required today; wire-contract changes follow the
-selected versioning rules in <a href="design-decisions.html">design-decisions.md</a> and
-Protocol. Never silently reinterpret unsupported messages or conceal incompatible
-behavior. Do not invent protocol fields to paper over attribution or routing the
-link or Core already owns.</p>
+<p>Protocol&#39;s published package version is its only version. Definitions and messages
+carry no protocol version, and links do not negotiate one. Package dependencies
+select the definitions a program uses. Never silently reinterpret unsupported
+messages or conceal incompatible behavior. Do not invent protocol fields to paper
+over attribution or routing the link or Core already owns.</p>
 <p>Protocol is the spec. The SDK is the one implementation and front door. Core uses
 the SDK and keeps business rules only — no second validation or dedupe stack.
 See <a href="design-decisions.html">design-decisions.md</a>.</p>
@@ -89,6 +90,10 @@ forwarding, and separate repeated effects from repeated delivery. Exact rules li
 in Protocol (<code>communication.md</code> / SDK docs).</p>
 <p>SDK helpers report contact, queues, and outcomes. The Asset app owns motion and
 failsafes. Helpers never fly.</p>
+<p>Core, Assets, and the SDK provide detailed diagnostic logging from the start.
+Core and Asset apps collect their own events and the SDK&#39;s events for their run
+archives. Their owning docs define logging and configurable options; Protocol
+defines shared data, not a runtime logging service.</p>
 <p>Stress undecided ideas with small prototypes and write findings back into the docs.
 The docs stay the source.</p>
 <p>Every coding agent reads and upholds this charter and

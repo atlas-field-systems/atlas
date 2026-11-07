@@ -2,7 +2,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>First flight</title>
 <link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="first-flight">First flight</h1>
 <p>The drone powers on and connects to Atlas through a gateway.
-The operator requests Takeoff, then Move To a location, then Land.
+The operator sends the whole task list: Takeoff, Move To a location, then Land.
+The drone starts the list only after it holds every Task&#39;s body.
 The operator sees what the drone reports doing.</p>
 <p>This is the selected first workflow. Takeoff and Land are planned capabilities,
 not claims about the current implementation.</p>
@@ -25,12 +26,17 @@ and lands.</li>
     Drone-&#62;&#62;Gateway: Report identity and state
     Gateway-&#62;&#62;Core: Forward the report
     Core--&#62;&#62;App: Show the reported state
-    App-&#62;&#62;Core: Request Takeoff
-    Note over Drone,Core: The drone obtains requested work through the gateway
+    App-&#62;&#62;Core: Send Takeoff, Move To and Land bodies, then their ordered list
+    Core-&#62;&#62;Gateway: Forward the bodies and list
+    Gateway-&#62;&#62;Drone: Deliver the bodies and list
+    Drone--&#62;&#62;Gateway: Confirm the complete list is aboard
+    Gateway--&#62;&#62;Core: Forward the queue report
+    Core--&#62;&#62;App: Show the reported queue
+    Note over Drone: Run Takeoff, Move To, then Land in order
     Drone--&#62;&#62;Gateway: Report what happened
     Gateway--&#62;&#62;Core: Forward the report
     Core--&#62;&#62;App: Show the reported outcome
-    Note over Drone,App: Repeat for Move To after Takeoff succeeds, then Land after Move To succeeds</pre><p>Core retains the requests and reported evidence. The Asset runtime performs the
+    Note over Drone,App: Report each Task's progress and outcome</pre><p>Core retains the requests and reported evidence. The Asset runtime performs the
 physical action. A request reaching Core does not prove that the drone received
 or executed it.</p>
 <h2 id="when-something-goes-wrong">When something goes wrong</h2>
@@ -52,17 +58,23 @@ until it falls out of the sky.</p>
 <p>When the operator spins them down, Core, each gateway, and each Asset each
 write their own Reset ZIP. Core&#39;s ZIP holds:</p>
 <ul>
-<li>Every message in and out, in arrival order.</li>
+<li>Every message in and out, in local arrival and send order, with credentials removed.</li>
 <li>Each Task&#39;s history: what was requested, accepted, and observed.</li>
 <li>Each device&#39;s last state and each Track&#39;s history.</li>
 <li>The run setup: devices, gateways, settings, and software versions.</li>
-<li>Errors and link drops.</li>
+<li>Errors, link drops, and the SDK&#39;s message-handling diagnostics.</li>
 <li>A plain readable summary: start and end, devices, Tasks, and outcomes.</li>
 </ul>
 <p>Reset ZIPs are for after the system is used: dump them into an AI agent to give
 it full context on how the system was used and any errors. Each system&#39;s
 documentation defines its own ZIP contents and Reset procedure. Merging
 several ZIPs into one is a separate process.</p>
+<p>Core and Assets keep detailed local diagnostic logs alongside their normal state.
+The SDK supplies events to the program using it, so those events join that
+program&#39;s archive. Logging does not depend on sending diagnostic traffic over
+the field link. See <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/logging.md">Core logging</a>,
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md">Asset logging</a>,
+and <a href="https://github.com/atlas-field-systems/atlas/blob/main/sdk/docs/logging.md">SDK logging</a>.</p>
 <p>This example explains one flight. Detailed Task, radio, and recovery rules
 belong in their owning subsystem documentation.</p>
 <p><a href="index.html">Charter home</a></p>

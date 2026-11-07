@@ -1,37 +1,37 @@
 # Open questions
 
-Not decided yet. Planning comes before building.
+Unresolved questions and work deliberately deferred. Selected answers live in
+[decisions](decisions.md), [communication](communication.md), and
+[storage](storage.md). Git history records earlier drafts.
 
-## Message groups and the queue
+## Unresolved
 
-- **Who owns the task queue.** Answered in 0.8: the Asset, which always carries its whole list. See [communication.md](communication.md#delivering-a-task-queue).
+- **Stored record formats.** [Storage](storage.md) describes the tables, but exact
+  record formats are not defined yet. Protocol owns those formats, including
+  storage on Assets and in the SDK cache ([law 1](laws.md)).
+- **Operator keys.** Where operator IDs and keys come from is not decided. Core's
+  prototype reads them from configuration ([prototype findings](../../core/docs/findings.md#remaining-gaps)).
+- **Fetching an Object's file.** An operator interface fetches it from Core over
+  HTTP by `object_id`. The exact request, and how it is authorized when keys travel
+  only in the hello (law 17), are open.
+- **Failure responses on Assets.** Every failure triggers a configured failsafe,
+  but which failure triggers which failsafe is still open in the
+  [Asset docs](../../asset/docs/README.md).
 
-- **Tasks and geo features.** Answered in 0.8: a command carries a copy of the shape and `geofeature_id` as a record. See [decisions](decisions.md#geo-features-and-objects).
-- **Fetching an Object's file.** An operator interface fetches it from Core over HTTP by `object_id`. The exact request, and how it is authorized when keys travel only in the hello (law 17), are open.
-- **Uploads and other attachments.** Only Plugins make Objects. Uploads from operators or Assets, and Objects attached to an Asset, Task or Track, wait for a story.
-- **Core picks `task_id` too?** Answered in 0.8: no. The operator interface picks it, so Core still passes commands on unchanged. Core refuses a `task_id` that Asset already had in the run, and the interface picks another. See [communication.md](communication.md#operator-interfaces).
-- **What else registration contains.** `admin.describe` lists reports, commands and cameras; [Storage](storage.md) keeps them. Answered in 0.8: an Asset may say what it is with `entity_type`.
-- **`reply_to` through Core.** Answered in 0.8: every message carries `from`; Core forwards unchanged; replies use `reply_from` + `reply_to` naming (`from`, `seq`).
+Diagnostic logging and configuration choices are tracked with their owners in
+[Core configuration](../../core/config.md), [Asset configuration](../../asset/config.md),
+and [SDK configuration](../../sdk/config.md). They are not Protocol options.
 
-## Earlier
+## Deferred
 
-- **Future Asset data.** Answered: each new fixed report is a Protocol change the owner approves.
-- **Queued settings confirmation.** Answered in 0.8: the Asset sends `report.settings` naming the Task, like an immediate change. One overtaken by a newer change is still `completed`.
-- **Errors back to an Asset.** Not yet: Core drops and logs an invalid report, and the Asset gets only acknowledgements. Revisit after first flight.
-- **What "latest state" includes.** Answered in 0.8: Core's connect push has each Asset's `admin.describe` and newest reports, its queue report included. The SDK live picture is opt-in; on disconnect the last snapshot stays readable as `stale: true`.
-- **One level deeper?** Answered: no. `kind` stays its own field.
-- **Additive changes and the version.** Answered: every change after a release is a new version, additive or not (law 10). Ends never ignore unknown fields.
-- **Same target, two observation IDs.** Answered: the fusion module decides, also when several Assets see the same thing.
-- **Holding commands for offline Assets.** Answered in 0.8: Core refuses and holds nothing, and counts an Asset offline by contact rather than an open link (see [communication.md](communication.md#when-core-counts-an-asset-offline)). Revisit only if it becomes a real problem.
-- **Observation types.** Answered in 0.8: observation kinds `coordinates` and `bearing`, a shared `entity_type`, uncertainty areas, and a fixed list of `details`. See [decisions](decisions.md#storage-sensors-and-registration).
+- **Errors back to an Asset.** Core drops and logs an invalid report, and the Asset
+  gets only acknowledgements. Revisit after first flight.
+- **Uploads and other attachments.** Only Plugins make Objects. Uploads from
+  operators or Assets, and Objects attached to an Asset, Task or Track, wait for a
+  story.
+- **Offline command holding.** The selected behavior is to refuse commands to
+  offline Assets and hold nothing ([communication](communication.md#when-core-counts-an-asset-offline)).
+  Revisit only if it becomes a real problem.
 
-Most of these are answered in [communication.md](communication.md).
-
-- **Command acknowledgement.** Answered for operators: `admin.reply` says accepted or refused; the Asset's reports give the observed result.
-- **Queue and task-list delivery.** Answered in 0.8: bodies once, all at once; the order in `control.queue`; Core resends the bodies the Asset names as missing. No `task_seq`, no gap-wait.
-- **Connect-time version check.** Answered by `admin.hello` and `admin.hello_reply`.
-- **Failure reporting.** Answered by `report.failsafe`.
-- **Objects.** Answered in 0.8: files Core holds, described by `object.describe`. See [decisions](decisions.md#geo-features-and-objects).
-- **Gateways.** Answered: routing is the link's job; see [Routing and duplicates](communication.md#routing-and-duplicates).
-- **Plugins.** Answered in 0.8: the `plugin` message group; see [decisions](decisions.md#plugins).
-- **Encode/decode library and stress testing.** Build phase: SDK in its own `sdk/` folder, docs drafted for 0.8; implementation next.
+Building and stress-testing the SDK is implementation work, planned in
+[the SDK docs](../../sdk/README.md), rather than an undecided protocol rule.

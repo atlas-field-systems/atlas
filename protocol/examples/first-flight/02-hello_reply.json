@@ -4,6 +4,5 @@
   "seq": 1,
   "from": "CORE",
   "asset_id": "A1",
-  "hello_result": "accepted",
-  "protocol_version": "0.8"
+  "hello_result": "accepted"
 }
