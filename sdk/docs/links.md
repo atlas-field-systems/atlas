@@ -110,7 +110,9 @@ createLink({ observer: (event: { name, at, ...detail }) => void })
 ```
 [SDK logging](logging.md) owns event coverage and the proposed record contents.
 [SDK configuration](../config.md) tracks the controls still to be decided.
-Emit through `queueMicrotask` inside try/catch.
-Observer exceptions are swallowed and an async observer's promise is never awaited.
+Emit through `queueMicrotask`. Inside the callback, catch synchronous exceptions
+and attach a rejection handler to any returned promise without awaiting it.
+Contain both failures; reporting observer failure must not invoke that same
+observer recursively. An unhandled async rejection must not escape to the host.
 JS is single-threaded, so an observer that blocks synchronously still blocks; that
 is the caller's bug and is not tested. Only one observer per link.

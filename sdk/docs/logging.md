@@ -53,7 +53,9 @@ including invalid, duplicate, and pre-ready traffic. Logging sees retries even
 when dedupe correctly suppresses another business effect. Forwarding remains
 byte-preserving; logging must not mutate or restamp a message.
 
-Observer errors do not fail message handling, and its promises are not awaited.
+Observer errors do not fail message handling. Catch synchronous exceptions and
+consume returned promise rejections without awaiting them, as required by the
+[observer delivery rule](links.md#observer-optional).
 A host consumer must enqueue promptly rather than perform blocking file I/O in
 the callback. Bounded delivery, overflow accounting, filtering, and host output
 failure reporting need final choices before implementation. Logging gaps must

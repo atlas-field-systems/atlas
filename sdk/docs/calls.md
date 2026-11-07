@@ -75,7 +75,7 @@ The key is just `seq`, because `from` is always this identity.
 - On disconnect, resolve every pending entry `unknown/disconnected`. Never reject.
 - On timeout, resolve `unknown/timeout`. A late reply after timeout gets an observer event `late_reply` and is **still delivered to subscribers**.
 - `stream` resets its timeout on each item, so a long history read does not time out while answers are still arriving.
-- Never auto-retry. Every Result carries `sent: { msg, raw }`. `retry(result)` (one name, no other variant) resends `result.sent.raw` unchanged (same from/seq/time) and re-arms the pending entry. Allowed for any message. Docs say not to retry non-idempotent commands automatically; a manual retry of the same bytes is safe because of dedupe plus Core's last-answer cache.
+- Never auto-retry. Every Result carries `sent: { msg, raw }`. `retry(result)` (one name, no other variant) resends `result.sent.raw` unchanged (same from/seq/time) and re-arms the pending entry. Allowed for any message. Retry safety requires the receiver's no-repeat handling and paired original-answer retention. The proposed bounded lookback alone cannot supply it; resolve the [retention decision](identity-and-duplicates.md#module-identitymjs-and-dedupemjs-d7) before implementing effectful retry paths.
 - Bounded: `maxPending` per link (default 256). Over the cap, `request` throws `SdkError('busy')`.
 
 ## Outcome and errors

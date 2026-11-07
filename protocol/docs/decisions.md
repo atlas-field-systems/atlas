@@ -162,7 +162,7 @@ They show the readable JSON beside the compressed bytes (hex dump and base64), w
 ## Operator API
 
 - Each operator interface opens one WebSocket to Core and uses the same messages as Assets, pushed both ways, with no polling. No user accounts or roles.
-- It presents its own `operator_id` and 16-byte key in `admin.operator_hello`, checked like an asset key (Core stores the hash), then sends `admin.operator_hello`. Core answers `admin.hello_reply` with `operator_id`.
+- It sends one `admin.operator_hello` carrying its `operator_id` and 16-byte key, then waits for Core's `admin.hello_reply` with `operator_id`. Core checks the key like an asset key and stores only its hash.
 - On connect, Core pushes every Asset's latest `admin.describe` and latest reports unchanged, then forwards telemetry, status, queue changes and failsafes live (still unchanged).
 - Operators send `control.command`, `control.settings`, `control.queue` and `control.cancel` with `asset_id`. Core checks them against the Asset's `admin.describe` and refuses unsupported ones with a reason. Reading uses `query.core` and `query.asset` (`every_s`).
 - Core answers every operator message with `admin.reply` (`accepted` or `refused` with `explanation`, `reply_from` + `reply_to` naming its (`from`, `seq`)). The Asset's reports confirm the effect.

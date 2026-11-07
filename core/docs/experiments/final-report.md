@@ -160,6 +160,11 @@ package version identifies the release. The historical Core pin remains isolated
 Detailed reports and raw evidence are preserved outside this PR and in the
 original experiment worktrees. The source baselines were `75d71ae`, `de477a8`,
 and `b89547c`. This report retains the lessons; it is not an executable reproducer.
+On the experiment host, the archive is
+`/home/ubuntu/.t3/artifacts/atlas-prototype-records-77b23ee/reports-and-evidence.tar.gz`.
+Its adjacent `manifest.json` lists the source commit, file inventory, and archive
+SHA-256. Use `tar -tzf` to list cases and `tar -xOf` to read a named report or trace.
+Other checkouts need a copy from the owner; the archive is not a package dependency.
 
 ## Next work
 

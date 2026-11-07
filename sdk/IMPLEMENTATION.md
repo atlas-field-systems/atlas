@@ -159,7 +159,7 @@ Acceptance:
 - A handler that throws still leaves the message remembered; its duplicate is flagged.
 - `contact()` / `lastContact` advances on non-duplicate inbound messages after the accepted hello with `asset_id === this id && from !== this id`. `build` throws `clock_unset` before the clock is set.
 - Out-of-order unseen messages are delivered.
-- The window holds ≥1024 per `from`. After eviction, behavior is documented. Memory stays bounded with 10k distinct `from`.
+- The proposed generic window holds ≥1024 per `from` and stays bounded with 10k distinct `from`. This does not prove no-repeat effects: resolve the [paired-retention decision](docs/identity-and-duplicates.md#module-identitymjs-and-dedupemjs-d7) before effectful dispatch or retry acceptance is implemented. Do not use eviction as permission to repeat an effect.
 - Seq survives link reconnect on the same identity. `time` never goes backwards under a fake clock stepping back.
 - The `onDuplicate` hook fires (the hook Core will use for its last-answer cache). The SDK holds no answer cache. Assert there is no reply storage in identity.
 
@@ -244,11 +244,11 @@ separate Core PR, not done here:
 | Structure | Owner | Shape | Bound |
 | --- | --- | --- | --- |
 | seq counter | Identity (SDK) | `{seq:number, lastTime:number}`, in memory for the operation | n/a |
-| dedupe window | Identity (SDK) | `Map<from, {ring:Array<[seq,time]>, set:Set<string>}>` | 1024/from, 4096 froms LRU |
+| generic dedupe lookback (proposal) | Identity (SDK) | `Map<from, {ring:Array<[seq,time]>, set:Set<string>}>` | 1024/from, 4096 froms LRU; protected-effect retention remains open |
 | pending requests | Link/calls (SDK) | `Map<seq, Pending>` per link | `maxPending` 256 |
 | stream buffer | calls (SDK) | array per stream | `maxItems` 10000 |
 | subscribers | Link (SDK) | `Set<{filter,cb}>` | caller-owned |
-| task list, bodies, finished tasks (final bytes + `acked`), Asset answers | TaskStore (internal in-memory Map) | `list`, `body:<id>`, `task:<id>`, `answer:<from:seq:time>` | list 64; finished tasks kept for the operation; answers ≥1024, oldest evicted |
+| task list, bodies, finished tasks (final bytes + `acked`), Asset answers | TaskStore (internal in-memory Map) | `list`, `body:<id>`, `task:<id>`, `answer:<from:seq:time>` | list 64; finished tasks kept for the operation; answers paired with protected identities; budgets/release open |
 | **last-answer cache** (forwarded traffic) | **Core (not SDK)** | `Map<"from:seq:time", replyBytes>` | Core's choice |
 | live picture | Picture (SDK, optional) | maps per asset | memory only |
 
@@ -302,7 +302,7 @@ the developer instead of changing it inside a slice.
 - **Subscribe (slice 5):** callback is `{msg, raw, duplicate}` (same as `onMessage`); acting code skips duplicates.
 - **P2 (slice 9):** the live picture issues its own `query.core kind assets` on connect and reconnect, and is `ready` when that request's `admin.reply` arrives. It does not try to detect the end of Core's connect push.
 - **P3 (slice 2):** each transport adapter is a sibling package with its own `package.json`. No npm workspaces.
-- **P4 (slice 6):** the Asset queue uses an internal in-memory Map, see [Task queue](docs/task-queue.md). It keeps the list, held bodies, finished Tasks and final-report acknowledgement state for the operation. Answer replay keeps at least the newest 1024 answers. No disk store or process restart recovery is required.
+- **P4 (slice 6):** the Asset queue uses an internal in-memory Map, see [Task queue](docs/task-queue.md). It keeps the list, held bodies, finished Tasks and final-report acknowledgement state for the operation. Answers must remain paired with protected request identities; their budgets and safe release remain open. No disk store or process restart recovery is required.
 - **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings`, each waiting for Core's `admin.reply`, and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report. `createLink` takes `connectSettings`.
 
 ## 10. How to work this plan

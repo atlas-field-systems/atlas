@@ -26,10 +26,13 @@ TaskStore = Map  // internal, in memory for the operation
 //   "body:<task_id>"          -> Uint8Array                              a Task body it holds
 //   "task:<task_id>"          -> { final: Uint8Array, acked: boolean }   one record per finished task
 //   "answer:<from:seq:time>"  -> Uint8Array                              the Asset's answer to a request
-// Finished tasks stay for the operation; answered-request replay keeps at least the newest 1024 answers.
+// Finished tasks stay for the operation; answers stay paired with protected request identities.
 ```
 All queue logic stays in the helper. Link reconnects use the same in-memory
 state. Process restart recovery is outside the current design.
+The [retention decision](identity-and-duplicates.md#module-identitymjs-and-dedupemjs-d7)
+must be settled before implementing effectful dispatch and answer eviction.
+The 1024-message minimum is not permission to forget a protected request's answer.
 Invariants (law 18, communication.md):
 - A body is any `control.command` **or** `control.settings` carrying `task_id`. It is stored; arrival order does not matter. A resent body for a Task it holds is ignored; for a Task it has finished, it resends that Task's stored `final` bytes.
 - A `control.queue` built on a version other than the current `queue_version` is ignored, and answered with the current queue report.
