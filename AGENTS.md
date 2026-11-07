@@ -1,6 +1,6 @@
 # Working on Atlas
 
-Atlas is one repository, [atlas-field-systems/monorepo](https://github.com/atlas-field-systems/monorepo),
+Atlas is one repository, [atlas-field-systems/atlas](https://github.com/atlas-field-systems/atlas),
 in the [atlas-field-systems](https://github.com/atlas-field-systems) GitHub organization.
 Each part of Atlas is a top-level folder. Everything is on disk together, so read the
 other folders for context, and change several in one PR when a change spans them.
@@ -23,7 +23,7 @@ other folders for context, and change several in one PR when a change spans them
 - Want how a gateway, Asset or app talks to Core, or how bytes cross a link? Go to `protocol/sdk/`.
 
 Each folder has its own `AGENTS.md` with its local rules. Read it before working there.
-Links of the form `https://github.com/atlas-field-systems/monorepo/blob/main/<path>` are
+Links of the form `https://github.com/atlas-field-systems/atlas/blob/main/<path>` are
 the file at `<path>` in this repository.
 
 ## Charter first

@@ -43,7 +43,7 @@ Assets report observations (`report.observation`), never tracks. An Asset reuses
 Asset ── report.observation ──▶ Core ──▶ [ fusion ] ──▶ tracks
 ```
 
-Fusion decides when observations describe the same target, including when one Asset gives a target two IDs or several Assets see the same thing. Tasks that aim at a target name the track. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/monorepo/blob/main/core/docs/fusion.md).
+Fusion decides when observations describe the same target, including when one Asset gives a target two IDs or several Assets see the same thing. Tasks that aim at a target name the track. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/fusion.md).
 
 An observation's `kind` says what the sensor measured. `coordinates` gives the target's position and its `uncertainty`. `bearing` gives the `origin` the sensor recorded when it saw the target, the bearing, and optionally elevation and range, each with its own uncertainty. `entity_type` and `details` stay true for an observation until a new value arrives, so Core keeps the latest of each.
 

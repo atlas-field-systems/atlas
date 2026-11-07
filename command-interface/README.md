@@ -4,7 +4,7 @@ The command interface is what an operator uses to run Atlas. It shows Assets and
 
 **Planning.** No code yet. This folder will say how the command interface works, so Core can rely on that behavior instead of guarding against an interface that misbehaves.
 
-- Charter: https://atlas-field-systems.github.io/monorepo/
-- Protocol (all data formats, and how parts talk to Core): https://github.com/atlas-field-systems/monorepo/tree/main/protocol
+- Charter: https://atlas-field-systems.github.io/atlas/
+- Protocol (all data formats, and how parts talk to Core): https://github.com/atlas-field-systems/atlas/tree/main/protocol
 - Docs: [docs/README.md](docs/README.md)
 - AI agents: read [AGENTS.md](AGENTS.md).

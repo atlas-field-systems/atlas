@@ -61,7 +61,7 @@ How changes are made:
 - Every change after a release is a new version, additive or not. A released
   version never changes, so two ends with the same version have exactly the
   same definitions
-  ([Protocol law 10](https://github.com/atlas-field-systems/monorepo/blob/main/protocol/docs/laws.md)).
+  ([Protocol law 10](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/laws.md)).
 
 How versions and releases work:
 
@@ -84,7 +84,7 @@ How drift is prevented:
   definitions from it.
 
 **SDK how-it-works is locked** for protocol 0.8 (see
-[protocol `sdk/how-it-works.md`](https://github.com/atlas-field-systems/monorepo/blob/main/protocol/sdk/how-it-works.md)
+[protocol `sdk/how-it-works.md`](https://github.com/atlas-field-systems/atlas/blob/main/protocol/sdk/how-it-works.md)
 once 0.8 is on main; until then the PR that lands it). Highlights that bind Core
 and Assets:
 

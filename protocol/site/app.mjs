@@ -58,7 +58,7 @@ async function branchBanner() {
   const link = (href, label, on) => on ? `<b>${esc(label)}</b>` : `<a href="${esc(href)}">${esc(label)}</a>`;
   const cur = prs.find((p) => p.number === here);
   $('branch').className = here ? 'branch' : 'branch main';
-  $('branch').innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/monorepo/pull/${here}">#${here}</a>${cur ? `: ${esc(cur.title)}` : ''} (work in progress, not on main). ` : 'Showing main. ') +
+  $('branch').innerHTML = (here ? `Preview of pull request <a href="https://github.com/atlas-field-systems/atlas/pull/${here}">#${here}</a>${cur ? `: ${esc(cur.title)}` : ''} (work in progress, not on main). ` : 'Showing main. ') +
     'Versions: ' + link(`${root}${sub}`, 'main', !here) + prs.map((p) => link(`${root}pr/pr-${p.number}/${sub}`, `#${p.number} ${p.title}`, p.number === here)).join('');
 }
 

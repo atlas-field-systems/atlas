@@ -88,7 +88,7 @@ test('preview banner retains its identity, main link, and other preview links', 
     { number: 12, title: 'Current' }, { number: 13, title: 'Other' },
   ]);
   assert.equal(result.className, 'branch');
-  assert.match(result.innerHTML, /https:\/\/github.com\/atlas-field-systems\/monorepo\/pull\/12/);
+  assert.match(result.innerHTML, /https:\/\/github.com\/atlas-field-systems\/atlas\/pull\/12/);
   assert.match(result.innerHTML, /href="\/atlas\/">main<\/a>/);
   assert.match(result.innerHTML, /<b>#12 Current<\/b>/);
   assert.match(result.innerHTML, /href="\/atlas\/pr\/pr-13\/"/);
