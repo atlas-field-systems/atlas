@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/status/asset.json",
+  "title": "asset",
+  "description": "The Asset's overall health.",
+  "type": "object",
+  "required": [
+    "kind",
+    "condition"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "asset"
+    },
+    "condition": {
+      "$ref": "../../../variables/condition.json"
+    },
+    "explanation": {
+      "$ref": "../../../variables/explanation.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "asset",
+      "condition": "degraded",
+      "explanation": "Navigation receiver unavailable"
+    }
+  ]
+}

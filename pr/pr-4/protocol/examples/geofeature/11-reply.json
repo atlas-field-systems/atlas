@@ -1,0 +1,10 @@
+{
+  "type": "admin.reply",
+  "time": 1793667803010,
+  "seq": 206,
+  "from": "CORE",
+  "reply_from": "OP1",
+  "reply_to": 3,
+  "reply_result": "accepted",
+  "geofeature_id": "G1"
+}

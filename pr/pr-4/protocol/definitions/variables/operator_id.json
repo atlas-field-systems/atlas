@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/operator_id.json",
+  "title": "operator_id",
+  "description": "An operator interface's own ID, like asset_id. One ID per interface: a newer link with the same ID replaces the older. Its key travels only in admin.operator_hello. It names a connection, not a person: there are no user accounts or roles.",
+  "type": "string",
+  "examples": [
+    "OP1"
+  ],
+  "pattern": "^[A-Za-z0-9]{1,4}$",
+  "minLength": 1,
+  "maxLength": 4
+}
