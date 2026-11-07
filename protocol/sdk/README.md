@@ -12,7 +12,7 @@ the spec and its checks land in one PR.
 Transport adapters (WebSocket, Meshtastic, FLRC) only move bytes. Each will be
 its own package beside the SDK, so a program installs only the links it uses.
 
-**Status:** how-it-works is locked (protocol 0.8). Runtime code is not built yet.
+**Status:** how-it-works is a draft (protocol 0.8). Runtime code is not built yet.
 Build it from [IMPLEMENTATION.md](IMPLEMENTATION.md): one slice per PR, in order,
 and the developer approves each merge before the next slice starts.
 

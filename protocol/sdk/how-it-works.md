@@ -1,7 +1,7 @@
 # SDK how it works
 
-Locked decisions for the first SDK (protocol 0.8). Do not reopen them unless the
-developer changes a lock.
+Draft decisions for the first SDK (protocol 0.8). Like everything in Atlas, any of
+them may change; propose a change to the developer rather than diverging quietly.
 
 The SDK implements the wire rules in [communication.md](../docs/communication.md)
 and the [laws](../docs/laws.md): the hello, duplicates, the task queue, settings,

@@ -2,6 +2,7 @@
 
 Read the [root AGENTS.md](../AGENTS.md) first: the parts of Atlas, Charter first,
 branches and releases, and the working rules live there.
+Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 
 ## This folder
 

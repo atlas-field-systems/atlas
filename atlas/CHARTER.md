@@ -3,6 +3,16 @@
 Atlas helps operators understand field systems, request work, and retain evidence.
 Read the [operating environment](environment.md) before designing a subsystem.
 
+## Everything is a draft
+
+Atlas is greenfield. It is deployed nowhere and has no users to stay compatible with.
+Every part of this repository, this Charter included, is a draft: any decision, law,
+message, plan or piece of code may be reworked, rewritten or removed, and new ideas
+are welcome. Nothing is locked. When something has a problem, consider reworking it
+from the ground up before patching it.
+
+Draft does not mean quiet change. Propose the change and its reason; the owner decides.
+
 ## Keep Atlas understandable
 
 The owner must be able to read the docs whenever they change.
@@ -85,8 +95,8 @@ Protocol is the spec. The SDK is the one implementation and front door. Core use
 the SDK and keeps business rules only — no second validation or dedupe stack.
 See [design-decisions.md](design-decisions.md).
 
-Locked how-it-works, laws, and communication docs beat an implementation plan when
-they conflict. Change a lock on purpose with the owner; do not quietly diverge in
+How-it-works, laws, and communication docs beat an implementation plan when
+they conflict. Change them on purpose with the owner; do not quietly diverge in
 code.
 
 Accepted acknowledgment and observed Asset outcomes are different facts. Asset

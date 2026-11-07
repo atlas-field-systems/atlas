@@ -83,25 +83,7 @@ How drift is prevented:
 - A program outside Protocol, such as Core, pins one release and loads its JSON
   definitions from it.
 
-**SDK how-it-works is locked** for protocol 0.8 (see
-[protocol `sdk/how-it-works.md`](https://github.com/atlas-field-systems/atlas/blob/main/protocol/sdk/how-it-works.md)
-once 0.8 is on main; until then the PR that lands it). Highlights that bind Core
-and Assets:
-
-- **Core uses the SDK.** Shared `check()` validates schemas. Core keeps business
-  rules only — it does **not** re-implement validation or keep a second dedupe set.
-- **Assets use the SDK** too (IP Assets and Core-created messages with `from` =
-  `CORE`).
-- **Origin:** every message carries `from`; Core forwards other creators unchanged.
-- **Hello vs describe:** keys stay on hello; description is a separate keyless
-  `admin.describe` (no `admin.asset`).
-- **Queue:** Core owns an ordered `task_id` list; no `task_seq` / gap-wait.
-- **Caller surface:** `request` / `stream` / `subscribe`; outcomes
-  `accepted` | `rejected` | `unknown`.
-- **Transports:** bytes-only adapters (`open` / `send` / `onData` / `onClose` /
-  `close`).
-- **No generated code;** load JSON definitions at runtime. Strict version mismatch
-  refuses the link (on purpose).
-
+How the SDK works is drafted for protocol 0.8 in
+[protocol `sdk/how-it-works.md`](https://github.com/atlas-field-systems/atlas/blob/main/protocol/sdk/how-it-works.md).
 Runtime SDK code is not started; Core stays on its pinned Protocol release until
 a protocol-bump adopt PR.

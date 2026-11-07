@@ -22,7 +22,7 @@ Protocol gaps found while building the prototype. Protocol is not changed from h
 13. **What "latest state" means on connect.** The prototype pushes each Asset's hello and newest report of each type.
 14. **Storage formats.** The prototype stores whole messages as JSON beside a few key columns.
 
-## Protocol 0.8 (SDK locks) — not adopted here yet
+## Protocol 0.8 (SDK draft) — not adopted here yet
 
 Protocol 0.8 documents the SDK how-it-works and cuts three prototype patches.
 This Core still speaks its **pinned** Protocol release (`"protocol"` in `package.json`) and still

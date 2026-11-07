@@ -1,7 +1,7 @@
 # Atlas SDK implementation plan (protocol 0.8)
 
 For a coding agent building the SDK runtime in `protocol/sdk/`. The behavior
-contract is already locked in `sdk/how-it-works.md`, `docs/laws.md` and
+contract is drafted in `sdk/how-it-works.md`, `docs/laws.md` and
 `docs/communication.md`. This file covers **how to build it**:
 the file layout, signatures, invariants, the order of PRs, and tests. If this
 plan and those docs disagree, the docs win. Stop and ask; do not invent a fix.
@@ -41,7 +41,7 @@ protocol/
   lib/protocol.mjs          KEEP. Viewer and CLI use it. The SDK imports loadProtocol/validate/messageFile from here.
   sdk/
     README.md               update the status line and layout per slice
-    how-it-works.md         locked contract (do not edit unless the developer changes a lock)
+    how-it-works.md         behavior contract (draft; change it with the developer, not in a slice)
     IMPLEMENTATION.md       this plan
     package.json            name "@atlas/sdk", private, type module, exports "./src/index.mjs"
     src/
@@ -585,9 +585,10 @@ separate Core PR, not done here:
 
 ---
 
-## 10. Decided implementation points
+## 10. Current implementation points
 
-Confirmed by the developer. These are settled; do not reopen them in a slice PR.
+The developer's current choices. A slice follows them; to change one, raise it with
+the developer instead of changing it inside a slice.
 
 - **Dedupe (all slices):** act once, deliver always. Dedupe stops a message being acted on again; streams, subscribers and the picture still receive replays. The picture upserts by `(from, seq, time)`, newest `time` wins.
 - **Contact (slice 4):** `lastContact` / `contact()` advances on non-duplicate post-hello inbound with `asset_id === this id && from !== this id` (not only `from: CORE`).
