@@ -8,5 +8,8 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 
 - How an Asset behaves goes here, from start-up to shutdown: starting up and setting home, connecting, taking Tasks, failsafes and reconnecting.
 - Write down how a decent Asset behaves. Core relies on it, so a rule that only guards Core against a misbehaving Asset belongs here as Asset behavior instead.
-- Message and storage formats live in `protocol/`, and how an Asset talks over a link lives in `sdk/`. Link to those rules; do not copy them.
+- Shared message and domain-storage formats live in `protocol/`, and how an
+  Asset talks over a link lives in `sdk/`. Link to those rules; do not copy them.
+  Local configuration and diagnostic records belong here, in
+  [config.md](config.md) and [logging](docs/logging.md).
 - Planning only: no code until the owner asks. Do not merge without the developer's approval.

@@ -2,7 +2,7 @@
 
 Protocol gaps found while building the prototype. Protocol is not changed from here.
 
-## Settled in Protocol 0.6
+## Findings from the retained prototype
 
 1. **Link-opening format.** Keys go in the first message (`admin.hello`, `admin.operator_hello`), never the URL (law 17).
 2. **Same operator_id twice.** One ID per interface; a newer link replaces the older (law 22).
@@ -15,33 +15,43 @@ Protocol gaps found while building the prototype. Protocol is not changed from h
 9. **Telemetry rate.** Asset setting `telemetry_every_s`.
 10. **Repeated task_id from an operator.** Core refuses it with a reason; the Asset ignores a resent Task silently.
 
-## Still open (in Protocol's open-questions)
+## Remaining gaps
 
 11. **Where operator keys come from.** The prototype reads them from config (`ATLAS_OPERATORS`).
 12. **Bad messages from an Asset.** Dropped and logged; the Asset never knows.
-13. **What "latest state" means on connect.** The prototype pushes each Asset's hello and newest report of each type.
-14. **Storage formats.** The prototype stores whole messages as JSON beside a few key columns.
+13. **Storage formats.** The prototype stores whole messages as JSON beside a few key columns.
 
-## Protocol 0.8 (SDK draft) — not adopted here yet
+These are tracked in [Protocol's open questions](../../protocol/docs/open-questions.md).
 
-Protocol 0.8 documents how the SDK works and cuts three prototype patches.
+## Current design not adopted by the prototype
+
+The current docs draft SDK behavior and change the prototype's contracts.
 This Core still speaks its **pinned** Protocol release (`"protocol"` in `package.json`) and still
-implements the older shapes until a protocol-bump + adapt PR:
+implements the older shapes. Whether to keep or replace it is undecided:
 
 1. **Origin / no renumber.** Spec: every message carries `from`; Core forwards
    other creators unchanged; duplicates are `(from, seq, time)`; replies use
    `reply_from` + `reply_to`. Prototype today still stamps its own `seq` on
    forwards.
-2. **`admin.describe` replaces `admin.asset`.** Hello is keys + version + id;
+2. **`admin.describe` replaces `admin.asset`.** Hello is keys + id;
    description is keyless. Prototype still pushes `admin.asset`.
 3. **The Asset owns its queue.** Bodies once, the order in `control.queue`; Core
    resends the bodies the Asset names as missing. Prototype may still pass `task_seq`
    through from operators.
+
+The current spec also settles the old "latest state" question: its
+[connect push](../../protocol/docs/communication.md#operator-interfaces) includes
+each Asset's description and latest reports, with settings kept per setting.
+The prototype still pushes its older hello and newest report of each type.
 
 **When the SDK exists:** Core calls shared `check()` and keeps business rules
 only (online?, command listed in `admin.describe`?, duplicate `task_id`?). Core
 keeps a last-answer cache for retries — **not** a second dedupe set that can
 swallow them. Do not half-migrate the runtime ahead of the SDK thin slice.
 
-See the [SDK docs](../../sdk/README.md) and Protocol's 0.8 changelog section.
+See the [SDK docs](../../sdk/README.md) and [Protocol laws](../../protocol/docs/laws.md).
+
+The retained runtime also sends an embedded protocol version. Current definitions
+and messages have no such field; the published package will supply the release
+identity. That change has not been ported into this older runtime.
 

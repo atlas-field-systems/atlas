@@ -48,9 +48,10 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
   is about, as when Core asks a drone for its task list.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
-- The whole data format lives in Protocol. Protocol defines both the messages and
-  the storage layout. Core, the SDK cache, and Assets store data in those formats,
-  built from the same variables, names, units, and shapes.
+- Shared domain data lives in Protocol, including messages and domain-storage
+  records. Core, the SDK cache, and Assets use the same variables, names, units,
+  and shapes. Local process configuration and diagnostic logs belong to the
+  component that uses them; they are not Protocol contracts.
 - Every ID is 1 to 4 letters or digits.
 
 ## Document ownership
@@ -85,11 +86,11 @@ an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.
 
-Matching protocol versions are required today; wire-contract changes follow the
-selected versioning rules in [design-decisions.md](design-decisions.md) and
-Protocol. Never silently reinterpret unsupported messages or conceal incompatible
-behavior. Do not invent protocol fields to paper over attribution or routing the
-link or Core already owns.
+Protocol's published package version is its only version. Definitions and messages
+carry no protocol version, and links do not negotiate one. Package dependencies
+select the definitions a program uses. Never silently reinterpret unsupported
+messages or conceal incompatible behavior. Do not invent protocol fields to paper
+over attribution or routing the link or Core already owns.
 
 Protocol is the spec. The SDK is the one implementation and front door. Core uses
 the SDK and keeps business rules only — no second validation or dedupe stack.
@@ -109,6 +110,11 @@ in Protocol (`communication.md` / SDK docs).
 
 SDK helpers report contact, queues, and outcomes. The Asset app owns motion and
 failsafes. Helpers never fly.
+
+Core, Assets, and the SDK provide detailed diagnostic logging from the start.
+Core and Asset apps collect their own events and the SDK's events for their run
+archives. Their owning docs define logging and configurable options; Protocol
+defines shared data, not a runtime logging service.
 
 Stress undecided ideas with small prototypes and write findings back into the docs.
 The docs stay the source.

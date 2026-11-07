@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/operator_hello.json",
   "title": "Operator hello",
-  "description": "First message from an operator interface when its WebSocket opens, carrying its operator_id (also from), key and protocol version; the key appears in no other message. Core checks the key like an asset key (it stores only the hash). Each interface has its own operator_id: if a second link opens with the same operator_id, the newer link replaces the older and Core closes the older. Core answers admin.hello_reply with operator_id, then pushes every Asset's latest admin.describe and latest reports unchanged, then forwards new reports live. No user accounts or roles.",
+  "description": "First message from an operator interface when its WebSocket opens, carrying its operator_id (also from) and key; the key appears in no other message. Core checks the key like an asset key (it stores only the hash). Each interface has its own operator_id: if a second link opens with the same operator_id, the newer link replaces the older and Core closes the older. Core answers admin.hello_reply with operator_id, then pushes every Asset's latest admin.describe and latest reports unchanged, then forwards new reports live. No user accounts or roles.",
   "type": "object",
   "required": [
     "type",
@@ -10,7 +10,6 @@
     "seq",
     "from",
     "operator_id",
-    "protocol_version",
     "key"
   ],
   "additionalProperties": false,
@@ -34,9 +33,6 @@
     "operator_id": {
       "$ref": "../../variables/operator_id.json"
     },
-    "protocol_version": {
-      "$ref": "../../variables/protocol_version.json"
-    },
     "key": {
       "$ref": "../../variables/key.json"
     }
@@ -47,7 +43,6 @@
       "time": 1793667600000,
       "seq": 0,
       "operator_id": "OP1",
-      "protocol_version": "0.8",
       "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e",
       "from": "OP1"
     }

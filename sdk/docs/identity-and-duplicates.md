@@ -28,12 +28,19 @@ retries.
 
 ## Module: `identity.mjs` and `dedupe.mjs` (D7)
 
+The bounded ring below is a proposed duplicate lookback, not a sufficient
+implementation of Protocol's no-repeat and unchanged-answer guarantees.
+Before implementing effectful dispatch, select paired retention for handled
+side-effect identities and original answers; cache eviction must not authorize
+another effect. Operation-long paired retention is the tested provisional
+baseline. The owner will determine budgets through integration tests; exact
+limits and safe release remain open. See the [prototype findings](../../core/docs/experiments/final-report.md#duplicate-prevention-and-retention).
+
 ```js
 export function createIdentity(opts: {
   id: string,                  // asset_id | operator_id | 'CORE'
   role: 'asset' | 'operator' | 'core',
   key?: string, enrollmentKey?: string,
-  seqStore?: { load(): number, save(n: number): void },  // Core persists; others default in-memory
   now?: () => number,
   dedupeSize?: number          // default 1024 per from (communication.md)
 }): Identity
@@ -49,9 +56,9 @@ Identity = {
 ```
 Invariants:
 - Keys are attached **only** to `admin.hello` / `admin.operator_hello`. `stamp` throws if a draft for any other type already carries `key`/`enrollment_key`.
-- There is one seq counter per identity, shared across all links. It does not reset on reconnect. It may restart at 0 on a process restart only when `time` is strictly later.
+- There is one in-memory seq counter per identity for the operation, shared across all links. It does not reset on reconnect. Processes stay running for the operation; no restart recovery or persisted counter is required.
 - `time = max(now(), lastTime)`. It never goes backwards. If `now()` is earlier than `lastTime`, use `lastTime` (same ms is allowed; seq disambiguates).
-- Dedupe key: `(from, seq, time)`. Dedupe decides whether a message is **acted on**, not whether it is delivered ([Links](links.md#link)). Keep a per-`from` bounded ring (Map + array, size N, oldest evicted). Memory is bounded by `N × distinct from`. Add a cap on distinct `from` (default 4096, LRU).
+- Dedupe key: `(from, seq, time)`. Dedupe concerns acting, not delivery ([Links](links.md#link)). The proposed per-`from` ring (Map + array, size N, oldest evicted) bounds only generic lookback memory by `N × distinct from`, with a proposed 4096-creator LRU cap. Neither eviction grants permission to repeat an effect; protected identity and answer retention must be resolved before implementing those paths.
 - No Core-style last-answer cache in the SDK for forwarded traffic. That cache belongs to **Core** (business layer); the SDK exposes `seen()` and `onDuplicate` so Core can resend its cached reply.
-- The Asset helpers are different: an Asset answers `control.settings` and `control.cancel` itself with `report.settings`, so the Asset queue helper keeps its own answer replay ([Task queue](task-queue.md)). It is Asset-side, bounded, and separate from Core's cache.
+- The Asset helpers are different: an Asset answers `control.settings` and `control.cancel` itself with `report.settings`, so the Asset queue helper keeps its own answer replay ([Task queue](task-queue.md)). It is separate from Core's cache; its answers must not expire while their requests remain protected against repeated effects.
 - Contact (communication.md, Losing the link): identity records `lastContact` (the `now()` of the last **non-duplicate** inbound message after an accepted hello whose `asset_id` is this identity's id and whose `from` is **not** this identity's id). Exposed as `identity.contact()` and an observer event `contact`. The Asset app sends `report.telemetry` early when it has sent nothing new for a third of its `link_loss_after_s`, so Core can count it connected; the SDK exposes when it last sent something new (communication.md, When Core counts an Asset offline). The SDK only reports contact; timing `link_loss_after_s` and triggering the `link_loss` failsafe is the Asset app's work (helpers never fly). A creator sends nothing until its clock is set: `build` throws `SdkError('clock_unset')` while `now()` returns null.

@@ -4,6 +4,5 @@
   "seq": 100,
   "from": "CORE",
   "operator_id": "OP1",
-  "hello_result": "accepted",
-  "protocol_version": "0.8"
+  "hello_result": "accepted"
 }

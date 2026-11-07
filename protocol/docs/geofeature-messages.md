@@ -11,8 +11,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Operator → Core | [`admin.operator_hello`](../examples/geofeature/01-operator_hello.json) | The operator interface says hello. | 149 | 126 |
-| 02 | Core → Operator | [`admin.hello_reply`](../examples/geofeature/02-hello_reply.json) | Core accepts. | 144 | 123 |
+| 01 | Operator → Core | [`admin.operator_hello`](../examples/geofeature/01-operator_hello.json) | The operator interface says hello. | 124 | 103 |
+| 02 | Core → Operator | [`admin.hello_reply`](../examples/geofeature/02-hello_reply.json) | Core accepts. | 119 | 106 |
 | 03 | Core → Operator | [`geofeature.set area`](../examples/geofeature/03-geofeature-set.json) | With the Asset descriptions, Core pushes every geo feature it holds: area G1. | 303 | 164 |
 | 04 | Core → Operator | [`object.describe`](../examples/geofeature/04-object-describe.json) | and every Object: F1, an image Plugin IMG stored, attached to G1. The file stays in Core until the interface fetches it by object_id. | 201 | 157 |
 | 05 | Operator → Core | [`geofeature.set point`](../examples/geofeature/05-geofeature-set-point.json) | The operator marks a helipad. No geofeature_id, so this creates one. | 152 | 125 |
@@ -36,7 +36,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 0,
   "from": "OP1",
   "operator_id": "OP1",
-  "protocol_version": "0.8",
   "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e"
 }
 ```
@@ -52,8 +51,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 200,
   "from": "CORE",
   "operator_id": "OP1",
-  "hello_result": "accepted",
-  "protocol_version": "0.8"
+  "hello_result": "accepted"
 }
 ```
 
@@ -382,7 +380,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-17 messages, 3030 bytes minified, 2210 bytes if each is deflated on its own.
+17 messages, 2980 bytes minified, 2170 bytes if each is deflated on its own.
 
 The header (`type`, `time`, `seq`, `asset_id`) is 30% of all bytes. Field names, quotes and punctuation are 59%; the values themselves are the rest.
 

@@ -1,4 +1,4 @@
-# Atlas SDK implementation plan (protocol 0.8)
+# Atlas SDK implementation plan
 
 For a coding agent building the SDK runtime in `sdk/`. What each module does, with
 its signatures and invariants, is in the [SDK docs](README.md#docs), and the wire
@@ -8,6 +8,11 @@ it**: the file layout, the order of PRs, and tests. If this plan and those docs
 disagree, the docs win. Stop and ask; do not invent a fix.
 Read [AGENTS.md](../AGENTS.md) first: the Charter comes before this plan, and its
 working rules (commit identity, privacy, merging, CI, no CDN) apply to every slice.
+
+Read [configuration](config.md) and [logging](docs/logging.md) before implementing
+any slice. Diagnostic capture is part of each module from its first slice; the
+optional live picture does not defer logging until later. Unresolved option names
+and recording limits remain discussion points, not invented implementation defaults.
 
 Ground rules:
 
@@ -63,7 +68,7 @@ sdk/
     asset-queue.mjs         createAssetQueue(): task_id list, task store, final-report retries, answer replay
     reconnect.mjs           backoff policy and the Asset auto-resync sequence
     picture.mjs             OPTIONAL createLivePicture() (slice 9)
-    observer.mjs            OPTIONAL observer plumbing (safe emit)
+    observer.mjs            diagnostic event delivery (host consumer optional)
   adapters/
     transport.mjs           the Transport interface (JSDoc) + assertTransport()
     fake.mjs                in-process pair: createFakePair() -> [a, b]; test-only but shipped
@@ -105,7 +110,8 @@ All exported from `sdk/src/index.mjs`. Signatures and invariants live in the SDK
 | --- | --- |
 | `definitions.mjs`, `check.mjs`, `build.mjs`, `codec.mjs` | [Messages](docs/messages.md) |
 | `identity.mjs`, `dedupe.mjs`, `clock.mjs` | [Identity and duplicates](docs/identity-and-duplicates.md) |
-| `adapters/`, `link.mjs`, `reconnect.mjs`, `observer.mjs` | [Links](docs/links.md) |
+| `adapters/`, `link.mjs`, `reconnect.mjs` | [Links](docs/links.md) |
+| `observer.mjs`, module diagnostics | [Logging](docs/logging.md) |
 | `calls.mjs`, `outcome.mjs` | [Calls](docs/calls.md) |
 | `asset-queue.mjs` | [Task queue](docs/task-queue.md) |
 | `picture.mjs` | [Live picture](docs/live-picture.md) |
@@ -117,7 +123,7 @@ All exported from `sdk/src/index.mjs`. Signatures and invariants live in the SDK
 Every PR updates the `sdk/README.md` status line and runs Protocol's `npm run check` and the SDK's `npm test`.
 
 ### Slice 1: Definitions, `check`, `build`, codec, clock
-Files: `package.json`, `definitions.mjs`, `check.mjs`, `build.mjs`, `codec.mjs`, `clock.mjs`, a minimal `identity.mjs` (stamp + seq only), `outcome.mjs`, `index.mjs`, `.github/workflows/sdk.yml`.
+Files: `package.json`, `definitions.mjs`, `check.mjs`, `build.mjs`, `codec.mjs`, `clock.mjs`, a minimal `identity.mjs` (stamp + seq only), `outcome.mjs`, `observer.mjs`, `index.mjs`, `.github/workflows/sdk.yml`.
 Acceptance:
 - Every example in every definition (`examples[]`) passes `check`. Every file in `protocol/examples/first-flight` and `protocol/examples/operator-session` passes.
 - Mutations fail with a useful path: extra field, missing `from`, bad `kind`, key on `admin.describe`, `from` longer than 4 chars, `semi_minor_m` without `orientation_deg`, `semi_minor_m` larger than `semi_major_m`.
@@ -125,6 +131,7 @@ Acceptance:
 - A failed `build` does not consume a seq.
 - `build` works for every type and kind with no per-type code (the generic test).
 - `encode∘decode` round-trips are byte-stable for all examples.
+- Diagnostic events cover build, check, encode and decode outcomes. A throwing consumer does not change their behavior; credentials never appear in captured output.
 
 ### Slice 2: Transport interface, fake pair, WebSocket adapter
 Files: `adapters/transport.mjs`, `adapters/fake.mjs`, `adapters/websocket/*`.
@@ -135,24 +142,24 @@ Acceptance:
 - A WS test on an ephemeral port on 127.0.0.1 (no external network).
 
 ### Slice 3: Link + hello + describe (D9)
-Files: `link.mjs`, inbound pipeline without dedupe (dedupe lands in slice 4), observer basics.
+Files: `link.mjs`, inbound pipeline without dedupe (dedupe lands in slice 4), connection and message diagnostics.
 Acceptance (fake transport plus a test server built from `createLink({side:'server'})`):
-- Asset hello accepted → describe from `opts.describe`, then (after its `admin.reply`) connect `report.settings` from `opts.connectSettings` when provided, then (after its `admin.reply`) `ready`; a lost reply is covered by resending the same bytes; describe carries no key and no version.
+- Asset hello accepted → describe from `opts.describe`, then (after its `admin.reply`) connect `report.settings` from `opts.connectSettings` when provided, then (after its `admin.reply`) `ready`; a lost reply is covered by resending the same bytes; describe carries no key.
 - Lost acknowledgements: drop the first `admin.reply` to the describe and then to the connect report. Each is resent after 10 s (fake clock), the next reply passes the pre-ready filter, and the link reaches `ready`. A Task body that arrives before `ready` is dropped, not remembered, and its resend after `ready` is handled.
 - Operator hello accepted → `ready`, with no describe.
 - A message before the hello is accepted is refused locally (`not_ready`). A server receiving a non-hello first closes.
-- `version_mismatch` → `open()` rejects, state set, no reconnect.
 - `refused` → `auth_lost`, after which `build` throws `auth_lost`.
 - Invalid inbound bytes are dropped with an observer event, and the link survives.
+- The diagnostic consumer sees inbound and outbound deliveries in local order, including retries, invalid messages and pre-ready drops; logging never mutates forwarded bytes.
 
 ### Slice 4: Identity dedupe (D1/D7)
 Files: `identity.mjs` (full), `dedupe.mjs`.
 Acceptance:
-- A duplicate `(from,seq,time)` is acted on once: flagged `duplicate:true`, still delivered to readers. The same seq with a different time is new (restart case).
+- A duplicate `(from,seq,time)` is acted on once: flagged `duplicate:true`, still delivered to readers. The same seq with a different time is a different message identity.
 - A handler that throws still leaves the message remembered; its duplicate is flagged.
 - `contact()` / `lastContact` advances on non-duplicate inbound messages after the accepted hello with `asset_id === this id && from !== this id`. `build` throws `clock_unset` before the clock is set.
 - Out-of-order unseen messages are delivered.
-- The window holds ≥1024 per `from`. After eviction, behavior is documented. Memory stays bounded with 10k distinct `from`.
+- The proposed generic window holds ≥1024 per `from` and stays bounded with 10k distinct `from`. This does not prove no-repeat effects: resolve the [paired-retention decision](docs/identity-and-duplicates.md#module-identitymjs-and-dedupemjs-d7) before effectful dispatch or retry acceptance is implemented. Do not use eviction as permission to repeat an effect.
 - Seq survives link reconnect on the same identity. `time` never goes backwards under a fake clock stepping back.
 - The `onDuplicate` hook fires (the hook Core will use for its last-answer cache). The SDK holds no answer cache. Assert there is no reply storage in identity.
 
@@ -180,17 +187,19 @@ Acceptance:
 - Bodies T3, T1, T2 in any order, then a list [T1, T2, T3]: run order T1, T2, T3. A duplicate body while held is ignored. A body for a finished task resends its stored final report bytes.
 - A list naming T4 before T4's body arrives: the old list keeps running, the queue report names T4 in `missing_task_ids`, and the list takes effect when T4 arrives.
 - A list built on an old `queue_version` is ignored and answered with the current queue report. A list that drops a queued Task reports it cancelled.
-- A finished `task_id` is never emitted again, including after a simulated restart with a store. The list and version survive the restart. The store keeps ≥1024 finished ids and evicts the oldest.
+- A finished `task_id` is never emitted again during the operation, including after a link disconnect and reconnect. The same helper retains its list, queue version and finished IDs in memory for the operation.
 - `clear()` reports each listed task cancelled, raises the version, then sends an empty queue report. A motion command without `task_id` clears; an immediate `control.settings` does not. A `control.settings` with `task_id` is a task.
 - Every cancel and settings request gets a `report.settings` answer; a duplicate request gets the identical answer bytes. `control.cancel` is emitted to `onImmediate`.
-- A final report is retried with identical bytes every 10 s (fake clock) with no attempt cap, until a matching `admin.reply` (+ `task_id`) arrives, then stops. Ack state lives in the store (`acked`); after a simulated restart with a persistent store, unacked finals keep retrying.
+- Two immediate settings requests whose creation timestamps disagree with receipt order reach the app in receipt order. A settings Task received before an immediate change still applies when that Task later runs. No change is discarded as overtaken because of its timestamp.
+- Queue and final-report diagnostics distinguish receipt, handoff to the app, retries, and acknowledgement without claiming the SDK performed an equipment action.
+- A final report is retried with identical bytes every 10 s (fake clock) with no attempt cap, until a matching `admin.reply` (+ `task_id`) arrives, then stops. Ack state lives in memory (`acked`); after a link reconnect, unacked finals keep retrying.
 
 ### Slice 7: Reconnect (D8)
 Files: `reconnect.mjs`.
 Acceptance:
 - Asset: drop the transport mid-task. On the next accepted hello, the order on the wire is describe → connect `report.settings` → unacked final reports → queue report.
 - Operator: an in-flight request resolves `unknown/disconnected`. A command is **not** resent after reconnect.
-- Backoff grows and is capped. No reconnect after `auth_lost` or `version_mismatch`.
+- Backoff grows and is capped. No reconnect after `auth_lost`.
 - Seq stays continuous across reconnects.
 
 ### Slice 8: First-flight path, end to end in-process
@@ -206,24 +215,27 @@ Core and does not ship. Acceptance:
 - The Asset runs takeoff → move_to → land once each. Final reports are acked. A mid-run link loss recovers via slice 7. mini-core forwards with `forward(raw)` and sends `admin.alive` when quiet.
 - Repeat the run with 10% drop and 10% duplicate (seeded): still exactly-once task execution.
 
-### Slice 9: Optional live picture + observer polish (D4)
-Files: `picture.mjs`, `observer.mjs`.
+### Slice 9: Optional live picture (D4)
+Files: `picture.mjs`. Diagnostics already exist from earlier slices.
 Acceptance: reads return `ready:false` while loading. After the picture's own
 `query.core kind assets` reply, `ready:true` with the describes in it. On
 disconnect, `stale:true` with data still readable. On reconnect, a full rebuild
 from the replayed connect push even though every message is a duplicate. Upsert
-keeps the newest `time`. Auth loss leaves a read-only snapshot. A throwing
+keeps the newest `time`. A partial settings report changes only its named
+settings, so a gear-only update preserves the previous lights value, including
+after connect-push replay. Settings reports with equal `time` use the Asset's `seq`
+to select the newer value; a late earlier report cannot replace it. Auth loss leaves a read-only snapshot. A throwing
 observer and an async (never-resolving) observer do not affect message flow.
 
 ### Slice 10 (docs only): Core-as-caller notes
 Write `sdk/docs/core-adopt.md` (short). It is the checklist for a **later**,
 separate Core PR, not done here:
 - Replace Core's Ajv loader with `check`. Replace the socket code with `wsServer` + `createLink({side:'server'})`.
-- Core identity is `createIdentity({id:'CORE', role:'core', seqStore: <persisted>})`.
+- Core identity is `createIdentity({id:'CORE', role:'core'})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
 - Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.
 - Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), command listed in describe, `task_id` duplicate, a list naming only bodies Core has, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its connect report), resending a list until a queue report names it, and each body a queue report names as missing every 10 s until a later one no longer does, `every_s` repeats (a new Core-created message each time, with a new seq).
-- Pin Core to the release that contains the SDK.
+- Select the Protocol and SDK package dependencies used by the new runtime.
 
 ---
 
@@ -231,12 +243,12 @@ separate Core PR, not done here:
 
 | Structure | Owner | Shape | Bound |
 | --- | --- | --- | --- |
-| seq counter | Identity (SDK) | `{seq:number, lastTime:number}`; Core persists via `seqStore` | n/a |
-| dedupe window | Identity (SDK) | `Map<from, {ring:Array<[seq,time]>, set:Set<string>}>` | 1024/from, 4096 froms LRU |
+| seq counter | Identity (SDK) | `{seq:number, lastTime:number}`, in memory for the operation | n/a |
+| generic dedupe lookback (proposal) | Identity (SDK) | `Map<from, {ring:Array<[seq,time]>, set:Set<string>}>` | 1024/from, 4096 froms LRU; protected-effect retention remains open |
 | pending requests | Link/calls (SDK) | `Map<seq, Pending>` per link | `maxPending` 256 |
 | stream buffer | calls (SDK) | array per stream | `maxItems` 10000 |
 | subscribers | Link (SDK) | `Set<{filter,cb}>` | caller-owned |
-| task list, bodies, finished tasks (final bytes + `acked`), Asset answers | TaskStore (Map-like, `new Map()` default) | `list`, `body:<id>`, `task:<id>`, `answer:<from:seq:time>` | list 64; finished and answers ≥1024 each, oldest deleted |
+| task list, bodies, finished tasks (final bytes + `acked`), Asset answers | TaskStore (internal in-memory Map) | `list`, `body:<id>`, `task:<id>`, `answer:<from:seq:time>` | list 64; finished tasks kept for the operation; answers paired with protected identities; budgets/release open |
 | **last-answer cache** (forwarded traffic) | **Core (not SDK)** | `Map<"from:seq:time", replyBytes>` | Core's choice |
 | live picture | Picture (SDK, optional) | maps per asset | memory only |
 
@@ -258,7 +270,7 @@ separate Core PR, not done here:
 - Fusion and track messages (no wire types exist). Fetching an Object's file. Geo feature and Object messages go through the generic front door with no SDK code.
 - Meshtastic and FLRC adapters. The interface exists; write no implementation and no framing profile.
 - Byte-stream framing, compression and chunking (link profile work, law 12).
-- Rewriting or adapting Core (only `core-adopt.md` notes). No Core submodule bump.
+- Rewriting or adapting Core (only `core-adopt.md` notes). No change to the retained prototype's historical Protocol pin.
 - Disk cache for the picture. Browser builds. npm publishing or workspaces.
 - Auto-retry of operator commands. Any `task_seq` or gap-wait. A Core-style last-answer cache in the SDK (the Asset helper's own answer replay is in scope).
 - Generated clients, TypeScript, OpenAPI.
@@ -273,8 +285,8 @@ separate Core PR, not done here:
 - [ ] Forwarding never changes bytes (`forward(raw)`).
 - [ ] Dedupe gates acting, never delivery to readers.
 - [ ] `unknown` never mapped to failure. Disconnect never rejects a promise.
-- [ ] Every queue, map and buffer has a bound.
-- [ ] Observer errors are swallowed.
+- [ ] Pending work and buffers have limits. Finished Task IDs stay for the operation so old work cannot run again.
+- [ ] Diagnostic events cover the module's decisions and message attempts; credentials are excluded. Observer errors do not alter message handling.
 - [ ] No `Date.now()` outside `clock.mjs`. No network in tests except localhost WS.
 
 ---
@@ -290,7 +302,7 @@ the developer instead of changing it inside a slice.
 - **Subscribe (slice 5):** callback is `{msg, raw, duplicate}` (same as `onMessage`); acting code skips duplicates.
 - **P2 (slice 9):** the live picture issues its own `query.core kind assets` on connect and reconnect, and is `ready` when that request's `admin.reply` arrives. It does not try to detect the end of Core's connect push.
 - **P3 (slice 2):** each transport adapter is a sibling package with its own `package.json`. No npm workspaces.
-- **P4 (slice 6):** the Asset queue takes a Map-like store (`get`/`set`/`delete`/`keys`, default `new Map()`), see [Task queue](docs/task-queue.md). One record for the list, one per held body, one per finished task (final bytes + `acked`) and one per answer; the newest ≥1024 finished tasks and answers are kept.
+- **P4 (slice 6):** the Asset queue uses an internal in-memory Map, see [Task queue](docs/task-queue.md). It keeps the list, held bodies, finished Tasks and final-report acknowledgement state for the operation. Answers must remain paired with protected request identities; their budgets and safe release remain open. No disk store or process restart recovery is required.
 - **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings`, each waiting for Core's `admin.reply`, and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report. `createLink` takes `connectSettings`.
 
 ## 10. How to work this plan

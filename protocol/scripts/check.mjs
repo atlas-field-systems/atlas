@@ -24,19 +24,6 @@ const schemas = Object.fromEntries(files.map((f) => [f, JSON.parse(readFileSync(
 
 const resolve = (file, ref) => posix.normalize(posix.join(posix.dirname(file), ref));
 
-// Law 10: the version is written once, in variables/protocol_version.json. Every copy must match it.
-const pv = schemas['variables/protocol_version.json'];
-const version = pv.examples?.[0];
-if (pv.examples?.length !== 1 || !/^\d+\.\d+$/.test(version) || pv.const !== undefined || pv.enum) errors.push('variables/protocol_version.json: law 10: exactly one example, the version as major.minor, and no const or enum');
-const wrongCopy = (m) => m?.protocol_version !== undefined && m.protocol_version !== version;
-for (const [file, s] of Object.entries(schemas)) {
-  if (s.examples?.some(wrongCopy)) errors.push(`${file}: law 10: an example's protocol_version is not ${version}; run npm run bump -- ${version}`);
-  const pvRef = s.properties?.protocol_version;
-  if (pvRef && (Object.keys(pvRef).join() !== '$ref' || resolve(file, pvRef.$ref) !== 'variables/protocol_version.json')) errors.push(`${file}: law 10: "protocol_version" is only a $ref to variables/protocol_version.json`);
-}
-for (const f of readdirSync('examples', { recursive: true }).filter((f) => f.endsWith('.json'))) {
-  if (wrongCopy(JSON.parse(readFileSync(join('examples', f), 'utf8')))) errors.push(`examples/${f}: law 10: protocol_version is not ${version}; run npm run bump -- ${version}`);
-}
 for (const s of Object.values(schemas)) ajv.addSchema(s);
 
 const index = JSON.parse(readFileSync(join(root, 'index.json'), 'utf8'));

@@ -1,6 +1,9 @@
 # Storage
 
-How Core stores what it knows. A normal store with one table per kind of thing. Core does not keep a raw log of every message. Field names match the message fields.
+How Core stores shared domain data, with one table per kind of thing. Field names
+match the message fields. These tables are not the diagnostic transcript.
+[Core logging](../../core/docs/logging.md) owns the separate local record of
+messages, decisions, and errors used in Reset archives.
 
 ## Tables
 
@@ -15,7 +18,7 @@ How Core stores what it knows. A normal store with one table per kind of thing. 
 | telemetry | telemetry report | `asset_id`, time, position, speed, heading (a time series) |
 | history | stored report | `asset_id`, time, the report as received (status, failsafe, settings, battery) |
 
-Latest status (the queue report included), battery and gimbal pointing are kept on the asset row or beside it, newest only. Settings are kept per setting: the report holding that setting's newest value, and which settings the latest connect report listed. No row has a revision or version counter.
+Latest status (the queue report included), battery and gimbal pointing are kept on the asset row or beside it, newest only. Settings are kept per setting: the report holding that setting's newest confirmed value, ordered by the Asset report's `time`, then `seq`, and which settings the latest connect report listed. Operator command timestamps do not order settings. No row has a revision or version counter.
 
 ## Assets
 

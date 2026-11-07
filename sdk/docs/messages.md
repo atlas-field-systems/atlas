@@ -9,8 +9,7 @@ with no rebuild step.
 ```js
 /** Loads definitions/index.json + every listed file. Sync-at-startup is fine. */
 export async function loadDefinitions(opts?: { dir?: string }): Promise<Defs>
-// Defs = { version: string /* from variables/protocol_version.json examples[0] */,
-//          index, schemas, ajv, types: Set<string>, kindsByType: Map<string,string[]> }
+// Defs = { index, schemas, ajv, types: Set<string>, kindsByType: Map<string,string[]> }
 
 export function check(defs: Defs, msg: unknown):
   { ok: true,  file: string, kind?: string }
@@ -21,14 +20,12 @@ Invariants:
 - `check` is pure, never mutates `msg`, and never throws on bad input (`null`, an array, unknown `type` all return `ok:false`).
 - An unknown `type` is `ok:false, errors:["unknown type <t>"]`.
 - One rule a schema can't state is checked after the schema: in any object holding both, `semi_minor_m` is no larger than `semi_major_m` (an uncertainty ellipse). It is the only cross-field rule; add none without a decision.
-- `defs.version` is read from the definitions. It is never a constant in SDK code.
 - Bind a convenience `createSdk({defs})` that returns `{check: m => check(defs,m), build, ...}` so callers don't thread `defs`.
 
 Loading (no codegen):
 - `loadDefinitions({dir})` defaults to `new URL('../../protocol/definitions/', import.meta.url)`, reads `index.json`, then every file listed (the same as `loadProtocol` with an fs `readJson`).
 - Ajv: `new Ajv({strict:false, allErrors:true})` + `ajv-formats`, as in lib. Compile lazily per `$id`, then memoize.
 - Type → file: `messageFile(msg)` (`control.command` → `messages/control/command.json`). Validate the whole message against that type schema, including its `oneOf`. A kind schema alone does not check the common fields or reject extra fields. An unknown `kind` gets one error naming the allowed kinds; error formatting must not skip full-message validation. `check` reports `kind` when present.
-- `defs.version`: `schemas['variables/protocol_version.json'].examples[0]`.
 - A test asserts every file under `protocol/definitions/` is listed in `index.json`, and that the SDK loads it all in under 500 ms.
 
 ## Build

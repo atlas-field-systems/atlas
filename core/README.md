@@ -2,7 +2,14 @@
 
 Atlas Core is the server that keeps the shared picture of a site and requests work from Assets. It stores data in the formats defined in Protocol and talks to gateways and apps through the SDK.
 
-**First-flight prototype.** Built to learn fast; speaks Protocol 0.6; findings go back into Protocol and the Charter ([docs/findings.md](docs/findings.md)).
+**Retained first-flight prototype.** It uses a historical Protocol snapshot and
+does not implement the current docs. Whether to keep or replace it is undecided;
+no new runtime work is planned until the owner requests the prototype pass.
+Findings live in [docs/findings.md](docs/findings.md).
+
+The future runtime's [configuration inventory](config.md) and
+[logging requirements](docs/logging.md) are discussion drafts, separate from the
+retained prototype's options below.
 
 ```sh
 git clone https://github.com/atlas-field-systems/atlas && cd atlas/core && npm install && npm run demo

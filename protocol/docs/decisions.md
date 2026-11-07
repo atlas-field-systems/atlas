@@ -53,7 +53,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - Core sends one `plugin.describe` per Plugin when an operator connects. An operator can also ask with `query.core` kind `plugins`.
 - Each action is a kind of `plugin.call` and `plugin.result`, defined once in Protocol, like a command kind (law 15). A Plugin lists the actions it offers, and several Plugins may offer the same one. A new action is a Protocol change, even when it reuses existing inputs.
 - Plugin messages are from `CORE`, with `plugin_id` naming the Plugin, because Plugins are inside Core.
-- Every action input is built from Protocol variables and components, such as a box, a position or a geo feature ID. A new kind of input is a Protocol change, with a changelog line such as "Added a box component so Plugins can search an area."
+- Every action input is built from Protocol variables and components, such as a box, a position or a geo feature ID. A new kind of input is a Protocol change, documented with its reason.
 - A call is answered like a query: one `plugin.result` per output item, naming the call with `reply_from` and `reply_to`, then `admin.reply` to mark the end. There is no list size limit. `admin.reply` says `accepted` when the call finished, `refused` when it never ran, or `failed` when the Plugin ran and broke; results already sent still stand. A long call sends nothing until it has results; progress and cancel wait until a real Plugin needs them. A result that must outlive the call is stored in Core with an ID and returned as a reference, so closing the operator interface loses nothing.
 - An action's output is a list returned to the caller, or a reference to what the Plugin created in Core (an Object, a Track, a geo feature or another Entity).
 - Outputs follow the same rule as inputs. Each action says what one list item is, built from Protocol variables and components, such as an altitude for a ground elevation or an unsaved geo feature for a building. A new kind of output is a Protocol change. Plugin data varies more than the rest of Atlas, so these additions are expected often.
@@ -84,8 +84,8 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - Any failure on the Asset triggers its configured failsafe. A failsafe with any response except `continue`, or an immediate motion command, clears the queue. What triggers which failsafe is the Asset's call and not decided yet.
 
 ## Connect and reports
-- `admin.hello`: an Asset's first message on a link: `asset_id`, `from`, `protocol_version`, and keys only (`key` required; `enrollment_key` the first time). Reports, commands and cameras follow in `admin.describe`.
-- `admin.hello_reply`: Core answers `accepted` or `version_mismatch`, with the version to run.
+- `admin.hello`: an Asset's first message on a link: `asset_id`, `from`, and keys only (`key` required; `enrollment_key` the first time). Reports, commands and cameras follow in `admin.describe`.
+- `admin.hello_reply`: Core answers `accepted` or `refused`.
 - `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
 - `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`continue`, `hold`, `land` or `return_to_home`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
 - `report.battery`: the battery, on its own schedule, separate from telemetry, because it changes even when the Asset does not move.
@@ -100,54 +100,57 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Compact JSON
 - Compact JSON is the message minified: same keys, same structure, no extra spaces.
-- No short keys (such as `time` -> `t`) and no type numbers, now or at 1.0. Names stay readable in the definitions, in messages and in storage.
+- No short keys (such as `time` -> `t`) and no type numbers, now or later. Names stay readable in the definitions, in messages and in storage.
 - Compression does the work short keys would. On the first-flight run, deflating each message with a dictionary of the definitions' names takes 4661 bytes to 2041 (largest message 117); short keys on top save only 3% more.
 
 ## Radio compression
-Each link chooses its own compression in its link profile: a proven existing method, chosen later. A link that compresses with a dictionary can build it from the definitions, because one version always means the same definitions (law 10). The hello and its reply are never compressed (law 12).
+Each link chooses its own compression in its link profile: a proven existing method, chosen later. A link that compresses with a dictionary can build it from the definitions, with matching dictionaries supplied by the link profile. The hello and its reply are never compressed (law 12).
 
 ## Storage
-The protocol also defines the storage layout, so the whole data format lives here. Core's tables are in [Storage](storage.md); stored record formats are not defined yet.
+Protocol also defines domain-storage records, so shared data uses the same names
+and shapes throughout Atlas. Local configuration and diagnostic records belong to
+their runtime components. Core's domain tables are in [Storage](storage.md);
+stored record formats are not defined yet.
 
 ## Late reports
-An older time never overwrites newer state. There is no "history-only" message.
+An older report never overwrites newer state. Settings reports from the same
+Asset use `time`, then `seq` to break a tie ([communication](communication.md#settings)).
+Operator command timestamps do not decide which settings the Asset applies.
+There is no "history-only" message.
 
 ## Settings
 - `report.settings`, sent when the Asset changes a setting itself, is a report and needs no confirmation. The connect report is the exception: Core acknowledges it with `admin.reply` (law 23).
-- When Core changes a setting, it is either immediate or queued. An immediate change is a `control.settings` without `task_id` (the easy default, a button press), confirmed by a `report.settings` whose `reply_from` and `reply_to` name the command. A queued change is a `control.settings` with `task_id`, for example placed after a move_to,, confirmed by its task status.
+- When Core changes a setting, it is either immediate or queued. An immediate change is a `control.settings` without `task_id` (the easy default, a button press), confirmed by a `report.settings` whose `reply_from` and `reply_to` name the command. A queued change is a `control.settings` with `task_id`, for example placed after a move_to. It applies when the Task runs and is confirmed by `report.settings` and its task status.
 - Settings are variables, grouped once in the `settings` component that `report.settings` and `control.settings` both carry; no setting has its own message.
 - Starting settings: `run_state` (paused/running), `lights` (on/off), `landing_gear` (up/down), `link_loss_response` (continue/hold/land/return_to_home) and `low_battery_response` (the same list without continue), and `home_position`, where `return_to_home` goes. The Asset sets it to where it starts up and an operator can move it, so there is no separate landing-point setting.
-- Each change is an explicit end state, never a toggle. The most recent time wins.
+- Each change is an explicit end state, never a toggle. The Asset applies new immediate changes in receipt order, and queued changes when their Task runs. Request timestamps do not determine execution order; safe responses still take precedence.
 - No custom per-Asset settings yet.
 
-## Versions
-- Everything is assumed up to date. There is no backward compatibility.
-- There is one version check, at connect. A mismatch is rejected with a clear "update this device" error.
-- Every change after a release is a new version, even an additive one (law 10).
+## Package releases
+Protocol's published package version is its only version ([law 10](laws.md)).
+Definitions and wire messages have no version field, and links do not negotiate
+one. Package publishing is not configured yet.
 
 ## Tools
 The CLI and web viewer only display messages. They never send to a live Core.
 They show the readable JSON beside the compressed bytes (hex dump and base64), with both sizes, so compression can be inspected.
 
-## First version
-Takeoff, Settings, Status, and Telemetry. Port the rest later.
-
 ## Storage, sensors and registration
 
-- Core uses a normal store with one table per kind of thing: assets, tasks, observations, tracks, geo features, Objects and telemetry. No raw message store. See [Storage](storage.md).
+- Core uses a normal store with one table per kind of thing: assets, tasks, observations, tracks, geo features, Objects and telemetry. The separate diagnostic transcript belongs to [Core logging](../../core/docs/logging.md). See [Storage](storage.md) for domain records.
 - `admin.describe` declares cameras once: fixed or gimbal, direction from the nose, field of view. No zoom, no revision fields.
 - `report.gimbal` gives live gimbal pointing, often while active, never while idle.
 - A command never depends on a geo feature. Cameras may give an optional roll.
 - Assets send `report.observation`, never tracks. Fusion alone decides when observations are the same target. Tasks target tracks. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/fusion.md).
-- Observations (0.8). `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
+- Observations. `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
 - One `entity_type` list names what Assets, observations and tracks are: person, ground_vehicle, airplane, helicopter, drone, aircraft (type unknown), watercraft, animal, structure, fixed_sensor, other. Left out means unknown. An Asset may give it in `admin.describe`.
 - Uncertainty is an ellipse (a circle when only `semi_major_m` is given) or a polygon of up to 32 corners, plus an optional `altitude_uncertainty_m`; bearing, elevation and range each have their own. Every bound is 95% (law 8). Left out means unknown, never exact. Observations and tracks share it.
 - A position with no altitude means the altitude was not measured. Displays draw it at ground level; fusion never reads it as "on the ground".
 - Extra facts go in `details`, a fixed list of specific details (`icao_address`, `callsign`, `squawk`, `color`), not broad groups, so tools can read and show each one. A new kind of detail is added to the list. Each stays true for its observation until replaced.
 - Target speed and direction of travel are not sent; fusion works them out from successive positions.
-- Assets self-register with a deployment enrollment key presented once, in the first hello (from 0.6). Keys are 16 random bytes (22 characters).
+- Assets self-register with a deployment enrollment key presented once, in the first hello. Keys are 16 random bytes (22 characters).
 
-## Queue order, cancel and failures (0.4)
+## Queue order, cancel and failures
 
 - `admin.describe` `commands` may be empty, for a receive-only Asset such as an ADS-B receiver.
 - `control.cancel` stops the motion running now: the Asset holds, sets `run_state` paused, reports the Task cancelled and answers with `report.settings` naming the cancel. A new list drops queued Tasks.
@@ -156,16 +159,16 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
 - Link bandwidth is a link-design concern (link profiles), not a message concern.
 
-## Operator API (0.5)
+## Operator API
 
 - Each operator interface opens one WebSocket to Core and uses the same messages as Assets, pushed both ways, with no polling. No user accounts or roles.
-- It presents its own `operator_id` and 16-byte key (with the link opening in 0.5; in `admin.operator_hello` from 0.6), checked like an asset key (Core stores the hash), then sends `admin.operator_hello`. Core answers `admin.hello_reply` with `operator_id`.
+- It sends one `admin.operator_hello` carrying its `operator_id` and 16-byte key, then waits for Core's `admin.hello_reply` with `operator_id`. Core checks the key like an asset key and stores only its hash.
 - On connect, Core pushes every Asset's latest `admin.describe` and latest reports unchanged, then forwards telemetry, status, queue changes and failsafes live (still unchanged).
 - Operators send `control.command`, `control.settings`, `control.queue` and `control.cancel` with `asset_id`. Core checks them against the Asset's `admin.describe` and refuses unsupported ones with a reason. Reading uses `query.core` and `query.asset` (`every_s`).
 - Core answers every operator message with `admin.reply` (`accepted` or `refused` with `explanation`, `reply_from` + `reply_to` naming its (`from`, `seq`)). The Asset's reports confirm the effect.
 - Routing is the link's job. A receiver handles a message once per `(from, seq, time)`; see [Routing and duplicates](communication.md#routing-and-duplicates).
 
-## Keys, links and answers (0.6)
+## Keys, links and answers
 
 - Keys travel in the opening hello, not the link opening (browsers cannot set WebSocket headers, and URLs end up in logs). `admin.hello` requires `key` and carries `enrollment_key` the first time; `admin.operator_hello` carries `key`. No other message carries a key, and Core never sends one: operators get the Asset's `admin.describe` forwarded unchanged. A bad key gets `hello_result: refused` and the link closes.
 - The hello must be the first message on a link. Anything before an accepted hello closes the link.
@@ -175,31 +178,31 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched.- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset ignores a resent Task it holds, and resends the final report of one it finished.)
 - Telemetry rate is the Asset setting `telemetry_every_s`.
 
-## Recovery (0.7)
+## Recovery
 
-From the review of the first-flight prototype: lost, repeated, late and reordered messages, and restarts, must not repeat work or erase what Core knows. See [communication.md](communication.md).
+From the review of the first-flight prototype: lost, repeated, late and reordered messages must not repeat work or erase what Core knows. See [communication.md](communication.md).
 
-- **Duplicates and retries.** A message is identified by `(from, seq, time)`. A retry is the same message unchanged, and a receiver that answered it sends the same answer again (Core's last-answer cache). A restarted Asset or operator interface may start `seq` at 0; its `time` keeps the new messages distinct, so the "lower hello means restart" rule is gone. Core keeps its own `seq` across restarts for messages it creates (`from` = `CORE`).
-- **Clocks.** A creator's clock never goes backwards, even across a restart, and it sends nothing before its clock is set. Clocks do not need to match each other.
+- **Duplicates and retries.** A message is identified by `(from, seq, time)`. A retry is the same message unchanged, and a receiver that answered it sends the same answer again (Core's last-answer cache). A creator keeps one `seq` counter for the operation, including across link reconnects. Processes stay running throughout the operation.
+- **Clocks.** A creator's clock never goes backwards during an operation, and it sends nothing before its clock is set. Clocks do not need to match each other.
 - **Tasks move forward only.** The first final state stays. A late or contradicting report goes to history, changes nothing and is not forwarded.
-- **Final reports are acknowledged.** The Asset resends a Task's final report until Core answers with `admin.reply`, which names the `task_id` so an answer can't be matched to the wrong report after the Asset's `seq` restarts. A final report lost in an Asset restart leaves that Task's outcome unknown.
-- **An Asset never runs a `task_id` twice.** It remembers at least its last 1024 finished Tasks and resends their final report if one arrives again.
-- **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Per setting the newest `time` wins, and an Asset never sends two settings reports with the same `time`.
+- **Final reports are acknowledged.** The Asset resends a Task's final report until Core answers with `admin.reply`, naming the report and its `task_id`. A lost acknowledgement is covered by resending the same final report.
+- **An Asset never runs a `task_id` twice.** It remembers its finished Tasks for the whole operation and resends their final report if one arrives again.
+- **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Views order each setting by the Asset report's `time`, then `seq` for a tie. The Asset applies requests in receipt order rather than comparing creator clocks.
 - **Link loss.** Contact with Core means hearing new (non-duplicate) messages after the accepted hello that name this Asset in `asset_id` and were not sent by this Asset. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), the `link_loss` failsafe triggers once. With `continue` the Asset keeps its Task and queue.
 
-## Acknowledgements and edges (0.8)
+## Acknowledgements and edges
 
-Owner answers to the edges a throwaway Core prototype of 0.7 found.
+Selected answers to edge cases found during prototyping.
 
 - **What must arrive is acknowledged** (law 23). Core acknowledges an Asset's `admin.describe` and connect `report.settings` as it does final reports, and the Asset waits for each before going on, so a later partial settings report is never taken for the full list.
-- **Core starts first and stops last.** A Core restart mid-operation is not designed for: Core keeps its `seq`, but not which messages it has handled, and a final report for a Task Core doesn't know does not occur.
+- **Core starts first and stops last.** Core, gateways, Assets, and their SDK instances stay running for the operation. Recovery covers link reconnects, not process restarts.
 - **A resent Task is a retry.** Core forwards an operator's Task unchanged, so resending a missing body sends the same bytes.
-- **Same-millisecond settings changes.** Two changes to one setting with the same `time` can tie. Accepted as too rare for a rule.
+- **Same-millisecond settings reports.** The Asset's `seq` orders reports whose `time` is equal; no extra field or clock synchronisation is required.
 - **Paused waits.** A new immediate command runs while paused, but queued tasks wait for `run_state: running`.
-- **Queued settings are confirmed** with `report.settings` naming the Task, like immediate ones. One overtaken by a newer change is still `completed`.
+- **Queued settings are confirmed** with `report.settings` naming the Task, like immediate ones. A queued change applies when that Task runs, regardless of its body's timestamp.
 - **Link loss on the ground.** It counts there too; every response except `continue` keeps the Asset down and clears its queue.
 
-## SDK choices (0.8)
+## SDK choices
 
 Drafted for the SDK docs and the matching protocol cuts. Details: [SDK](../../sdk/README.md).
 
@@ -215,16 +218,16 @@ Drafted for the SDK docs and the matching protocol cuts. Details: [SDK](../../sd
 - **Contact:** new post-hello messages with this Asset's `asset_id` whose `from` is not this Asset (not only `from: CORE`).
 - **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no correlation field. Core sends a history answer oldest first, and the finished result lists its items oldest first.
 - **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` (each waiting for Core's `admin.reply`) → unacked finals → queue report; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
-- **Handshake vs description:** hello = keys + version + id; `admin.describe` is keyless; `admin.asset` is removed.
+- **Handshake vs description:** hello = keys + id; `admin.describe` is keyless; `admin.asset` is removed.
 
-## Offline Assets (0.8)
+## Offline Assets
 
 - Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset that has been quiet for a third of that sends `report.telemetry` early, so its check-in carries data. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
 - Commands, settings changes, lists and cancels for an offline Asset are refused and not held. The operator sends them again once the Asset is back.
 
-## Review fixes (0.8)
+## Review fixes
 
-From an outside review of 0.8 before the SDK is built.
+Selected corrections from a review before the SDK is built.
 
 - **Facts can be cleared.** On an observation, `entity_type` or a detail set to `null` is no longer known. Left out still means unchanged.
 - **Ellipses have a direction.** An uncertainty with `semi_minor_m` also gives `orientation_deg`. `semi_minor_m` is never larger than `semi_major_m`; the SDK's `check()` enforces that, because a schema can't compare two fields.

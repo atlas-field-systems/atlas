@@ -11,14 +11,14 @@
       "from": "Drone",
       "to": "Core",
       "file": "01-hello.json",
-      "why": "The drone opens the link through the gateway and says hello: its id, protocol version, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe."
+      "why": "The drone opens the link through the gateway and says hello: its id, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe."
     },
     {
       "branch": "main",
       "from": "Core",
       "to": "Drone",
       "file": "02-hello_reply.json",
-      "why": "Core accepts the drone and confirms the version both sides will use."
+      "why": "Core accepts the drone."
     },
     {
       "branch": "main",

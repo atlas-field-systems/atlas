@@ -31,7 +31,7 @@ The battery is its own fixed report, `report.battery` (103 / 88), sent on its ow
 ```
 
 ## 2. Gateway → Core
-- **Link:** IP, through the [SDK front door](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md#one-front-door). Its behavior is drafted for 0.8; the SDK runtime is not built yet. Each medium's transport adapter and link profile own how bytes cross that link ([Communication](../communication.md#one-model-for-every-link)).
+- **Link:** IP, through the [SDK front door](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md#one-front-door). The SDK runtime is not built yet. Each medium's transport adapter and link profile own how bytes cross that link ([Communication](../communication.md#one-model-for-every-link)).
 - **Bloat:** the gateway should pass the message on unchanged. It should not wrap it or add fields Core can work out itself.
 
 ## 3. Core stores it
