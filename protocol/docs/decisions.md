@@ -47,7 +47,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - Replies name the original with `reply_from` + `reply_to` (= that message's `from` and `seq`).
 
 ## Plugins
-- Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/monorepo/blob/main/atlas/plugins.md) page.
+- Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/atlas/blob/main/atlas/plugins.md) page.
 - Plugins get their own message group, `plugin`: `plugin.describe` (one Plugin and the actions it offers), `plugin.call` and `plugin.result`.
 - Core sends one `plugin.describe` per Plugin when an operator connects. An operator can also ask with `query.core` kind `plugins`.
 - Each action is a kind of `plugin.call` and `plugin.result`, defined once in Protocol, like a command kind (law 15). A Plugin lists the actions it offers, and several Plugins may offer the same one. A new action is a Protocol change, even when it reuses existing inputs.
@@ -136,7 +136,7 @@ Takeoff, Settings, Status, and Telemetry. Port the rest later.
 - `admin.describe` declares cameras once: fixed or gimbal, direction from the nose, field of view. No zoom, no revision fields.
 - `report.gimbal` gives live gimbal pointing, often while active, never while idle.
 - A command never depends on a geo feature. Cameras may give an optional roll.
-- Assets send `report.observation`, never tracks. Fusion alone decides when observations are the same target. Tasks target tracks. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/monorepo/blob/main/core/docs/fusion.md).
+- Assets send `report.observation`, never tracks. Fusion alone decides when observations are the same target. Tasks target tracks. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/fusion.md).
 - Observations (0.8). `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
 - One `entity_type` list names what Assets, observations and tracks are: person, ground_vehicle, airplane, helicopter, drone, aircraft (type unknown), watercraft, animal, structure, fixed_sensor, other. Left out means unknown. An Asset may give it in `admin.describe`.
 - Uncertainty is an ellipse (a circle when only `semi_major_m` is given) or a polygon of up to 32 corners, plus an optional `altitude_uncertainty_m`; bearing, elevation and range each have their own. Every bound is 95% (law 8). Left out means unknown, never exact. Observations and tracks share it.
