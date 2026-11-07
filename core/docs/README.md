@@ -20,3 +20,7 @@ options and [logging](logging.md) defines the diagnostic evidence to collect.
 
 [findings.md](findings.md) lists protocol gaps found while building.
 [Fusion](fusion.md) records the selected first implementation, which is not built yet.
+
+[Final prototyping findings](experiments/final-report.md) records the lessons,
+accepted directions, deferred choices, and next work from the completed exploration.
+Detailed experiment reports and raw evidence are preserved outside this PR.
