@@ -82,7 +82,7 @@ The key is just `seq`, because `from` is always this identity.
 
 ```js
 export const Outcome = { ACCEPTED: 'accepted', REJECTED: 'rejected', FAILED: 'failed', UNKNOWN: 'unknown' }
-export class SdkError extends Error { code: 'invalid'|'auth_lost'|'version_mismatch'|'timeout'|'busy'|'closed'|'not_ready'|'clock_unset'; detail }
+export class SdkError extends Error { code: 'invalid'|'auth_lost'|'timeout'|'busy'|'closed'|'not_ready'|'clock_unset'; detail }
 ```
 Rule: a protocol outcome is a **Result value**. Programmer errors and hard stops
 are **throws**. `unknown` is never turned into failure. `accepted` never means

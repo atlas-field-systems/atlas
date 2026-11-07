@@ -6,12 +6,15 @@ It does not wait in a queue or go through a Task's steps.
 
 - Operators can change an Asset's settings, and so can the Asset itself.
   An Asset changes its own setting without asking Core, then reports the change.
-- If two changes cross, the one made most recently wins, judged by when it was
-  made, not when Core received it. Mesh messages can arrive late or out of order.
+- The Asset applies new immediate changes in the order it receives them, alongside
+  its own local changes. It does not compare the operator's clock with its own.
+  A delayed distinct command can therefore override a local change made later
+  than that command was sent.
 - A change always names the end state, such as "lights on" or "gear down",
-  never "switch the gear". A late or repeated change cannot flip it the wrong way.
+  never "switch the gear". A retry of the same message is not applied again.
 - A Change Setting Task puts a setting change in the queue, for example:
-  fly here, lights on, fly there.
+  fly here, lights on, fly there. It applies when that Task runs, regardless of
+  when its body was sent or received.
 - Pause and Resume are settings, not Tasks. An Asset is set to "paused" or
   "running", always as an explicit end state.
 - A Change Setting Task can pause an Asset inside a queue. It waits there until
@@ -23,5 +26,10 @@ It does not wait in a queue or go through a Task's steps.
   There is no separate backup landing point.
 
 How an Asset responds when something goes wrong is in [First flight](first-flight.md#when-something-goes-wrong).
+
+Normal use is an operator choosing actions such as Takeoff, Move To, and Land,
+like issuing orders in an RTS game, rather than streaming high-rate controls.
+The Asset reports each resulting setting value. Core and interfaces follow those
+reports, not guesses based on which operator command was sent last.
 
 [Using Atlas](using-atlas.md)

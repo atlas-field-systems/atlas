@@ -2,11 +2,16 @@
 
 The single definition of every Atlas message, and the guide for how Atlas stores data.
 
-It covers how data moves between parts of Atlas, and it guides how data is stored.
+It covers how shared data moves between parts of Atlas and how it is stored.
 Core, the SDK cache, and Assets store data built from these same definitions.
-Everything is described here, once, in plain JSON files.
+Shared formats are described here, once, in plain JSON files. Local configuration
+and diagnostic logs belong to the runtime components that use them.
 Core, the SDK, Assets, and the tools all read from these files.
 When we improve the protocol, everything that uses it improves.
+
+Protocol is an unpublished draft. When it is published, its package version is
+its only version. Definitions and messages carry no protocol version, and links
+do not negotiate one.
 
 A CLI and a web viewer show any message, its example, and its size.
 They only display what the definitions say, so changing the protocol never means

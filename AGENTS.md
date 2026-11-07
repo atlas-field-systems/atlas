@@ -20,8 +20,8 @@ is locked. Propose changes to the owner rather than making them quietly. See
 | Folder | What lives there | Status |
 |---|---|---|
 | [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide design decisions | Active |
-| [protocol/](protocol/) | The spec: every Atlas data format (messages and the storage layout) as definitions, laws, examples and docs. It carries the version, released as `protocol-v<major.minor>.<patch>` tags: major.minor is the protocol version, and the patch counts releases that change no message | Draft |
-| [sdk/](sdk/) | The SDK: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages. Loads Protocol's definitions; defines no message itself. Docs drafted for protocol 0.8; runtime code is not built yet | Draft docs, runtime not built |
+| [protocol/](protocol/) | The spec: shared domain data (messages and domain-storage records) as definitions, laws, examples and docs. Component configuration and diagnostic logs live with their owners. When published, its package version is its only version; definitions and messages carry no protocol version | Draft, unpublished |
+| [sdk/](sdk/) | The SDK: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages. Loads Protocol's definitions; defines no message itself. Runtime code is not built yet | Draft docs, runtime not built |
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and requests work. First-flight prototype; pins a Protocol release tag. Will adopt the SDK front door (shared `check()`, no second validation engine) once the SDK exists | Prototype |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
@@ -59,10 +59,11 @@ already knows the fundamentals.
 
 - `main` is where work lands, through PRs. Nothing leaves the repository from `main`.
 - `prod` is what is released. When the developer approves, `git push origin main:prod`.
-  Only commits on `main` are released; never commit to `prod` directly. The release
-  workflow tags and releases each part that changed: Protocol as `protocol-v…`, Core as
-  `core-v…` (see `protocol/AGENTS.md` and `core/AGENTS.md`).
-- Core never reads `protocol/` on `main`. It pins a Protocol release in `core/package.json`.
+  Only commits on `main` are released; never commit to `prod` directly. Protocol
+  package publishing is not configured yet. Its package version will be its only
+  version (see `protocol/AGENTS.md`).
+- The retained Core prototype never reads `protocol/` on `main`. It pins a
+  historical Protocol snapshot in `core/package.json`; it does not follow the current spec.
 - Later, a push to `prod` will also update a read-only copy of each folder in its own
   repository. That is not built yet.
 

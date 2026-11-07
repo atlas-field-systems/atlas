@@ -41,8 +41,9 @@ definitions or docs. Programs load the definitions as data instead.
 
 Atlas is split into three layers, so each can change without breaking the others.
 
-- **Protocol is the spec.** Definitions, laws, examples and docs. It carries the
-  version number, written once in Protocol and copied everywhere by a script.
+- **Protocol is the spec.** Definitions, laws, examples and docs. Its published
+  package version is its only version; no version is embedded in definitions or
+  messages.
 - **The SDK is the one implementation** and the stable front door every program
   uses: Core, bridges and operator apps. It builds, validates and parses
   messages, and handles keys, queueing and retry, and duplicates. Programs never
@@ -58,32 +59,27 @@ How changes are made:
 - Internal changes, such as compression or encoding, are agreed between the two
   ends when a link opens. Programs do not see them.
 - Changes to meaning are additive: new fields and messages, not changed ones.
-- Every change after a release is a new version, additive or not. A released
-  version never changes, so two ends with the same version have exactly the
-  same definitions
-  ([Protocol law 10](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/laws.md)).
+- Published packages are immutable. Changes are released through the package
+  version, with no separate wire-version counter or handshake negotiation.
 
-How versions and releases work:
+How releases work:
 
-- Protocol's main carries the version being worked on. It can still change until
-  it is released.
-- All of Atlas is one repository. A release is a git tag named for its part.
-  Nothing is published as a package. Protocol's tags are
-  `protocol-v<major.minor>.<patch>`: major.minor is the protocol version, and the
-  patch counts releases that change no message, such as tool fixes.
-- Releasing is pushing main to the `prod` branch (`git push origin main:prod`).
-  That runs the checks and makes a tag and a GitHub release for each part that
-  changed. Only commits on main are released.
-- Core moves only to Protocol release tags, never to Protocol's main, so spec
-  work in progress never breaks it.
+- Protocol is an unpublished draft. Package publishing is not configured yet.
+  When published, the package version is the protocol version. No draft protocol
+  number or version-bump script is maintained in the spec.
+- Programs select Protocol through their package dependency. Protocol's JSON
+  definitions, examples, and messages contain no protocol-version metadata.
+- All Atlas work lands in this repository through `main`. Only approved commits
+  on `main` are released through `prod`.
+- The retained Core prototype uses a historical Protocol snapshot. Its pin keeps
+  that older runtime separate from current spec work until it is rebuilt or removed.
 
 How drift is prevented:
 
 - Protocol's examples run as SDK tests.
-- A program outside Protocol, such as Core, pins one release and loads its JSON
-  definitions from it.
+- Programs pin the Protocol package they use and load its JSON definitions.
 
-How the SDK works is drafted for protocol 0.8 in the
+How the SDK works is drafted in the
 [SDK docs](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md).
-Runtime SDK code is not started; Core stays on its pinned Protocol release until
-a protocol-bump adopt PR.
+Runtime SDK code is not started. The retained Core prototype is not an
+implementation of the current docs.

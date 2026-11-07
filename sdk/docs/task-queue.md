@@ -9,7 +9,7 @@ Helpers never fly: the Asset app runs each Task.
 ## Module: `asset-queue.mjs` (D6)
 
 ```js
-export function createAssetQueue(opts: { link, identity, store?: TaskStore, now?, finalRetryMs?: number /*10000*/ }): AssetQueue
+export function createAssetQueue(opts: { link, identity, now?, finalRetryMs?: number /*10000*/ }): AssetQueue
 AssetQueue = {
   onTask(cb: (task: Message) => void): () => void  // emits in list order, at most once per task_id
   onImmediate(cb: (msg: Message) => void): () => void // immediate command/settings and control.cancel
@@ -21,15 +21,15 @@ AssetQueue = {
   ids(): string[]
 }
 
-TaskStore = Map-like { get(key), set(key, value), delete(key), keys() }  // default: new Map()
+TaskStore = Map  // internal, in memory for the operation
 //   "list"                    -> { version: number, ids: string[] }      the list in effect
 //   "body:<task_id>"          -> Uint8Array                              a Task body it holds
 //   "task:<task_id>"          -> { final: Uint8Array, acked: boolean }   one record per finished task
 //   "answer:<from:seq:time>"  -> Uint8Array                              the Asset's answer to a request
-// keys() is in insertion order; the helper keeps the newest >= 1024 finished tasks and answers and deletes older ones.
+// Finished tasks stay for the operation; answered-request replay keeps at least the newest 1024 answers.
 ```
-A persistent store is anything with those four methods. All queue logic stays in
-the helper.
+All queue logic stays in the helper. Link reconnects use the same in-memory
+state. Process restart recovery is outside the current design.
 Invariants (law 18, communication.md):
 - A body is any `control.command` **or** `control.settings` carrying `task_id`. It is stored; arrival order does not matter. A resent body for a Task it holds is ignored; for a Task it has finished, it resends that Task's stored `final` bytes.
 - A `control.queue` built on a version other than the current `queue_version` is ignored, and answered with the current queue report.
@@ -37,5 +37,9 @@ Invariants (law 18, communication.md):
 - A **motion** `control.command` without `task_id` runs now and calls `clear()`. A `control.settings` without `task_id` runs now beside the list and does **not** clear it. When a failsafe triggers with any response except `continue`, the app calls `clear()`. Bodies no list names are dropped at a clear.
 - `control.cancel` is emitted to `onImmediate` (hold/pause; don't fly anything, concept 10). It never creates a task.
 - Every `control.cancel` and `control.settings` is answered with `report.settings` (`reply_from`/`reply_to` naming it). The helper builds the answer frame through `answer()`; the app supplies the `settings` object. Every answer's bytes, the queue report included, are stored; a duplicate request (via `onDuplicate`) gets the same bytes again, unchanged. This is Asset-side answer replay, not Core's last-answer cache.
-- Final reports (`completed|failed|cancelled`) are stored as `task:<task_id>` with `acked: false` until an `admin.reply` matches by `reply_from/reply_to` **and** `task_id`. Retry the **same bytes** on each new link and every 10 s (`finalRetryMs`) until acked, with no attempt cap. Observer event `final_report_retry` on each retry. With a persistent store, the list, version and retries survive an Asset restart.
+- Immediate settings reach the app in receipt order. A settings Task applies when
+  the app runs it from the list; neither path discards a change because another
+  creator's request has a newer timestamp. The app reports its resulting values
+  under [Protocol's settings rule](../../protocol/docs/communication.md#settings).
+- Final reports (`completed|failed|cancelled`) are stored as `task:<task_id>` with `acked: false` until an `admin.reply` matches by `reply_from/reply_to` **and** `task_id`. Retry the **same bytes** on each new link and every 10 s (`finalRetryMs`) until acked, with no attempt cap. Observer event `final_report_retry` on each retry. The list, queue version, finished tasks and unacknowledged reports stay in memory through link disconnects.
 - The list holds at most 64 `task_id`s (the definition's limit).

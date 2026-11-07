@@ -11,8 +11,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Operator → Core | [`admin.operator_hello`](../examples/operator-session/01-operator_hello.json) | The operator interface opens its WebSocket and says hello with its operator_id and key, the only message that carries the key. | 149 | 126 |
-| 02 | Core → Operator | [`admin.hello_reply`](../examples/operator-session/02-hello_reply.json) | Core checks the key against its stored hash and accepts. | 144 | 122 |
+| 01 | Operator → Core | [`admin.operator_hello`](../examples/operator-session/01-operator_hello.json) | The operator interface opens its WebSocket and says hello with its operator_id and key, the only message that carries the key. | 124 | 103 |
+| 02 | Core → Operator | [`admin.hello_reply`](../examples/operator-session/02-hello_reply.json) | Core checks the key against its stored hash and accepts. | 119 | 103 |
 | 03 | Core → Operator | [`admin.describe`](../examples/operator-session/03-describe.json) | Core pushes each Asset's stored admin.describe unchanged (A1 here). Same from, seq and time as the Asset sent. | 349 | 227 |
 | 04 | Core → Operator | [`admin.describe`](../examples/operator-session/04-describe.json) | And A2, a receive-only ADS-B receiver that accepts no commands. | 131 | 110 |
 | 05 | Core → Operator | [`report.settings`](../examples/operator-session/05-settings.json) | Core pushes A1's latest state: settings, | 296 | 196 |
@@ -44,7 +44,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 0,
   "from": "OP1",
   "operator_id": "OP1",
-  "protocol_version": "0.8",
   "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e"
 }
 ```
@@ -60,8 +59,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 100,
   "from": "CORE",
   "operator_id": "OP1",
-  "hello_result": "accepted",
-  "protocol_version": "0.8"
+  "hello_result": "accepted"
 }
 ```
 
@@ -484,9 +482,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-23 messages, 3817 bytes minified, 2947 bytes if each is deflated on its own.
+23 messages, 3767 bytes minified, 2905 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 39% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 39% of all bytes. Field names, quotes and punctuation are 60%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 

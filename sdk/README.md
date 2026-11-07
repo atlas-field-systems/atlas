@@ -15,9 +15,9 @@ top. A change to the spec and the SDK can land in one PR.
 Transport adapters (WebSocket, Meshtastic, FLRC) only move bytes. Each will be
 its own package beside the SDK, so a program installs only the links it uses.
 
-**Status:** a draft for protocol 0.8, like everything in Atlas. Runtime code is
-not built yet. Build it from [IMPLEMENTATION.md](IMPLEMENTATION.md): one slice per
-PR, in order, and the developer approves each merge before the next slice starts.
+**Status:** a draft, like everything in Atlas. Runtime code is
+not built yet. [IMPLEMENTATION.md](IMPLEMENTATION.md) is the future SDK build plan;
+implementation starts when the owner requests it.
 
 ## One front door
 
@@ -34,8 +34,9 @@ Every program uses the SDK: **Core, bridges, operator apps, and Assets on IP**.
 - Helpers never schedule or fly physical work; the Asset's own software does.
 - Work is bounded. Queues, retries and history reads have limits, and programs
   can stop and close what they opened.
-- One optional [observer](docs/links.md#observer-optional) lets a program watch
-  the SDK's own activity without slowing or breaking it.
+- [Diagnostic events](docs/logging.md) expose message handling, retries, outcomes,
+  and errors to the host through an optional observer. Core and Asset apps attach
+  a consumer for their required logging from the first prototype.
 
 ## Docs
 
@@ -47,6 +48,8 @@ Every program uses the SDK: **Core, bridges, operator apps, and Assets on IP**.
 | [Calls](docs/calls.md) | `request` / `stream` / `subscribe`, outcomes and errors |
 | [Task queue](docs/task-queue.md) | The Asset-side queue helper |
 | [Live picture](docs/live-picture.md) | The optional in-memory picture for operator apps |
+| [Logging](docs/logging.md) | Detailed SDK events collected by the host |
+| [Configuration](config.md) | Library controls and logging options for discussion |
 | [Implementation plan](IMPLEMENTATION.md) | Layout, build slices, tests, current implementation points |
 
 ## Non-goals (for v1)
@@ -64,6 +67,7 @@ sdk/
   README.md           this file
   AGENTS.md           rules for agents working here
   IMPLEMENTATION.md   build plan
+  config.md           configuration inventory for discussion
   docs/               one doc per part of the SDK
   # later: src/, test/, adapters/ (see IMPLEMENTATION.md)
 ```

@@ -100,7 +100,6 @@
         "variables/ground_speed_mps.json",
         "variables/heading_deg.json",
         "variables/battery_percent.json",
-        "variables/protocol_version.json",
         "variables/hello_result.json",
         "variables/reply_result.json",
         "variables/task_id.json",

@@ -49,7 +49,7 @@ export function createLink(opts: {
 }): Link
 
 Link = {
-  state: 'idle'|'opening'|'hello_sent'|'ready'|'closed'|'auth_lost'|'version_mismatch',
+  state: 'idle'|'opening'|'hello_sent'|'ready'|'closed'|'auth_lost',
   open(): Promise<HelloResult>  // client: open transport, send hello, await admin.hello_reply
   accept(): Promise<PeerHello>  // server: await first message, must be a hello type
   replyHello(result, fields)    // server side (Core) answers
@@ -62,15 +62,14 @@ Link = {
 }
 ```
 Hello state machine (client):
-1. `open` → `hello_sent`: build `admin.hello` (asset) or `admin.operator_hello` (operator). `protocol_version = defs.version`.
+1. `open` → `hello_sent`: build `admin.hello` (asset) or `admin.operator_hello` (operator), carrying the identity and keys.
 2. Wait for `admin.hello_reply` (not `admin.reply`).
    - `accepted` → an Asset sends `admin.describe` (D9) and its connect `report.settings`, each acknowledged by Core's `admin.reply`, then → `ready` ([Reconnect](#reconnect-d8)).
-   - `version_mismatch` → state `version_mismatch`, close, and reject `open()` with `SdkError('version_mismatch', {peer: protocol_version})`. No retry loop (strict breaks are intended).
    - `refused` → `identity.stop('refused')`, state `auth_lost`, close. Network sends stop. Local reads stay.
    - timeout → close, `SdkError('timeout')`, eligible for reconnect.
 
 Server side (used by mini-core in tests, later by Core): the first message must
-be a hello type, or close. The SDK checks schema and version equality. **Key
+be a hello type, or close. The SDK checks the message against its loaded definitions. **Key
 verification is Core business** (it holds the hashes): `accept()` returns the hello,
 and Core calls `replyHello`. One-link-per-ID replacement (law 22) is Core business
 too; the SDK just provides `close()`.
@@ -95,20 +94,22 @@ Inbound pipeline, in this order: `decode → check → (pre-ready filter) → du
 ```js
 export function createReconnector(link factory, opts: { backoff?: {minMs:500,maxMs:30000,factor:2,jitter:0.2} })
 ```
-- Reconnect on transport close or hello timeout. Stop on `auth_lost` and `version_mismatch`.
+- Reconnect on transport close or hello timeout. Stop on `auth_lost`.
 - **Asset**, after **every** accepted hello (first connect and each reconnect), in order (communication.md, After reconnecting): the link sends (1) `admin.describe` from `opts.describe` and (2) the connect `report.settings` from `opts.connectSettings()` (every setting it supports; Core refuses changes to any setting it leaves out). It sends each only after the one before is acknowledged by Core's `admin.reply` (matched by `reply_from`/`reply_to`), resending the same bytes every 10 s until then (law 23), then sets state `ready`. The Asset queue listens with `onState` and on `ready` sends (3) unacked final reports, (4) `queueReport()`. The reconnector only reopens the link and has no resync steps of its own; `link.mjs` never imports `asset-queue.mjs`.
 - **Operator**: pending → `unknown/disconnected`. No command retry. The live picture (if on) goes `stale:true` and then rebuilds from Core's connect push. Those messages are mostly duplicates of what it saw before; they are delivered anyway ([Link](#link)).
 - The seq counter continues across reconnects (same identity object).
 
 ## Observer (optional)
 
-One optional observer lets a program watch the SDK's own activity (connects,
-retries, drops) for diagnostics, without slowing or breaking the SDK.
+The observer delivers the SDK's [diagnostic events](logging.md) to its host.
+It is optional for a general library caller; Core and Asset apps attach a
+diagnostic consumer to collect their required run evidence.
 
 ```js
 createLink({ observer: (event: { name, at, ...detail }) => void })
 ```
-Events: `open, hello_sent, ready, closed, reconnect_scheduled, invalid_in, invalid_out, duplicate_in, decode_error, timeout, late_reply, auth_lost, version_mismatch, final_report_retry, contact`.
+[SDK logging](logging.md) owns event coverage and the proposed record contents.
+[SDK configuration](../config.md) tracks the controls still to be decided.
 Emit through `queueMicrotask` inside try/catch.
 Observer exceptions are swallowed and an async observer's promise is never awaited.
 JS is single-threaded, so an observer that blocks synchronously still blocks; that

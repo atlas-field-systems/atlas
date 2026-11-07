@@ -33,7 +33,6 @@ export function createIdentity(opts: {
   id: string,                  // asset_id | operator_id | 'CORE'
   role: 'asset' | 'operator' | 'core',
   key?: string, enrollmentKey?: string,
-  seqStore?: { load(): number, save(n: number): void },  // Core persists; others default in-memory
   now?: () => number,
   dedupeSize?: number          // default 1024 per from (communication.md)
 }): Identity
@@ -49,7 +48,7 @@ Identity = {
 ```
 Invariants:
 - Keys are attached **only** to `admin.hello` / `admin.operator_hello`. `stamp` throws if a draft for any other type already carries `key`/`enrollment_key`.
-- There is one seq counter per identity, shared across all links. It does not reset on reconnect. It may restart at 0 on a process restart only when `time` is strictly later.
+- There is one in-memory seq counter per identity for the operation, shared across all links. It does not reset on reconnect. Processes stay running for the operation; no restart recovery or persisted counter is required.
 - `time = max(now(), lastTime)`. It never goes backwards. If `now()` is earlier than `lastTime`, use `lastTime` (same ms is allowed; seq disambiguates).
 - Dedupe key: `(from, seq, time)`. Dedupe decides whether a message is **acted on**, not whether it is delivered ([Links](links.md#link)). Keep a per-`from` bounded ring (Map + array, size N, oldest evicted). Memory is bounded by `N × distinct from`. Add a cap on distinct `from` (default 4096, LRU).
 - No Core-style last-answer cache in the SDK for forwarded traffic. That cache belongs to **Core** (business layer); the SDK exposes `seen()` and `onDuplicate` so Core can resend its cached reply.

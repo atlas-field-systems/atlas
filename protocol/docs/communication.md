@@ -1,8 +1,13 @@
 # How Atlas parts communicate
 
-How every part of Atlas behaves on a link, for protocol 0.8. It spells out the
+How every part of Atlas behaves on a link. It spells out the
 [laws](laws.md) in full. The SDK implements these rules; what it adds on top is in
 the [SDK docs](../../sdk/README.md).
+
+Core, gateways, Assets, and their SDK instances stay running for an operation
+([operating assumption](../../atlas/using-atlas.md#the-four-pillars)). Recovery
+here means restoring a dropped link in those same processes, with state retained
+in memory. It does not include process restarts.
 
 ## One model for every link
 
@@ -23,12 +28,10 @@ adapters only move bytes; framing and JSON stay in the SDK or link profile.
 
 1. The WebSocket (or radio link) opens.
 2. The first message on the link is `admin.hello`: `asset_id`, `from` (the same
-   id), protocol version, and its 16-byte asset key (and the enrollment key the
+   id) and its 16-byte asset key (and the enrollment key the
    first time). Keys appear in no other message, and Core never sends one.
-3. A version mismatch gets `version_mismatch` ("update this device"); a bad key
-   gets `refused`. Either way Core closes the link. Anything sent before an
-   accepted hello closes the link too. After the hello, no message carries a
-   version.
+3. A bad key gets `refused`, and Core closes the link. Anything sent before an
+   accepted hello closes the link too.
 4. If the Asset already has a link open, the newer link replaces the older; Core
    closes the older.
 5. After an accepted hello, the Asset sends `admin.describe` (reports, commands,
@@ -41,7 +44,7 @@ WebSocket per interface**, the same messages, pushed both ways, no polling.
 No user accounts or roles.
 
 1. The WebSocket opens and the interface's first message is `admin.operator_hello`:
-   its `operator_id` (also `from`), its 16-byte key and protocol version. Core
+   its `operator_id` (also `from`) and its 16-byte key. Core
    checks the key like an asset key (it stores only the hash) and answers
    `admin.hello_reply` with `operator_id`.
 2. Each interface has its own `operator_id`. A newer link with the same ID replaces
@@ -90,11 +93,10 @@ So a message can arrive twice. Every receiver, Core included, applies one rule:
   same `time`. Everything else a creator sends gets a new `seq`.
 - Core **forwards other creators' messages unchanged**. It does not stamp a new
   `seq` on them.
-- A creator's `seq` is one counter across all its links. It does not reset on
-  reconnect. An Asset or operator interface may restart it at 0 when it restarts;
-  its `time` keeps the new messages apart from the old ones. Core keeps its own
-  counter across restarts for messages it creates (`from` is `CORE`).
-- A creator's clock never goes backwards, even across a restart, and a creator
+- A creator's `seq` is one counter across all its links for the operation. It
+  does not reset on reconnect. Core uses its own counter for messages it creates
+  (`from` is `CORE`).
+- A creator's clock never goes backwards during an operation, and a creator
   sends nothing until its clock is set. Clocks need not match each other.
 - The receiver remembers, per `from`, the `(seq, time)` of each message it has
   handled (at least the last 1024). A message it has already handled is not
@@ -138,12 +140,13 @@ to fetch the next one.
 5. **The version.** The Asset raises `queue_version` by one whenever its list
    changes: a new list takes effect, or it clears the list. Starting a Task does not
    raise it; the Asset skips any `task_id` in a list that it has already started or
-   finished. It keeps its list, version and finished `task_id`s across a restart.
+   finished. It keeps its list, version and finished `task_id`s for the operation,
+   including while its links are disconnected.
 6. The Asset runs its list in order while `run_state` is `running`. A Task that
    leaves the list without starting is reported `cancelled`.
 7. An Asset never runs a `task_id` twice. A resent body for a Task it holds is
    ignored; for a Task it has finished, it sends that Task's final report again. It
-   remembers at least its last 1024 finished `task_id`s.
+   remembers its finished `task_id`s for the whole operation.
 8. **Clears.** Any failure on the Asset, a failed Task included, triggers its
    configured failsafe. A failsafe with any response except `continue`, or an
    immediate motion command, clears the list and raises the version. The Asset
@@ -155,11 +158,8 @@ to fetch the next one.
 When a task finishes (`completed`, `failed` or `cancelled`), the Asset keeps sending
 that `report.status` as a retry, on each new link and every 10 s, until Core answers
 it with `admin.reply` (`accepted`, `reply_from`/`reply_to` naming the report, and its
-`task_id`). The Asset matches both, so after its `seq` restarts an old answer can't
-close a new report. A lost answer is covered the same way: Core recognises the retry
-and sends its answer again.
-
-If the Asset restarted and lost a Task's final report, that Task's outcome is unknown.
+`task_id`). The Asset matches both the report identity and Task ID. A lost answer
+is covered the same way: Core recognises the retry and sends its answer again.
 
 ## Immediate commands and cancel
 
@@ -183,13 +183,19 @@ If the Asset restarted and lost a Task's final report, that Task's outcome is un
   partial report is never taken for the full list.
 - A later `report.settings` may carry only some settings. A setting left out is
   unchanged, not unsupported.
-- Per setting, the newest `time` wins, wherever the report comes from (Core forwards
-  reports unchanged). An Asset never sends two settings reports with the same
-  `time`. An older report is kept in history and changes nothing.
+- The Asset applies each new valid immediate settings request when it receives
+  it, alongside its local changes. Request timestamps do not choose the winner.
+  A delayed distinct request can override a local change; a duplicate retry does
+  not apply again. Configured safe responses still override ordinary settings.
+- The Asset reports the resulting values. Core and pictures keep the newest
+  Asset report per setting, ordered by that Asset's `time`, then `seq` when the
+  times match. Both fields come from the same Asset, so no comparison between
+  operator and Asset clocks is needed. Older reports stay in history and do not
+  replace the current value.
 - A `control.settings` Task is confirmed like an immediate one: when it runs, the Asset
-  sends `report.settings` with `reply_from`/`reply_to` naming it. If a newer change
-  already set that setting, it changes nothing, is still `completed`, and the report
-  shows the value kept.
+  applies its settings and sends `report.settings` with `reply_from`/`reply_to`
+  naming it. The body's send or arrival time does not make it obsolete; its
+  execution follows queue order. A failure response still takes precedence.
 
 ## Losing the link
 

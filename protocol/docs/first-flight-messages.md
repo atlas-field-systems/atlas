@@ -11,8 +11,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says hello: its id, protocol version, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe. | 177 | 152 |
-| 02 | Core → Drone | [`admin.hello_reply`](../examples/first-flight/02-hello_reply.json) | Core accepts the drone and confirms the version both sides will use. | 138 | 118 |
+| 01 | Drone → Core | [`admin.hello`](../examples/first-flight/01-hello.json) | The drone opens the link through the gateway and says hello: its id, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe. | 152 | 134 |
+| 02 | Core → Drone | [`admin.hello_reply`](../examples/first-flight/02-hello_reply.json) | Core accepts the drone. | 113 | 100 |
 | 01b | Drone → Core | [`admin.describe`](../examples/first-flight/01b-describe.json) | After the hello is accepted, the drone describes itself: reports, commands and cameras. No keys. Core stores this and will forward it unchanged to operators. | 349 | 227 |
 | 01c | Core → Drone | [`admin.reply`](../examples/first-flight/01c-reply.json) | Core stores the description and acknowledges it. Until it does, the drone resends the description and sends nothing else. | 138 | 108 |
 | 03 | Drone → Core | [`report.settings`](../examples/first-flight/03-settings.json) | The drone reports its current settings, so Core knows what it will do if the link drops. This connect report lists every setting it supports. | 296 | 196 |
@@ -48,7 +48,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 1,
   "from": "A1",
   "asset_id": "A1",
-  "protocol_version": "0.8",
   "key": "q3J8vR2xT0bN5mK7wY1cZg",
   "enrollment_key": "H4sLp9Qe2Vd6Fu0Ka8Tn3w"
 }
@@ -65,8 +64,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 1,
   "from": "CORE",
   "asset_id": "A1",
-  "hello_result": "accepted",
-  "protocol_version": "0.8"
+  "hello_result": "accepted"
 }
 ```
 
@@ -652,9 +650,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-30 messages, 5203 bytes minified, 3942 bytes if each is deflated on its own.
+30 messages, 5153 bytes minified, 3906 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 38% of all bytes. Field names, quotes and punctuation are 62%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 38% of all bytes. Field names, quotes and punctuation are 61%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 

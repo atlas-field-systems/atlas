@@ -11,8 +11,8 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 | # | From → To | Message | Why | Minified | Deflate |
 |---|---|---|---|---|---|
-| 01 | Operator → Core | [`admin.operator_hello`](../examples/plugin-call/01-operator_hello.json) | The operator interface says hello. | 149 | 126 |
-| 02 | Core → Operator | [`admin.hello_reply`](../examples/plugin-call/02-hello_reply.json) | Core accepts. | 144 | 122 |
+| 01 | Operator → Core | [`admin.operator_hello`](../examples/plugin-call/01-operator_hello.json) | The operator interface says hello. | 124 | 103 |
+| 02 | Core → Operator | [`admin.hello_reply`](../examples/plugin-call/02-hello_reply.json) | Core accepts. | 119 | 103 |
 | 03 | Core → Operator | [`plugin.describe`](../examples/plugin-call/03-plugin-describe.json) | Core pushes one plugin.describe per Plugin with the Asset descriptions: Plugin DEM offers ground_elevation. | 120 | 109 |
 | 04 | Operator → Core | [`plugin.call ground_elevation`](../examples/plugin-call/04-call-ground_elevation.json) | The operator asks DEM for the ground elevation at a point. | 161 | 131 |
 | 05 | Core → Operator | [`plugin.result ground_elevation`](../examples/plugin-call/05-result-ground_elevation.json) | One result item, naming the call by reply_from and reply_to. Plugins are inside Core, so from is CORE. | 191 | 145 |
@@ -30,7 +30,6 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 0,
   "from": "OP1",
   "operator_id": "OP1",
-  "protocol_version": "0.8",
   "key": "Xc7Rb2Mt5Wq9Ln1Jd4Sg8e"
 }
 ```
@@ -46,8 +45,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
   "seq": 100,
   "from": "CORE",
   "operator_id": "OP1",
-  "hello_result": "accepted",
-  "protocol_version": "0.8"
+  "hello_result": "accepted"
 }
 ```
 
@@ -216,9 +214,9 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 
 ## Observations on verbosity
 
-11 messages, 1543 bytes minified, 1273 bytes if each is deflated on its own.
+11 messages, 1493 bytes minified, 1231 bytes if each is deflated on its own.
 
-The header (`type`, `time`, `seq`, `asset_id`) is 36% of all bytes. Field names, quotes and punctuation are 55%; the values themselves are the rest.
+The header (`type`, `time`, `seq`, `asset_id`) is 37% of all bytes. Field names, quotes and punctuation are 54%; the values themselves are the rest.
 
 Deflate saves little on one small message, because there is little repetition inside it. Compressing many messages together would find the repeated field names.
 
@@ -227,7 +225,7 @@ Where the bytes go (each field summed across every message):
 | Field | Times | Bytes | Share |
 |---|---|---|---|
 | `type` | 11 | 244 | 16% |
-| `time` | 11 | 220 | 14% |
+| `time` | 11 | 220 | 15% |
 | `from` | 11 | 139 | 9% |
 | `seq` | 11 | 91 | 6% |
 | `kind` | 4 | 91 | 6% |
@@ -235,7 +233,7 @@ Where the bytes go (each field summed across every message):
 | `reply_result` | 3 | 73 | 5% |
 | `reply_from` | 4 | 72 | 5% |
 | `explanation` | 1 | 51 | 3% |
-| `protocol_version` | 2 | 48 | 3% |
+| `reply_to` | 4 | 48 | 3% |
 
 Longest single fields:
 
