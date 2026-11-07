@@ -1,0 +1,13 @@
+{
+  "type": "control.command",
+  "time": 1793667605000,
+  "seq": 4,
+  "from": "CORE",
+  "asset_id": "A1",
+  "kind": "takeoff",
+  "task_id": "T1",
+  "target_altitude": {
+    "altitude_m": 30,
+    "altitude_reference": "launch"
+  }
+}

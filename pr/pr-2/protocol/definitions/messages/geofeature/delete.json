@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/geofeature/delete.json",
+  "title": "Geo feature delete",
+  "description": "Remove a geo feature. From an operator interface to Core, answered by admin.reply; from Core (from is CORE) to every operator interface once it is gone. Objects attached to it keep its geofeature_id as a record, and the ID is never reused in the run.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "geofeature_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "geofeature.delete"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "geofeature_id": {
+      "$ref": "../../variables/geofeature_id.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "geofeature.delete",
+      "time": 1793667900000,
+      "seq": 9,
+      "from": "OP1",
+      "geofeature_id": "G2"
+    }
+  ]
+}

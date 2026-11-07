@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/entity_type.json",
+  "title": "entity_type",
+  "description": "What something is. Shared by Assets, observations and tracks, so one list names them all. aircraft means an aircraft whose type is not known; structure is something fixed in place, such as a mast or a building; fixed_sensor is a sensor fixed in place, such as a camera post or an ADS-B receiver. Leave it out when not known. On an observation, null means no longer known: it clears an earlier value.",
+  "enum": [
+    "person",
+    "ground_vehicle",
+    "airplane",
+    "helicopter",
+    "drone",
+    "aircraft",
+    "watercraft",
+    "animal",
+    "structure",
+    "fixed_sensor",
+    "other",
+    null
+  ],
+  "examples": [
+    "ground_vehicle"
+  ]
+}

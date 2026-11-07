@@ -1,0 +1,13 @@
+{
+  "type": "report.status",
+  "time": 1793667605300,
+  "seq": 9,
+  "from": "A1",
+  "asset_id": "A1",
+  "kind": "queue",
+  "task_ids": [
+    "T1",
+    "T2",
+    "T3"
+  ]
+}

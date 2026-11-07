@@ -1,0 +1,10 @@
+{
+  "type": "report.failsafe",
+  "time": 1793667709000,
+  "seq": 22,
+  "from": "A1",
+  "asset_id": "A1",
+  "kind": "low_battery",
+  "response": "land",
+  "explanation": "Battery at 15%"
+}

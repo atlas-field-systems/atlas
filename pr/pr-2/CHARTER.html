@@ -1,0 +1,101 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>The Atlas charter</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
+<p>Atlas helps operators understand field systems, request work, and retain evidence.
+Read the <a href="environment.html">operating environment</a> before designing a subsystem.</p>
+<h2 id="keep-atlas-understandable">Keep Atlas understandable</h2>
+<p>The owner must be able to read the docs whenever they change.
+Use short user stories and visible data flows to expose mismatches with intended use.
+Describe and review the intended user-visible flow before implementing it.
+Keep unresolved product decisions visible in the owning subsystem&#39;s documentation.
+Put a consequential restriction in its owning system&#39;s story before adopting it.</p>
+<h2 id="keep-the-systems-replaceable">Keep the systems replaceable</h2>
+<p>Entities, Tasks, Objects, and Plugins are four replaceable pillars.
+Keep their interfaces small enough to rebuild one pillar without rebuilding Atlas.
+Authentication and administration support the pillars.</p>
+<p>Core retains the shared picture and requests for work. Separate projects provide
+vehicle control, radio transport, map rendering, and operator applications.
+The <a href="using-atlas.html">system overview</a> shows how those parts fit together.</p>
+<h2 id="keep-evidence-honest">Keep evidence honest</h2>
+<p>An accepted request and an observed result are different facts.
+Receiving a report does not prove fresh measurements or two-way contact.
+Each subsystem defines how it represents that evidence.</p>
+<h2 id="keep-shared-data-simple">Keep shared data simple</h2>
+<p>The owner decides Atlas&#39;s data formats and data structures. Protocol follows them and adds the exact fields.</p>
+<ul>
+<li>Each message has one time for the whole message. Mixed times are rare and need
+their own case. Every message carries <code>from</code> (the creator), <code>time</code>, and <code>seq</code>.
+Messages about one Asset also carry <code>asset_id</code>. The two often hold the same
+ID but are not a repeat: <code>from</code> is who made the message and <code>asset_id</code> is who it
+is about, as when Core reports that a drone&#39;s Task was undelivered.</li>
+<li>Times are in milliseconds. Only specialized radio data uses nanosecond timing.</li>
+<li>Counters are ordinary numbers, not long numbers written as text.</li>
+<li>The whole data format lives in Protocol. Protocol defines both the messages and
+the storage layout. Core, the SDK cache, and Assets store data in those formats,
+built from the same variables, names, units, and shapes.</li>
+<li>Every ID is 1 to 4 letters or digits.</li>
+</ul>
+<h2 id="document-ownership">Document ownership</h2>
+<ul>
+<li>This charter owns Atlas&#39;s purpose, operating context, project-wide principles,
+and end-to-end usage examples.</li>
+<li>Subsystem documentation owns its behavior, failure cases, and planning decisions.</li>
+<li>Protocol owns exact shared contracts within the charter&#39;s
+<a href="#keep-shared-data-simple">shared data rules</a>. Core owns server mechanisms.
+SDK owns client behavior. <a href="https://github.com/atlas-field-systems/atlas/tree/main/asset">Asset</a>
+owns how an Asset behaves, and
+<a href="https://github.com/atlas-field-systems/atlas/tree/main/command-interface">Command Interface</a>
+owns how the operator application works. Other components own their runtime details.</li>
+</ul>
+<p>Keep each rule with its owner and link to it from other documents.
+When a subsystem rule conflicts with the operating context, surface the mismatch
+and resolve it explicitly. Neither document silently overrides the other.
+Intended behavior is not proof of implementation.</p>
+<h2 id="keep-judgment-sharp">Keep judgment sharp</h2>
+<p>Coding agents uphold these fundamentals before changing Atlas. Subsystem AGENTS.md
+files point here. Architecture detail lives in <a href="design-decisions.html">design-decisions.md</a>.</p>
+<p>Fix the real hole. Adding a new concept, field, or mechanism to paper over a bug is
+a design problem. Prefer deleting the wrong thing over layering a new one.</p>
+<p>Name important domain distinctions early so first flight does not conflate them
+(for example Observation versus Track). Keep untested shapes provisional until a
+concrete story, consumer, or prototype establishes what the contract needs. Commit
+an exact contract early only when postponing creates a specific, explainable
+obstacle. Do not let an imagined future architecture indefinitely delay first
+flight; do not let first-flight shortcuts define the whole architecture either.</p>
+<p>Matching protocol versions are required today; wire-contract changes follow the
+selected versioning rules in <a href="design-decisions.html">design-decisions.md</a> and
+Protocol. Never silently reinterpret unsupported messages or conceal incompatible
+behavior. Do not invent protocol fields to paper over attribution or routing the
+link or Core already owns.</p>
+<p>Protocol is the spec. The SDK is the one implementation and front door. Core uses
+the SDK and keeps business rules only — no second validation or dedupe stack.
+See <a href="design-decisions.html">design-decisions.md</a>.</p>
+<p>Locked how-it-works, laws, and communication docs beat an implementation plan when
+they conflict. Change a lock on purpose with the owner; do not quietly diverge in
+code.</p>
+<p>Accepted acknowledgment and observed Asset outcomes are different facts. Asset
+reports are the observed outcome under the contract, not the same fact as
+acceptance. Preserve uncertainty when the outcome is not known — see
+<a href="#keep-evidence-honest">Keep evidence honest</a>. State guarantees together with
+their assumptions and recovery boundaries. Preserve message identity when
+forwarding, and separate repeated effects from repeated delivery. Exact rules live
+in Protocol (<code>communication.md</code> / SDK docs).</p>
+<p>SDK helpers report contact, queues, and outcomes. The Asset app owns motion and
+failsafes. Helpers never fly.</p>
+<p>Stress undecided ideas with small prototypes and write findings back into the docs.
+The docs stay the source.</p>
+<p>Every coding agent reads and upholds this charter and
+<a href="design-decisions.html">design-decisions.md</a>. The Charter is the <strong>review standard</strong>.
+Reading or quoting it does not prove a change meets it. A change should make clear
+what problem it solves, why this is the simplest credible fix, and what evidence
+supports the claim.</p>
+<h2 id="change-atlas-deliberately">Change Atlas deliberately</h2>
+<p>The owner approves behavior and scope. Engineers choose conforming details.
+Keep selected decisions, proposals, and open questions distinct in subsystem docs.
+Coding agents and their subagents follow this charter and
+<a href="design-decisions.html">design-decisions.md</a>. When evidence shows an approved
+assumption is wrong, the agent explains the mismatch and proposes the smallest
+correction; the owner still decides. Generated output, reviews, and
+historical specifications do not approve changes and do not override this charter.</p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
