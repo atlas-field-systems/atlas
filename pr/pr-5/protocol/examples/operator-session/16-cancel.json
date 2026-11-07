@@ -1,0 +1,8 @@
+{
+  "type": "control.cancel",
+  "time": 1793667704000,
+  "seq": 4,
+  "from": "OP1",
+  "asset_id": "A1",
+  "task_id": "T4"
+}

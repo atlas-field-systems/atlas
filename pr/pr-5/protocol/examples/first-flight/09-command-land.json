@@ -1,0 +1,17 @@
+{
+  "type": "control.command",
+  "time": 1793667605250,
+  "seq": 6,
+  "from": "CORE",
+  "asset_id": "A1",
+  "kind": "land",
+  "task_id": "T3",
+  "landing_position": {
+    "latitude": 42.2746,
+    "longitude": -71.8063
+  },
+  "transit_altitude": {
+    "altitude_m": 20,
+    "altitude_reference": "launch"
+  }
+}

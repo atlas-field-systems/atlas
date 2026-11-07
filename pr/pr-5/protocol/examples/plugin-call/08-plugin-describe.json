@@ -1,0 +1,10 @@
+{
+  "type": "plugin.describe",
+  "time": 1793667702010,
+  "seq": 104,
+  "from": "CORE",
+  "plugin_id": "DEM",
+  "actions": [
+    "ground_elevation"
+  ]
+}
