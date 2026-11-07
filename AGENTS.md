@@ -5,6 +5,11 @@ in the [atlas-field-systems](https://github.com/atlas-field-systems) GitHub orga
 Each part of Atlas is a top-level folder. Everything is on disk together, so read the
 other folders for context, and change several in one PR when a change spans them.
 
+**This is where Atlas work is implemented.** Every plan, doc, spec change and line of
+code for every part is written, reviewed and merged here, through PRs into `main`.
+There is no other repository to change. Any per-part repository made later is a
+read-only copy published from `prod`; never edit one.
+
 ## The parts
 
 | Folder | What lives there | Status |
