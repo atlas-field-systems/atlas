@@ -4,6 +4,8 @@ Not decided yet. Planning comes before building.
 
 ## Message groups and the queue
 
+- **Who owns the task queue.** Proposal: [the Asset carries its whole task list](proposals/task-queue.md). Not adopted.
+
 - **Tasks and geo features.** Answered in 0.8: a command carries a copy of the shape and `geofeature_id` as a record. See [decisions](decisions.md#geo-features-and-objects).
 - **Fetching an Object's file.** An operator interface fetches it from Core over HTTP by `object_id`. The exact request, and how it is authorized when keys travel only in the hello (law 17), are open.
 - **Uploads and other attachments.** Only Plugins make Objects. Uploads from operators or Assets, and Objects attached to an Asset, Task or Track, wait for a story.
