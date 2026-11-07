@@ -5,23 +5,49 @@ Assets on IP. It builds, validates, and parses messages; handles keys, identity
 (`from` / `seq` / `time`), dedupe, queue sync, and reconnect; and is the only
 front door to the wire.
 
-It loads the definitions in [`definitions/`](../definitions) at runtime. It does
-**not** define messages itself, and it does **not** generate code. A change to
-the spec and its checks land in one PR.
+It loads Protocol's [`definitions/`](../protocol/definitions) at runtime. It does
+**not** define messages itself, and it does **not** generate code. The SDK
+implements the wire rules in [Communication](../protocol/docs/communication.md)
+and the [laws](../protocol/docs/laws.md): the hello, duplicates, the task queue,
+settings, link loss and reconnecting. These docs cover only what the SDK adds on
+top. A change to the spec and the SDK can land in one PR.
 
 Transport adapters (WebSocket, Meshtastic, FLRC) only move bytes. Each will be
 its own package beside the SDK, so a program installs only the links it uses.
 
-**Status:** how-it-works is a draft (protocol 0.8). Runtime code is not built yet.
-Build it from [IMPLEMENTATION.md](IMPLEMENTATION.md): one slice per PR, in order,
-and the developer approves each merge before the next slice starts.
+**Status:** a draft for protocol 0.8, like everything in Atlas. Runtime code is
+not built yet. Build it from [IMPLEMENTATION.md](IMPLEMENTATION.md): one slice per
+PR, in order, and the developer approves each merge before the next slice starts.
+
+## One front door
+
+Every program uses the SDK: **Core, bridges, operator apps, and Assets on IP**.
+
+- Callers build and read messages through helpers, not raw JSON. Fields,
+  precision and left-out fields are kept exactly.
+- The SDK validates on the way in and out against `definitions/`. Commands and
+  every other message come from the definitions, never hardcoded.
+- **Core does not re-implement schema validation.** It calls the shared
+  `check()` when a message did not already arrive through an SDK edge (for
+  example a raw test inject). After a valid message, Core runs **business rules
+  only** (online?, command listed in `admin.describe`?, duplicate `task_id`?).
+- Helpers never schedule or fly physical work; the Asset's own software does.
+- Work is bounded. Queues, retries and history reads have limits, and programs
+  can stop and close what they opened.
+- One optional [observer](docs/links.md#observer-optional) lets a program watch
+  the SDK's own activity without slowing or breaking it.
+
+## Docs
 
 | Doc | What it covers |
 | --- | --- |
-| [Implementation plan](IMPLEMENTATION.md) | Layout, signatures, build slices, tests, decided points |
-| [How it works](how-it-works.md) | Front door, identity, caller surface, picture, adapters, reconnect |
-| [Communication](../docs/communication.md) | The wire rules the SDK implements |
-| This README | Scope, non-goals, where code will live |
+| [Messages](docs/messages.md) | Loading definitions, `check`, `build`, the codec, names the SDK may hardcode |
+| [Identity and duplicates](docs/identity-and-duplicates.md) | Keys on hello, stamping `from`/`seq`/`time`, dedupe, contact, auth loss |
+| [Links](docs/links.md) | Transport adapters, the link and its hello, reconnect, the observer |
+| [Calls](docs/calls.md) | `request` / `stream` / `subscribe`, outcomes and errors |
+| [Task queue](docs/task-queue.md) | The Asset-side queue helper |
+| [Live picture](docs/live-picture.md) | The optional in-memory picture for operator apps |
+| [Implementation plan](IMPLEMENTATION.md) | Layout, build slices, tests, current implementation points |
 
 ## Non-goals (for v1)
 
@@ -31,14 +57,15 @@ and the developer approves each merge before the next slice starts.
 - Auto-retry of operator commands after disconnect
 - Live picture required on Assets
 
-## Repo layout (planned)
+## Folder layout (planned)
 
 ```text
 sdk/
   README.md           this file
-  how-it-works.md     behavior contract
+  AGENTS.md           rules for agents working here
   IMPLEMENTATION.md   build plan
-  # later: package source that loads ../definitions
+  docs/               one doc per part of the SDK
+  # later: src/, test/, adapters/ (see IMPLEMENTATION.md)
 ```
 
 Adapters will sit beside the SDK package once they exist, not inside Core.

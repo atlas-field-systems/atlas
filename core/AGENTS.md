@@ -8,7 +8,7 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 
 - Core's internal behavior, storage use and failure rules go here.
 - Message and storage formats live in `protocol/`; do not define them here.
-- How clients talk to Core lives in `protocol/sdk/`.
+- How clients talk to Core lives in `sdk/`.
 - Core reads the Protocol release pinned in `package.json` (`"protocol"`), unpacked into `protocol/` here by `npm run protocol` (run before `test`, `start` and `demo`). Never point Core at `../protocol`.
 - Prototypes are approved: build small, learn, and write findings to [docs/findings.md](docs/findings.md) so they can go back into Protocol and the Charter. Do not change Protocol from here.
 - Run `npm test` before every PR. Do not merge without the developer's approval.

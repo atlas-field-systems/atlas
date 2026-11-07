@@ -46,8 +46,8 @@ Atlas is split into three layers, so each can change without breaking the others
 - **The SDK is the one implementation** and the stable front door every program
   uses: Core, bridges and operator apps. It builds, validates and parses
   messages, and handles keys, queueing and retry, and duplicates. Programs never
-  touch bytes, compression or framing. It lives in Protocol, in
-  `sdk/`, so a change to the spec and its implementation land together.
+  touch bytes, compression or framing. It has its own folder, `sdk/`, beside
+  Protocol, so each keeps its own history; a change to both can still land in one PR.
 - **Transport adapters** are small plug-in packages beside the SDK (WebSocket,
   Meshtastic, FLRC, and others). They only move bytes, plus any compression or
   splitting a link needs. Each is its own package, so a program installs only
@@ -70,7 +70,7 @@ How versions and releases work:
 - All of Atlas is one repository. A release is a git tag named for its part.
   Nothing is published as a package. Protocol's tags are
   `protocol-v<major.minor>.<patch>`: major.minor is the protocol version, and the
-  patch counts releases that change no message, such as SDK fixes.
+  patch counts releases that change no message, such as tool fixes.
 - Releasing is pushing main to the `prod` branch (`git push origin main:prod`).
   That runs the checks and makes a tag and a GitHub release for each part that
   changed. Only commits on main are released.
@@ -79,11 +79,11 @@ How versions and releases work:
 
 How drift is prevented:
 
-- Protocol's examples run as SDK tests, in the same folder.
+- Protocol's examples run as SDK tests.
 - A program outside Protocol, such as Core, pins one release and loads its JSON
   definitions from it.
 
-How the SDK works is drafted for protocol 0.8 in
-[protocol `sdk/how-it-works.md`](https://github.com/atlas-field-systems/atlas/blob/main/protocol/sdk/how-it-works.md).
+How the SDK works is drafted for protocol 0.8 in the
+[SDK docs](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md).
 Runtime SDK code is not started; Core stays on its pinned Protocol release until
 a protocol-bump adopt PR.

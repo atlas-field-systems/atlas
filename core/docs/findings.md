@@ -24,7 +24,7 @@ Protocol gaps found while building the prototype. Protocol is not changed from h
 
 ## Protocol 0.8 (SDK draft) — not adopted here yet
 
-Protocol 0.8 documents the SDK how-it-works and cuts three prototype patches.
+Protocol 0.8 documents how the SDK works and cuts three prototype patches.
 This Core still speaks its **pinned** Protocol release (`"protocol"` in `package.json`) and still
 implements the older shapes until a protocol-bump + adapt PR:
 
@@ -43,5 +43,5 @@ only (online?, command listed in `admin.describe`?, duplicate `task_id`?). Core
 keeps a last-answer cache for retries — **not** a second dedupe set that can
 swallow them. Do not half-migrate the runtime ahead of the SDK thin slice.
 
-See Protocol `sdk/how-it-works.md` and the 0.8 changelog section.
+See the [SDK docs](../../sdk/README.md) and Protocol's 0.8 changelog section.
 

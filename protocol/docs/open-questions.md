@@ -32,4 +32,4 @@ Most of these are answered in [communication.md](communication.md).
 - **Objects.** Answered in 0.8: files Core holds, described by `object.describe`. See [decisions](decisions.md#geo-features-and-objects).
 - **Gateways.** Answered: routing is the link's job; see [Routing and duplicates](communication.md#routing-and-duplicates).
 - **Plugins.** Answered in 0.8: the `plugin` message group; see [decisions](decisions.md#plugins).
-- **Encode/decode library and stress testing.** Build phase: SDK under `sdk/`, how-it-works drafted in 0.8; implementation next.
+- **Encode/decode library and stress testing.** Build phase: SDK in its own `sdk/` folder, docs drafted for 0.8; implementation next.

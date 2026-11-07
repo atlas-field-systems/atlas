@@ -27,6 +27,7 @@ field to see the effect. Both tools only display; they never send anything.
 - `docs/communication.md`: how parts behave on a link. `docs/storage.md`: how Core stores what it knows
 - `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer
 - `scripts/check.mjs`: checks every definition and example (`npm ci && npm run check && npm test`)
-- `sdk/`: the [SDK](sdk/README.md), the one implementation every program uses. Not built yet.
+
+The [SDK](../sdk/README.md), the one implementation every program uses, has its own folder beside this one.
 
 AI agents: read [AGENTS.md](AGENTS.md). Undecided items: [docs/open-questions.md](docs/open-questions.md).
