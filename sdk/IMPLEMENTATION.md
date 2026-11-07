@@ -222,7 +222,7 @@ separate Core PR, not done here:
 - Core identity is `createIdentity({id:'CORE', role:'core', seqStore: <persisted>})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
 - Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.
-- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), command listed in describe, `task_id` duplicate, a list naming only bodies Core has, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its connect report), resending a list until a queue report names it and each body a queue report names as missing, `every_s` repeats (a new Core-created message each time, with a new seq).
+- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), command listed in describe, `task_id` duplicate, a list naming only bodies Core has, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its connect report), resending a list until a queue report names it, and each body a queue report names as missing every 10 s until a later one no longer does, `every_s` repeats (a new Core-created message each time, with a new seq).
 - Pin Core to the release that contains the SDK.
 
 ---

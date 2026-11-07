@@ -129,7 +129,8 @@ to fetch the next one.
    Core resends a list unchanged until a queue report names it.
 3. **A list takes effect only when complete.** Until the Asset holds every body in
    a new list, it keeps running its current list and names the missing bodies in its
-   queue report (`missing_task_ids`). Core resends those bodies at once.
+   queue report (`missing_task_ids`). Core resends those bodies at once, and every
+   10 s until a queue report no longer names them.
 4. **The queue report** (`report.status` kind `queue`) lists the Tasks not started
    yet, in order, with the list's `queue_version`. The Asset sends it whenever the
    list or the missing bodies change, and when Core sends `query.queue`. Answering a
