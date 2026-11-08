@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/hello_reply.json",
+  "title": "Hello Reply",
+  "description": "Core's answer to a Hello: accepted or refused. On refused, Core closes the link. It names the Asset (asset_id) or the operator interface (operator_id) that said hello, never both.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "hello_result"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "admin.hello_reply"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "operator_id": {
+      "$ref": "../../variables/operator_id.json"
+    },
+    "hello_result": {
+      "$ref": "../../variables/hello_result.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "admin.hello_reply",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "hello_result": "accepted",
+      "from": "CORE"
+    },
+    {
+      "type": "admin.hello_reply",
+      "time": 1793667600000,
+      "seq": 1,
+      "operator_id": "OP1",
+      "hello_result": "accepted",
+      "from": "OP1"
+    },
+    {
+      "type": "admin.hello_reply",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "hello_result": "refused",
+      "from": "CORE"
+    }
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "asset_id"
+      ]
+    },
+    {
+      "required": [
+        "operator_id"
+      ]
+    }
+  ],
+  "not": {
+    "required": [
+      "asset_id",
+      "operator_id"
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/cancel.json",
+  "title": "Cancel",
+  "description": "From Core (or from an operator interface to Core, which checks it and passes it on): stop whatever motion is running now. The Asset holds (hovers in place, or stays on the ground) and sets run_state paused, so it does not start the next Task until resumed; a new immediate command still runs. It reports the running Task cancelled and answers with report.settings (reply_from and reply_to naming this message). To drop or reorder queued Tasks, send a new control.queue instead.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "asset_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "control.cancel"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "control.cancel",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1",
+      "from": "A1"
+    }
+  ]
+}

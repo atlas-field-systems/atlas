@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command/move_to.json",
+  "title": "move_to",
+  "description": "Fly to a position. If the position has no altitude, the Asset keeps its current altitude. geofeature_id names the geo feature the destination was copied from, as a record; the Asset ignores it and never looks the geo feature up.",
+  "type": "object",
+  "required": [
+    "kind",
+    "destination"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "move_to"
+    },
+    "destination": {
+      "$ref": "../../../components/position.json"
+    },
+    "geofeature_id": {
+      "$ref": "../../../variables/geofeature_id.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "move_to",
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "launch"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "move_to",
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "launch"
+          }
+        ]
+      },
+      "geofeature_id": "G2"
+    }
+  ]
+}
