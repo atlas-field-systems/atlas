@@ -37,7 +37,14 @@ Invariants (law 18, communication.md):
 - A body is any `control.command` **or** `control.settings` carrying `task_id`. It is stored; arrival order does not matter. A resent body for a Task it holds is ignored; for a Task it has finished, it resends that Task's stored `final` bytes.
 - A `control.queue` built on a version other than the current `queue_version` is ignored, and answered with the current queue report.
 - A `control.queue` takes effect only once every listed body is held, skipping `task_id`s already started or finished. Until then the current list keeps running and the queue report names the missing ones in `missing_task_ids`. A newer list replaces a waiting one. When it takes effect, `queue_version` goes up by one, each Task that left the list without starting is reported `cancelled`, and the queue report answers it.
-- A **motion** `control.command` without `task_id` runs now and calls `clear()`. A `control.settings` without `task_id` runs now beside the list and does **not** clear it. When a failsafe triggers with any response except `continue`, the app calls `clear()`. Bodies no list names are dropped at a clear.
+- In ordinary operation, a **motion** `control.command` without `task_id` runs now and calls `clear()`. A `control.settings` without `task_id` runs now beside the list and does **not** clear it. When a failsafe activates, the app calls `clear()` before starting its locally created response Task. Bodies no list names are dropped at a clear.
+- When a command fails, the app always clears the remaining queue before another
+  Task can run, regardless of its configured safe response. A queued command's
+  final report remains `failed`; clearing reports the remaining Tasks `cancelled`.
+  The Asset owns [the failure behavior](../../asset/docs/failsafes.md).
+- The app enforces [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation)
+  before ordinary dispatch. Onboard Task creation and refusal reporting await
+  [shared contracts](../../protocol/docs/open-questions.md#unresolved).
 - `control.cancel` is emitted to `onImmediate` (hold/pause; don't fly anything, concept 10). It never creates a task.
 - Every `control.cancel` and `control.settings` is answered with `report.settings` (`reply_from`/`reply_to` naming it). The helper builds the answer frame through `answer()`; the app supplies the `settings` object. Every answer's bytes, the queue report included, are stored; a duplicate request (via `onDuplicate`) gets the same bytes again, unchanged. This is Asset-side answer replay, not Core's last-answer cache.
 - Immediate settings reach the app in receipt order. A settings Task applies when

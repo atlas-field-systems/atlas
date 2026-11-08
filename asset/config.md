@@ -38,6 +38,16 @@ supplies supported initial settings; live operator changes then follow
 [the Asset settings rules](../protocol/docs/communication.md#settings).
 Changing a configuration file is not an alternative route for sending commands.
 
+Equipment-specific setup depends on the proposed
+[platform integration](docs/assets.md#proposed-platform-integration).
+
+## Failsafe configuration
+
+[Failsafes](docs/failsafes.md) owns the default empty rule list, response Tasks,
+and live policy replacement. Exact configuration fields and the division between
+local startup configuration and shared live settings remain open; Protocol's
+current settings do not yet express this model.
+
 ## Logging and Reset
 
 [Asset logging](docs/logging.md) owns the equipment evidence, app decisions, and

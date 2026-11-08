@@ -14,9 +14,12 @@ Unresolved questions and work deliberately deferred. Selected answers live in
 - **Fetching an Object's file.** An operator interface fetches it from Core over
   HTTP by `object_id`. The exact request, and how it is authorized when keys travel
   only in the hello (law 17), are open.
-- **Failure responses on Assets.** Every failure triggers a configured failsafe,
-  but which failure triggers which failsafe is still open in the
-  [Asset docs](../../asset/docs/README.md).
+- **Failsafe contracts.** [Selected Asset behavior](../../asset/docs/failsafes.md)
+  needs shared policy settings, locally created Task identities and outcomes,
+  and command-refusal reports. Current definitions still encode unconditional
+  link loss and a fixed response enum; they do not express combined conditions,
+  parameterized response Tasks, or the operation-long work lock. Agree these
+  formats before aligning the definitions and SDK interfaces.
 
 Diagnostic logging and configuration choices are tracked with their owners in
 [Core configuration](../../core/config.md), [Asset configuration](../../asset/config.md),

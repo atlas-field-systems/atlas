@@ -14,8 +14,10 @@ while its Core link is down. It collects both equipment and app events and the
   and command or equipment errors.
 - Each applied setting change, whether operator-requested, locally initiated,
   queued, or forced by a safe response. Record the resulting value and reason.
-- Failure detection, its trigger and configured response, pause or hold changes,
-  and what the equipment actually did.
+- Failsafe conditions, equipment, contact, and work state, and the selected rule
+  and priority.
+- Interrupted Tasks, primary and fallback outcomes, refused commands, pause or
+  hold changes, and observed equipment behavior.
 - Local contact timing, link loss, continued local execution, reconnects,
   outgoing reports, and their acknowledgements through the SDK.
 - Diagnostic output failures or gaps, even when the flight behavior continues.

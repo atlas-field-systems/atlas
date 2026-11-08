@@ -18,6 +18,7 @@ not claims about the current implementation.
   and lands.
 
 These are simpler than MAVLink and ArduPilot commands but map onto them.
+The Asset owns [platform-specific preparation and arming](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#prepare-and-take-off).
 
 ## Follow the work and its evidence
 
@@ -50,21 +51,29 @@ or executed it.
 ## When something goes wrong
 
 The drone carries its whole task list before it leaves, so losing the link never
-strands part of the mission on the ground. Any failure on the drone, a failed Task
-included, triggers its configured failsafe. Unless that failsafe is set to
-continue, the drone cancels the remaining Tasks, and Core marks them cancelled once
-the drone reports it, so the records match what happened.
+strands part of the mission on the ground. If a command fails, the drone always
+cancels the remaining Tasks. For example, failed Takeoff cancels Move To and Land.
+Core marks them cancelled once the drone reports it, so the records match what
+happened. No configured response can preserve those cancelled Tasks.
 
 Each Asset has [settings](settings.md) for how it responds to events such as
-losing its radio link. Each trigger has its own response: continue the mission,
-hold, land, or return to home. Losing the link can be set to continue, for example
-when Core rides in a car through a tunnel and the drone should keep its mission.
+losing its radio link. Conditions determine when a failsafe is needed, and each
+rule has a configured response Task and its parameters. A failsafe uses the same
+equipment execution as an ordinary Task. The drone can keep its onboard mission
+when Core rides in a car through a tunnel if no failsafe rule applies.
+If it finishes its work while still out of contact and remains airborne, a
+separate condition can trigger a safe response. That condition is configurable
+too: the operator may intend to bring the communications link to the waiting drone.
 Return to home is done by an Atlas layer above the
 flight controller or by ArduPilot's return-to-home mode.
 
-Failure always wins. Every failure has a defined safe response, and it applies
-whatever state the drone is in, including paused. An Asset never stays airborne
-until it falls out of the sky.
+An applicable failsafe overrides ordinary work, including paused, and locks new
+work for the rest of the operation, even after its response Task succeeds.
+There is no in-operation recovery; the next step is shutdown and log inspection.
+Atlas enables no failsafe rules by default. The flight setup explicitly supplies
+the intended rules, including any battery response during an intentional wait.
+The Asset owns
+[the trigger conditions, cancellation rule, and remaining decisions](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
 
 ## Keep the whole run for debugging
 
