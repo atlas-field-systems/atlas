@@ -116,6 +116,19 @@ Link loss is timed locally under
 On reconnect the app keeps its execution state while the SDK restores message
 delivery and applicable queue reporting. Reconnecting alone never restarts a Task.
 
+## Record and send report history
+
+An Asset can record more domain reports than its live link can carry. For the
+[model-rocket flight](../../command-interface/docs/README.md#review-a-model-rocket-flight),
+retain the additional samples locally while sending a live subset. After landing,
+use restored contact or a faster link to deliver retained reports through the
+ordinary [report catch-up path](../../protocol/docs/communication.md#report-catch-up).
+Assets returning after a disconnection use the same path.
+
+These reports populate shared history; they are separate from local diagnostic
+logs and Reset ZIP exports. Recording limits, delivery tracking, and completion
+evidence remain [open](../../protocol/docs/open-questions.md#unresolved).
+
 ## Shut down and retain evidence
 
 The app records equipment, module, and SDK evidence locally throughout the

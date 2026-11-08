@@ -73,4 +73,4 @@ already knows the fundamentals.
 - Never put a personal name or personal email in any file, commit message, PR body, test fixture or example. In prose refer to the owner as "the developer" or "the owner".
 - Merge only after the developer approves, with `git merge --no-ff`, then push main.
 - CI must be green before any merge. Each part's checks run in `.github/workflows/` when that folder changes.
-- No CDN dependencies: pages and tools load nothing from third-party servers at run time; ship what they need in the repo or the package.
+- No CDN dependencies: ship application code and assets in the repo or package. The Command Interface may use external basemap tile services for its [connected command-station use](command-interface/docs/README.md#operators-and-connectivity).
