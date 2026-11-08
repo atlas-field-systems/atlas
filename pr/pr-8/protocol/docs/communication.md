@@ -4,10 +4,8 @@ How every part of Atlas behaves on a link. It spells out the
 [laws](laws.md) in full. The SDK implements these rules; what it adds on top is in
 the [SDK docs](../../sdk/README.md).
 
-Selected Asset planning changes include early and minimal connection, independent
-settings support, and selective subsystem conditions. Current definitions do not
-yet express all of these changes. [Open contracts](open-questions.md#unresolved)
-identify the remaining work. No new message shape is specified by this page.
+This page includes selected behavior not yet expressed by current definitions.
+[Open contracts](open-questions.md#unresolved) identify the missing formats.
 
 Core, gateways, Assets, and their SDK instances stay running for an operation
 ([operating assumption](../../atlas/using-atlas.md#the-four-pillars)). Recovery
@@ -207,10 +205,8 @@ remain [open](open-questions.md#unresolved).
   Core acknowledges each required connect report with `admin.reply` before
   ordinary traffic (see [After reconnecting](#after-reconnecting-asset)). A later
   `report.settings` may carry only some values. An omitted value is unchanged.
-- **Shared-contract gap.** Current definitions infer support from the connect
-  `report.settings`, require a nonempty settings object, and describe startup
-  home as always known. The independent support declaration, unknown values, and
-  setting-free connection path need [exact contracts](open-questions.md#unresolved).
+- Independent support and setting-free startup await
+  [exact contracts](open-questions.md#unresolved).
 - The Asset applies each new valid immediate settings request when it receives
   it, alongside its local changes. Request timestamps do not choose the winner.
   A delayed distinct request can override a local change; a duplicate retry does
@@ -289,12 +285,6 @@ answered. Ordinary traffic starts only after the applicable required startup
 acknowledgements. Core refuses `control.*` while the Asset is still connecting,
 not merely because its equipment is starting. Missing pre-ready deliveries are
 not treated as executed work.
-
-**Shared-contract gap.** Current definitions and SDK interface sketches still
-assume a connect settings report establishes readiness for every Asset. The
-setting-free path and independent support declaration need exact representation
-before implementation. The sequence above records selected behavior, not an
-invented replacement message or handshake.
 
 An operator interface rebuilds what it knows from Core's connect push (see
 [Operator interfaces](#operator-interfaces)).

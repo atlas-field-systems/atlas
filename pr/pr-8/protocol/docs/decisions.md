@@ -49,22 +49,10 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 
 ## Asset planning direction
 
-The [Asset model](../../asset/docs/assets.md) owns configurable modules, equipment
-drivers, and movement profiles. Copters and fixed-wing aircraft use separate
-command families. Exact fixed-wing and turret-pointing commands remain open.
-
-[Early and minimal connection](communication.md#after-reconnecting-asset) permits
-equipment still starting, unknown position and home, and Assets with no settings
-or task queue. [Subsystem conditions](../../asset/docs/status.md) replace the
-single overall health condition with selective reports and shared meanings.
-Current definitions and generated examples do not yet express those choices.
-In particular, an overall `healthy` example is not proof of equipment readiness.
-The exact contract gaps are listed in [open questions](open-questions.md#unresolved).
-
-An Asset's own GPS position is telemetry. ADS-B and camera measurements about
-other targets are Observations. The coordinates Observation description's
-reference to GPS trackers needs to preserve this distinction when definitions
-are aligned.
+The [Asset model](../../asset/docs/assets.md) owns the selected behavior.
+[Open contracts](open-questions.md#unresolved) identify where definitions and
+generated examples still differ. An overall `healthy` example does not establish
+equipment readiness.
 
 ## Plugins
 - Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/atlas/blob/main/atlas/plugins.md) page.
@@ -161,7 +149,7 @@ They show the readable JSON beside the compressed bytes (hex dump and base64), w
 - `report.gimbal` gives live gimbal pointing, often while active, never while idle.
 - A command never depends on a geo feature. Cameras may give an optional roll.
 - Assets send `report.observation`, never tracks. Fusion alone decides when observations are the same target. Tasks target tracks. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/fusion.md).
-- Observations. `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
+- Observations. `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. An Asset reporting its own GPS position uses telemetry, not an Observation. The coordinates description needs to distinguish those cases when definitions are aligned. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
 - One `entity_type` list names what Assets, observations and tracks are: person, ground_vehicle, airplane, helicopter, drone, aircraft (type unknown), watercraft, animal, structure, fixed_sensor, other. Left out means unknown. An Asset may give it in `admin.describe`.
 - Uncertainty is an ellipse (a circle when only `semi_major_m` is given) or a polygon of up to 32 corners, plus an optional `altitude_uncertainty_m`; bearing, elevation and range each have their own. Every bound is 95% (law 8). Left out means unknown, never exact. Observations and tracks share it.
 - A position with no altitude means the altitude was not measured. Displays draw it at ground level; fusion never reads it as "on the ground".
