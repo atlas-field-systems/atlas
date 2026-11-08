@@ -1,0 +1,12 @@
+{
+  "type": "admin.describe",
+  "time": 1793667500000,
+  "seq": 2,
+  "from": "A2",
+  "asset_id": "A2",
+  "reports": [
+    "status",
+    "observation"
+  ],
+  "commands": []
+}

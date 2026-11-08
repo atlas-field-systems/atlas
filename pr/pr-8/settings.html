@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Settings</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html" class="on">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="settings">Settings</h1>
+<p>A setting is an Asset&#39;s current configuration, such as its lights, landing gear,
+or what it does when it loses its radio link. Changing one is quick and immediate.
+It does not wait in a queue or go through a Task&#39;s steps.</p>
+<ul>
+<li>Operators can change an Asset&#39;s settings, and so can the Asset itself.
+An Asset changes its own setting without asking Core, then reports the change.</li>
+<li>The Asset applies new immediate changes in the order it receives them, alongside
+its own local changes. It does not compare the operator&#39;s clock with its own.
+A delayed distinct command can therefore override a local change made later
+than that command was sent.</li>
+<li>A change always names the end state, such as &quot;lights on&quot; or &quot;gear down&quot;,
+never &quot;switch the gear&quot;. A retry of the same message is not applied again.</li>
+<li>A Change Setting Task puts a setting change in the queue, for example:
+fly here, lights on, fly there. It applies when that Task runs, regardless of
+when its body was sent or received.</li>
+<li>Pause and Resume are settings, not Tasks. An Asset is set to &quot;paused&quot; or
+&quot;running&quot;, always as an explicit end state.</li>
+<li>A Change Setting Task can pause an Asset inside a queue. It waits there until
+someone resumes it, for example: fly here, pause, wait for the operator, continue.</li>
+<li>An applicable failsafe overrides ordinary settings, including paused, and the
+Asset carries out its configured safe response. The Asset owns
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions</a>.</li>
+<li>Settings support is separate from current values. An Asset can support home
+before it knows its position. A reporting-only Asset needs no live settings.
+The <a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/open-questions.md#unresolved">shared startup contract</a>
+still needs to express these cases.</li>
+<li>Home is a setting for Assets whose behavior uses it. Position can come from
+equipment or manual configuration for stationary equipment. The quadcopter
+establishes home under its
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#position-and-home">startup rules</a>.
+An operator can move home. A
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failsafe-activates-a-configured-task">failsafe response Task</a>
+resolves home when it starts and keeps that destination for its execution.
+There is no separate backup landing-point setting.</li>
+</ul>
+<p>How an Asset responds when something goes wrong is in <a href="first-flight.html#when-something-goes-wrong">First flight</a>.</p>
+<p>Normal use is an operator choosing actions such as Takeoff, Move To, and Land,
+like issuing orders in an RTS game, rather than streaming high-rate controls.
+The Asset reports each resulting setting value. Core and interfaces follow those
+reports, not guesses based on which operator command was sent last.</p>
+<p><a href="using-atlas.html">Using Atlas</a></p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

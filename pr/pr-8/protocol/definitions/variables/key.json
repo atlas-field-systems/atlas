@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/key.json",
+  "title": "key",
+  "description": "The sender's own key: 16 random bytes as 22 characters of base64url. Sent only in the hello that opens a link, never in any other message. Core stores only its hash and never sends a key.",
+  "type": "string",
+  "pattern": "^[A-Za-z0-9_-]{22}$",
+  "maxLength": 22,
+  "examples": [
+    "q3J8vR2xT0bN5mK7wY1cZg"
+  ]
+}

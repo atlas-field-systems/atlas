@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/geofeature/set.json",
+  "title": "Geo feature set",
+  "description": "A whole geo feature: a point, line or area made in Core, with an optional name. kind is its shape. From an operator interface to Core: without geofeature_id it creates a geo feature, and Core's admin.reply carries the geofeature_id Core picked; with geofeature_id it replaces that geo feature whole, so a name left out is cleared. From Core (from is CORE) to every operator interface: the geo feature as Core now holds it, always with geofeature_id, after each change and for every geo feature when an operator connects. A Plugin's geo features come from Core this way too. Editing a geo feature never changes a command already sent. Geo features are not sent to Assets.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "set/point.json"
+    },
+    {
+      "$ref": "set/line.json"
+    },
+    {
+      "$ref": "set/area.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "geofeature.set"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    },
+    "geofeature_id": {
+      "$ref": "../../variables/geofeature_id.json"
+    },
+    "name": {
+      "$ref": "../../variables/name.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "geofeature.set",
+      "time": 1793667800000,
+      "seq": 4,
+      "from": "OP1",
+      "kind": "area",
+      "name": "North field",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ]
+    },
+    {
+      "type": "geofeature.set",
+      "time": 1793667800040,
+      "seq": 110,
+      "from": "CORE",
+      "kind": "area",
+      "geofeature_id": "G1",
+      "name": "North field",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ]
+    },
+    {
+      "type": "geofeature.set",
+      "time": 1793667810000,
+      "seq": 111,
+      "from": "CORE",
+      "kind": "point",
+      "geofeature_id": "G2",
+      "name": "Helipad",
+      "position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      }
+    },
+    {
+      "type": "geofeature.set",
+      "time": 1793667820000,
+      "seq": 112,
+      "from": "CORE",
+      "kind": "line",
+      "geofeature_id": "G3",
+      "line": [
+        {
+          "latitude": 42.2746,
+          "longitude": -71.8063
+        },
+        {
+          "latitude": 42.2751,
+          "longitude": -71.8049
+        },
+        {
+          "latitude": 42.276,
+          "longitude": -71.8044
+        }
+      ]
+    }
+  ]
+}
