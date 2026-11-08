@@ -43,11 +43,8 @@ Invariants (law 18, communication.md):
   final report remains `failed`; clearing reports the remaining Tasks `cancelled`.
   The Asset owns [the failure behavior](../../asset/docs/failsafes.md).
 - The app enforces [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation)
-  before ordinary dispatch: forbidden commands and queue replacements cannot alter
-  work during that state. Successful response completion does not release the lock.
-  The lock lasts for the rest of the operation; recovery is out of scope. Onboard
-  Task creation and refusal reporting need agreed shared contracts before their
-  SDK interfaces are selected.
+  before ordinary dispatch. Onboard Task creation and refusal reporting await
+  [shared contracts](../../protocol/docs/open-questions.md#unresolved).
 - `control.cancel` is emitted to `onImmediate` (hold/pause; don't fly anything, concept 10). It never creates a task.
 - Every `control.cancel` and `control.settings` is answered with `report.settings` (`reply_from`/`reply_to` naming it). The helper builds the answer frame through `answer()`; the app supplies the `settings` object. Every answer's bytes, the queue report included, are stored; a duplicate request (via `onDuplicate`) gets the same bytes again, unchanged. This is Asset-side answer replay, not Core's last-answer cache.
 - Immediate settings reach the app in receipt order. A settings Task applies when

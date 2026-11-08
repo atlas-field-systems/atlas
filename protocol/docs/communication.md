@@ -149,7 +149,7 @@ to fetch the next one.
    remembers its finished `task_id`s for the whole operation.
 8. **Clears.** A failed command always clears the remaining list, regardless of
    its configured safe response. A queued command's failed report stays failed.
-   each remaining Task is reported `cancelled`. Activating a failsafe or accepting
+   Each remaining Task is reported `cancelled`. Activating a failsafe or accepting
    an immediate motion command also clears the list. Clearing raises
    the version and reports the empty queue. A list built before the clear is
    ignored, so cleared work never comes back on its own. The Asset owns
@@ -165,13 +165,10 @@ is covered the same way: Core recognises the retry and sends its answer again.
 
 ## Immediate commands and cancel
 
-These rules describe ordinary operation. The selected
+These rules describe ordinary operation.
 [Asset failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation)
-refuses remote motion, queue replacements, Cancel, Pause, and settings changes
-that affect execution. Queries and reports continue. Successful completion of the
-failsafe task does not release that lock. The lock lasts for the rest of the
-operation. In-operation recovery is out of scope. Exact refusal messages remain open in
-[failsafe contracts](open-questions.md#unresolved).
+overrides ordinary dispatch for the rest of the operation. Exact refusal messages
+remain [open](open-questions.md#unresolved).
 
 - A motion command without `task_id` (takeoff, move_to, land, return_to_home) runs now and clears the list (see Clears above).
 - A `control.settings` without `task_id` runs now beside the list and does not clear it.
@@ -223,17 +220,12 @@ open socket, a radio acknowledgement, or other Assets overheard on the mesh.
   (30 s unless set), timed on its own clock. A link that drops and comes back within
   that time is not lost.
 - Contact loss is an input to the Asset's
-  [configured failsafe conditions](../../asset/docs/failsafes.md#configure-conditions-as-well-as-responses),
-  rather than an unconditional instruction to act. An Asset can keep working
-  offline, then trigger a different response if it finishes with no work left
-  while still airborne and out of contact. Intentional waiting is configurable.
-- **Shared-contract gap.** The current `link_loss` report definition and
-  `link_loss_response` setting still describe the earlier unconditional trigger,
-  including on the ground and rearming only after renewed contact. They do not
-  yet express the selected conditional behavior. Trigger settings, timers, and
-  reporting need an agreed format before the definitions can be aligned. Existing
-  contact timing and Core's offline classification below remain separate from
-  that physical-response decision.
+  [configured conditions](../../asset/docs/failsafes.md#configure-conditions-as-well-as-responses),
+  not an unconditional instruction to act.
+- **Shared-contract gap.** The current `link_loss` report and `link_loss_response`
+  setting still describe unconditional link-loss handling. The selected Asset
+  behavior needs [new contracts](open-questions.md#unresolved). Contact timing and
+  Core's offline classification below are separate from physical-response policy.
 
 ### When Core counts an Asset offline
 

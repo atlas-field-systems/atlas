@@ -200,7 +200,7 @@ Selected answers to edge cases found during prototyping.
 - **Same-millisecond settings reports.** The Asset's `seq` orders reports whose `time` is equal; no extra field or clock synchronisation is required.
 - **Paused waits.** A new immediate command runs while paused, but queued tasks wait for `run_state: running`.
 - **Queued settings are confirmed** with `report.settings` naming the Task, like immediate ones. A queued change applies when that Task runs, regardless of its body's timestamp.
-- **Contact conditions on the ground.** Contact can be lost on the ground too. Configured rules apply as soon as the Asset can evaluate them, with any airborne restriction explicit in the rule. No rule is enabled by default. See [Asset failsafes](../../asset/docs/failsafes.md#configure-conditions-as-well-as-responses).
+- **Contact conditions on the ground.** Contact can be lost there too. The [Asset's configured conditions](../../asset/docs/failsafes.md#configure-conditions-as-well-as-responses) determine the response, with no implicit ground exemption.
 
 ## SDK choices
 

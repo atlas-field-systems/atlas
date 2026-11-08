@@ -37,9 +37,6 @@ Completion follows the observed equipment result. A failure includes its reason.
 The SDK delivers final reports to Core, retrying through link loss until Core
 acknowledges them.
 
-[Command failure](failsafes.md#a-failed-command-cancels-the-remaining-tasks)
-always cancels the remaining Tasks, independently of the configured safe response.
-
 ### Prepare and take off
 
 When a Takeoff Task runs, the Asset app performs the preparation that its platform
@@ -58,6 +55,7 @@ Preparation is part of executing the Task. Arming alone does not complete
 Takeoff; completion follows the observed takeoff result. Each platform supplies
 its own execution sequence, as proposed in
 [the platform integration](assets.md#proposed-platform-integration).
+Equipment-specific completion evidence, tolerances, and timeouts remain open.
 
 ### Other commands and settings
 
@@ -71,23 +69,13 @@ runs. Report the resulting values rather than comparing operator and Asset clock
 ## Handle failures and link loss
 
 The app monitors equipment, active work, its queue, and contact information from
-the SDK. [Command failures and failsafes](failsafes.md) defines unconditional
-command-failure cancellation and configurable safe-response conditions, including
-being out of contact while airborne with no work left.
+the SDK. [Command failures and failsafes](failsafes.md) owns cancellation,
+configured conditions, response Tasks, and the operation-long work lock.
 
 Link loss is timed locally under
 [Protocol's contact rules](../../protocol/docs/communication.md#losing-the-link).
 On reconnect the app keeps its execution state while the SDK restores message
 delivery and queue reporting. Reconnecting alone never starts a Task again.
-
-## Decisions still needed
-
-- The remaining trigger, timeout, and priority decisions in
-  [failsafes](failsafes.md#later-specification-work).
-- How equipment confirms each command's completion, including position and
-  altitude tolerances, and when an attempt has failed.
-- Reset invocation, archive retrieval, and recording limits, tracked in
-  [configuration](../config.md). [Logging](logging.md) defines the evidence to collect.
 
 This is a behavior draft. It does not select flight-controller integrations or
 simulation mechanics, and no Asset runtime is built here yet.
