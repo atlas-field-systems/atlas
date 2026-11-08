@@ -16,9 +16,13 @@ A reporting-only tracker needs no live settings or task queue merely to connect.
 Those startup cases need [Protocol contract work](../protocol/docs/open-questions.md#unresolved).
 Changing a configuration file is not another route for sending commands.
 
-Proposed loading procedure: validate one local configuration file before
-connecting and expose the effective configuration with secrets removed.
-How configuration is stored or changed during an operation is not selected.
+The app validates startup configuration before connecting and exposes the
+effective configuration with secrets removed. A local inspection command shows
+the selected modules and equipment, supported commands, reporting policy, and
+enabled failsafes. It identifies missing or incompatible configuration without
+moving equipment or claiming it is ready. The same check runs in CI without
+hardware. Loading from one local file is proposed. Command syntax, storage, and
+configuration changes during an operation remain open.
 
 ## Options to discuss
 
@@ -27,14 +31,14 @@ Names in this table are proposed configuration keys, not an implemented format.
 | Option | Purpose | Selected requirement or open choice |
 | --- | --- | --- |
 | `asset_id`, `asset_key`, `enrollment_key` | Identity and registration credentials | Follow [registration](../protocol/docs/storage.md#registration); provisioning and local storage remain open |
-| `link` | Core endpoint or field-link adapter and local connection | Communications module manages the SDK; transport configuration shape is open |
-| `modules`, `equipment` | Behavior modules, movement profiles, equipment drivers, and their connections | Full catalog, interfaces, equipment options, and loading rules remain open |
+| `link` | Core endpoint and available transports or transport interfaces | Communications module manages SDK configuration; see [communications goals](docs/communications.md); exact configuration shape is open |
+| `modules`, `equipment` | Explicit behavior modules, movement profiles, equipment drivers, and their connections | No silent module overrides; full catalog, interfaces, and equipment options remain open |
 | `capabilities` | Explicit supported commands, reports, cameras, and settings support | Command list is supplied outright; settings-support representation needs Protocol work |
 | `position` | Own position source or a configured stationary position | Equipment or manual configuration supplies it; missing values stay unknown |
 | `initial_settings` | Initial values for supported live settings | Use shared settings fields where defined; explicit home takes precedence over automatic initialization |
 | `startup_behavior` | Acquisition, reporting, and initial equipment behavior | Initial example setups report automatically and wait for movement requests; other behavior is Asset-selected |
 | `completion_tolerances`, `command_timeouts` | Evidence and limits for equipment execution | Per-command values and failure mappings remain open |
-| `reporting` | When measurements and subsystem conditions are relevant to send | Asset-selected policy; no mandatory periodic health snapshots |
+| `reporting` | Selection and rate of outgoing reports from local state | Communications module considers data relevance and available links; thresholds and rates remain open; no mandatory periodic health snapshots |
 | `log_level` | Detail of app and SDK diagnostics | Detailed per-message logging is required; proposed prototype default is `trace` |
 | `log_directory` | Local diagnostic files | Available while Core is unreachable; destination remains open |
 | `log_message_content` | Message content in trace records | Proposed on for the prototype, with credentials removed |

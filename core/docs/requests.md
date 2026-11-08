@@ -14,5 +14,7 @@ Core retains requested work and forwards accepted requests unchanged under
 [Current equipment checks and execution](../../asset/docs/README.md#carry-out-work-and-report-its-result)
 remain with the Asset. [Subsystem conditions](../../asset/docs/status.md) do not
 automatically gate commands. Configured [failsafes](../../asset/docs/failsafes.md)
-remain onboard, including while disconnected. This follows
+remain with the Asset runtime, including while disconnected from Core.
+The runtime may be ground-based, as in the [first-flight setup](../../atlas/first-flight.md).
+This follows
 [decisions near their source](../../atlas/design-decisions.md#decisions-stay-near-their-source).

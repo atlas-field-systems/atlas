@@ -1,6 +1,6 @@
 {
   "title": "First flight",
-  "source": "Charter first-flight.md: power on, connect through a gateway, Takeoff, Move To, Land, with the failure branch.",
+  "source": "Charter first-flight.md: the ground Pi connects to Core over Wi-Fi and controls ArduPilot over SiK for Takeoff, Move To, Land, with the failure branch. Drone identifies the vehicle represented by the Pi runtime. Examples use current Protocol shapes, pending alignment with selected startup, subsystem, and failsafe behavior.",
   "branches": {
     "main": "The run as planned",
     "failsafe": "If the link drops during Move To (replaces the main steps after Move To starts)"
@@ -11,7 +11,7 @@
       "from": "Drone",
       "to": "Core",
       "file": "01-hello.json",
-      "why": "The drone opens the link through the gateway and says hello: its id, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe."
+      "why": "The ground Pi opens the Wi-Fi link for the drone and says hello: its id, its key and, this first time, the enrollment key. Reports and commands come next as admin.describe."
     },
     {
       "branch": "main",
@@ -95,14 +95,14 @@
       "from": "Core",
       "to": "Drone",
       "file": "09b-queue.json",
-      "why": "The task list: the order, by ID only. The drone takes it only once every Task in it is on board."
+      "why": "The task list gives the order by ID. It takes effect once the ground runtime holds every Task body."
     },
     {
       "branch": "main",
       "from": "Drone",
       "to": "Core",
       "file": "10-status-queue.json",
-      "why": "All three bodies are on board, so the list takes effect at version 1. Had a body been lost, the report would name it in missing_task_ids and Core would resend it."
+      "why": "The ground runtime holds all three bodies, so the list takes effect at version 1. If a body were missing, the report would name it in missing_task_ids and Core would resend it."
     },
     {
       "branch": "main",

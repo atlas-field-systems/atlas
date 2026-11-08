@@ -52,3 +52,13 @@ Actual execution still depends on current equipment evidence. An action can
 fail when required equipment is unavailable or does not perform the action.
 That is an execution failure, not a decision made by the health-reporting system.
 The existing command-failure and failsafe rules still apply.
+
+## Inspect local diagnostics on demand
+
+Local inspection exposes module and equipment diagnostics, including connection
+details, queue usage, and sensor-worker state where applicable. A running process
+alone does not prove that its equipment works. Inspection preserves individual
+conditions and explanations without computing an overall healthy verdict.
+
+This inspection complements [local logging](logging.md). Its interface remains
+open and does not require a new remote command or periodic diagnostic broadcasts.

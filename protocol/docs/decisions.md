@@ -88,7 +88,7 @@ equipment readiness.
 ## Queue
 - There are no Plans. A **queue** is just the list of an Asset's Tasks not started yet, in order. It is not an object and has no ID.
 - `task_id` is unique per Asset, even after a Task finishes.
-- **The Asset owns its queue and always carries all of it**, so it never leaves with part of a mission. Each body is sent once, all at once. `control.queue` carries the order as `task_id`s plus the `queue_version` it was built on; it takes effect only when every body is on board, and is ignored when built on an old version. Lists are tiny, so this stays light on slow links. Details: [communication.md](communication.md#delivering-a-task-queue).
+- **The Asset runtime owns its complete queue**, so it never needs to fetch the next Task from Core during execution. This does not require a runtime physically aboard the vehicle or an uploaded autopilot mission. Each body is sent once, all at once. `control.queue` carries the order as `task_id`s plus the `queue_version` it was built on; it takes effect only when every body is held by the runtime, and is ignored when built on an old version. Lists are tiny, so this stays light on slow links. Details: [communication.md](communication.md#delivering-a-task-queue).
 - A failed command always clears the remaining queue, regardless of the configured response. Failsafe activation or an accepted immediate motion command also clears it. The Asset owns [command failures and failsafe conditions](../../asset/docs/failsafes.md).
 
 ## Connect and reports

@@ -1,15 +1,21 @@
 # First flight
 
-The drone powers on and connects to Atlas through a gateway.
-The operator sends the whole task list: Takeoff, Move To a location, then Land.
-The drone starts the list only after it holds every Task's body.
-The operator sees what the drone reports doing.
+The first setup uses a Raspberry Pi on the ground, connected to Core over Wi-Fi.
+The Pi runs the Asset app and connects to an ArduPilot quadcopter through a SiK
+radio link. It acts as the companion computer from the ground, much like using
+a ground-control station such as QGroundControl.
+The vehicle remains the Asset represented in Atlas.
 
-This is the selected first flight workflow. The
-[GPS tracker](using-atlas.md#locate-the-tracker) is the first Asset to build, followed
-by this quadcopter. Takeoff and Land are planned capabilities, not claims about
-the current implementation. The drone may connect while equipment is still
-starting. Connection alone does not establish that it can take off.
+The operator sends the whole task list: Takeoff, Move To a location, then Land.
+The app on the Pi starts the list only after it holds every Task's body. It sends
+equipment commands to the flight controller and reports the observed outcomes
+through the SDK. The operator sees the reported vehicle behavior.
+
+No runtime is built yet. The Pi can connect to Atlas while vehicle equipment is
+still starting or unreachable. Connection alone does not establish takeoff
+readiness. The operator can intervene locally at the Pi. Independent vehicle
+controls and ArduPilot protections remain part of the setup, with their
+configuration and handover procedure still to be defined and verified.
 
 ## The flight commands
 
@@ -29,54 +35,58 @@ The Asset owns [platform-specific preparation and arming](https://github.com/atl
 
 ```mermaid
 sequenceDiagram
-    participant Drone
-    participant Gateway
+    participant Drone as ArduPilot vehicle
+    participant Pi as Asset app on ground Pi
     participant Core
     participant App as Operator application
-    Drone->>Gateway: Report identity and state
-    Gateway->>Core: Forward the report
+    Drone->>Pi: Equipment state over SiK
+    Pi->>Core: SDK identity and vehicle reports over Wi-Fi
     Core-->>App: Show the reported state
     App->>Core: Send Takeoff, Move To and Land bodies, then their ordered list
-    Core->>Gateway: Forward the bodies and list
-    Gateway->>Drone: Deliver the bodies and list
-    Drone-->>Gateway: Confirm the complete list is aboard
-    Gateway-->>Core: Forward the queue report
+    Core->>Pi: Deliver the bodies and list over Wi-Fi
+    Pi-->>Core: Confirm the complete list is held on the Pi
     Core-->>App: Show the reported queue
-    Note over Drone: Run Takeoff, Move To, then Land in order
-    Drone-->>Gateway: Report what happened
-    Gateway-->>Core: Forward the report
+    Note over Pi: Run Takeoff, Move To, then Land in order
+    Pi->>Drone: Equipment commands over SiK
+    Drone-->>Pi: Observed equipment state over SiK
+    Pi-->>Core: SDK Task outcomes over Wi-Fi
     Core-->>App: Show the reported outcome
-    Note over Drone,App: Report each Task's progress and outcome
+    Note over Pi,App: Report each Task's progress and outcome
 ```
 
-Core retains the requests and reported evidence. The Asset runtime performs the
-physical action. A request reaching Core does not prove that the drone received
-or executed it.
+Core retains the requests and reported evidence. The Asset runtime coordinates
+execution, and ArduPilot controls the vehicle. A request reaching Core or the Pi does
+not prove that the flight controller received or executed an equipment command.
+The SiK connection is an equipment link, not an Atlas Protocol transport or mesh.
 
 ## When something goes wrong
 
-The drone carries its whole task list before it leaves, so losing the link never
-strands part of the mission on the ground. If a command fails, the drone always
-cancels the remaining Tasks. For example, failed Takeoff cancels Move To and Land.
-Core marks them cancelled once the drone reports it, so the records match what
-happened. No configured response can preserve those cancelled Tasks.
+The ground Pi holds the Atlas task list. Whether it uploads a complete mission
+to the flight controller remains open. Continued flight after SiK loss cannot
+assume an onboard Atlas queue.
 
-Each Asset has [settings](settings.md) for how it responds to events such as
-losing its radio link. Conditions determine when a failsafe is needed, and each
-rule has a configured response Task and its parameters. A failsafe uses the same
-equipment execution as an ordinary Task. The drone can keep its onboard mission
-when Core rides in a car through a tunnel if no failsafe rule applies.
-If it finishes its work while still out of contact and remains airborne, a
-separate condition can trigger a safe response. That condition is configurable
-too: the operator may intend to bring the communications link to the waiting drone.
-Return to home is done by an Atlas layer above the
-flight controller or by ArduPilot's return-to-home mode.
+If Wi-Fi to Core drops but the Pi and SiK link keep working, the app retains its
+queue and execution state. Configured Atlas failsafe conditions determine its
+response. If SiK drops, the Pi may still report to Core, but it lacks current
+vehicle evidence and cannot rely on sending a response to the flight controller.
+Independent controller protections and the operator's intervention path handle
+the failures they are configured to cover, including failure of the Pi itself.
+
+A command failure cancels the remaining Tasks. For example, failed Takeoff
+cancels Move To and Land. Core records cancellations when the app reports them.
+Detected independent autopilot failsafe takeover also cancels ordinary work and
+locks it for the operation. No configured response preserves cancelled Tasks.
+
+Atlas [settings](settings.md) configure local conditions and response Tasks.
+A response uses the same equipment execution as ordinary work. Return to home
+can use Atlas execution or ArduPilot's own behavior, as selected for the setup.
+A requested response is not proof that the vehicle returned or landed.
 
 An applicable failsafe overrides ordinary work, including paused, and locks new
 work for the rest of the operation, even after its response Task succeeds.
-The operator must go to the Asset and manually restart it before another
-operation. Atlas does not manage that recovery. Shutdown and log inspection
-follow the flight.
+Local intervention and a manual runtime restart are required before another
+operation. For this setup the runtime is on the ground Pi. Atlas does not manage
+that recovery. Shutdown and log inspection follow the flight.
 Atlas enables no failsafe rules by default. The flight setup explicitly supplies
 the intended rules, including any battery response during an intentional wait.
 The Asset owns
