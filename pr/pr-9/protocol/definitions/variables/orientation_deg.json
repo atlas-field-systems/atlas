@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/orientation_deg.json",
+  "title": "orientation_deg",
+  "description": "Direction of an ellipse's long axis, in degrees clockwise from true north (0 up to 180).",
+  "type": "number",
+  "minimum": 0,
+  "exclusiveMaximum": 180,
+  "examples": [
+    70
+  ]
+}

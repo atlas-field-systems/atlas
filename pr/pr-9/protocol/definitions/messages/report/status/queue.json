@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/status/queue.json",
+  "title": "queue",
+  "description": "The Asset's task list: the task_id of every Task it has not started, in the order it will run them, and the list's queue_version. Sent whenever the list or the missing bodies change, and when Core asks. An empty list means nothing is queued. missing_task_ids names the Tasks of a waiting control.queue whose bodies the Asset does not hold yet; Core resends those bodies. Left out, nothing is missing. When it answers a control.queue, reply_from and reply_to name it.",
+  "type": "object",
+  "required": [
+    "kind",
+    "queue_version",
+    "task_ids"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "queue"
+    },
+    "queue_version": {
+      "$ref": "../../../variables/queue_version.json"
+    },
+    "task_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../../../variables/task_id.json"
+      },
+      "maxItems": 64
+    },
+    "missing_task_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../../../variables/task_id.json"
+      },
+      "maxItems": 64
+    },
+    "reply_from": {
+      "$ref": "../../../variables/reply_from.json"
+    },
+    "reply_to": {
+      "$ref": "../../../variables/reply_to.json"
+    }
+  },
+  "dependentRequired": {
+    "reply_to": [
+      "reply_from"
+    ],
+    "reply_from": [
+      "reply_to"
+    ]
+  },
+  "examples": [
+    {
+      "kind": "queue",
+      "queue_version": 1,
+      "task_ids": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "reply_from": "CORE",
+      "reply_to": 7
+    },
+    {
+      "kind": "queue",
+      "queue_version": 1,
+      "task_ids": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "missing_task_ids": [
+        "T5"
+      ]
+    }
+  ]
+}

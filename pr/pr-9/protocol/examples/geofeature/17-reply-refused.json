@@ -1,0 +1,11 @@
+{
+  "type": "admin.reply",
+  "time": 1793667805010,
+  "seq": 210,
+  "from": "CORE",
+  "reply_from": "OP1",
+  "reply_to": 5,
+  "reply_result": "refused",
+  "geofeature_id": "G9",
+  "explanation": "No geo feature G9"
+}
