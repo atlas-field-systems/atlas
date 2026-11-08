@@ -194,14 +194,14 @@ From the review of the first-flight prototype: lost, repeated, late and reordere
 - **Tasks move forward only.** The first final state stays. A late or contradicting report goes to history, changes nothing and is not forwarded.
 - **Final reports are acknowledged.** The Asset resends a Task's final report until Core answers with `admin.reply`, naming the report and its `task_id`. A lost acknowledgement is covered by resending the same final report.
 - **An Asset never runs a `task_id` twice.** It remembers its finished Tasks for the whole operation and resends their final report if one arrives again.
-- **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Views order each setting by the Asset report's `time`, then `seq` for a tie. The Asset applies requests in receipt order rather than comparing creator clocks.
+- **Settings.** Follow [settings rules](communication.md#settings) for support declarations, current values, effect ordering, and per-setting retention.
 - **Link loss.** Contact with Core means hearing new (non-duplicate) messages after the accepted hello that name this Asset in `asset_id` and were not sent by this Asset. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), contact is lost. The Asset evaluates its configured conditions to decide whether a safe response is needed. The older unconditional link-loss definitions need alignment; see [Losing the link](communication.md#losing-the-link).
 
 ## Acknowledgements and edges
 
 Selected answers to edge cases found during prototyping.
 
-- **What must arrive is acknowledged** (law 23). Core acknowledges an Asset's `admin.describe` and connect `report.settings` as it does final reports, and the Asset waits for each before going on, so a later partial settings report is never taken for the full list.
+- **What must arrive is acknowledged.** [Law 23](laws.md) and the [applicable startup sequence](communication.md#after-reconnecting-asset) define required exchanges and acknowledgements.
 - **Core starts first and stops last.** Core, gateways, Assets, and their SDK instances stay running for the operation. Recovery covers link reconnects, not process restarts.
 - **A resent Task is a retry.** Core forwards an operator's Task unchanged, so resending a missing body sends the same bytes.
 - **Same-millisecond settings reports.** The Asset's `seq` orders reports whose `time` is equal; no extra field or clock synchronisation is required.
@@ -224,12 +224,12 @@ Drafted for the SDK docs and the matching protocol cuts. Details: [SDK](../../sd
 - **Identity:** one SDK module for keys-on-hello, `from`/`seq`/`time` stamp, and remember/dedupe; Core keeps a last-answer cache only.
 - **Contact:** new post-hello messages with this Asset's `asset_id` whose `from` is not this Asset (not only `from: CORE`).
 - **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no correlation field. Core sends a history answer oldest first, and the finished result lists its items oldest first.
-- **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` (each waiting for Core's `admin.reply`) → unacked finals → queue report; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
+- **Reconnect:** the Asset SDK follows the [applicable startup sequence](communication.md#after-reconnecting-asset). The operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
 - **Handshake vs description:** hello = keys + id; `admin.describe` is keyless; `admin.asset` is removed.
 
 ## Offline Assets
 
-- Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset that has been quiet for a third of that sends `report.telemetry` early, so its check-in carries data. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
+- Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. Check-ins follow the [contact rules](communication.md#when-core-counts-an-asset-offline); the quiet-Asset exchange remains [open](open-questions.md#unresolved).
 - Commands, settings changes, lists and cancels for an offline Asset are refused and not held. The operator sends them again once the Asset is back.
 
 ## Review fixes
