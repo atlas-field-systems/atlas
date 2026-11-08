@@ -1,9 +1,9 @@
 # Command interface docs
 
-Selected behavior, not implemented. Shared exchanges live in
-[How Atlas parts communicate](../../protocol/docs/communication.md).
-[Past interface ideas](past-interface-ideas.md) records the historical research;
-the choices here supersede its recommendations.
+This page records selected behavior. No interface code exists yet. Shared
+exchanges live in [How Atlas parts
+communicate](../../protocol/docs/communication.md). The choices here supersede
+the recommendations in [past interface ideas](past-interface-ideas.md).
 
 ## Operators and connectivity
 
@@ -25,10 +25,10 @@ layout from the earlier interfaces. Selecting an item in the list or map shows
 the same item in the panel and keeps its map context visible.
 
 Assets, Tracks, and Observations also have their own addressable detail pages.
-Their URLs can be shared, bookmarked, refreshed, and opened in another tab.
-An operator can select an Asset on the map, inspect its summary, and open its
-page for deeper inspection. Data and related records can link to their own pages;
-inspection is not confined to one screen. Exact detail routes remain open.
+Operators can share or bookmark those URLs, refresh them, or open them in
+another tab. From an Asset's map summary, an operator can open its page for
+deeper inspection. Related records can link to their own pages. Exact detail
+routes remain open.
 
 Selecting a Track shows when it was last spotted. Core decides
 [when information is stale](../../core/docs/fusion.md#track-freshness).
@@ -44,11 +44,10 @@ Use [RidgeLine](https://github.com/the-Drunken-coder/Ridgeline) for mapping and
 reusable map tools. Atlas supplies its domain data, presentation, pages, command
 forms, and operator workflows on top. RidgeLine remains a general-purpose package.
 
-When RidgeLine needs a change, record a proposal in these docs. Also propose a
-change when it would simplify Atlas, simplify the projects overall, or offer
-another benefit. Describe the concrete need, the proposed package change, and
-its benefit compared with handling it in Atlas. The owner decides; a proposal
-does not authorize changes to the RidgeLine repository.
+Document proposed RidgeLine changes here whenever Atlas needs them or they would
+simplify either project or provide another benefit. Explain the need, the
+package change, and the benefit compared with handling it in Atlas. The owner
+approves changes before work starts in the RidgeLine repository.
 
 ## Prepare requests with the map
 
@@ -56,24 +55,25 @@ Offer explicitly supported commands and settings, with explanations beside the
 controls. Distinguish support from whether a current setting value is known.
 A reporting-only tracker needs no movement controls, pause control, or artificial home.
 
-Map interaction supplies inputs to a request draft. An operator can pick a point,
-or two coordinates when the input requires them. For a polygon input, an operator
-can select an existing Geofeature with suitable geometry. If a Task explicitly
-requests a Geofeature, selection supplies that feature's identity. Geometry and
-a reference to a Geofeature remain distinct inputs; exact shared contracts belong
-to Protocol. A geometry input takes a snapshot of the selected shape. Later edits
-to the Geofeature do not change that draft's geometry. At submission, retain the
-chosen shape and Geofeature ID under [Protocol's snapshot rule](../../protocol/docs/storage.md#geo-features).
-Later edits or deletion do not change the Task. A future Task needing a changing
-reference requires an explicit contract.
+An operator fills request inputs by picking a point or the required coordinates
+on the map. For a polygon input, an operator can select an existing Geofeature
+with suitable geometry. If a Task explicitly requests a Geofeature, selection
+supplies that feature's identity. Geometry and a reference to a Geofeature
+remain distinct inputs; exact shared contracts belong to Protocol. A geometry
+input takes a snapshot of the selected shape. Later edits to the Geofeature do
+not change that draft's geometry. At submission, retain the chosen shape and
+Geofeature ID under [Protocol's snapshot
+rule](../../protocol/docs/storage.md#geo-features). Later edits or deletion do
+not change the Task. A future Task needing a changing reference requires an
+explicit contract.
 
 Offer input-specific actions such as "Pick on map", "Choose Geofeature", and
 "Draw". While picking, show which field is being filled. Escape cancels picking
 without discarding the rest of the draft.
 
-Before sending, show the target Asset, input values, units, and effect on the task
-queue. Selecting a location or feature fills the draft. The operator submits it
-explicitly. Keep simple actions short.
+Before sending, show the target Asset, input values, units, and effect on the
+task queue. The operator submits the draft explicitly. Keep simple actions
+short.
 
 Use RidgeLine's drawing and editing tools for geometry authoring. Show drafts
 separately from shared Geofeatures, with clear finish and discard actions. Review
@@ -117,25 +117,26 @@ equipment layout and the exact launch command remain open.
 The operator follows the flight until the rocket returns and lands, then opens
 the recorded launch data. The operator scrubs back through the flight or plays
 it, with the map and available flight measurements following the same playback
-time. The goal is to inspect all recorded launch data,
-including detail that was not available over the live link.
+time. Review includes all recorded launch data, including samples that did not
+arrive over the live link.
 
-The rocket [records more data than it transmits live](../../asset/docs/README.md#record-and-send-report-history).
-After landing, a restored or faster link carries the retained reports through the
-ordinary [report catch-up path](../../protocol/docs/communication.md#report-catch-up).
+The rocket [records more data than it transmits
+live](../../asset/docs/README.md#record-and-send-report-history). After landing,
+a restored or faster link carries the retained reports through the ordinary
+[report catch-up path](../../protocol/docs/communication.md#report-catch-up).
 Those reports keep their original times and fill in history for playback.
-The interface distinguishes missing data from a recorded absence of
-activity; receipt of live telemetry alone does not establish a complete flight
-record. Recording limits and completion evidence remain open. Flight control,
-landing, and ignition mechanisms belong to the Asset design.
+Distinguish missing data from a recorded absence of activity. Live telemetry
+alone does not establish a complete flight record. Recording limits and
+completion evidence remain open. Flight control, landing, and ignition
+mechanisms belong to the Asset design.
 
 ### Diagnostics and simulation
 
-Optional expandable views expose source records, Task payloads, and request errors
-for testing and troubleshooting. Normal views explain the evidence without
-requiring the operator to read JSON.
+Expandable diagnostic views show source records, Task payloads, and request
+errors. Normal views explain the evidence without requiring the operator to read
+JSON.
 
-Simulation has a separate, persistently labeled test context and a clear
+Keep simulation in a separate test context that always shows its label and
 destination. Support useful test cases such as stale reports, missing
 capabilities, rejected requests, and unknown outcomes. Do not substitute sample
 data for an outage or let a simulation warning disappear.
@@ -149,10 +150,9 @@ in the SDK. The interface owns local drafts and view state. Core owns
 [request admission](../../core/docs/requests.md), and the Asset owns
 [execution checks](../../asset/docs/README.md#carry-out-work-and-report-its-result).
 
-Build and exercise the interface to discover what the SDK needs for operator and
-administrative use. The SDK may change to meet those needs; record findings and
-update the owning SDK docs instead of adding a second implementation in the UI.
-SDK runtime code is not built yet. This direction does not start implementation.
+Use interface prototypes to discover SDK needs for operator and administrative
+use. Record findings in the SDK docs and change the SDK to meet those needs. SDK
+runtime code is not built yet; implementation still requires an owner request.
 
 Task ordering, immediate commands, cancel, and settings follow Protocol's
 [queue rules](../../protocol/docs/communication.md#delivering-a-task-queue),
@@ -161,11 +161,11 @@ and [settings rules](../../protocol/docs/communication.md#settings).
 
 ## Open choices and scope
 
-The exact detail routes, history controls, package integration, and basemap provider
-remain open. Report catch-up needs the [remaining shared contracts](../../protocol/docs/open-questions.md#unresolved).
-Geometry-based and Geofeature-reference Task inputs need concrete stories and
-shared input formats. Object inspection and manual
-upload from the historical review still need an owner decision.
+The exact detail routes, history controls, package integration, and basemap
+provider remain open. Report catch-up needs the [remaining shared
+contracts](../../protocol/docs/open-questions.md#unresolved). Geometry-based and
+Geofeature-reference Task inputs need concrete stories and shared input formats.
+Object inspection and manual upload still need an owner decision.
 
 Natural-language interaction is out of scope. If revisited, it belongs on a
-separate page; no conversational feature is selected now.
+separate page.

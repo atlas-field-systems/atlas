@@ -1,61 +1,51 @@
 # Ideas from past Atlas command interfaces
 
-Historical research and recommendations. The owner's subsequent choices live in
-[selected behavior](README.md), including RidgeLine, separate detail pages,
-external basemap services, and removal of natural-language interaction from scope.
-This note preserves the original recommendations; it does not select behavior.
-**Keep** means retain the idea for consideration,
-**change** means retain its purpose with the changes described, and **trash** means
-do not carry that historical approach forward. These are recommendations, not approvals.
+These historical recommendations preceded the owner's decisions. [Selected
+behavior](README.md) records those decisions and takes precedence. Keep, change,
+and trash below describe the original recommendations.
 
 ## Basis and limits
 
-Current baseline: `f814e406bc0be0bc02eb050eb1722afbeed838f9`. Read against the
-[Charter](../../atlas/CHARTER.md), [design decisions](../../atlas/design-decisions.md),
-[operating environment](../../atlas/environment.md), and
-[interface ownership rules](../AGENTS.md). Existing selected rules already require
-supported controls, separate conditions with source and age, shared SDK checks,
-and separation of request, acceptance, and outcome. The proposals below concern
-how to present those facts; they do not reopen the shared contracts.
+Baseline reviewed: `f814e406bc0be0bc02eb050eb1722afbeed838f9`. Read against the
+[Charter](../../atlas/CHARTER.md), [design
+decisions](../../atlas/design-decisions.md), [operating
+environment](../../atlas/environment.md), and [interface ownership
+rules](../AGENTS.md). The review used the selected rules for supported controls,
+source and age, SDK checks, and separate request, acceptance, and outcome
+evidence.
 
-Research inspected default-branch source snapshots on 2026-11-08. Connected GitHub
-file fetch worked. Code search returned empty results and one rate-limit error,
-so read-only `gh api` repository metadata and commit-pinned source archives supplied
-the substantive investigation. All nine named repositories were accessible,
-including private repositories. Private source links require repository access.
+The review inspected default-branch source snapshots on 2026-11-08. All nine
+repositories were accessible. Private source links require repository access.
 
-"Implemented" below means the behavior exists in inspected source, not that it was
-run, deployed, or validated in field use. No historical application was executed.
-This is a snapshot review, not an exhaustive review of deleted code, other branches,
-or every commit. The current checkout's retained prototype is outside this note's
-historical investigation.
+"Implemented" means the inspected source contains the behavior. No historical
+application was run. The review excludes other branches, deleted code, earlier
+commits, and the current repository's retained Core prototype.
 
 ## Sources across generations
 
-| Repository | Revision inspected | What it contributes |
-| --- | --- | --- |
-| [atlas-c3-retired](https://github.com/the-Drunken-coder/atlas-c3-retired/tree/aa426c34789866370c180f19b18d9c08b5486f56) | `main` at `aa426c34789866370c180f19b18d9c08b5486f56` | Interface planning, explicitly deferred screens. Core and its administration CLI also exist; that CLI is not an operator interface. |
-| [Atlas-Modernization](https://github.com/the-Drunken-coder/Atlas-Modernization/tree/0dcad33c9d276e3695eaf08f6c491cdf5eb1d23d) | `main` at `0dcad33c9d276e3695eaf08f6c491cdf5eb1d23d` | Substantial implemented map console, command forms, Tasks, geometry tools, and movement history. |
-| [ATLAS2-retired](https://github.com/the-Drunken-coder/ATLAS2-retired/tree/e3b08b81320098c8478af0d39a398f6adf3839bd) | `main` at `e3b08b81320098c8478af0d39a398f6adf3839bd` | Core, Protocol, and deferred SDK planning. No dedicated command-interface application found in the inspected tree; do not present its plans as a UI. |
-| [ATLAS-retired](https://github.com/the-Drunken-coder/ATLAS-retired/tree/3b948e85fb5ee199937f8f45c4652d0186c4ad1b) | `main` at `3b948e85fb5ee199937f8f45c4652d0186c4ad1b` | Implemented React map interface, sidebars, command dispatch integration, diagnostics, and demo handling. |
-| [ATLAS-Testing-WebUI-retired](https://github.com/the-Drunken-coder/ATLAS-Testing-WebUI-retired/tree/fbd1c50471099ebc592be8e2fca41dcdffcdc1f9) | `master` at `fbd1c50471099ebc592be8e2fca41dcdffcdc1f9` | Implemented Asset simulator, track generator, and object-upload test screens. |
-| [ATLAS-natural-language-interface-demo-retired](https://github.com/the-Drunken-coder/ATLAS-natural-language-interface-demo-retired/tree/30590a88bac953081feca1cd9e8fda80c481aad3) | `master` at `30590a88bac953081feca1cd9e8fda80c481aad3` | Implemented chat frontend and tool-calling worker, including a geofeature deletion tool. |
-| [atlas-docs-retired](https://github.com/the-Drunken-coder/atlas-docs-retired/tree/f38d185c729aee4d85b80e82eff64d7bb0c94474) | `main` at `f38d185c729aee4d85b80e82eff64d7bb0c94474` | Interface and SDK proposals, not proof of implementation. |
-| [ATLAS-dev-retired](https://github.com/the-Drunken-coder/ATLAS-dev-retired/tree/145f4a13b05547c789bc583fcf5e1d2505b3c906) | `main` at `145f4a13b05547c789bc583fcf5e1d2505b3c906` | Inspected tree contains only ATLAS CORE/LICENSE. No UI evidence at this revision. |
-| [ATLAS-OS-retired](https://github.com/the-Drunken-coder/ATLAS-OS-retired/tree/ad16f81fe3310f33696309ae639aff2a117e9258) | `main` at `ad16f81fe3310f33696309ae639aff2a117e9258` | Asset and gateway software. No operator UI found in the inspected tree. |
+| Repository snapshot | Inspected contents |
+| --- | --- |
+| [atlas-c3-retired](https://github.com/the-Drunken-coder/atlas-c3-retired/tree/aa426c34789866370c180f19b18d9c08b5486f56) | Interface planning, explicitly deferred screens. Core and its administration CLI also exist; that CLI is not an operator interface. |
+| [Atlas-Modernization](https://github.com/the-Drunken-coder/Atlas-Modernization/tree/0dcad33c9d276e3695eaf08f6c491cdf5eb1d23d) | Substantial implemented map console, command forms, Tasks, geometry tools, and movement history. |
+| [ATLAS2-retired](https://github.com/the-Drunken-coder/ATLAS2-retired/tree/e3b08b81320098c8478af0d39a398f6adf3839bd) | Core, Protocol, and deferred SDK planning. No dedicated command-interface application found in the inspected tree; do not present its plans as a UI. |
+| [ATLAS-retired](https://github.com/the-Drunken-coder/ATLAS-retired/tree/3b948e85fb5ee199937f8f45c4652d0186c4ad1b) | Implemented React map interface, sidebars, command dispatch integration, diagnostics, and demo handling. |
+| [ATLAS-Testing-WebUI-retired](https://github.com/the-Drunken-coder/ATLAS-Testing-WebUI-retired/tree/fbd1c50471099ebc592be8e2fca41dcdffcdc1f9) | Implemented Asset simulator, track generator, and object-upload test screens. |
+| [ATLAS-natural-language-interface-demo-retired](https://github.com/the-Drunken-coder/ATLAS-natural-language-interface-demo-retired/tree/30590a88bac953081feca1cd9e8fda80c481aad3) | Implemented chat frontend and tool-calling worker, including a geofeature deletion tool. |
+| [atlas-docs-retired](https://github.com/the-Drunken-coder/atlas-docs-retired/tree/f38d185c729aee4d85b80e82eff64d7bb0c94474) | Interface and SDK proposals, not proof of implementation. |
+| [ATLAS-dev-retired](https://github.com/the-Drunken-coder/ATLAS-dev-retired/tree/145f4a13b05547c789bc583fcf5e1d2505b3c906) | Inspected tree contains only ATLAS CORE/LICENSE. No UI evidence at this revision. |
+| [ATLAS-OS-retired](https://github.com/the-Drunken-coder/ATLAS-OS-retired/tree/ad16f81fe3310f33696309ae639aff2a117e9258) | Asset and gateway software. No operator UI found in the inspected tree. |
 
-C3's [interface module][C3 planning] explicitly defers layout and authoring flows.
-ATLAS2's [ownership index][ATLAS2 scope] and [SDK status][SDK planning] identify
-planning boundaries. The [OS overview][OS scope] confirms its different focus.
-These gaps limit historical UI evidence; they are not repository access failures.
+C3's [interface module][C3 planning] defers layout and authoring. ATLAS2's
+[ownership index][ATLAS2 scope] and [SDK status][SDK planning] describe plans.
+The [OS overview][OS scope] covers Asset and gateway software.
 
 ## Choices to consider
 
 ### 1. Keep a linked map, searchable list, and detail panel
 
-History: Modernization wires selected entities into the [map shell] and supplies a
-filterable [entity browser] with selected rows and focus recovery. The [older map]
-also connects Assets, Tracks, geofeatures, and command overlays.
+History: Modernization links selected entities to the [map shell] and a
+filterable [entity browser] with selected rows and focus recovery. The [older
+map] also connects Assets, Tracks, geofeatures, and command overlays.
 
 Recommendation: **Keep** the interaction. An operator can find an Asset by ID,
 select it, and inspect the same Asset on the map without losing context. Preserve
@@ -67,11 +57,10 @@ must remain useful without flight controls. Exact layout and visual styling rema
 History: Modernization's [command details] show Protocol and Asset descriptions,
 queued versus immediate scheduling, and cancel and progress support.
 
-Recommendation: **Keep** concise explanations of what the selected Asset explicitly
-supports. This gives the selected supported-controls rule a readable presentation.
-Use current Protocol and SDK information, not the historical manifest shape or a
-UI-maintained command catalog. Explain unavailable information without treating an
-unknown current setting as unsupported.
+Recommendation: **Keep** concise explanations of what the selected Asset
+explicitly supports. Use current Protocol and SDK information for these
+explanations. Keep command definitions out of the UI. Explain unavailable
+information without treating an unknown current setting as unsupported.
 
 ### 3. Change map commands into explicit, reviewable requests
 
@@ -85,16 +74,16 @@ click fills a draft. It must not hide an immediate dispatch. Keep simple actions
 short; do not copy historical flight semantics or thresholds. Use SDK checks for
 request construction and leave current equipment checks to the Asset.
 
-### 4. Change Task rows into a visible evidence trail
+### 4. Show request, acceptance, and outcome in Task rows
 
 History: The [task inspector] separates active, queued, and historical Tasks.
 [Task feedback] shows pending cancellation, errors, status, and inspectable payloads.
 
-Recommendation: **Change** the rows to distinguish the operator's request, Core's
-acceptance, and the Asset's reported outcome, including source and age. Acceptance
-must never paint a Task as completed. A cancel request remains pending evidence
-until its outcome is known. Display queue order and immediate-command effects from
-current Protocol rules, not the old status vocabulary.
+Recommendation: **Change** the rows to distinguish the operator's request,
+Core's acceptance, and the Asset's reported outcome, including source and age.
+Acceptance does not complete a Task. A cancel request stays pending until its
+outcome is known. Display queue order and immediate-command effects from current
+Protocol rules, not the old status vocabulary.
 
 ### 5. Change connection and status presentation to preserve uncertainty
 
@@ -113,12 +102,12 @@ verdict from a green connection indicator.
 History: [History controls] offer time windows and expose retention limits, empty
 intervals, loading, and errors while retaining previous history.
 
-Recommendation: **Change** the defaults to the current run rather than adopting the
-historical 30-day option or its limits. Mark historical inspection clearly beside
-live state. Reveal missing or unavailable intervals and preserve sample times;
-do not imply uninterrupted observation between reports. Fetch history on demand
-through the SDK, with live field traffic taking priority. No new retention promise
-or historical message shape is selected here.
+Recommendation: **Change** the defaults to the current run rather than adopting
+the historical 30-day option or its limits. Mark historical inspection clearly
+beside live state. Reveal missing or unavailable intervals and preserve sample
+times; do not imply uninterrupted observation between reports. Fetch history on
+demand through the SDK, with live field traffic taking priority. Retention and
+message formats remain unchanged by this recommendation.
 
 ### 7. Change geometry drawing into an unmistakable draft
 
@@ -142,19 +131,19 @@ must not imply a file was received or viewed. Add manual upload only for a concr
 operator story. Keep transfers explicit and SDK-owned so evidence browsing does
 not silently consume constrained field capacity.
 
-### 9. Keep the SDK boundary; discard old sync recipes
+### 9. Keep synchronization in the SDK
 
 History: Modernization's [SDK data source] reads SDK snapshots and commands.
-C3's [interface plan][C3 planning] assigns bootstrap and recovery to the SDK.
-An [earlier refresh proposal] favors periodic full queries, while the older
-[UI sync hook][older sync hook] exposes polling and cache retry configuration.
-These are different historical approaches, not one settled design.
+C3's [interface plan][C3 planning] assigns bootstrap and recovery to the SDK. An
+[earlier refresh proposal] favors periodic full queries, while the older [UI
+sync hook][older sync hook] exposes polling and cache retry configuration. The
+generations used different synchronization designs.
 
-Recommendation: **Keep** the SDK as the front door. **Trash** copying polling,
+Recommendation: **Keep** SDK-owned communication. **Trash** copying polling,
 reconciliation, retry, validation, or deduplication into interface components.
 The interface presents SDK contact and outcome information and owns local view
-state. Historical SDK modes, method names, and ATLAS2's Core-owned validation
-proposal do not override today's shared SDK ownership.
+state. Historical SDK APIs and ATLAS2's Core-owned validation proposal are not
+the current SDK design.
 
 ### 10. Keep an optional diagnostic view
 
@@ -181,9 +170,10 @@ unknown outcomes without confusing those scenarios with real field evidence.
 ### 12. Trash unrestricted natural-language writes; defer conversational help
 
 History: The demo's [NL tools] and [NL execution loop] execute model-requested
-calls directly. [NL deletion] checks that an entity is a geofeature, then deletes
-it without a separate operator confirmation in that path. The [NL service] calls
-an external model service. The type check is a guard, not proof of intended deletion.
+calls directly. [NL deletion] checks that an entity is a geofeature, then
+deletes it without a separate operator confirmation in that path. The [NL
+service] calls an external model service. The type check does not confirm that
+the operator intended deletion.
 
 Recommendation: **Trash** automatic model-authorized mutation as the operator flow.
 Defer conversational assistance until ordinary inspection and request authoring
@@ -194,28 +184,27 @@ field operation.
 
 ### 13. Trash mandatory remote map and runtime dependencies
 
-History: The older [tile providers] build direct provider URLs, including a CARTO
-CDN URL. [Modern map config][modern map config] likewise defines remote tile sources.
-Their presence is implemented dependency configuration, not evidence of offline maps.
+History: The older [tile providers] build direct provider URLs, including a
+CARTO CDN URL. [Modern map config][modern map config] likewise defines remote
+tile sources. Neither configuration establishes offline map support.
 
-Recommendation: **Trash** those dependencies as a required runtime foundation.
-Ship scripts, styles, fonts, symbols, and required map resources with the repository
-or package to meet the no-CDN rule. Keep local list and detail inspection working
-without internet. Any later external map-data option needs an explicit owner choice
-consistent with that rule and field operation, not silent adoption of old URLs.
+Recommendation: **Trash** required remote runtime dependencies. Ship scripts,
+styles, fonts, symbols, and required map resources with the repository or
+package to meet the no-CDN rule. Keep local list and detail inspection working
+without internet. Any later external map-data option needs an explicit owner
+choice consistent with that rule and field operation, not silent adoption of old
+URLs.
 
 ## Recommended owner review order
 
-Start with linked selection, request review, evidence-aware Task feedback, and
-separate connection and condition displays. Those choices exercise the immediate
-operator story with the fewest new concepts. Review history, geometry authoring,
-and Object workflows against concrete flight stories next. Defer conversational
-control and broad simulation tooling until the ordinary workflow is understandable.
+Review linked selection, request drafts, Task feedback, and connection displays
+first. Use concrete flight stories to review history, geometry authoring, and
+Object workflows next. Defer conversational control and broad simulation tools.
 
-A useful review story is: select an Asset, inspect old telemetry, prepare a request,
-lose the link after Core accepts it, and later receive the Asset's outcome. The
-interface must make every known fact and remaining uncertainty readable throughout.
-This is a proposed review exercise, not a claim that a historical interface passed it.
+For review, select an Asset, inspect old telemetry, prepare a request, lose the
+link after Core accepts it, and later receive the Asset's outcome. Check that
+the interface explains what is known and what remains uncertain at each step. No
+historical interface was run through this exercise.
 
 [map shell]: https://github.com/the-Drunken-coder/Atlas-Modernization/blob/0dcad33c9d276e3695eaf08f6c491cdf5eb1d23d/surfaces/command-interface/src/features/MapConsole.tsx#L550-L655
 [entity browser]: https://github.com/the-Drunken-coder/Atlas-Modernization/blob/0dcad33c9d276e3695eaf08f6c491cdf5eb1d23d/surfaces/command-interface/src/features/EntityList.tsx#L32-L107

@@ -123,7 +123,7 @@ An Asset can record more domain reports than its live link can carry. For the
 retain the additional samples locally while sending a live subset. After landing,
 use restored contact or a faster link to deliver retained reports through the
 ordinary [report catch-up path](../../protocol/docs/communication.md#report-catch-up).
-This also serves Assets returning after a disconnection.
+Assets returning after a disconnection use the same path.
 
 These reports populate shared history; they are separate from local diagnostic
 logs and Reset ZIP exports. Recording limits, delivery tracking, and completion
