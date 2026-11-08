@@ -10,6 +10,15 @@ are precise, and they keep AI agents from drifting.</p>
 <h2 id="proven-and-lean">Proven and lean</h2>
 <p>Prefer proven existing systems over building our own. Keep designs lean and
 minimal: build only what is needed now.</p>
+<h2 id="decisions-stay-near-their-source">Decisions stay near their source</h2>
+<p>Keep decisions with the part that has the authoritative information. Core checks
+requests before they cross the field link, using the SDK&#39;s shared validation.
+Assets own current equipment checks, execution, and local failsafes. The SDK and
+transport adapters supply communication mechanics. This keeps decisions local
+and avoids unnecessary exchanges over constrained links.</p>
+<p><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/requests.md">Core request admission</a>
+and <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md">Asset behavior</a>
+own the detailed responsibilities.</p>
 <h2 id="data-formats-belong-to-the-owner">Data formats belong to the owner</h2>
 <p>The project owner decides Atlas&#39;s data formats and data structures. Protocol
 writes them down exactly. See <a href="CHARTER.html#keep-shared-data-simple">Keep shared data simple</a>.</p>

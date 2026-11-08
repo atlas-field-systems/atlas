@@ -72,6 +72,12 @@ An Asset&#39;s <a href="settings.html">settings</a> are its current configuratio
 administration support the pillars.</p>
 <h2 id="information-focused-stories">Information-focused stories</h2>
 <p>These stories describe intended use.</p>
+<h3 id="locate-the-tracker">Locate the tracker</h3>
+<p>The first Asset to build is a Raspberry Pi with a GPS peripheral and an uplink.
+It starts obtaining its own position and reports telemetry to Core for an operator
+to see. It accepts no equipment-control commands. If it loses its GPS fix, Atlas
+retains its last known position and the reported GPS condition. The tracker does
+not send the old position as a new fix.</p>
 <h3 id="observe-an-aircraft">Observe an aircraft</h3>
 <p>An ADS-B receiver is an Asset. It reports Observations about a passing aircraft.
 Atlas uses those Observations as evidence to maintain a shared Track of the

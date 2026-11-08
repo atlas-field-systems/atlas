@@ -14,6 +14,24 @@ Unresolved questions and work deliberately deferred. Selected answers live in
 - **Fetching an Object's file.** An operator interface fetches it from Core over
   HTTP by `object_id`. The exact request, and how it is authorized when keys travel
   only in the hello (law 17), are open.
+- **Early and minimal startup.** Define the independent settings-support
+  declaration and applicable acknowledgements for [selected Asset startup](../../asset/docs/README.md#start-and-connect),
+  then align SDK interfaces and generated scenarios. Current settings definitions
+  assume known startup home and nonempty connect values.
+- **Subsystem-condition contracts.** Replace the overall condition with reports
+  and records for [the selected subsystem model](../../asset/docs/status.md).
+  Define declarations, bounds, query behavior, and replay for Core and the SDK
+  picture.
+- **Commands for other equipment.** Define exact turret-pointing and future
+  fixed-wing commands following [the Asset model](../../asset/docs/assets.md).
+  Multiple modules' concurrent work needs a concrete story before changing
+  queue semantics.
+- **Quiet-Asset contact.** A check-in must not require periodic subsystem
+  broadcasts or present an old position as a new fix. The current procedure
+  assumes a useful listed report can be sent early. Select the exchange for an
+  Asset with neither new measurements nor a relevant condition update, keeping
+  [contact evidence](communication.md#when-core-counts-an-asset-offline) distinct
+  from measurement freshness.
 - **Failsafe contracts.** [Selected Asset behavior](../../asset/docs/failsafes.md)
   needs shared policy settings, locally created Task identities and outcomes,
   and command-refusal reports. Current definitions still encode unconditional

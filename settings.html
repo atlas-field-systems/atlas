@@ -23,7 +23,11 @@ someone resumes it, for example: fly here, pause, wait for the operator, continu
 <li>An applicable failsafe overrides ordinary settings, including paused, and the
 Asset carries out its configured safe response. The Asset owns
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions</a>.</li>
-<li>Home is a setting. Every Asset has GPS, and it sets home to where it starts up.
+<li>Settings support is independent of current values. An Asset may support no
+live settings.</li>
+<li>Home is a setting for Assets whose behavior uses it. The quadcopter establishes
+home under its
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#position-and-home">startup rules</a>.
 An operator can move home. A
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failsafe-activates-a-configured-task">failsafe response Task</a>
 resolves home when it starts and keeps that destination for its execution.
