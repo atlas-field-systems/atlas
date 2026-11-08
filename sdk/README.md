@@ -29,14 +29,10 @@ Every program uses the SDK: **Core, bridges, operator apps, and Assets**.
   every other message come from the definitions, never hardcoded.
 - **Core does not re-implement schema validation.** It calls the shared
   `check()` when a message did not already arrive through an SDK edge (for
-  example a raw test inject). After a valid message, Core runs **business rules
-  only** (online?, command listed in `admin.describe`?, duplicate `task_id`?).
-- Core owns [request admission](../core/docs/requests.md) before forwarding over
-  field links. Shared SDK checks supply contract validation, not a second set of
-  Core business rules.
+  example a raw test inject). Core then applies
+  [request admission](../core/docs/requests.md) before forwarding over field links.
 - The Asset's [communications module](../asset/docs/assets.md#modules-and-equipment-drivers)
-  manages the SDK. Other Asset modules own reporting decisions, current equipment
-  checks, execution, and failsafes. Helpers never fly or control equipment.
+  manages the SDK. Other Asset modules own behavior. Helpers never control equipment.
 - A reporting-only Asset needs no task-queue helper or artificial settings.
   [Early and minimal startup contracts](../protocol/docs/open-questions.md#unresolved)
   still need exact definitions before the link interfaces can implement them.

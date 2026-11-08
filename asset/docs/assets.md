@@ -12,10 +12,8 @@ The first Asset is a Raspberry Pi with a GPS peripheral and an uplink. Its GPS
 equipment driver obtains measurements. The app maintains its own position and
 reports it as telemetry through the communications module and SDK.
 
-It accepts no equipment-control commands and needs no task queue or live settings.
-It has no failsafe. If GPS position becomes unavailable, it stops sending position
-updates and reports the GPS problem through [subsystem conditions](status.md).
-Core retains the last reported position as last known, rather than a new fix.
+It accepts no equipment-control commands and has no failsafe, task queue, or live
+settings. [Position rules](README.md#position-and-home) cover unavailable fixes.
 A radio's participation in the mesh is separate from its Asset capabilities.
 
 ### ArduPilot quadcopter
@@ -60,9 +58,6 @@ Observation of the receiver. It does not need equipment-control commands to be a
 Asset. [Protocol](../../protocol/docs/storage.md#observations-and-tracks) owns the
 shared Observation data. Core fusion decides Tracks.
 
-Stationary equipment can use a manually configured position. A GPS receiver is
-not required when the configured position describes the installation.
-
 ## Modules and equipment drivers
 
 The selected structure is a configurable Asset app on ordinary Linux, composed
@@ -106,8 +101,7 @@ reinterpret copter commands as fixed-wing commands. Exact fixed-wing commands
 and inputs are not selected yet.
 
 ArduRover ground vehicles, ArduPlane aircraft, and boats are intended extensions.
-VTOL behavior and transitions, profile selection and switching, concurrent work
-across modules, gimbal control paths, and camera image transport remain open.
+Gimbal control paths and camera image transport remain open.
 Shared exact commands belong to Protocol after their behavior is agreed.
 
 ## Configuration and commitments
@@ -117,10 +111,6 @@ and reporting behavior, supported commands, and response policies. The app
 explicitly lists the supported commands, independently of which modules and
 equipment drivers are configured. Only list commands the configured Asset can
 implement.
-
-The example setups start acquisition and reporting automatically and wait for
-requested work or a configured failsafe before operational movement. This is a
-selected setup, not a restriction on every possible Asset configuration.
 
 Configurability does not change shared meanings. Advertised commands, Task
 outcomes, subsystem conditions, and enabled failsafe policies keep their agreed

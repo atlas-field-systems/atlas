@@ -36,12 +36,6 @@ or a required network topology.
 | Asset runtime | Equipment control, local execution, and reports of its effects |
 | Plugin subsystem within Core | Acquiring, analyzing, and publishing information |
 
-The Asset runtime is configurable. Behavior modules use equipment drivers where
-hardware access is needed. Its communications module manages the SDK. Each Asset
-explicitly lists its commands and may support none. Connection readiness does
-not establish equipment readiness. Decisions follow the
-[responsibility split](design-decisions.md#decisions-stay-near-their-source).
-
 The Asset runtime is planned in [asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
 and the operator application in
 [command-interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface).

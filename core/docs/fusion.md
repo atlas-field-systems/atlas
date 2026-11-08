@@ -23,8 +23,5 @@ operator interface draws the bearing from the source observation.
 
 ## Reference-data decisions still needed
 
-The temporary iteration does not implement DEM use or reference-data fusion.
-Data sources, access, availability, accuracy, and algorithms remain open. No new
-wire message, Plugin dependency, or reference-data storage format is selected by
-this requirement. Protocol continues to own exact shared Observation and Track
-data.
+The temporary iteration does not use DEMs. Reference-data sources, access,
+availability, accuracy, and fusion algorithms remain open.

@@ -71,10 +71,7 @@ Link = {
 Hello state machine (client):
 1. `open` → `hello_sent`: build `admin.hello` (asset) or `admin.operator_hello` (operator), carrying the identity and keys.
 2. Wait for `admin.hello_reply` (not `admin.reply`).
-   - `accepted` → an Asset completes its applicable acknowledged startup exchanges,
-     beginning with `admin.describe` (D9), then → `ready` ([Reconnect](#reconnect-d8)).
-     Missing equipment measurements do not hold startup. An Asset supporting no
-     settings does not send a placeholder connect report.
+   - `accepted` → complete [startup exchanges](#reconnect-d8), then → `ready`.
    - `refused` → `identity.stop('refused')`, state `auth_lost`, close. Network sends stop. Local reads stay.
    - timeout → close, `SdkError('timeout')`, eligible for reconnect.
 
@@ -105,12 +102,10 @@ Inbound pipeline, in this order: `decode → check → (pre-ready filter) → du
 export function createReconnector(link factory, opts: { backoff?: {minMs:500,maxMs:30000,factor:2,jitter:0.2} })
 ```
 - Reconnect on transport close or hello timeout. Stop on `auth_lost`.
-- **Asset:** after every accepted hello, the link sends `admin.describe` from
-  `opts.describe` and completes the applicable settings-support and known-value
-  exchanges. Required acknowledgements use `reply_from`/`reply_to`. Each required
-  acknowledged message is retried unchanged every 10 s until answered, then the
-  link reaches `ready`. An Asset with no settings needs no connect settings
-  report. The exact support declaration remains Protocol work.
+- **Asset:** the link performs [Protocol's startup sequence](../../protocol/docs/communication.md#after-reconnecting-asset)
+  after each accepted hello, using `opts.describe` and applicable connect values.
+  Required acknowledgements use `reply_from`/`reply_to`. Retry each required
+  message unchanged every 10 s until answered, then enter `ready`.
 - **Task-capable Asset:** its queue helper listens with `onState` and, on `ready`,
   sends unacknowledged final reports and `queueReport()`. A reporting-only Asset
   without a queue skips this helper. The reconnector only reopens the link and

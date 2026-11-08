@@ -14,11 +14,9 @@ any slice. Diagnostic capture is part of each module from its first slice; the
 optional live picture does not defer logging until later. Unresolved option names
 and recording limits remain discussion points, not invented implementation defaults.
 
-The selected Asset model adds [contract prerequisites](../protocol/docs/open-questions.md#unresolved)
-for early and setting-free startup, independent settings support, and selective
-subsystem conditions. Settle those exact contracts before implementing affected
-link and picture interfaces. Existing examples still exercise current definitions;
-they do not establish the newer behavior.
+Settle the [open Asset contracts](../protocol/docs/open-questions.md#unresolved)
+before implementing affected link and picture interfaces. Existing examples
+exercise current definitions, not the newer selected behavior.
 
 Ground rules:
 
@@ -243,7 +241,7 @@ separate Core PR, not done here:
 - Core identity is `createIdentity({id:'CORE', role:'core'})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
 - Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.
-- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), command listed in describe, `task_id` duplicate, a list naming only bodies Core has, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its applicable required startup exchanges), resending a list until a queue report names it, and each body a queue report names as missing every 10 s until a later one no longer does, `every_s` repeats (a new Core-created message each time, with a new seq).
+- Core owns [request admission](../core/docs/requests.md). Preserve Protocol's [exchanges](../protocol/docs/communication.md), including missing-body retries and query repeats.
 - Select the Protocol and SDK package dependencies used by the new runtime.
 
 ---
@@ -312,7 +310,7 @@ the developer instead of changing it inside a slice.
 - **P2 (slice 9):** the live picture issues its own `query.core kind assets` on connect and reconnect, and is `ready` when that request's `admin.reply` arrives. It does not try to detect the end of Core's connect push.
 - **P3 (slice 2):** each transport adapter is a sibling package with its own `package.json`. No npm workspaces.
 - **P4 (slice 6):** the Asset queue uses an internal in-memory Map, see [Task queue](docs/task-queue.md). It keeps the list, held bodies, finished Tasks and final-report acknowledgement state for the operation. Answers must remain paired with protected request identities; their budgets and safe release remain open. No disk store or process restart recovery is required.
-- **Post-hello sequence (slices 3/6):** the link completes the applicable acknowledged startup exchanges before `ready`. Supported settings are independent of known values. A task-capable Asset then resends final reports and its queue report. A reporting-only Asset needs neither artificial settings nor a queue. `createLink` and `connectSettings` remain sketches pending the exact startup contract.
+- **Post-hello sequence (slices 3/6):** follow [the link's reconnect responsibilities](docs/links.md#reconnect-d8).
 
 ## 10. How to work this plan
 

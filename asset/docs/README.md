@@ -90,10 +90,6 @@ result. Equipment-specific evidence, tolerances, and timeouts remain open.
 Immediate commands and cancel follow
 [Protocol's rules](../../protocol/docs/communication.md#immediate-commands-and-cancel).
 The app performs the motion or hold. The SDK never controls equipment.
-The turret's [point-and-hold behavior](assets.md#fixed-camera-turret) needs exact
-shared commands before implementation. Copter and fixed-wing commands belong to
-separate families, with future aircraft commands still open.
-
 Settings follow the [shared contract](../../protocol/docs/communication.md#settings).
 Apply new immediate changes in receipt order and queued changes when their Task
 runs. Report resulting values rather than comparing operator and Asset clocks.

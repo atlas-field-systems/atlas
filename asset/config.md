@@ -10,12 +10,6 @@ remain open.
 
 Startup configuration describes the Asset's modules, equipment access, explicit
 command list, initial behavior, connection to Core, and diagnostic storage.
-The app starts the configured modules and connects them together. A separate
-leader module is not selected.
-
-The command list is explicit. Atlas does not infer it from the configured modules
-or equipment drivers. It must describe commands the Asset can implement.
-
 Live settings describe supported operating values, such as lights, home, or
 failure responses. Support is independent of whether a current value is known.
 A reporting-only tracker needs no live settings or task queue merely to connect.
@@ -62,11 +56,7 @@ Exact configuration fields and the division between local startup configuration
 and shared live settings remain open. Protocol's current settings cannot yet
 express the selected policy model.
 
-## Logging and remaining decisions
+## Logging
 
 [Logging](docs/logging.md) owns diagnostic evidence and Reset archives. Collection
 is local and does not depend on streaming logs over the field link.
-
-Decisions still needed include credential provisioning, required options and
-defaults, equipment connection details, which options can change during an
-operation, diagnostic capacity, Reset invocation, and archive retrieval.

@@ -65,10 +65,9 @@ Invariants:
   the `now()` of the last non-duplicate inbound message after an accepted hello
   whose `asset_id` is this identity's ID and whose `from` is not this identity's ID.
   It exposes `identity.contact()` and an observer event `contact`.
-  The SDK also exposes when the Asset last sent something new. The current
-  check-in procedure sends a useful listed report early. It must not present an
-  old position as a fresh fix or require periodic subsystem reports.
-  Quiet-Asset check-ins remain [open](../../protocol/docs/open-questions.md#unresolved).
+  The SDK also exposes when the Asset last sent something new.
+  [Protocol](../../protocol/docs/communication.md#when-core-counts-an-asset-offline)
+  owns check-ins, including the unresolved quiet-Asset exchange.
   Timing contact loss and evaluating [configured failsafe conditions](../../asset/docs/failsafes.md)
   are the Asset app's work. Contact loss alone does not require a physical response.
   A creator sends nothing until its clock is set. `build` throws

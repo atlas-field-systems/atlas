@@ -9,12 +9,8 @@ logging controls. Exact operator-facing exposure remains a host-app decision.
 
 ## Controls already in the draft
 
-The linked SDK pages own signatures and defaults. Link sketches need revision
-once Protocol defines early and minimal startup and independent settings support.
-A reporting-only Asset with no queue needs no queue helper or settings placeholder.
-
-This inventory does not create a second set of defaults or turn every test hook
-into a deployment setting.
+The linked SDK pages own signatures and defaults. This inventory does not create
+a second set of defaults or turn every test hook into a deployment setting.
 
 | Area | Controls | Authority |
 | --- | --- | --- |

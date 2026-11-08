@@ -24,9 +24,8 @@ An optional explanation describes the limitation or fault.
 | `faulted` | Unable to perform its intended function. |
 
 Subsystem conditions replace the single overall Asset condition. Atlas does not
-compute an overall verdict from them. The exact shared representation, bounds,
-and declaration of subsystem identities are not selected yet. Shared reports
-remain defined data, not arbitrary vendor status fields or codes.
+compute an overall verdict from them. Shared reports remain defined data, not
+arbitrary vendor status fields or codes.
 
 ## Report relevant changes
 
