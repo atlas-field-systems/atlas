@@ -6,6 +6,22 @@ Unresolved questions and work deliberately deferred. Selected answers live in
 
 ## Unresolved
 
+- **Core-assigned IDs (proposal).** The owner is considering Core assigning and
+  retaining all IDs, including Asset IDs. Decide which IDs this covers, how a
+  participant first enrolls without an ID, and what survives a manual Asset
+  restart. Current IDs follow [law 22](laws.md).
+- **Task retrieval after interface refresh.** The interface uses the SDK to
+  retrieve requested Task bodies, latest outcomes, and queue order from Core.
+  Define how to retrieve this information and know when it is complete. The
+  connect push and `query.core kind assets` do not supply all of it.
+- **Pause and interrupted work.** [Pause](../../asset/docs/README.md#pause) stops
+  current movement with a platform-specific hold or loiter. Define Task reporting
+  and continuation after Resume, and the interrupted Task's outcome when a new
+  immediate motion command replaces it.
+- **Track delivery and freshness.** Core decides
+  [when information is stale](../../core/docs/fusion.md#track-freshness).
+  Define delivery and replay, last-sighting and stale-status fields, freshness
+  thresholds, and whether a returning target keeps its Track ID.
 - **Stored record formats.** [Storage](storage.md) describes the tables, but exact
   record formats are not defined yet. Protocol owns those formats, including
   storage on Assets and in the SDK cache ([law 1](laws.md)).

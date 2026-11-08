@@ -62,7 +62,7 @@ equipment readiness.
 - Plugin messages are from `CORE`, with `plugin_id` naming the Plugin, because Plugins are inside Core.
 - Every action input is built from Protocol variables and components, such as a box, a position or a geo feature ID. A new kind of input is a Protocol change, documented with its reason.
 - A call is answered like a query: one `plugin.result` per output item, naming the call with `reply_from` and `reply_to`, then `admin.reply` to mark the end. There is no list size limit. `admin.reply` says `accepted` when the call finished, `refused` when it never ran, or `failed` when the Plugin ran and broke; results already sent still stand. A long call sends nothing until it has results; progress and cancel wait until a real Plugin needs them. A result that must outlive the call is stored in Core with an ID and returned as a reference, so closing the operator interface loses nothing.
-- An action's output is a list returned to the caller, or a reference to what the Plugin created in Core (an Object, a Track, a geo feature or another Entity).
+- An action's output is a list returned to the caller, or a reference to what the Plugin created in Core, such as an Object or a geo feature. Only fusion creates Tracks.
 - Outputs follow the same rule as inputs. Each action says what one list item is, built from Protocol variables and components, such as an altitude for a ground elevation or an unsaved geo feature for a building. A new kind of output is a Protocol change. Plugin data varies more than the rest of Atlas, so these additions are expected often.
 - Only operator interfaces call Plugins for now. Assets will be allowed to later.
 - For now, plugins do not act on their own to direct Assets or issue Tasks. This may change later.
@@ -70,6 +70,7 @@ equipment readiness.
 ## Geo features and Objects
 - A **geo feature** is a point, line or area made in Core, by an operator or a Plugin. It is `geofeature_id`, `kind` (its shape: `point`, `line` or `area`) and an optional `name`, plus its shape: a `position`, a `line` (2 to 32 points) or an `area` (3 to 32 corners). There is no list of meanings, such as building or no-fly zone, until something reads one. Findings never go on a geo feature; each Plugin action says whether its output is a result list or Objects.
 - `geofeature.set` carries the whole geo feature, so a change is an end state and the newest `time` wins. Without `geofeature_id` it creates one; with it, it replaces that one. `geofeature.delete` removes one. Core answers each with `admin.reply` and sends the result to every operator interface as its own message (`from` is `CORE`). On connect, Core pushes every geo feature. Geo features are not sent to Assets.
+- Geo-feature edit ordering assumes [synchronized clocks](../../atlas/environment.md#core-is-a-deliberate-dependency).
 - An **Object** is a file Core holds. `object.describe` says what it is: `object_id`, `name`, `content_type`, `size_bytes`, and optionally `plugin_id` and `geofeature_id`. Core sends it once the file is stored and pushes every Object on connect. The file never travels in a message (law 13). An operator interface fetches it from Core over HTTP by `object_id`, only when it needs it. Only Plugins make Objects for now; there are no uploads.
 - An Object is attached to at most one geo feature, by `geofeature_id` on the Object. A geo feature can have many Objects. The link is stored once, on the Object; an operator interface lists a geo feature's Objects from the `object.describe`s it holds. Deleting a geo feature leaves its Objects, which keep its ID as a record.
 - **Core picks** `geofeature_id` and `object_id`, so no creator retries against a taken ID over a slow link. For a create, Core's `admin.reply` carries the new `geofeature_id`. Neither ID is reused in a run, even after a delete.
@@ -179,8 +180,8 @@ They show the readable JSON beside the compressed bytes (hex dump and base64), w
 
 - Keys travel in the opening hello, not the link opening (browsers cannot set WebSocket headers, and URLs end up in logs). `admin.hello` requires `key` and carries `enrollment_key` the first time; `admin.operator_hello` carries `key`. No other message carries a key, and Core never sends one: operators get the Asset's `admin.describe` forwarded unchanged. A bad key gets `hello_result: refused` and the link closes.
 - The hello must be the first message on a link. Anything before an accepted hello closes the link.
-- One link per ID. Each operator interface has its own `operator_id`. A second link with the same `asset_id` or `operator_id` replaces the older one.
-- Everything a creator sends gets a new `seq`. Core forwards other creators' messages unchanged. A deliberate repeat (including `every_s`) is a new message with a new `seq` from its creator, so the duplicate rule never drops it.
+- Creator IDs and link replacement follow [law 22](laws.md). Core-assigned IDs remain a [proposal](open-questions.md#unresolved).
+- Each newly created message gets a new `seq`. Core forwards stored reports unchanged, including `every_s` answers. Replays still reach readers under [communication rules](communication.md#routing-and-duplicates).
 - A command to an Asset that is not connected is refused with a reason. Core does not hold it.
 - A query's answer comes first and its `admin.reply` last, marking the end. An accepted reply with nothing before it means nothing matched.- A repeated `task_id` from an operator is refused by Core with a reason. (An Asset ignores a resent Task it holds, and resends the final report of one it finished.)
 - Telemetry rate is the Asset setting `telemetry_every_s`.
@@ -190,7 +191,7 @@ They show the readable JSON beside the compressed bytes (hex dump and base64), w
 From the review of the first-flight prototype: lost, repeated, late and reordered messages must not repeat work or erase what Core knows. See [communication.md](communication.md).
 
 - **Duplicates and retries.** A message is identified by `(from, seq, time)`. A retry is the same message unchanged, and a receiver that answered it sends the same answer again (Core's last-answer cache). A creator keeps one `seq` counter for the operation, including across link reconnects. Processes stay running throughout the operation.
-- **Clocks.** A creator's clock never goes backwards during an operation, and it sends nothing before its clock is set. Clocks do not need to match each other.
+- **Clocks.** A creator's clock never goes backwards during an operation, and it sends nothing before its clock is set. Clocks need not match exactly; the [operating assumption](../../atlas/environment.md#core-is-a-deliberate-dependency) excludes large clock errors.
 - **Tasks move forward only.** The first final state stays. A late or contradicting report goes to history, changes nothing and is not forwarded.
 - **Final reports are acknowledged.** The Asset resends a Task's final report until Core answers with `admin.reply`, naming the report and its `task_id`. A lost acknowledgement is covered by resending the same final report.
 - **An Asset never runs a `task_id` twice.** It remembers its finished Tasks for the whole operation and resends their final report if one arrives again.
