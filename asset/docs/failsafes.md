@@ -1,8 +1,9 @@
 # Command failures and failsafes
 
-The Asset app evaluates equipment, contact, and work state locally, controls the
-response, and reports and logs the trigger, selected rule, and observed outcome.
-The SDK supplies contact and queue information through the communications module.
+The Asset app evaluates equipment, contact, and work state locally.
+It controls the response and reports and logs the trigger, selected rule, and
+observed outcome. The SDK supplies contact and queue information through the
+communications module.
 No Asset runtime is built yet.
 Terms are defined in the [Atlas glossary](../../GLOSSARY.md).
 
@@ -11,6 +12,9 @@ Terms are defined in the [Atlas glossary](../../GLOSSARY.md).
 An Asset starts with no Atlas failsafe rules, including battery rules. Rules and
 response actions are configured explicitly for the Asset and operation. Only
 configure actions the Asset supports. A reporting-only beacon has no failsafe.
+
+An empty Atlas rule list leaves the flight controller's own protections unchanged.
+Those belong to the [platform setup](#independent-flight-controller-protections).
 
 [Subsystem conditions](status.md) describe equipment. Reporting a condition does
 not gate commands, cancel work, or select a response. Configured conditions own
@@ -26,7 +30,46 @@ The failed Task remains failed, and cancelled work cannot return through an old 
 or reconnect. Another attempt needs new Tasks.
 
 Cancellation alone does not activate failsafe state or perform a maneuver.
-A response starts only if a configured rule matches.
+An Atlas response starts only if a configured rule matches.
+
+## Independent flight-controller protections
+
+The quadcopter needs flight-controller protections that work if the Asset app,
+SDK, or companion computer fails. Atlas rules cannot act when their process has
+stopped or hung.
+
+The flight setup selects which conditions Atlas handles and which ArduPilot
+handles independently. It can rely on ArduPilot's return-to-home response,
+including for loss of Asset-app control. Triggers, parameters, and timeouts remain
+open. Return to home requires working equipment and navigation evidence.
+Enabling it does not prove a successful return or landing.
+
+When the app detects an independent autopilot failsafe taking over, it cancels
+ordinary work and the remaining queue, and enters the same
+[operation-long work lock](#lock-ordinary-work-for-the-rest-of-the-operation).
+It does not override that protection with ordinary Atlas work. A cancelled Task
+does not become completed merely because the autopilot performed a similar
+maneuver. Recovery requires local intervention before another operation.
+
+The app records the equipment behavior and affected Task outcomes without
+claiming that Atlas initiated the maneuver. If the app fails, its reports and
+logs may be unavailable. A missing report establishes no outcome.
+
+Before the first copter flight, document the retained autopilot protections and
+how Atlas commands interact with them. Verify the interaction through simulation
+and equipment integration checks, including an Asset-app crash or hang, loss of
+the companion-to-controller connection, and an autopilot intervention during work
+or an Atlas failsafe response. Exact detection, interaction with an already
+running Atlas response, and reporting details remain open. Process restart
+recovery remains outside the operation model.
+
+In the [initial ground-Pi setup](assets.md#ardupilot-quadcopter), loss of Wi-Fi to
+Core and loss of the SiK equipment link are independent failures. The app can
+remain reachable while it has no current vehicle measurements or control.
+It cannot send a response through a lost equipment link. The flight setup defines
+the independent vehicle response and operator intervention path. Both must work
+without the ground app. Exact controls, controller parameters, and handover
+procedure remain open.
 
 ## Configure conditions as well as responses
 
@@ -104,8 +147,9 @@ times without restarting idle or contact timers.
 
 ## Later specification work
 
-- Platform equipment behavior after the primary and fallback both fail, including
-  the autopilot's own protections.
+- Flight-controller protection configuration and interaction with Atlas under
+  [the independent-protection requirement](#independent-flight-controller-protections),
+  including behavior after the primary and fallback both fail.
 - Boundary details and measurement freshness limits.
 - [Shared contracts](../../protocol/docs/open-questions.md#unresolved) for policy
   configuration, onboard Task identities and outcomes, and command refusal.

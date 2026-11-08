@@ -41,6 +41,10 @@ are not selected yet. Credentials are excluded from diagnostic output.
 
 ## Decisions still needed
 
+- How hosts configure several transports or transport interfaces and consume
+  their status under the [multiple-transport direction](docs/links.md#multiple-transports-and-link-status).
+- How hosts supply relay participation and resource limits, and reporting
+  priorities independently of route selection.
 - Which existing SDK controls the host exposes to its operator.
 - Whether event filtering happens before the observer or in the host logger.
 - A bounded event-delivery policy and how dropped diagnostic records are counted.

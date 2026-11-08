@@ -53,8 +53,8 @@ Core owns [request admission](../../core/docs/requests.md), using shared SDK
 validation before forwarding work. The Asset retains decisions that require
 current equipment knowledge. Equipment can change after Core accepts a request.
 
-For [first flight](../../atlas/first-flight.md), the drone holds the complete
-Takeoff, Move To, Land list before starting. The
+For [first flight](../../atlas/first-flight.md), the ground Pi's Asset app holds
+the complete Takeoff, Move To, Land list before starting. The
 [SDK queue helper](../../sdk/docs/task-queue.md) holds and orders Tasks. The app
 coordinates execution through the appropriate module and equipment drivers.
 Receiving a Task is not completing it.

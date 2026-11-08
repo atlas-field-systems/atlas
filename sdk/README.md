@@ -48,7 +48,7 @@ Every program uses the SDK: **Core, bridges, operator apps, and Assets**.
 | --- | --- |
 | [Messages](docs/messages.md) | Loading definitions, `check`, `build`, the codec, names the SDK may hardcode |
 | [Identity and duplicates](docs/identity-and-duplicates.md) | Keys on hello, stamping `from`/`seq`/`time`, dedupe, contact, auth loss |
-| [Links](docs/links.md) | Transport adapters, the link and its hello, reconnect, the observer |
+| [Links](docs/links.md) | Transport adapters, multiple-link goals and status, relay participation, the hello, reconnect, the observer |
 | [Calls](docs/calls.md) | `request` / `stream` / `subscribe`, outcomes and errors |
 | [Task queue](docs/task-queue.md) | The Asset-side queue helper |
 | [Live picture](docs/live-picture.md) | The optional in-memory picture for operator apps |

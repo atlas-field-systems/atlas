@@ -37,6 +37,39 @@ export function wsServer(opts: { port?: number, server?: http.Server }):
 ```
 Binary frames only. Pass `Uint8Array` through.
 
+## Multiple transports and link status
+
+The SDK and transports aim to provide the best available paths across Assets,
+using mesh links and choosing how messages reach their destinations. Radio
+systems own mesh mechanisms, and the SDK integrates their interfaces.
+The division of routing responsibilities remains open.
+
+Hosts configure available transports and receive their status through the SDK.
+An adapter may expose several interfaces, such as Wi-Fi, FLRC, and LoRa.
+Healthy, degraded, and unhealthy describe local transport operation. They do not
+add values to Protocol's subsystem conditions.
+
+The Asset's [communications module](../../asset/docs/communications.md) uses this
+information to select reports and their rate. Adapters move bytes without
+interpreting Atlas messages. The SDK owns delivery and duplicate handling.
+
+Initial Assets may use only Wi-Fi, FLRC, or LoRa. They do not need to wait for
+multiple-link routing.
+
+Hosts explicitly configure relay participation and resource limits. A stationary
+gateway and a battery-powered tracker can allow different amounts of peer traffic.
+Defaults, units, enforcement, and support in each radio system remain open.
+
+Reporting priority and route quality are separate decisions. The
+[Asset supplies data and reporting priorities](../../asset/docs/communications.md#report-from-local-state).
+The SDK owns shared scheduling and delivery. Scenarios establish priority and
+congestion behavior before an algorithm is selected.
+
+The byte interface above does not yet cover this planned behavior. Status APIs,
+capacity and reachability evidence, multiple-interface configuration, and path
+switching remain open.
+Local transport health alone proves neither Core reachability nor internet access.
+
 ## Link
 
 The interface below is a planning sketch. The selected

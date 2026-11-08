@@ -9,13 +9,15 @@ Radio technology, IP connectivity, and edge networks will keep changing.
 Atlas is designed around constrained links with different capabilities.
 A LoRa-scale data rate is not a ceiling for the whole system.
 
-The likely early direction is a multimode radio with multiple transceivers:
+Initial Assets may use only Wi-Fi, only FLRC, or only LoRa. Multiple-link routing
+is not a prerequisite for those Assets. The longer-term direction includes a
+multimode radio with multiple transceivers:
 
 - 2.4 GHz FLRC as the primary field link.
 - 915 MHz LoRa for coverage when the FLRC link becomes unreliable.
 - Wi-Fi as a possible addition.
 
-The intended flight uses FLRC nearby and LoRa when distance makes FLRC spotty.
+A future flight can use FLRC nearby and LoRa when distance makes FLRC spotty.
 FLRC is expected to carry more than single-digit kilobits per second.
 The radio project owns the detailed design as the hardware evolves.
 
