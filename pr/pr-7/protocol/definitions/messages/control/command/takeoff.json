@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command/takeoff.json",
+  "title": "takeoff",
+  "description": "Leave the ground and climb to a target altitude.",
+  "type": "object",
+  "required": [
+    "kind",
+    "target_altitude"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "takeoff"
+    },
+    "target_altitude": {
+      "$ref": "../../../components/altitude.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "takeoff",
+      "target_altitude": {
+        "altitude_m": 30,
+        "altitude_reference": "launch"
+      }
+    }
+  ]
+}

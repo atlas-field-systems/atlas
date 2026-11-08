@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/low_battery_response.json",
+  "title": "low_battery_response",
+  "description": "Setting: which failsafe_response the Asset uses when its battery gets too low. Any response except continue: hold, land or return_to_home.",
+  "$ref": "failsafe_response.json",
+  "not": {
+    "const": "continue"
+  },
+  "examples": [
+    "return_to_home"
+  ]
+}
