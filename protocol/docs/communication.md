@@ -296,3 +296,17 @@ not treated as executed work.
 
 An operator interface rebuilds what it knows from Core's connect push (see
 [Operator interfaces](#operator-interfaces)).
+
+## Report catch-up
+
+An Asset delivers retained reports through the same SDK and report messages used
+for live traffic. This applies after a disconnection and when an Asset has
+recorded more samples than it could transmit live. A faster link can carry the
+backlog without requiring a separate rocket-specific import path.
+
+Retained reports keep their original times and message identities. Retries remain
+the same messages under [Routing and duplicates](#routing-and-duplicates).
+Late reports populate [history](storage.md#history), not a new measurement at
+upload time. Catch-up follows applicable startup acknowledgements and respects
+live traffic. Bounded transfer, retained-delivery tracking, and completion
+evidence still need [contracts](open-questions.md#unresolved).
