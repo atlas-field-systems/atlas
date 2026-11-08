@@ -85,6 +85,16 @@ button. Enabling it later does not revive the failed Task.
 Arming alone does not complete Takeoff. Completion follows the observed takeoff
 result. Equipment-specific evidence, tolerances, and timeouts remain open.
 
+### Pause
+
+Pause suspends the current movement. Each Asset handles the physical response:
+copters stop and loiter at their current position, fixed-wing aircraft loiter,
+and ground vehicles brake and stop. Paused Assets do not advance their Task queue.
+Configured failsafes still override pause.
+
+Task reporting and continuation after Resume remain
+[open](../../protocol/docs/open-questions.md#unresolved).
+
 ### Other commands and settings
 
 Immediate commands and cancel follow

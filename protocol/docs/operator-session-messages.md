@@ -19,7 +19,7 @@ Sizes are bytes: minified JSON, then deflate (level 9). GAP marks something the 
 | 06 | Core → Operator | [`report.status asset`](../examples/operator-session/06-status-asset.json) | health, | 118 | 100 |
 | 07 | Core → Operator | [`report.telemetry`](../examples/operator-session/07-telemetry.json) | and position. From here on Core forwards new reports as they arrive; nothing is polled. | 235 | 167 |
 | 08 | Operator → Core | [`query.asset`](../examples/operator-session/08-query-asset.json) | The operator asks for A1's battery every 30 s. | 112 | 96 |
-| 09 | Core → Operator | [`report.battery`](../examples/operator-session/09-battery.json) | Core sends A1's latest battery report unchanged (A1's from, seq and time). Each 30 s repeat is a new message Core creates, with from CORE and a new seq. | 104 | 89 |
+| 09 | Core → Operator | [`report.battery`](../examples/operator-session/09-battery.json) | Core sends A1's latest battery report unchanged, including its from, seq and time. Each 30 s repeat reaches readers with the original measurement time. | 104 | 89 |
 | 10 | Core → Operator | [`admin.reply`](../examples/operator-session/10-reply.json) | Then Core accepts the query. A query's reply comes after its answer, so it marks the end. | 141 | 109 |
 | 11 | Operator → Core | [`control.command takeoff`](../examples/operator-session/11-command-takeoff.json) | The operator adds a takeoff Task, T4, for A1: its body first. | 182 | 139 |
 | 12 | Core → Operator | [`admin.reply`](../examples/operator-session/12-reply.json) | A1 lists takeoff in its describe, so Core accepts and passes the body to A1 unchanged. | 141 | 113 |

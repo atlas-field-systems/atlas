@@ -25,3 +25,13 @@ operator interface draws the bearing from the source observation.
 
 The temporary iteration does not use DEMs. Reference-data sources, access,
 availability, accuracy, and fusion algorithms remain open.
+
+## Track freshness
+
+Core decides when retained information is stale. A Track keeps its last sighting
+time when delivered or replayed. Silence does not prove the target disappeared.
+Core supplies the last sighting and stale status to the
+[Command Interface](../../command-interface/docs/README.md).
+
+Freshness thresholds and shared data formats remain
+[open](../../protocol/docs/open-questions.md#unresolved).

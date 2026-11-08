@@ -28,8 +28,8 @@ returns one of two kinds of output:
 
 - **A list.** The output is the list itself, returned to the caller.
 - **A reference.** The Plugin creates something in Core, such as an Object, a
-  Track, a geo feature or another Entity, and the output names it. The result
-  stays in Core, where the operator can find it later.
+  geo feature or another Entity, and the output names it. The result stays in
+  Core, where the operator can find it later. Only fusion creates Tracks.
 
 ## Examples
 

@@ -17,6 +17,8 @@ It does not wait in a queue or go through a Task's steps.
   when its body was sent or received.
 - Pause and Resume are settings, not Tasks. An Asset is set to "paused" or
   "running", always as an explicit end state.
+- Pause affects movement already underway. The Asset owns the
+  [platform-specific response](../asset/docs/README.md#pause).
 - A Change Setting Task can pause an Asset inside a queue. It waits there until
   someone resumes it, for example: fly here, pause, wait for the operator, continue.
 - An applicable failsafe overrides ordinary settings, including paused, and the

@@ -49,6 +49,9 @@ the system simpler. Offline authorization of new work is not a current requireme
 Core dependence does not imply that Core or every field link is always reachable.
 Component docs own outage behavior.
 
+Clocks are assumed to be synchronized well enough for normal use. Exact agreement
+is not required. Large clock errors are outside the current design.
+
 ## Hosting is flexible
 
 Core usually runs on an internet-hosted server. It can also run on a computer with

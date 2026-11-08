@@ -74,7 +74,9 @@ flight controller or by ArduPilot's return-to-home mode.
 
 An applicable failsafe overrides ordinary work, including paused, and locks new
 work for the rest of the operation, even after its response Task succeeds.
-There is no in-operation recovery; the next step is shutdown and log inspection.
+The operator must go to the Asset and manually restart it before another
+operation. Atlas does not manage that recovery. Shutdown and log inspection
+follow the flight.
 Atlas enables no failsafe rules by default. The flight setup explicitly supplies
 the intended rules, including any battery response during an intentional wait.
 The Asset owns
