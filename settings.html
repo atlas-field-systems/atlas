@@ -20,11 +20,14 @@ when its body was sent or received.</li>
 &quot;running&quot;, always as an explicit end state.</li>
 <li>A Change Setting Task can pause an Asset inside a queue. It waits there until
 someone resumes it, for example: fly here, pause, wait for the operator, continue.</li>
-<li>A failure overrides any setting, including paused, and the Asset carries out
-that failure&#39;s defined safe response.</li>
+<li>An applicable failsafe overrides ordinary settings, including paused, and the
+Asset carries out its configured safe response. The Asset owns
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions</a>.</li>
 <li>Home is a setting. Every Asset has GPS, and it sets home to where it starts up.
-An operator can move home, and return to home always goes to the current home.
-There is no separate backup landing point.</li>
+An operator can move home. A
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failsafe-activates-a-configured-task">failsafe response Task</a>
+resolves home when it starts and keeps that destination for its execution.
+There is no separate backup landing-point setting.</li>
 </ul>
 <p>How an Asset responds when something goes wrong is in <a href="first-flight.html#when-something-goes-wrong">First flight</a>.</p>
 <p>Normal use is an operator choosing actions such as Takeoff, Move To, and Land,

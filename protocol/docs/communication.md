@@ -147,11 +147,13 @@ to fetch the next one.
 7. An Asset never runs a `task_id` twice. A resent body for a Task it holds is
    ignored; for a Task it has finished, it sends that Task's final report again. It
    remembers its finished `task_id`s for the whole operation.
-8. **Clears.** Any failure on the Asset, a failed Task included, triggers its
-   configured failsafe. A failsafe with any response except `continue`, or an
-   immediate motion command, clears the list and raises the version. The Asset
-   reports each cleared Task `cancelled`, then its empty queue. A list built before
-   the clear is ignored, so cleared work never comes back on its own.
+8. **Clears.** A failed command always clears the remaining list, regardless of
+   its configured safe response. A queued command's failed report stays failed.
+   Each remaining Task is reported `cancelled`. Activating a failsafe or accepting
+   an immediate motion command also clears the list. Clearing raises
+   the version and reports the empty queue. A list built before the clear is
+   ignored, so cleared work never comes back on its own. The Asset owns
+   [failure and trigger behavior](../../asset/docs/failsafes.md).
 
 ### Final reports are acknowledged
 
@@ -162,6 +164,11 @@ it with `admin.reply` (`accepted`, `reply_from`/`reply_to` naming the report, an
 is covered the same way: Core recognises the retry and sends its answer again.
 
 ## Immediate commands and cancel
+
+These rules describe ordinary operation.
+[Asset failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation)
+overrides ordinary dispatch for the rest of the operation. Exact refusal messages
+remain [open](open-questions.md#unresolved).
 
 - A motion command without `task_id` (takeoff, move_to, land, return_to_home) runs now and clears the list (see Clears above).
 - A `control.settings` without `task_id` runs now beside the list and does not clear it.
@@ -212,13 +219,13 @@ open socket, a radio acknowledgement, or other Assets overheard on the mesh.
 - The link is **lost** when the Asset has had no contact for `link_loss_after_s`
   (30 s unless set), timed on its own clock. A link that drops and comes back within
   that time is not lost.
-- The `link_loss` failsafe then triggers once, with the Asset's `link_loss_response`.
-  It can trigger again only after contact returns and is lost again.
-- With `link_loss_response: continue` the Asset keeps flying its list, which is
-  always fully on board, for example while Core drives through a tunnel.
-- Link loss counts on the ground too. There every response except `continue` keeps the
-  Asset on the ground and clears its list, so no queued takeoff starts while Core
-  can't see it.
+- Contact loss is an input to the Asset's
+  [configured conditions](../../asset/docs/failsafes.md#configure-conditions-as-well-as-responses),
+  not an unconditional instruction to act.
+- **Shared-contract gap.** The current `link_loss` report and `link_loss_response`
+  setting still describe unconditional link-loss handling. The selected Asset
+  behavior needs [new contracts](open-questions.md#unresolved). Contact timing and
+  Core's offline classification below are separate from physical-response policy.
 
 ### When Core counts an Asset offline
 
