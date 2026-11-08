@@ -81,11 +81,12 @@ No user accounts or roles.
    had in this run ("A1 already has task T3"), so after a refresh, or with two
    interfaces open, the interface picks another and sends again. Core also refuses
    a `control.queue` that names a `task_id` it has no body for.
-6. To read, it uses `query.core` and `query.asset`; `every_s` repeats an answer
-   as a **new** message (new `seq` from its creator). Core sends a query's answer
-   first and its `admin.reply` last, so the reply marks the end; an accepted
-   reply alone means nothing matched. Live forwards keep flowing meanwhile; the
-   reader takes as the answer the messages that match the query's own fields.
+6. To read, it uses `query.core` and `query.asset`. With `every_s`, Core repeats
+   its latest stored report unchanged, keeping the original `from`, `seq`, and
+   `time`. Repeating a report does not make it a new measurement. Core sends a
+   query's answer first and its `admin.reply` last to mark the end. An accepted
+   reply alone means nothing matched. Live reports keep arriving meanwhile.
+   The reader takes messages matching the query's fields as answers.
 7. Core answers **every** operator message after the hello with one `admin.reply`:
    `accepted` or `refused` (with `explanation`), or for a `plugin.call` also
    `failed` (with `explanation`), `reply_from` + `reply_to` naming
@@ -111,7 +112,12 @@ So a message can arrive twice. Every receiver, Core included, applies one rule:
   does not reset on reconnect. Core uses its own counter for messages it creates
   (`from` is `CORE`).
 - A creator's clock never goes backwards during an operation, and a creator
-  sends nothing until its clock is set. Clocks need not match each other.
+  sends nothing until its clock is set. Clocks need not match exactly; the
+  [operating assumption](../../atlas/environment.md#core-is-a-deliberate-dependency)
+  excludes large clock errors.
+- Asset and operator IDs must be unique across both groups. `CORE` is reserved
+  for Core. Core refuses an ID belonging to another participant and authenticates
+  reconnecting participants before replacing their links.
 - The receiver remembers, per `from`, the `(seq, time)` of each message it has
   handled (at least the last 1024). A message it has already handled is not
   **acted on** again: no task runs twice, no setting is applied twice, nothing is
@@ -192,6 +198,8 @@ remain [open](open-questions.md#unresolved).
 
 ## Settings
 
+- `run_state: paused` pauses motion already underway as well as queue progression.
+  The Asset owns the physical response under [Pause](../../asset/docs/README.md#pause).
 - Settings travel together in one `settings` object, the same in `report.settings`
   and `control.settings`, so each setting is listed once.
 - `home_position` is where `return_to_home` goes for Assets supporting that

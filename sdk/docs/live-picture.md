@@ -18,6 +18,12 @@ need it.
   read-only while network sends stop.
 - Assets do **not** need the live picture for v1.
 
+After an interface refreshes, the SDK must retrieve Task bodies, latest outcomes,
+and queue order. A Task ID and state do not describe its destination or requested
+settings. The connect push and `query.core kind assets` do not supply all of this.
+Define the [retrieval exchange](../../protocol/docs/open-questions.md#unresolved)
+before treating the Task picture as ready.
+
 ## Module: `picture.mjs`
 
 ```js

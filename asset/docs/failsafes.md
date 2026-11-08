@@ -88,7 +88,9 @@ Failsafe state refuses remote motion commands, queue replacements, Cancel, Pause
 and settings changes that affect execution. Queries, reports, and logging continue.
 The lock lasts for the rest of the operation, including after successful landing,
 renewed contact, or conditions becoming false. Cancelled Tasks never resume.
-There is no in-operation recovery; shutdown and local log inspection follow.
+The operator must go to the Asset and manually restart it before another
+operation. Atlas provides no remote restart or way to clear the lock. Local log
+inspection follows shutdown.
 
 ## Replace configuration during ordinary operation
 

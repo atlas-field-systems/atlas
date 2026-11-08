@@ -3,6 +3,18 @@
 Selected behavior, not implemented. Shared exchanges live in
 [How Atlas parts communicate](../../protocol/docs/communication.md).
 
+The interface uses the SDK's WebSocket transport adapter to read Core's
+information and send requests over a local IP network or the internet.
+
+After opening or refreshing, the interface retrieves Task instructions and
+reported outcomes through the SDK. For example, an active Move To Task includes
+its destination. The retrieval exchange remains
+[open](../../protocol/docs/open-questions.md#unresolved).
+
+Selecting a Track shows when it was last spotted. Core decides
+[when information is stale](../../core/docs/fusion.md#track-freshness).
+Track delivery contracts remain open.
+
 The interface offers explicitly supported commands and settings, distinguishing
 support from whether a current setting value is known. A reporting-only tracker
 needs no movement controls, pause control, or artificial home.

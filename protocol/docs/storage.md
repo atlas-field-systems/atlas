@@ -71,6 +71,9 @@ A track holds what fusion decided: its `entity_type`, and a position with an `un
 ## Registration
 
 Assets register themselves. No operator adds them first.
+Core enforces [unique participant IDs](laws.md). Core-assigned IDs remain a
+[proposal](open-questions.md#unresolved). The exchange below describes the current
+definitions.
 
 1. The deployment has one **enrollment key**, set in Core and given to the fleet.
 2. A new Asset picks its own 4-character `asset_id` and makes its own random **asset key**.

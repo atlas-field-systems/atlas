@@ -66,7 +66,7 @@
       "from": "Core",
       "to": "Operator",
       "file": "09-battery.json",
-      "why": "Core sends A1's latest battery report unchanged (A1's from, seq and time). Each 30 s repeat is a new message Core creates, with from CORE and a new seq."
+      "why": "Core sends A1's latest battery report unchanged, including its from, seq and time. Each 30 s repeat reaches readers with the original measurement time."
     },
     {
       "branch": "main",
