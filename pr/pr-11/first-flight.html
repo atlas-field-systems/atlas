@@ -1,0 +1,105 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>First flight</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="first-flight">First flight</h1>
+<p>The first setup uses a Raspberry Pi on the ground, connected to Core over Wi-Fi.
+The Pi runs the Asset app and connects to an ArduPilot quadcopter through a SiK
+radio link. It acts as the companion computer from the ground, much like using
+a ground-control station such as QGroundControl.
+The vehicle remains the Asset represented in Atlas.</p>
+<p>The operator sends the whole task list: Takeoff, Move To a location, then Land.
+The app on the Pi starts the list only after it holds every Task&#39;s body. It sends
+equipment commands to the flight controller and reports the observed outcomes
+through the SDK. The operator sees the reported vehicle behavior.</p>
+<p>No runtime is built yet. The Pi can connect to Atlas while vehicle equipment is
+still starting or unreachable. Connection alone does not establish takeoff
+readiness. The operator can intervene locally at the Pi. Independent vehicle
+controls and ArduPilot protections remain part of the setup, with their
+configuration and handover procedure still to be defined and verified.</p>
+<h2 id="the-flight-commands">The flight commands</h2>
+<ul>
+<li><strong>Takeoff</strong> has one input, a target altitude. The drone climbs straight up
+to it and holds there.</li>
+<li><strong>Move To</strong> flies to a location.</li>
+<li><strong>Land</strong> has a landing position and an optional transit altitude. The drone
+goes to that altitude, or stays at its current one, flies over the position,
+and lands.</li>
+</ul>
+<p>These are the copter commands. Fixed-wing aircraft need a separate command
+family with its own behavior. The copter commands are simpler than MAVLink and
+ArduPilot commands but map onto them.
+The Asset owns <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#prepare-and-take-off">platform-specific preparation and arming</a>.</p>
+<h2 id="follow-the-work-and-its-evidence">Follow the work and its evidence</h2>
+<pre class="mermaid">sequenceDiagram
+    participant Drone as ArduPilot vehicle
+    participant Pi as Asset app on ground Pi
+    participant Core
+    participant App as Operator application
+    Drone-&#62;&#62;Pi: Equipment state over SiK
+    Pi-&#62;&#62;Core: SDK identity and vehicle reports over Wi-Fi
+    Core--&#62;&#62;App: Show the reported state
+    App-&#62;&#62;Core: Send Takeoff, Move To and Land bodies, then their ordered list
+    Core-&#62;&#62;Pi: Deliver the bodies and list over Wi-Fi
+    Pi--&#62;&#62;Core: Confirm the complete list is held on the Pi
+    Core--&#62;&#62;App: Show the reported queue
+    Note over Pi: Run Takeoff, Move To, then Land in order
+    Pi-&#62;&#62;Drone: Equipment commands over SiK
+    Drone--&#62;&#62;Pi: Observed equipment state over SiK
+    Pi--&#62;&#62;Core: SDK Task outcomes over Wi-Fi
+    Core--&#62;&#62;App: Show the reported outcome
+    Note over Pi,App: Report each Task's progress and outcome</pre><p>Core retains the requests and reported evidence. The Asset runtime coordinates
+execution, and ArduPilot controls the vehicle. A request reaching Core or the Pi does
+not prove that the flight controller received or executed an equipment command.
+The SiK connection is an equipment link, not an Atlas Protocol transport or mesh.</p>
+<h2 id="when-something-goes-wrong">When something goes wrong</h2>
+<p>The ground Pi holds the Atlas task list. Whether it uploads a complete mission
+to the flight controller remains open. Continued flight after SiK loss cannot
+assume an onboard Atlas queue.</p>
+<p>If Wi-Fi to Core drops but the Pi and SiK link keep working, the app retains its
+queue and execution state. Configured Atlas failsafe conditions determine its
+response. If SiK drops, the Pi may still report to Core, but it lacks current
+vehicle evidence and cannot rely on sending a response to the flight controller.
+Independent controller protections and the operator&#39;s intervention path handle
+the failures they are configured to cover, including failure of the Pi itself.</p>
+<p>A command failure cancels the remaining Tasks. For example, failed Takeoff
+cancels Move To and Land. Core records cancellations when the app reports them.
+Detected independent autopilot failsafe takeover also cancels ordinary work and
+locks it for the operation. No configured response preserves cancelled Tasks.</p>
+<p>Atlas <a href="settings.html">settings</a> configure local conditions and response Tasks.
+A response uses the same equipment execution as ordinary work. Return to home
+can use Atlas execution or ArduPilot&#39;s own behavior, as selected for the setup.
+A requested response is not proof that the vehicle returned or landed.</p>
+<p>An applicable failsafe overrides ordinary work, including paused, and locks new
+work for the rest of the operation, even after its response Task succeeds.
+Local intervention and a manual runtime restart are required before another
+operation. For this setup the runtime is on the ground Pi. Atlas does not manage
+that recovery. Shutdown and log inspection follow the flight.
+Atlas enables no failsafe rules by default. The flight setup explicitly supplies
+the intended rules, including any battery response during an intentional wait.
+The Asset owns
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions, cancellation rule, and remaining decisions</a>.</p>
+<h2 id="keep-the-whole-run-for-debugging">Keep the whole run for debugging</h2>
+<p>When the operator spins them down, Core, each gateway, and each Asset each
+write their own Reset ZIP. Core&#39;s ZIP holds:</p>
+<ul>
+<li>Every message in and out, in local arrival and send order, with credentials removed.</li>
+<li>Each Task&#39;s history: what was requested, accepted, and observed.</li>
+<li>Each device&#39;s last state and each Track&#39;s history.</li>
+<li>The run setup: devices, gateways, settings, and software versions.</li>
+<li>Errors, link drops, and the SDK&#39;s message-handling diagnostics.</li>
+<li>A plain readable summary: start and end, devices, Tasks, and outcomes.</li>
+</ul>
+<p>Reset ZIPs are for after the system is used: dump them into an AI agent to give
+it full context on how the system was used and any errors. Each system&#39;s
+documentation defines its own ZIP contents and Reset procedure. Merging
+several ZIPs into one is a separate process.</p>
+<p>Core and Assets keep detailed local diagnostic logs alongside their normal state.
+The SDK supplies events to the program using it, so those events join that
+program&#39;s archive. Logging does not depend on sending diagnostic traffic over
+the field link. See <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/logging.md">Core logging</a>,
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md">Asset logging</a>,
+and <a href="https://github.com/atlas-field-systems/atlas/blob/main/sdk/docs/logging.md">SDK logging</a>.</p>
+<p>This example explains one flight. Detailed Task, radio, and recovery rules
+belong in their owning subsystem documentation.</p>
+<p><a href="index.html">Charter home</a></p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/plugin/call/ground_elevation.json",
+  "title": "ground_elevation",
+  "description": "The ground elevation at a position. Only latitude and longitude are used; leave out altitudes.",
+  "type": "object",
+  "required": [
+    "kind",
+    "position"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "ground_elevation"
+    },
+    "position": {
+      "$ref": "../../../components/position.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "ground_elevation",
+      "position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      }
+    }
+  ]
+}

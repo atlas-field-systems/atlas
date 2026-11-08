@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/reply_from.json",
+  "title": "reply_from",
+  "description": "The from of the message this one answers, paired with reply_to (that message's seq). Together they name (from, seq) so a reply stays matched when Core forwards messages unchanged.",
+  "type": "string",
+  "pattern": "^[A-Za-z0-9]{1,4}$",
+  "maxLength": 4,
+  "examples": [
+    "OP1",
+    "A1",
+    "CORE"
+  ]
+}
