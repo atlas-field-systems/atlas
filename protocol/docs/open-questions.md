@@ -27,6 +27,12 @@ Unresolved questions and work deliberately deferred. Selected answers live in
   storage on Assets and in the SDK cache ([law 1](laws.md)).
 - **Operator keys.** Where operator IDs and keys come from is not decided. Core's
   prototype reads them from configuration ([prototype findings](../../core/docs/findings.md#remaining-gaps)).
+- **Report catch-up.** The [selected path](communication.md#report-catch-up) sends
+  retained reports with original timestamps through ordinary report messages.
+  Define bounded transfer that respects live traffic, how the Asset knows which
+  samples Core retained, and how a reader knows whether the requested interval
+  is complete. Account for duplicate retention across large backlogs. Asset
+  recording limits and overflow behavior belong with the Asset.
 - **Fetching an Object's file.** An operator interface fetches it from Core over
   HTTP by `object_id`. The exact request, and how it is authorized when keys travel
   only in the hello (law 17), are open.

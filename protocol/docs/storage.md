@@ -93,3 +93,9 @@ History is first-class. `telemetry` and `history` are append-only and ordered by
 ```
 
 Core answers with the stored `report.telemetry` messages, oldest first.
+
+Reports delivered through [catch-up](communication.md#report-catch-up) enter history
+at their original report times, even when newer reports arrived first. Previously
+unseen older samples add rows; duplicate handling still applies. An older sample
+does not replace a newer value in the latest picture. Upload time does not turn
+an old measurement into a fresh one.

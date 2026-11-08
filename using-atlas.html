@@ -19,6 +19,10 @@ The gateway represents the implementation used for that field link. Different
 gateway implementations can coexist as <a href="environment.html#connectivity-evolves">connectivity evolves</a>.
 The diagram shows system responsibilities, not process boundaries, wire messages,
 or a required network topology.</p>
+<p>The <a href="first-flight.html">first-flight setup</a> places the Asset runtime on a ground
+Raspberry Pi connected to Core over Wi-Fi. A separate SiK equipment link connects
+that Pi to the ArduPilot vehicle. The runtime represents the vehicle even though
+it is not aboard it.</p>
 <h2 id="what-the-parts-do">What the parts do</h2>
 <table>
 <thead>
@@ -73,7 +77,7 @@ administration support the pillars.</p>
 <h2 id="information-focused-stories">Information-focused stories</h2>
 <p>These stories describe intended use.</p>
 <h3 id="locate-the-tracker">Locate the tracker</h3>
-<p>The first Asset to build is a Raspberry Pi with a GPS peripheral and an uplink.
+<p>A reporting-only Asset is a Raspberry Pi with a GPS peripheral and an uplink.
 It starts obtaining its own position and reports telemetry to Core for an operator
 to see. It accepts no equipment-control commands. If it loses its GPS fix, Atlas
 retains its last known position and the reported GPS condition. The tracker does
