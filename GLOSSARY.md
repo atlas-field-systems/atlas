@@ -5,6 +5,11 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Term | Meaning |
 | --- | --- |
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
+| Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
+| Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
+| Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |
+| Movement module | The Asset module that carries out commands for physical platform movement. |
+| Movement profile | Platform-specific execution behavior and parameters used by a movement module, distinct from an autopilot flight mode. |
 | Command | A request to perform a supported action, such as Takeoff or Land. |
 | Task | One instance of requested work with a reported execution outcome. |
 | Failsafe condition | A test of an Asset's equipment, contact, or work state. |

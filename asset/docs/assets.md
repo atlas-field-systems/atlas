@@ -1,50 +1,118 @@
 # Assets and their equipment
 
-## Intended Assets
+An Asset reports information and may offer equipment-control capabilities.
+One vehicle is one Asset, including its cameras and gimbals. The Command
+Interface presents its supported functions together.
 
-One vehicle is one Asset, including its camera and gimbal capabilities. The
-Command Interface presents its supported functions together. Protocol's
-[`admin.describe`](../../protocol/definitions/messages/admin/describe.json)
-already supports cameras and an empty command list within one Asset description.
+## Initial Assets
 
-The first Asset is a generic ArduPilot quadcopter with a companion computer and
-radio connection to Atlas, carrying out the [first-flight story](../../atlas/first-flight.md).
-Other intended Assets include fixed-wing drones, boats, autonomous ground vehicles,
-and stationary pan-and-tilt cameras.
+### Position tracker
 
-A tracker attached to a car is a reporting-only beacon: it pushes position to Atlas,
-accepts no equipment-control commands, and has no failsafe. Its radio may also
-participate in the mesh; that role is separate from its Asset capabilities.
+The first Asset is a Raspberry Pi with a GPS peripheral and an uplink. Its GPS
+equipment driver obtains measurements. The app maintains its own position and
+reports it as telemetry through the communications module and SDK.
 
-## Proposed platform integration
+It accepts no equipment-control commands and has no failsafe, task queue, or live
+settings. [Position rules](README.md#position-and-home) cover unavailable fixes.
+A radio's participation in the mesh is separate from its Asset capabilities.
 
-The proposal is a shared Asset app on ordinary Linux, with equipment code and
-configuration for each platform. The app uses the Atlas SDK for Atlas messages
-and coordinates Tasks, outcome reporting, and local logging. Its platform
-integration performs equipment operations and supplies completion evidence.
+### ArduPilot quadcopter
 
-For the first drone, the companion computer talks to ArduPilot through
-[MAVLink](https://ardupilot.org/dev/docs/companion-computers.html); ArduPilot handles
-flight control and stabilization. Copter, fixed-wing, and VTOL integrations can
-share that connection code while using different preparation procedures.
-[Takeoff preparation and arming](README.md#prepare-and-take-off) belongs to the app.
+The second Asset uses a companion computer, flight controller, and radio uplink.
+An ArduPilot equipment driver obtains flight-controller state and sends equipment
+commands. The app uses observed state to maintain its own state, report to Atlas,
+and determine execution outcomes. MAVLink remains the proposed connection to
+ArduPilot. Interfaces for equipment drivers and connection options remain open.
 
-A supported gimbal can be [controlled through ArduPilot](https://ardupilot.org/dev/docs/mavlink-gimbal-mount.html)
-or connected directly to the companion computer. The gimbal connection and
-camera image path remain open.
+The movement module's copter profile carries out the
+[Takeoff, Move To, Land workflow](../../atlas/first-flight.md). ArduPilot handles
+flight control and stabilization. Sending a command to the flight controller
+proves neither motion nor Task completion.
 
-Different procedures can fulfill the same command only if they meet the same
-requested behavior. First-flight Takeoff climbs straight up and holds altitude;
-it does not describe conventional fixed-wing takeoff. Distinct fixed-wing,
-vertical, and VTOL takeoff commands remain an option. Their behavior must be
-agreed before Protocol defines their names and inputs.
+### Fixed camera turret
 
-## Decisions still needed
+A turret reports automatic Observations produced by its own detection software.
+Atlas does not implement computer vision. The Asset integrates that software's
+results and reports what it observes about targets, separately from its own state.
+Video viewing and human annotations are separate from this automatic reporting.
 
-- Power-on behavior before Tasks, including which startup-home rules apply beyond drones.
-- How equipment exposes physical arming requirements and confirms completion.
-- Interaction between app decisions and the autopilot's own failsafes.
-- Packaging, startup management, and the boundary between platform code and configuration.
+Its initial pointing behavior slews to a requested geographic position or
+bearing and elevation. Bearing uses degrees from true north. Elevation uses
+degrees above or below the local horizontal. Geographic requests include latitude,
+longitude, and altitude with an explicit reference, using
+[Protocol's shared units](../../protocol/docs/laws.md).
+Any data lookup needed to construct the request happens before the field link.
 
-No Asset runtime is built yet. Exact shared contracts belong to Protocol;
-SDK and radio behavior stay in their owning docs.
+Pointing completes when equipment measurements confirm the requested aim. The
+turret remains aimed there until another command. Following a moving target is a
+future behavior. The Asset handles installation orientation, calibration, and
+conversion to equipment coordinates through its modules and equipment drivers.
+Gimbal pointing reports can use equipment-relative angles without changing the
+request's geographic meaning. Exact pointing commands, limits, tolerances, and timeouts remain open.
+
+### ADS-B receiver
+
+A Raspberry Pi with an uplink and an ADS-B receiver, such as an RTL-SDR, reports
+Observations about aircraft. Its own position remains its own telemetry, not an
+Observation of the receiver. It does not need equipment-control commands to be an
+Asset. [Protocol](../../protocol/docs/storage.md#observations-and-tracks) owns the
+shared Observation data. Core fusion decides Tracks.
+
+## Modules and equipment drivers
+
+The selected structure is a configurable Asset app on ordinary Linux, composed
+of behavior modules. Modules use equipment drivers as tools where hardware
+access is needed. Use the full term **equipment driver** to distinguish it from
+an operating-system driver.
+
+The app starts the configured modules and connects them together. No separate
+leader module is selected. Module interfaces, the full module catalog, packaging,
+and startup management remain open.
+
+The communications module manages SDK setup and connection lifecycle, routes
+Atlas requests and outgoing reports, and makes SDK contact information and
+diagnostics available to the app. The SDK owns shared validation, identity,
+delivery, retry, duplicate handling, and transport adapters. Modules decide what
+to report and how to perform work.
+
+An equipment driver talks to external equipment and supplies its observed state.
+An equipment driver can support acquisition, control, or both. The GPS tracker
+needs acquisition and reporting without a movement module. The ArduPilot
+quadcopter also needs movement execution. This structure does not require a
+separate process or package for each module or equipment driver.
+
+## Movement module and profiles
+
+The movement module processes commands that physically move the platform.
+Movement profiles supply platform-specific execution behavior and parameters.
+A profile is not an autopilot flight mode.
+
+For a copter Takeoff Task, the app coordinates the Task, the movement module uses
+its copter profile, and the ArduPilot equipment driver exchanges commands and
+state with the flight controller. Observed equipment state determines the
+execution outcome. [Preparation and arming](README.md#prepare-and-take-off) are
+part of that execution. Configured failsafe responses use the same execution
+behavior as ordinary work.
+
+Copters share a command family for their common flight behavior. Fixed-wing
+aircraft need a separate command family because takeoff, travel, and landing have
+different meanings and success criteria. A movement profile does not silently
+reinterpret copter commands as fixed-wing commands. Exact fixed-wing commands
+and inputs are not selected yet.
+
+ArduRover ground vehicles, ArduPlane aircraft, and boats are intended extensions.
+Gimbal control paths and camera image transport remain open.
+Shared exact commands belong to Protocol after their behavior is agreed.
+
+## Configuration and commitments
+
+The Asset selects its modules, equipment drivers, startup behavior, acquisition
+and reporting behavior, supported commands, and response policies. The app
+explicitly lists the supported commands, independently of which modules and
+equipment drivers are configured. Only list commands the configured Asset can
+implement.
+
+Configurability does not change shared meanings. Advertised commands, Task
+outcomes, subsystem conditions, and enabled failsafe policies keep their agreed
+semantics. Configuration is not an alternative command channel. See
+[configuration](../config.md) and [behavior](README.md).

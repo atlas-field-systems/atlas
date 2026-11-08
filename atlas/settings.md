@@ -22,7 +22,11 @@ It does not wait in a queue or go through a Task's steps.
 - An applicable failsafe overrides ordinary settings, including paused, and the
   Asset carries out its configured safe response. The Asset owns
   [the trigger conditions](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
-- Home is a setting. Every Asset has GPS, and it sets home to where it starts up.
+- Settings support is independent of current values. An Asset may support no
+  live settings.
+- Home is a setting for Assets whose behavior uses it. The quadcopter establishes
+  home under its
+  [startup rules](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#position-and-home).
   An operator can move home. A
   [failsafe response Task](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failsafe-activates-a-configured-task)
   resolves home when it starts and keeps that destination for its execution.

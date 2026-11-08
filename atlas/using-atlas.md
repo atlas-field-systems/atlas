@@ -63,6 +63,14 @@ administration support the pillars.
 
 These stories describe intended use.
 
+### Locate the tracker
+
+The first Asset to build is a Raspberry Pi with a GPS peripheral and an uplink.
+It starts obtaining its own position and reports telemetry to Core for an operator
+to see. It accepts no equipment-control commands. If it loses its GPS fix, Atlas
+retains its last known position and the reported GPS condition. The tracker does
+not send the old position as a new fix.
+
 ### Observe an aircraft
 
 An ADS-B receiver is an Asset. It reports Observations about a passing aircraft.

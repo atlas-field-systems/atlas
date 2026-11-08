@@ -4,7 +4,10 @@ The Asset-side helper that holds an Asset's task list and Task bodies, runs each
 Task once in list order, and keeps resending final reports until Core acknowledges
 them. The wire rules are [Delivering a task queue](../../protocol/docs/communication.md#delivering-a-task-queue)
 and [Immediate commands and cancel](../../protocol/docs/communication.md#immediate-commands-and-cancel).
-Helpers never fly: the Asset app runs each Task.
+Helpers never fly: the Asset app runs each Task. This helper is optional for
+reporting-only Assets with no queue. They need no empty queue reports merely to
+connect. A task-capable Asset coordinates execution through its configured
+modules and equipment drivers.
 
 ## Module: `asset-queue.mjs` (D6)
 

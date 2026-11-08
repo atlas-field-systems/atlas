@@ -39,13 +39,20 @@ Binary frames only. Pass `Uint8Array` through.
 
 ## Link
 
+The interface below is a planning sketch. The selected
+[early and minimal Asset startup](../../protocol/docs/communication.md#after-reconnecting-asset)
+needs independent settings support and connections without settings or queues.
+Current `connectSettings` alone cannot express that support declaration. Adjust
+the interface after [Protocol defines the exchange](../../protocol/docs/open-questions.md#unresolved).
+Link `ready` means connection startup completed, not equipment readiness.
+
 ```js
 export function createLink(opts: {
   defs, identity, transport, codec?, observer?,
   side: 'client' | 'server',
   helloTimeoutMs?: number,      // default 10000
   describe?: object,            // Asset only: fields for admin.describe
-  connectSettings?: () => object // Asset only: the settings object for the connect report.settings
+  connectSettings?: () => object // Asset only: known connect values when applicable; support declaration remains open
 }): Link
 
 Link = {
@@ -64,7 +71,7 @@ Link = {
 Hello state machine (client):
 1. `open` → `hello_sent`: build `admin.hello` (asset) or `admin.operator_hello` (operator), carrying the identity and keys.
 2. Wait for `admin.hello_reply` (not `admin.reply`).
-   - `accepted` → an Asset sends `admin.describe` (D9) and its connect `report.settings`, each acknowledged by Core's `admin.reply`, then → `ready` ([Reconnect](#reconnect-d8)).
+   - `accepted` → complete [startup exchanges](#reconnect-d8), then → `ready`.
    - `refused` → `identity.stop('refused')`, state `auth_lost`, close. Network sends stop. Local reads stay.
    - timeout → close, `SdkError('timeout')`, eligible for reconnect.
 
@@ -75,7 +82,7 @@ and Core calls `replyHello`. One-link-per-ID replacement (law 22) is Core busine
 too; the SDK just provides `close()`.
 
 Inbound pipeline, in this order: `decode → check → (pre-ready filter) → dup = identity.seen(msg) → identity.remember(msg) → dispatch`.
-- Pre-ready filter: a server takes only a hello type first. A client takes only `admin.hello_reply` until its hello is accepted; then, until `ready`, an Asset client takes only `admin.reply` (Core's acknowledgements of its describe and connect report). Anything else before `ready` is dropped **before** it is remembered, so Core's resend of it is handled later.
+- Pre-ready filter: a server takes only a hello type first. A client takes only `admin.hello_reply` until its hello is accepted; then, until `ready`, an Asset client takes only `admin.reply` (Core's acknowledgements of its applicable startup exchanges). Anything else before `ready` is dropped **before** it is remembered, so Core's resend of it is handled later.
 - Remember **before** dispatch, so a throwing handler cannot leave the message unremembered and get it handled again.
 - Act vs deliver (communication.md, Routing and duplicates): `dup` is passed to every consumer. Consumers that **act** (Asset queue, settings apply, Core business, contact) skip duplicates. Consumers that **read** (`stream` items, `subscribe`, live picture) still get them. History answers and Core's connect push are replays and must reach the reader.
 - Invalid messages are dropped, with an observer event `invalid_in`. Never forward an invalid message.
@@ -95,7 +102,14 @@ Inbound pipeline, in this order: `decode → check → (pre-ready filter) → du
 export function createReconnector(link factory, opts: { backoff?: {minMs:500,maxMs:30000,factor:2,jitter:0.2} })
 ```
 - Reconnect on transport close or hello timeout. Stop on `auth_lost`.
-- **Asset**, after **every** accepted hello (first connect and each reconnect), in order (communication.md, After reconnecting): the link sends (1) `admin.describe` from `opts.describe` and (2) the connect `report.settings` from `opts.connectSettings()` (every setting it supports; Core refuses changes to any setting it leaves out). It sends each only after the one before is acknowledged by Core's `admin.reply` (matched by `reply_from`/`reply_to`), resending the same bytes every 10 s until then (law 23), then sets state `ready`. The Asset queue listens with `onState` and on `ready` sends (3) unacked final reports, (4) `queueReport()`. The reconnector only reopens the link and has no resync steps of its own; `link.mjs` never imports `asset-queue.mjs`.
+- **Asset:** the link performs [Protocol's startup sequence](../../protocol/docs/communication.md#after-reconnecting-asset)
+  after each accepted hello, using `opts.describe` and applicable connect values.
+  Required acknowledgements use `reply_from`/`reply_to`. Retry each required
+  message unchanged every 10 s until answered, then enter `ready`.
+- **Task-capable Asset:** its queue helper listens with `onState` and, on `ready`,
+  sends unacknowledged final reports and `queueReport()`. A reporting-only Asset
+  without a queue skips this helper. The reconnector only reopens the link and
+  has no resync steps of its own. `link.mjs` never imports `asset-queue.mjs`.
 - **Operator**: pending → `unknown/disconnected`. No command retry. The live picture (if on) goes `stale:true` and then rebuilds from Core's connect push. Those messages are mostly duplicates of what it saw before; they are delivered anyway ([Link](#link)).
 - The seq counter continues across reconnects (same identity object).
 

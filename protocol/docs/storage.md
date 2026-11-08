@@ -18,7 +18,19 @@ messages, decisions, and errors used in Reset archives.
 | telemetry | telemetry report | `asset_id`, time, position, speed, heading (a time series) |
 | history | stored report | `asset_id`, time, the report as received (status, failsafe, settings, battery) |
 
-Latest status (the queue report included), battery and gimbal pointing are kept on the asset row or beside it, newest only. Settings are kept per setting: the report holding that setting's newest confirmed value, ordered by the Asset report's `time`, then `seq`, and which settings the latest connect report listed. Operator command timestamps do not order settings. No row has a revision or version counter.
+Latest status for supported queues, battery, and gimbal pointing is kept on the
+Asset row or beside it. Settings retain each setting's newest confirmed value
+and source report, ordered by the Asset's `time`, then `seq`. Supported settings
+are separate from known values, under the selected
+[startup model](communication.md#settings). Operator timestamps do not order
+settings. No row has a revision or version counter.
+
+Selected [subsystem conditions](../../asset/docs/status.md) likewise retain each
+subsystem's last reported condition and source report independently. Partial
+updates change only named subsystems. Core replays the reports needed to restore
+those retained conditions, unchanged. Missing reports do not establish health.
+The exact subsystem and settings-support records remain
+[undefined](open-questions.md#unresolved), like the other stored record formats.
 
 ## Assets
 
@@ -49,6 +61,10 @@ Asset ── report.observation ──▶ Core ──▶ [ fusion ] ──▶ tr
 Fusion decides when observations describe the same target, including when one Asset gives a target two IDs or several Assets see the same thing. Tasks that aim at a target name the track. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/fusion.md).
 
 An observation's `kind` says what the sensor measured. `coordinates` gives the target's position and its `uncertainty`. `bearing` gives the `origin` the sensor recorded when it saw the target, the bearing, and optionally elevation and range, each with its own uncertainty. `entity_type` and `details` stay true for an observation until a new value arrives, so Core keeps the latest of each.
+
+The diagram shows the Observation path, not every possible fusion input.
+Fusion can also use reference information such as DEM terrain elevation.
+[Core fusion](../../core/docs/fusion.md) owns that behavior and its open choices.
 
 A track holds what fusion decided: its `entity_type`, and a position with an `uncertainty` area once fusion can place it. As fusion combines observations, the area shrinks; it is often a polygon. Source-specific facts, such as a callsign, are not copied onto the track: displays read them from the track's latest source observation.
 

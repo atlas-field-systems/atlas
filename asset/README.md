@@ -1,15 +1,20 @@
 # Atlas Asset
 
-Atlas Asset is the software on an Asset, such as a drone or position beacon.
-It connects to Core, reports information, and carries out supported work.
-A beacon reports its position without accepting equipment-control commands.
+Atlas Asset is the configurable software on an Asset. It connects to Atlas,
+maintains its own state, reports information, and carries out the work it supports.
+A reporting-only Asset needs no equipment-control commands, task queue, or live
+settings.
 
-**Planning.** No code yet. This folder will say how an Asset behaves from start-up to shutdown, so Core can rely on that behavior instead of guarding against an Asset that misbehaves.
+**Planning.** No runtime is built yet. The first Asset to build is a GPS tracker,
+followed by an ArduPilot quadcopter. Fixed camera turrets and ADS-B receivers are
+also intended Assets. The [first-flight story](../atlas/first-flight.md) describes
+the quadcopter's first end-to-end workflow.
 
-- Charter: https://atlas-field-systems.github.io/atlas/
-- Protocol (all data formats, and how parts talk over a link): https://github.com/atlas-field-systems/atlas/tree/main/protocol
-- Docs: [docs/README.md](docs/README.md)
-- Asset kinds and equipment: [model](docs/assets.md)
-- Configuration options for discussion: [config.md](config.md)
-- Diagnostic evidence and Reset archive: [logging](docs/logging.md)
+- [Behavior](docs/README.md): startup, execution, link loss, and shutdown.
+- [Assets and their equipment](docs/assets.md): examples, modules, equipment drivers, and movement profiles.
+- [Subsystem conditions](docs/status.md): selective hardware-status reporting.
+- [Configuration](config.md): selected requirements and options still under discussion.
+- [Logging](docs/logging.md): local diagnostic evidence and Reset archives.
+- [Protocol](../protocol/README.md): exact shared data formats.
+- [SDK](../sdk/README.md): communication mechanics used by the Asset app.
 - AI agents: read [AGENTS.md](AGENTS.md).

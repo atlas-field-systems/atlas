@@ -36,7 +36,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
 - A **command** is something an Asset can do: takeoff, move_to, land. A **task** is one queued use of a command or a settings change. `control.command` and `control.settings` each take an optional `task_id`. Without it, the message runs now (a button press). With it, the message is a Task's body; `control.queue` gives the order. Each kind is defined once.
-- `admin.describe` lists `commands`, the command kinds the Asset accepts, plus `reports` and `cameras`. Core never sends a kind not listed. Settings support is the set of settings in the Asset's `report.settings` on connect.
+- `admin.describe` lists `commands`, the command kinds the Asset accepts, plus `reports` and `cameras`. The command list is explicit, not inferred from modules or equipment drivers. Core never sends a kind not listed. Selected settings support is independent of currently known values. Current definitions still infer support from the connect `report.settings`; the replacement representation remains [open](open-questions.md#unresolved).
 - **Immediate settings changes run beside the queue; an immediate motion command clears it.**
 - `query` holds questions: `query.asset` (ask for any report an Asset supports: Core asks the Asset, or an operator interface or edge link asks Core for its latest copy, such as the latest telemetry for the most recent position; optional `every_s` makes Core repeat it every N seconds, `every_s` 0 cancels, mostly for slow edge links), `query.queue` (Core asks an Asset for its queue), and `query.core` (an operator interface asks Core for its Assets or stored history, over its operator WebSocket). Answers are always the normal messages, so no answer formats are added.
 - Failsafe is its own type under `report`, so it sits with everything else the Asset tells Core but can carry more context than a status.
@@ -46,6 +46,13 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `from`: who created the message (Asset `asset_id`, operator `operator_id`, or `CORE`). Stays on the message end to end; Core forwards unchanged.
 - `asset_id`: the Asset a command is for, or the Asset a report is from.
 - Replies name the original with `reply_from` + `reply_to` (= that message's `from` and `seq`).
+
+## Asset planning direction
+
+The [Asset model](../../asset/docs/assets.md) owns the selected behavior.
+[Open contracts](open-questions.md#unresolved) identify where definitions and
+generated examples still differ. An overall `healthy` example does not establish
+equipment readiness.
 
 ## Plugins
 - Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/atlas/blob/main/atlas/plugins.md) page.
@@ -86,7 +93,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 ## Connect and reports
 - `admin.hello`: an Asset's first message on a link: `asset_id`, `from`, and keys only (`key` required; `enrollment_key` the first time). Reports, commands and cameras follow in `admin.describe`.
 - `admin.hello_reply`: Core answers `accepted` or `refused`.
-- `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
+- The current `report.status` kind `asset` defines overall health, pending the selected subsystem replacement above. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
 - `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`continue`, `hold`, `land` or `return_to_home`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
 - `report.battery`: the battery, on its own schedule, separate from telemetry, because it changes even when the Asset does not move.
 - **Asset data reports are fixed and standard.** Every Asset reports battery, position and the rest with the same defined report and components. There are no free-form or "misc" fields. New kinds of Asset data get a new defined report.
@@ -142,7 +149,7 @@ They show the readable JSON beside the compressed bytes (hex dump and base64), w
 - `report.gimbal` gives live gimbal pointing, often while active, never while idle.
 - A command never depends on a geo feature. Cameras may give an optional roll.
 - Assets send `report.observation`, never tracks. Fusion alone decides when observations are the same target. Tasks target tracks. Core owns the [fusion module and its planned first implementation](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/fusion.md).
-- Observations. `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
+- Observations. `kind` says what the sensor measured, not which sensor: `coordinates` (the target's position) or `bearing` (from a recorded `origin`: bearing, optional elevation and range). ADS-B is `coordinates`. An Asset reporting its own GPS position uses telemetry, not an Observation. The coordinates description needs to distinguish those cases when definitions are aligned. The origin is what the Asset recorded when it saw the target, never taken from telemetry, and has no uncertainty of its own.
 - One `entity_type` list names what Assets, observations and tracks are: person, ground_vehicle, airplane, helicopter, drone, aircraft (type unknown), watercraft, animal, structure, fixed_sensor, other. Left out means unknown. An Asset may give it in `admin.describe`.
 - Uncertainty is an ellipse (a circle when only `semi_major_m` is given) or a polygon of up to 32 corners, plus an optional `altitude_uncertainty_m`; bearing, elevation and range each have their own. Every bound is 95% (law 8). Left out means unknown, never exact. Observations and tracks share it.
 - A position with no altitude means the altitude was not measured. Displays draw it at ground level; fusion never reads it as "on the ground".
@@ -187,14 +194,14 @@ From the review of the first-flight prototype: lost, repeated, late and reordere
 - **Tasks move forward only.** The first final state stays. A late or contradicting report goes to history, changes nothing and is not forwarded.
 - **Final reports are acknowledged.** The Asset resends a Task's final report until Core answers with `admin.reply`, naming the report and its `task_id`. A lost acknowledgement is covered by resending the same final report.
 - **An Asset never runs a `task_id` twice.** It remembers its finished Tasks for the whole operation and resends their final report if one arrives again.
-- **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Views order each setting by the Asset report's `time`, then `seq` for a tie. The Asset applies requests in receipt order rather than comparing creator clocks.
+- **Settings.** Follow [settings rules](communication.md#settings) for support declarations, current values, effect ordering, and per-setting retention.
 - **Link loss.** Contact with Core means hearing new (non-duplicate) messages after the accepted hello that name this Asset in `asset_id` and were not sent by this Asset. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), contact is lost. The Asset evaluates its configured conditions to decide whether a safe response is needed. The older unconditional link-loss definitions need alignment; see [Losing the link](communication.md#losing-the-link).
 
 ## Acknowledgements and edges
 
 Selected answers to edge cases found during prototyping.
 
-- **What must arrive is acknowledged** (law 23). Core acknowledges an Asset's `admin.describe` and connect `report.settings` as it does final reports, and the Asset waits for each before going on, so a later partial settings report is never taken for the full list.
+- **What must arrive is acknowledged.** [Law 23](laws.md) and the [applicable startup sequence](communication.md#after-reconnecting-asset) define required exchanges and acknowledgements.
 - **Core starts first and stops last.** Core, gateways, Assets, and their SDK instances stay running for the operation. Recovery covers link reconnects, not process restarts.
 - **A resent Task is a retry.** Core forwards an operator's Task unchanged, so resending a missing body sends the same bytes.
 - **Same-millisecond settings reports.** The Asset's `seq` orders reports whose `time` is equal; no extra field or clock synchronisation is required.
@@ -217,12 +224,12 @@ Drafted for the SDK docs and the matching protocol cuts. Details: [SDK](../../sd
 - **Identity:** one SDK module for keys-on-hello, `from`/`seq`/`time` stamp, and remember/dedupe; Core keeps a last-answer cache only.
 - **Contact:** new post-hello messages with this Asset's `asset_id` whose `from` is not this Asset (not only `from: CORE`).
 - **Stream items:** the inbound messages that match the query's own fields, once each, until its `admin.reply`. Core forwards live traffic as usual meanwhile; no correlation field. Core sends a history answer oldest first, and the finished result lists its items oldest first.
-- **Reconnect:** Asset SDK auto-resynces in order describe → connect `report.settings` (each waiting for Core's `admin.reply`) → unacked finals → queue report; operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
+- **Reconnect:** the Asset SDK follows the [applicable startup sequence](communication.md#after-reconnecting-asset). The operator live picture rebuilds from Core's connect push; inflight request → `unknown`; no auto-retry of operator commands.
 - **Handshake vs description:** hello = keys + id; `admin.describe` is keyless; `admin.asset` is removed.
 
 ## Offline Assets
 
-- Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. An Asset that has been quiet for a third of that sends `report.telemetry` early, so its check-in carries data. Details: [communication.md](communication.md#when-core-counts-an-asset-offline).
+- Core counts an Asset offline when it has heard nothing new from it for its `link_loss_after_s`, even while a link is open. Check-ins follow the [contact rules](communication.md#when-core-counts-an-asset-offline); the quiet-Asset exchange remains [open](open-questions.md#unresolved).
 - Commands, settings changes, lists and cancels for an offline Asset are refused and not held. The operator sends them again once the Asset is back.
 
 ## Review fixes

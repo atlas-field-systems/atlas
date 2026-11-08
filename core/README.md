@@ -7,6 +7,10 @@ does not implement the current docs. Whether to keep or replace it is undecided;
 no new runtime work is planned until the owner requests the prototype pass.
 Findings live in [docs/findings.md](docs/findings.md).
 
+[Request admission](docs/requests.md) records Core's checks before forwarding work.
+[Fusion](docs/fusion.md) records processing Observations with other information,
+including terrain reference data. Both describe selected future behavior.
+
 The future runtime's [configuration inventory](config.md) and
 [logging requirements](docs/logging.md) are discussion drafts, separate from the
 retained prototype's options below.

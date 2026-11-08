@@ -1,81 +1,114 @@
 # Asset docs
 
-An Asset reports what it observes and, where supported, controls equipment and
-carries out requested work. A position beacon is an Asset even though it accepts
-no equipment-control commands. The SDK handles messages and queue delivery;
-the Asset app owns execution and safe responses.
+The Asset app maintains its own state, reports information, and carries out
+supported work through configurable modules and equipment drivers. The
+[Asset model](assets.md) describes initial Assets and the selected structure.
+[Configuration](../config.md) separates selected requirements from proposed
+options. [Subsystem conditions](status.md) describes hardware-status reporting.
 
-[Assets and their equipment](assets.md) records the intended kinds of Asset,
-the proposed companion-computer layout, and questions about the shared model.
-[Configuration](../config.md) inventories startup options for discussion.
-[Logging](logging.md) defines the local diagnostic evidence to collect from the
-app, equipment, and SDK throughout an operation.
+This is selected planning direction. No Asset runtime is built yet, and several
+[shared contracts](../../protocol/docs/open-questions.md#unresolved) still need
+exact definitions. These pages do not claim that current schemas express them.
 
 ## Start and connect
 
-The startup and flight behavior below describes the first-flight drone.
+The communications module supplies the Asset's identity and explicit supported
+command list to the SDK. Once identity, clock, and communications are ready, the
+Asset can connect using the [SDK connection sequence](../../sdk/docs/links.md).
+Equipment readiness is separate from connection readiness. Waiting for GPS,
+a flight controller, a camera, or a detector does not hide an otherwise reachable
+Asset.
 
-The Asset sets home to its startup position and has its clock set before it
-connects. It supplies its identity, supported equipment capabilities, and current
-settings to the SDK. The SDK performs the
-[connection sequence](../../protocol/docs/communication.md#opening-a-connection-asset).
+Supported settings are separate from their currently known values. An Asset may
+support home before it has a position to establish home. A reporting-only Asset
+needs no artificial home, run state, task queue, or settings report when it
+supports none of those functions. Protocol's current connection rules do not yet
+express the complete [minimal startup path](../../protocol/docs/open-questions.md#unresolved).
 
-The Asset process and its SDK instance stay running for the whole operation.
-The [operating assumption](../../atlas/using-atlas.md#the-four-pillars) excludes
-process restart recovery. A dropped field link does not restart the app or clear
-its local state.
+The example configurations start acquisition and reporting automatically.
+A tracker obtains position, an ADS-B receiver listens, and a turret observes from
+its current orientation. The quadcopter waits for work before arming or taking
+off. Startup behavior is configurable, as described in the [Asset model](assets.md#configuration-and-commitments).
+
+### Position and home
+
+Position can come from equipment or manual configuration for a stationary Asset.
+Unknown position stays unknown. A GPS tracker without a valid fix sends no new
+position update. A lost fix leaves Core with its last known position and the
+reported GPS condition. A configured stationary position remains valid while it
+describes the installation.
+
+An Asset exposes home where its behavior uses it. The first quadcopter establishes
+home once its first valid startup position is available. An explicitly configured
+or operator-set home takes precedence over automatic initialization. Home is not
+reset by a reconnect. Operators can change it through supported settings.
+
+The app and its SDK instance stay running for the operation. The
+[operating assumption](../../atlas/using-atlas.md#the-four-pillars) excludes process
+restart recovery. A dropped field link does not restart the app or clear state.
 
 ## Carry out work and report its result
 
-For [first flight](../../atlas/first-flight.md), the drone holds the complete
-Takeoff, Move To, Land list before it starts. The
-[SDK queue helper](../../sdk/docs/task-queue.md) holds and orders the Tasks; the
-Asset app performs the physical actions. Receiving a Task is not completing it.
+Core owns [request admission](../../core/docs/requests.md), using shared SDK
+validation before forwarding work. The Asset retains decisions that require
+current equipment knowledge. Equipment can change after Core accepts a request.
 
-The app reports when work starts and when it completes, fails, or is cancelled.
-Completion follows the observed equipment result. A failure includes its reason.
-The SDK delivers final reports to Core, retrying through link loss until Core
-acknowledges them.
+For [first flight](../../atlas/first-flight.md), the drone holds the complete
+Takeoff, Move To, Land list before starting. The
+[SDK queue helper](../../sdk/docs/task-queue.md) holds and orders Tasks. The app
+coordinates execution through the appropriate module and equipment drivers.
+Receiving a Task is not completing it.
+
+If required equipment or position is unavailable when a Task starts, fail the
+attempt with an explanation rather than waiting indefinitely for readiness.
+Normal platform preparation remains part of execution. Becoming ready later
+does not revive failed work. Another attempt needs new Tasks.
+
+The app reports work starting and its completion, failure, or cancellation.
+Completion follows the observed equipment result. The SDK delivers final
+reports to Core, retrying through link loss until Core acknowledges them.
+[Subsystem conditions](status.md#reports-describe-equipment) do not impose a
+separate health gate on execution.
 
 ### Prepare and take off
 
-When a Takeoff Task runs, the Asset app performs the preparation that its platform
-requires and can control. This includes establishing flight-controller control,
-selecting the required mode and takeoff settings, and arming before takeoff.
-The operator does not need a separate software arming action.
+When a copter Takeoff Task runs, its movement profile performs the preparation
+that the platform requires and can control. This includes establishing
+flight-controller control, selecting the required mode and takeoff settings,
+and arming. The operator needs no separate software arming action.
 
-Some platforms require a physical switch or button before the flight controller
-can arm. The app respects that requirement; a Task does not replace the physical
-action. If that requirement is unmet when Takeoff runs, the app fails the Task
-with an explanation. It does not wait for someone to enable the switch or button.
-Enabling it later does not revive the failed Task; another takeoff attempt needs
-a new Task.
+Some platforms require a physical switch or button before arming. The app
+respects that requirement. If it is unmet when Takeoff runs, the app fails the
+Task with an explanation. It does not wait for someone to enable the switch or
+button. Enabling it later does not revive the failed Task.
 
-Preparation is part of executing the Task. Arming alone does not complete
-Takeoff; completion follows the observed takeoff result. Each platform supplies
-its own execution sequence, as proposed in
-[the platform integration](assets.md#proposed-platform-integration).
-Equipment-specific completion evidence, tolerances, and timeouts remain open.
+Arming alone does not complete Takeoff. Completion follows the observed takeoff
+result. Equipment-specific evidence, tolerances, and timeouts remain open.
 
 ### Other commands and settings
 
 Immediate commands and cancel follow
 [Protocol's rules](../../protocol/docs/communication.md#immediate-commands-and-cancel).
-The app performs the requested motion or hold; the SDK does not fly the drone.
-Settings follow the [shared settings contract](../../protocol/docs/communication.md#settings):
-apply new immediate changes in receipt order and queued changes when their Task
-runs. Report the resulting values rather than comparing operator and Asset clocks.
+The app performs the motion or hold. The SDK never controls equipment.
+Settings follow the [shared contract](../../protocol/docs/communication.md#settings).
+Apply new immediate changes in receipt order and queued changes when their Task
+runs. Report resulting values rather than comparing operator and Asset clocks.
 
 ## Handle failures and link loss
 
-The app monitors equipment, active work, its queue, and contact information from
-the SDK. [Command failures and failsafes](failsafes.md) owns cancellation,
+The app monitors equipment, work, its queue where supported, and SDK contact
+information. [Command failures and failsafes](failsafes.md) owns cancellation,
 configured conditions, response Tasks, and the operation-long work lock.
+These decisions remain local so they can operate without Core contact.
 
 Link loss is timed locally under
 [Protocol's contact rules](../../protocol/docs/communication.md#losing-the-link).
 On reconnect the app keeps its execution state while the SDK restores message
-delivery and queue reporting. Reconnecting alone never starts a Task again.
+delivery and applicable queue reporting. Reconnecting alone never restarts a Task.
 
-This is a behavior draft. It does not select flight-controller integrations or
-simulation mechanics, and no Asset runtime is built here yet.
+## Shut down and retain evidence
+
+The app records equipment, module, and SDK evidence locally throughout the
+operation, including while disconnected. [Logging](logging.md) owns that record
+and the Asset's own Reset ZIP. Shutdown and archive retrieval mechanisms remain
+open. No remote shutdown command or process restart recovery is selected here.
