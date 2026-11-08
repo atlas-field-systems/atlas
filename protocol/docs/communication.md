@@ -4,6 +4,11 @@ How every part of Atlas behaves on a link. It spells out the
 [laws](laws.md) in full. The SDK implements these rules; what it adds on top is in
 the [SDK docs](../../sdk/README.md).
 
+Selected Asset planning changes include early and minimal connection, independent
+settings support, and selective subsystem conditions. Current definitions do not
+yet express all of these changes. [Open contracts](open-questions.md#unresolved)
+identify the remaining work. No new message shape is specified by this page.
+
 Core, gateways, Assets, and their SDK instances stay running for an operation
 ([operating assumption](../../atlas/using-atlas.md#the-four-pillars)). Recovery
 here means restoring a dropped link in those same processes, with state retained
@@ -35,7 +40,14 @@ adapters only move bytes; framing and JSON stay in the SDK or link profile.
 4. If the Asset already has a link open, the newer link replaces the older; Core
    closes the older.
 5. After an accepted hello, the Asset sends `admin.describe` (reports, commands,
-   cameras — no keys). Core stores it, acknowledges it with `admin.reply`, and will forward it unchanged to operators.
+   cameras, no keys). Its command list is explicit, not inferred from modules or
+   equipment drivers. Core stores it, acknowledges it with `admin.reply`, and
+   forwards it unchanged to operators.
+
+The Asset can start this sequence once identity, clock, and communications are
+ready, even while equipment is starting or its position is unknown. A
+reporting-only Asset can list no commands. Complete startup follows
+[the applicable reconnect steps](#after-reconnecting-asset).
 
 ## Operator interfaces
 
@@ -52,16 +64,20 @@ No user accounts or roles.
 3. Core pushes every Asset's latest `admin.describe` and each Asset's latest
    reports (settings, status, queue, telemetry, battery), **unchanged** (same
    `from`, `seq` and `time`). For settings, that is each report holding a
-   setting's newest value, oldest first (see [Settings](#settings)). It also
-   sends one `plugin.describe` per Plugin, one `geofeature.set` per geo feature and
+   setting's newest value, oldest first (see [Settings](#settings)). The selected
+   subsystem model likewise retains the reports holding each subsystem's newest
+   condition, rather than only the last health message. Its exact contract is
+   still open. Core also sends one `plugin.describe` per Plugin, one
+   `geofeature.set` per geo feature and
    one `object.describe` per Object.
 4. From then on Core forwards each new report as it arrives: telemetry, status,
    queue changes and failsafes — still unchanged.
 5. To act, the interface sends `control.command`, `control.settings`,
    `control.queue` or `control.cancel` with `asset_id` and its own `from`/`seq`. Core checks it
-   against that Asset's describe (and its connect settings report) and passes it
-   on **unchanged**, or refuses it with a reason. Anything sent to an Asset that
-   is [offline](#when-core-counts-an-asset-offline) or not yet
+   against that Asset's declared command and settings support and applies
+   [request admission](../../core/docs/requests.md) before forwarding. It passes
+   accepted requests on **unchanged**, or refuses them with a reason. Anything
+   sent to an Asset that is [offline](#when-core-counts-an-asset-offline) or not yet
    [ready](#after-reconnecting-asset) is refused; Core does not hold it. The
    interface picks each Task's `task_id`. Core refuses one that Asset has already
    had in this run ("A1 already has task T3"), so after a refresh, or with two
@@ -120,8 +136,9 @@ So a message can arrive twice. Every receiver, Core included, applies one rule:
 
 ## Delivering a task queue
 
-The Asset owns its task list and always holds every Task in it, so it never waits
-to fetch the next one.
+An Asset that accepts Tasks owns its task list and always holds every Task in
+it, so it never waits to fetch the next one. A reporting-only Asset is not
+required to have a queue or send queue reports.
 
 1. **Bodies.** Each Task is a `control.command` or `control.settings` with a
    `task_id`, sent once, as soon as the operator adds it. Core passes every body on
@@ -179,17 +196,21 @@ remain [open](open-questions.md#unresolved).
 
 - Settings travel together in one `settings` object, the same in `report.settings`
   and `control.settings`, so each setting is listed once.
-- `home_position` is where `return_to_home` goes. Every Asset has GPS. It sets
-  `home_position` to where it starts up, before its hello, so the connect report
-  always carries it. An operator can move it like any other setting.
-- After each accepted hello the Asset sends its **connect report**: a `report.settings`
-  with every setting it supports and its value. Core refuses changes to any setting the
-  latest connect report left out, and the Asset never reports one until its next hello.
-  Core acknowledges the connect report with `admin.reply`, and the Asset sends nothing
-  after it until then (see [After reconnecting](#after-reconnecting-asset)), so a later
-  partial report is never taken for the full list.
-- A later `report.settings` may carry only some settings. A setting left out is
-  unchanged, not unsupported.
+- `home_position` is where `return_to_home` goes for Assets supporting that
+  behavior. Position can come from equipment or manual configuration for a
+  stationary Asset. The Asset owns [home initialization](../../asset/docs/README.md#position-and-home).
+  Connecting does not require a known home, and reconnecting does not reset it.
+- Settings support is declared independently of currently known values. Core
+  refuses unsupported settings, but an unknown value does not imply unsupported.
+  An Asset with no live settings needs no placeholder settings report.
+- When settings apply, the Asset supplies its known current values at connection.
+  Core acknowledges each required connect report with `admin.reply` before
+  ordinary traffic (see [After reconnecting](#after-reconnecting-asset)). A later
+  `report.settings` may carry only some values. An omitted value is unchanged.
+- **Shared-contract gap.** Current definitions infer support from the connect
+  `report.settings`, require a nonempty settings object, and describe startup
+  home as always known. The independent support declaration, unknown values, and
+  setting-free connection path need [exact contracts](open-questions.md#unresolved).
 - The Asset applies each new valid immediate settings request when it receives
   it, alongside its local changes. Request timestamps do not choose the winner.
   A delayed distinct request can override a local change; a duplicate retry does
@@ -236,33 +257,44 @@ a gateway can be out of radio range while the gateway's link to Core stays open.
   has heard a new (non-duplicate) message from it (`from` is its id) within its
   `link_loss_after_s`, timed on Core's clock. Otherwise it is **offline**. It is
   connected again as soon as Core hears something new from it.
-- So a quiet Asset is not mistaken for a lost one, an Asset that has sent nothing
-  new for a third of its `link_loss_after_s` sends `report.telemetry` early. The
-  check-in carries useful data instead of an empty heartbeat. An Asset that lists
-  no telemetry sends another report it lists, such as `report.status` kind `asset`.
+- The current check-in procedure sends a listed report early when the Asset has
+  sent nothing new for a third of its `link_loss_after_s`, normally telemetry.
+  Only send position updates when position is valid. Receiving another report
+  does not establish fresh position.
+- **Shared-contract gap.** A quiet Asset may have neither a new measurement nor
+  a relevant subsystem update. Selected [subsystem reporting](../../asset/docs/status.md)
+  has no mandatory periodic health broadcast. How such an Asset checks in
+  without manufacturing measurements or forcing subsystem updates remains
+  [open](open-questions.md#unresolved).
 - Core refuses `control.*` for an offline Asset and holds nothing new. The operator
   sends again once it is back. When it is back, its queue report names any body a
   waiting list still lacks, and Core resends it.
 
 ## After reconnecting (Asset)
 
-After each accepted hello the Asset, in this order:
+After each accepted hello the SDK performs the applicable startup exchanges in
+order. Connection readiness is separate from equipment readiness.
 
-1. Sends `admin.describe` and waits for Core's `admin.reply`.
-2. Sends its connect `report.settings` (every setting it supports; see above) and waits
-   for Core's `admin.reply`.
+1. Send `admin.describe` and wait for Core's `admin.reply`.
+2. Establish supported settings independently of known values. Send and await
+   acknowledgement of applicable connect settings reports. An Asset with no
+   settings skips those reports. Unknown equipment state or position does not
+   hold the connection open indefinitely.
+3. For an Asset accepting Tasks, resend unacknowledged final task reports as
+   retries and send its queue report. Core resends any body it names as missing.
+   A reporting-only Asset with no queue skips these steps.
 
-   It resends each unchanged every 10 s until answered, and sends nothing else first.
+Each required acknowledged exchange is resent unchanged every 10 s until
+answered. Ordinary traffic starts only after the applicable required startup
+acknowledgements. Core refuses `control.*` while the Asset is still connecting,
+not merely because its equipment is starting. Missing pre-ready deliveries are
+not treated as executed work.
 
-   Core counts the Asset **ready** once it has acknowledged the connect report.
-   Until then Core sends the Asset no Task and passes nothing on to it; it refuses
-   `control.*` for it ("A1 is still connecting"). If that acknowledgement is lost,
-   the link is failing: the Asset drops anything that arrives before it, a missing
-   body is resent after its queue report, and an immediate command shows no result,
-   so the operator sends it again.
-
-3. Resends any unacknowledged final task reports (retries, same bytes).
-4. Sends its queue report. Core resends any body it names as missing.
+**Shared-contract gap.** Current definitions and SDK interface sketches still
+assume a connect settings report establishes readiness for every Asset. The
+setting-free path and independent support declaration need exact representation
+before implementation. The sequence above records selected behavior, not an
+invented replacement message or handshake.
 
 An operator interface rebuilds what it knows from Core's connect push (see
 [Operator interfaces](#operator-interfaces)).

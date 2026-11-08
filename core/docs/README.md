@@ -1,6 +1,8 @@
 # Core docs
 
-This describes the retained runtime, not the current system design.
+The prototype layout below describes the retained runtime. Selected future
+behavior lives in [request admission](requests.md) and [fusion](fusion.md).
+Neither is implemented by the retained prototype.
 
 For the future runtime, [configuration](../config.md) inventories proposed
 options and [logging](logging.md) defines the diagnostic evidence to collect.

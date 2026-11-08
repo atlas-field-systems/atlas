@@ -36,7 +36,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
   ```
 - `kind` picks the exact message within a type. Only types that have kinds carry it. The other fields stay flat.
 - A **command** is something an Asset can do: takeoff, move_to, land. A **task** is one queued use of a command or a settings change. `control.command` and `control.settings` each take an optional `task_id`. Without it, the message runs now (a button press). With it, the message is a Task's body; `control.queue` gives the order. Each kind is defined once.
-- `admin.describe` lists `commands`, the command kinds the Asset accepts, plus `reports` and `cameras`. Core never sends a kind not listed. Settings support is the set of settings in the Asset's `report.settings` on connect.
+- `admin.describe` lists `commands`, the command kinds the Asset accepts, plus `reports` and `cameras`. The command list is explicit, not inferred from modules or equipment drivers. Core never sends a kind not listed. Selected settings support is independent of currently known values. Current definitions still infer support from the connect `report.settings`; the replacement representation remains [open](open-questions.md#unresolved).
 - **Immediate settings changes run beside the queue; an immediate motion command clears it.**
 - `query` holds questions: `query.asset` (ask for any report an Asset supports: Core asks the Asset, or an operator interface or edge link asks Core for its latest copy, such as the latest telemetry for the most recent position; optional `every_s` makes Core repeat it every N seconds, `every_s` 0 cancels, mostly for slow edge links), `query.queue` (Core asks an Asset for its queue), and `query.core` (an operator interface asks Core for its Assets or stored history, over its operator WebSocket). Answers are always the normal messages, so no answer formats are added.
 - Failsafe is its own type under `report`, so it sits with everything else the Asset tells Core but can carry more context than a status.
@@ -46,6 +46,25 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - `from`: who created the message (Asset `asset_id`, operator `operator_id`, or `CORE`). Stays on the message end to end; Core forwards unchanged.
 - `asset_id`: the Asset a command is for, or the Asset a report is from.
 - Replies name the original with `reply_from` + `reply_to` (= that message's `from` and `seq`).
+
+## Asset planning direction
+
+The [Asset model](../../asset/docs/assets.md) owns configurable modules, equipment
+drivers, and movement profiles. Copters and fixed-wing aircraft use separate
+command families. Exact fixed-wing and turret-pointing commands remain open.
+
+[Early and minimal connection](communication.md#after-reconnecting-asset) permits
+equipment still starting, unknown position and home, and Assets with no settings
+or task queue. [Subsystem conditions](../../asset/docs/status.md) replace the
+single overall health condition with selective reports and shared meanings.
+Current definitions and generated examples do not yet express those choices.
+In particular, an overall `healthy` example is not proof of equipment readiness.
+The exact contract gaps are listed in [open questions](open-questions.md#unresolved).
+
+An Asset's own GPS position is telemetry. ADS-B and camera measurements about
+other targets are Observations. The coordinates Observation description's
+reference to GPS trackers needs to preserve this distinction when definitions
+are aligned.
 
 ## Plugins
 - Plugins run inside Core. The protocol carries only a call to a Plugin's action and its result. How a Plugin works with the rest of Core is Core's own business, like traffic between Core's pillars. See the Charter's [Plugins](https://github.com/atlas-field-systems/atlas/blob/main/atlas/plugins.md) page.
@@ -86,7 +105,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 ## Connect and reports
 - `admin.hello`: an Asset's first message on a link: `asset_id`, `from`, and keys only (`key` required; `enrollment_key` the first time). Reports, commands and cameras follow in `admin.describe`.
 - `admin.hello_reply`: Core answers `accepted` or `refused`.
-- `report.status` kind `asset`: overall health. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
+- The current `report.status` kind `asset` defines overall health, pending the selected subsystem replacement above. Kind `task`: one Task's state (queued, active, completed, failed, cancelled), with an optional explanation. Kind `queue`: the Asset's queue.
 - `report.failsafe`: a failsafe triggered and the Asset acted by itself. `kind` is the trigger (`link_loss` or `low_battery`); `response` is what it does (`continue`, `hold`, `land` or `return_to_home`, the same values as the `link_loss_response` setting, defined once). A trigger and a response are different things, so they are never the same field.
 - `report.battery`: the battery, on its own schedule, separate from telemetry, because it changes even when the Asset does not move.
 - **Asset data reports are fixed and standard.** Every Asset reports battery, position and the rest with the same defined report and components. There are no free-form or "misc" fields. New kinds of Asset data get a new defined report.

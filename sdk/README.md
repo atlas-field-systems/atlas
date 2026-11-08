@@ -1,7 +1,7 @@
 # Atlas SDK
 
 The one implementation every program uses: Core, gateways, operator apps, and
-Assets on IP. It builds, validates, and parses messages; handles keys, identity
+Assets. It builds, validates, and parses messages; handles keys, identity
 (`from` / `seq` / `time`), dedupe, queue sync, and reconnect; and is the only
 front door to the wire.
 
@@ -21,7 +21,7 @@ implementation starts when the owner requests it.
 
 ## One front door
 
-Every program uses the SDK: **Core, bridges, operator apps, and Assets on IP**.
+Every program uses the SDK: **Core, bridges, operator apps, and Assets**.
 
 - Callers build and read messages through helpers, not raw JSON. Fields,
   precision and left-out fields are kept exactly.
@@ -31,7 +31,15 @@ Every program uses the SDK: **Core, bridges, operator apps, and Assets on IP**.
   `check()` when a message did not already arrive through an SDK edge (for
   example a raw test inject). After a valid message, Core runs **business rules
   only** (online?, command listed in `admin.describe`?, duplicate `task_id`?).
-- Helpers never schedule or fly physical work; the Asset's own software does.
+- Core owns [request admission](../core/docs/requests.md) before forwarding over
+  field links. Shared SDK checks supply contract validation, not a second set of
+  Core business rules.
+- The Asset's [communications module](../asset/docs/assets.md#modules-and-equipment-drivers)
+  manages the SDK. Other Asset modules own reporting decisions, current equipment
+  checks, execution, and failsafes. Helpers never fly or control equipment.
+- A reporting-only Asset needs no task-queue helper or artificial settings.
+  [Early and minimal startup contracts](../protocol/docs/open-questions.md#unresolved)
+  still need exact definitions before the link interfaces can implement them.
 - Work is bounded. Queues, retries and history reads have limits, and programs
   can stop and close what they opened.
 - [Diagnostic events](docs/logging.md) expose message handling, retries, outcomes,

@@ -36,6 +36,12 @@ or a required network topology.
 | Asset runtime | Equipment control, local execution, and reports of its effects |
 | Plugin subsystem within Core | Acquiring, analyzing, and publishing information |
 
+The Asset runtime is configurable. Behavior modules use equipment drivers where
+hardware access is needed. Its communications module manages the SDK. Each Asset
+explicitly lists its commands and may support none. Connection readiness does
+not establish equipment readiness. Decisions follow the
+[responsibility split](design-decisions.md#decisions-stay-near-their-source).
+
 The Asset runtime is planned in [asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
 and the operator application in
 [command-interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface).
@@ -62,6 +68,14 @@ administration support the pillars.
 ## Information-focused stories
 
 These stories describe intended use.
+
+### Locate the tracker
+
+The first Asset to build is a Raspberry Pi with a GPS peripheral and an uplink.
+It starts obtaining its own position and reports telemetry to Core for an operator
+to see. It accepts no equipment-control commands. If it loses its GPS fix, Atlas
+retains its last known position and the reported GPS condition. The tracker does
+not send the old position as a new fix.
 
 ### Observe an aircraft
 

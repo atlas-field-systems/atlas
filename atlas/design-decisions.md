@@ -15,6 +15,18 @@ are precise, and they keep AI agents from drifting.
 Prefer proven existing systems over building our own. Keep designs lean and
 minimal: build only what is needed now.
 
+## Decisions stay near their source
+
+Keep decisions with the part that has the authoritative information. Core checks
+requests before they cross the field link, using the SDK's shared validation.
+Assets own current equipment checks, execution, and local failsafes. The SDK and
+transport adapters supply communication mechanics. This keeps decisions local
+and avoids unnecessary exchanges over constrained links.
+
+[Core request admission](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/requests.md)
+and [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md)
+own the detailed responsibilities.
+
 ## Data formats belong to the owner
 
 The project owner decides Atlas's data formats and data structures. Protocol

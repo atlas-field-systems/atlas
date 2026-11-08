@@ -2,7 +2,8 @@
 
 The Asset app evaluates equipment, contact, and work state locally, controls the
 response, and reports and logs the trigger, selected rule, and observed outcome.
-The SDK supplies contact and queue information. No Asset runtime is built yet.
+The SDK supplies contact and queue information through the communications module.
+No Asset runtime is built yet.
 Terms are defined in the [Atlas glossary](../../GLOSSARY.md).
 
 ## No rules are enabled by default
@@ -10,6 +11,11 @@ Terms are defined in the [Atlas glossary](../../GLOSSARY.md).
 An Asset starts with no Atlas failsafe rules, including battery rules. Rules and
 response actions are configured explicitly for the Asset and operation. Only
 configure actions the Asset supports. A reporting-only beacon has no failsafe.
+
+[Subsystem conditions](status.md) describe equipment. Reporting a condition does
+not gate commands, cancel work, or select a response. Configured conditions own
+reactions to faults. A failed physical execution remains a command failure under
+the rule below, independently of health reporting.
 
 ## A failed command cancels the remaining Tasks
 
@@ -31,7 +37,8 @@ other rules; no battery rule has an implicit priority.
 
 Conditions can include:
 
-- Battery thresholds and contact loss, independently or together with other conditions.
+- Equipment faults, battery thresholds, and contact loss, independently or
+  together with other conditions.
 - No Tasks for a configured duration, including zero. This means neither an active
   Task nor a complete, accepted queue. A paused mission with queued Tasks is not
   idle. Telemetry and fragments of a proposed list do not reset the timer; an
@@ -55,9 +62,9 @@ contact is allowed by configuring conditions that do not match that situation.
 ## A failsafe activates a configured Task
 
 Activation overrides ordinary work and pause, stops current work, and clears the
-remaining Tasks. The Asset locally starts the configured response through the same
-equipment executor used for ordinary Tasks. Each execution has a fresh Task
-identity and reported outcome.
+remaining Tasks. The Asset locally starts the configured response through the
+same module used for ordinary execution. Each execution has a fresh Task identity
+and reported outcome.
 
 Parameters are fixed at Task start, including explicit destinations. If the
 response uses current home, resolve that position at activation and retain it

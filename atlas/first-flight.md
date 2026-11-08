@@ -5,8 +5,11 @@ The operator sends the whole task list: Takeoff, Move To a location, then Land.
 The drone starts the list only after it holds every Task's body.
 The operator sees what the drone reports doing.
 
-This is the selected first workflow. Takeoff and Land are planned capabilities,
-not claims about the current implementation.
+This is the selected first flight workflow. The
+[GPS tracker](using-atlas.md#locate-the-tracker) is the first Asset to build, followed
+by this quadcopter. Takeoff and Land are planned capabilities, not claims about
+the current implementation. The drone may connect while equipment is still
+starting. Connection alone does not establish that it can take off.
 
 ## The flight commands
 
@@ -17,7 +20,9 @@ not claims about the current implementation.
   goes to that altitude, or stays at its current one, flies over the position,
   and lands.
 
-These are simpler than MAVLink and ArduPilot commands but map onto them.
+These are the copter commands. Fixed-wing aircraft need a separate command
+family with its own behavior. The copter commands are simpler than MAVLink and
+ArduPilot commands but map onto them.
 The Asset owns [platform-specific preparation and arming](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#prepare-and-take-off).
 
 ## Follow the work and its evidence

@@ -34,7 +34,7 @@ Picture = {
 ```
 - `ready=false` until the picture's own `query.core kind assets` request gets its `admin.reply` (decided, P2 in the [implementation plan](../IMPLEMENTATION.md#9-current-implementation-points)). No protocol change.
 - Upsert by `(from, seq, time)`. When a value for the same slot (asset + type#kind) is replaced, the newest `time` wins. Duplicates are delivered, so a replay refills the picture.
-- Settings are the exception to whole-message replacement. Keep each setting's
+- Settings need retention beyond whole-message replacement. Keep each setting's
   newest value and source report independently, using the Asset report's `time`
   and then its `seq` when times match. Never order effects by operator-request
   timestamps.
@@ -42,6 +42,14 @@ Picture = {
   a newer gear-only report keeps the lights value from an earlier report.
   Replay all settings reports in Core's connect push into this map. A single
   `latest` entry for `report.settings` is not a complete settings snapshot.
+- Selected [subsystem conditions](../../asset/docs/status.md) also need independent
+  retention. Keep each subsystem's last reported condition and source report.
+  A partial update leaves other subsystems unchanged. Replay the reports Core
+  retains for those conditions. A never-reported condition stays unreported,
+  rather than healthy. The `latest` map alone cannot represent this view. Its
+  exact interface awaits [Protocol's shared records](../../protocol/docs/open-questions.md#unresolved).
+- Keep settings support separate from currently known setting values. Neither
+  link readiness nor picture readiness means equipment is ready.
 - On disconnect, `stale=true` and data is kept. On reconnect, rebuild from scratch (no disk).
 - Reads return `{ready, stale, items}` and never a bare empty list.
 - Assets do not need it.

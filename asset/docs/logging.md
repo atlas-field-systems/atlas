@@ -6,8 +6,10 @@ while its Core link is down. It collects both equipment and app events and the
 
 ## Record decisions and observed equipment behavior
 
-- Startup, equipment connection, capability discovery, resolved configuration
-  with secrets removed, and the software and package versions in use.
+- Startup, configured modules and movement profiles, connections to equipment
+  drivers, explicit capability declarations, configuration with secrets removed,
+  and the software and package versions in use.
+- Subsystem condition changes, reasons, and which updates the Asset chose to report.
 - Each requested action and whether it was queued, applied immediately, ignored
   as a duplicate, cancelled, or rejected locally, with the reason.
 - Task start and final outcome, the equipment observations used to decide them,

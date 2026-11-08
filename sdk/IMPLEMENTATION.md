@@ -14,6 +14,12 @@ any slice. Diagnostic capture is part of each module from its first slice; the
 optional live picture does not defer logging until later. Unresolved option names
 and recording limits remain discussion points, not invented implementation defaults.
 
+The selected Asset model adds [contract prerequisites](../protocol/docs/open-questions.md#unresolved)
+for early and setting-free startup, independent settings support, and selective
+subsystem conditions. Settle those exact contracts before implementing affected
+link and picture interfaces. Existing examples still exercise current definitions;
+they do not establish the newer behavior.
+
 Ground rules:
 
 - `protocol/definitions/` is the source of truth. The SDK never names a message type
@@ -144,8 +150,8 @@ Acceptance:
 ### Slice 3: Link + hello + describe (D9)
 Files: `link.mjs`, inbound pipeline without dedupe (dedupe lands in slice 4), connection and message diagnostics.
 Acceptance (fake transport plus a test server built from `createLink({side:'server'})`):
-- Asset hello accepted → describe from `opts.describe`, then (after its `admin.reply`) connect `report.settings` from `opts.connectSettings` when provided, then (after its `admin.reply`) `ready`; a lost reply is covered by resending the same bytes; describe carries no key.
-- Lost acknowledgements: drop the first `admin.reply` to the describe and then to the connect report. Each is resent after 10 s (fake clock), the next reply passes the pre-ready filter, and the link reaches `ready`. A Task body that arrives before `ready` is dropped, not remembered, and its resend after `ready` is handled.
+- Asset hello accepted: send describe, then complete applicable settings-support and known-value exchanges before `ready`. Test a setting-free tracker and an Asset with supported but unknown home, after Protocol defines those exchanges. Required acknowledgements are retried unchanged. Equipment readiness is not link readiness.
+- Lost acknowledgements: drop the first `admin.reply` to the describe and then to an applicable connect report. Each is resent after 10 s (fake clock), the next reply passes the pre-ready filter, and the link reaches `ready`. A Task body that arrives before `ready` is dropped, not remembered, and its resend after `ready` is handled.
 - Operator hello accepted → `ready`, with no describe.
 - A message before the hello is accepted is refused locally (`not_ready`). A server receiving a non-hello first closes.
 - `refused` → `auth_lost`, after which `build` throws `auth_lost`.
@@ -197,7 +203,7 @@ Acceptance:
 ### Slice 7: Reconnect (D8)
 Files: `reconnect.mjs`.
 Acceptance:
-- Asset: drop the transport mid-task. On the next accepted hello, the order on the wire is describe → connect `report.settings` → unacked final reports → queue report.
+- Asset: drop the transport mid-task. On the next accepted hello, complete describe and applicable settings exchanges, then send unacknowledged final reports and the queue report. A reporting-only tracker skips settings it does not support and has no queue resync.
 - Operator: an in-flight request resolves `unknown/disconnected`. A command is **not** resent after reconnect.
 - Backoff grows and is capped. No reconnect after `auth_lost`.
 - Seq stays continuous across reconnects.
@@ -226,6 +232,9 @@ settings, so a gear-only update preserves the previous lights value, including
 after connect-push replay. Settings reports with equal `time` use the Asset's `seq`
 to select the newer value; a late earlier report cannot replace it. Auth loss leaves a read-only snapshot. A throwing
 observer and an async (never-resolving) observer do not affect message flow.
+After subsystem contracts are defined, also verify partial condition updates and
+replay preserve each subsystem's last reported condition and source. An absent
+condition must not be interpreted as implicitly healthy.
 
 ### Slice 10 (docs only): Core-as-caller notes
 Write `sdk/docs/core-adopt.md` (short). It is the checklist for a **later**,
@@ -234,7 +243,7 @@ separate Core PR, not done here:
 - Core identity is `createIdentity({id:'CORE', role:'core'})`.
 - Delete seq renumbering, `admin.asset`, the `task_seq` pass-through and the second dedupe set. Keep a last-answer cache keyed `(from,seq,time)` and wire it to `onDuplicate`.
 - Forward with `link.forward(raw)` (byte-equal). Send `admin.alive` when Core has sent an Asset nothing new for a third of its `link_loss_after_s`.
-- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), command listed in describe, `task_id` duplicate, a list naming only bodies Core has, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its connect report), resending a list until a queue report names it, and each body a queue report names as missing every 10 s until a later one no longer does, `every_s` repeats (a new Core-created message each time, with a new seq).
+- Business rules that stay in Core: key hash check, one-link-per-ID replace, online check (contact, not an open link), command listed in describe, `task_id` duplicate, a list naming only bodies Core has, ready (send an Asset no Task and pass nothing on to it, refusing operator `control.*`, until Core has acknowledged its applicable required startup exchanges), resending a list until a queue report names it, and each body a queue report names as missing every 10 s until a later one no longer does, `every_s` repeats (a new Core-created message each time, with a new seq).
 - Select the Protocol and SDK package dependencies used by the new runtime.
 
 ---
@@ -303,7 +312,7 @@ the developer instead of changing it inside a slice.
 - **P2 (slice 9):** the live picture issues its own `query.core kind assets` on connect and reconnect, and is `ready` when that request's `admin.reply` arrives. It does not try to detect the end of Core's connect push.
 - **P3 (slice 2):** each transport adapter is a sibling package with its own `package.json`. No npm workspaces.
 - **P4 (slice 6):** the Asset queue uses an internal in-memory Map, see [Task queue](docs/task-queue.md). It keeps the list, held bodies, finished Tasks and final-report acknowledgement state for the operation. Answers must remain paired with protected request identities; their budgets and safe release remain open. No disk store or process restart recovery is required.
-- **Post-hello sequence (slices 3/6):** after every accepted hello, including the first, the link sends describe → connect `report.settings`, each waiting for Core's `admin.reply`, and then sets `ready`; the Asset queue's `ready` listener sends unacked finals → queue report. `createLink` takes `connectSettings`.
+- **Post-hello sequence (slices 3/6):** the link completes the applicable acknowledged startup exchanges before `ready`. Supported settings are independent of known values. A task-capable Asset then resends final reports and its queue report. A reporting-only Asset needs neither artificial settings nor a queue. `createLink` and `connectSettings` remain sketches pending the exact startup contract.
 
 ## 10. How to work this plan
 
