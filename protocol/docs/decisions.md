@@ -81,7 +81,7 @@ All Atlas communication flows through this protocol. Improve the protocol, and e
 - There are no Plans. A **queue** is just the list of an Asset's Tasks not started yet, in order. It is not an object and has no ID.
 - `task_id` is unique per Asset, even after a Task finishes.
 - **The Asset owns its queue and always carries all of it**, so it never leaves with part of a mission. Each body is sent once, all at once. `control.queue` carries the order as `task_id`s plus the `queue_version` it was built on; it takes effect only when every body is on board, and is ignored when built on an old version. Lists are tiny, so this stays light on slow links. Details: [communication.md](communication.md#delivering-a-task-queue).
-- Any failure on the Asset triggers its configured failsafe. A failsafe with any response except `continue`, or an immediate motion command, clears the queue. What triggers which failsafe is the Asset's call and not decided yet.
+- A failed command always clears the remaining queue, regardless of the configured response. Failsafe activation or an accepted immediate motion command also clears it. The Asset owns [command failures and failsafe conditions](../../asset/docs/failsafes.md).
 
 ## Connect and reports
 - `admin.hello`: an Asset's first message on a link: `asset_id`, `from`, and keys only (`key` required; `enrollment_key` the first time). Reports, commands and cameras follow in `admin.describe`.
@@ -155,7 +155,7 @@ They show the readable JSON beside the compressed bytes (hex dump and base64), w
 - `admin.describe` `commands` may be empty, for a receive-only Asset such as an ADS-B receiver.
 - `control.cancel` stops the motion running now: the Asset holds, sets `run_state` paused, reports the Task cancelled and answers with `report.settings` naming the cancel. A new list drops queued Tasks.
 - `return_to_home` is a command, and the same name is a failsafe response.
-- Each trigger has its own response setting. `link_loss_response` may be `continue`: the Asset keeps flying its queue, as when Core drives through a tunnel.
+- Trigger conditions and responses are configurable. An Asset may keep working without contact, then apply a separate airborne-idle condition when work ends. [Conditional settings and reports](open-questions.md#unresolved) still need exact shared formats.
 - History is first-class: Core keeps an append-only, time-ordered log, and `query.core` kind `history` with `asset_id`, `report: telemetry`, `since` and `until` returns an Asset's past path.
 - Link bandwidth is a link-design concern (link profiles), not a message concern.
 
@@ -188,7 +188,7 @@ From the review of the first-flight prototype: lost, repeated, late and reordere
 - **Final reports are acknowledged.** The Asset resends a Task's final report until Core answers with `admin.reply`, naming the report and its `task_id`. A lost acknowledgement is covered by resending the same final report.
 - **An Asset never runs a `task_id` twice.** It remembers its finished Tasks for the whole operation and resends their final report if one arrives again.
 - **Settings.** The connect report (after each accepted hello) lists every supported setting. Later reports may carry only some; a setting left out is unchanged. Views order each setting by the Asset report's `time`, then `seq` for a tie. The Asset applies requests in receipt order rather than comparing creator clocks.
-- **Link loss.** Contact with Core means hearing new (non-duplicate) messages after the accepted hello that name this Asset in `asset_id` and were not sent by this Asset. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), the `link_loss` failsafe triggers once. With `continue` the Asset keeps its Task and queue.
+- **Link loss.** Contact with Core means hearing new (non-duplicate) messages after the accepted hello that name this Asset in `asset_id` and were not sent by this Asset. Core sends `admin.alive` when it has sent nothing new for a while (repeated answers don't count). With no contact for `link_loss_after_s` (a setting, 30 s unless set), contact is lost. The Asset evaluates its configured conditions to decide whether a safe response is needed. The older unconditional link-loss definitions need alignment; see [Losing the link](communication.md#losing-the-link).
 
 ## Acknowledgements and edges
 
@@ -200,7 +200,7 @@ Selected answers to edge cases found during prototyping.
 - **Same-millisecond settings reports.** The Asset's `seq` orders reports whose `time` is equal; no extra field or clock synchronisation is required.
 - **Paused waits.** A new immediate command runs while paused, but queued tasks wait for `run_state: running`.
 - **Queued settings are confirmed** with `report.settings` naming the Task, like immediate ones. A queued change applies when that Task runs, regardless of its body's timestamp.
-- **Link loss on the ground.** It counts there too; every response except `continue` keeps the Asset down and clears its queue.
+- **Contact conditions on the ground.** Contact can be lost on the ground too. Configured rules apply as soon as the Asset can evaluate them, with any airborne restriction explicit in the rule. No rule is enabled by default. See [Asset failsafes](../../asset/docs/failsafes.md#configure-conditions-as-well-as-responses).
 
 ## SDK choices
 

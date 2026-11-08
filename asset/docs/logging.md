@@ -16,6 +16,10 @@ while its Core link is down. It collects both equipment and app events and the
   queued, or forced by a safe response. Record the resulting value and reason.
 - Failure detection, its trigger and configured response, pause or hold changes,
   and what the equipment actually did.
+- Failsafe rule priority, interrupted Tasks, primary and fallback outcomes, and
+  commands refused while the Asset remains in failsafe state.
+- Contact-related trigger evaluation when work ends, including airborne state,
+  active work, queue state, and the configured reason to act or keep waiting.
 - Local contact timing, link loss, continued local execution, reconnects,
   outgoing reports, and their acknowledgements through the SDK.
 - Diagnostic output failures or gaps, even when the flight behavior continues.

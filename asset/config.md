@@ -38,6 +38,48 @@ supplies supported initial settings; live operator changes then follow
 [the Asset settings rules](../protocol/docs/communication.md#settings).
 Changing a configuration file is not an alternative route for sending commands.
 
+[Platform integration](docs/assets.md#proposed-platform-integration) proposes
+equipment code and configuration for each platform within a shared Asset app.
+Setup needs to identify the platform's execution procedures and physical arming
+requirements. How these are selected, and which choices belong in code rather
+than configuration, remain open. Startup configuration selects how the Asset
+executes work; it does not itself request arming or takeoff.
+
+## Failsafe configuration
+
+The default Atlas failsafe configuration has no rules. Every rule is added
+explicitly; there is no mandatory battery, contact, idle, or area rule. A
+reporting-only beacon has no failsafe.
+
+[Command failures and failsafes](docs/failsafes.md) selects configurable trigger
+conditions and their responses. Contact policy needs to distinguish an Asset
+carrying out onboard work from one still airborne with no work left. It must
+support intentionally waiting without contact, such as when a link will be
+brought to the Asset later. Trigger timing, defaults, and option names remain open.
+
+The response-Task direction adds combined conditions, a no-Tasks timer that may be
+zero, and a horizontal polygon supplied directly as coordinates. Every rule requires
+all its conditions; alternative combinations are separate rules with an explicit
+priority order. Responses configure supported actions with their parameters, and
+each activation creates a fresh Task. A response may include one fallback Task.
+Battery rules and their priorities are configured explicitly. Area-exit tolerance
+uses a configurable distance and duration, both of which may be zero. Running
+response parameters are fixed at Task start.
+
+During ordinary operation, operators may replace the complete failsafe configuration.
+Validate the replacement before applying it; reject an invalid replacement and
+retain the previous one. Execution-affecting edits remain locked after failsafe
+activation for the rest of the operation. No recovery or recovery-edit mechanism
+is in scope. Exact shared formats remain under discussion.
+
+Accepted replacements immediately evaluate existing measurements and elapsed
+times; they do not restart idle or contact timers.
+
+The current Protocol settings do not yet express those separate conditions.
+Local configuration and shared live settings must be distinguished when their
+formats are selected. Command-failure cancellation is unconditional, regardless
+of failsafe configuration.
+
 ## Logging and Reset
 
 [Asset logging](docs/logging.md) owns the equipment evidence, app decisions, and
