@@ -5,9 +5,7 @@ Project-wide choices that every Atlas part follows.
 Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in [Keep judgment sharp](CHARTER.md#keep-judgment-sharp).
 
 The move from one shared message model to a Core API with gateways is recorded in
-the [API proposal](api-proposal.md). The decisions below follow it. Protocol, SDK,
-Core, Asset, and Command Interface docs still describe the earlier model until
-each is updated.
+the [API proposal](api-proposal.md). The decisions below follow it.
 
 ## Two layers of documentation
 
