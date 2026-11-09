@@ -1,7 +1,7 @@
 # First flight
 
 The first setup uses a Raspberry Pi on the ground. The Pi runs the Asset app and
-reaches Core through a gateway; the gateway's details are deferred. The Pi
+is a direct-IP Asset: it calls the Core API itself, with no gateway. The Pi
 connects to an ArduPilot quadcopter through a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
 such as QGroundControl. The vehicle remains the Asset represented in Atlas.
@@ -38,24 +38,19 @@ The Asset owns [platform-specific preparation and arming](https://github.com/atl
 sequenceDiagram
     participant Drone as ArduPilot vehicle
     participant Pi as Asset app on ground Pi
-    participant GW as Gateway
     participant Core
     participant UI as Command Interface
     Drone->>Pi: Equipment state over SiK
-    Pi->>GW: Description and vehicle reports
-    GW->>Core: Reports through the Core API
+    Pi->>Core: Description and vehicle reports through the Core API
     Core-->>UI: Show the reported state
     UI->>Core: Submit Takeoff, Move To and Land as Tasks
-    Core->>GW: The whole queue with every Task body
-    GW->>Pi: Deliver the queue
-    Pi-->>GW: Report the queue it holds
-    GW-->>Core: Queue report
+    Core->>Pi: The whole queue with every Task body
+    Pi-->>Core: Report the queue it holds
     Core-->>UI: Show the reported queue
     Note over Pi: Run Takeoff, Move To, then Land in order
     Pi->>Drone: Equipment commands over SiK
     Drone-->>Pi: Observed equipment state over SiK
-    Pi-->>GW: Task reports
-    GW-->>Core: Task reports
+    Pi-->>Core: Task reports
     Core-->>UI: Show the reported outcomes
 ```
 
@@ -102,10 +97,11 @@ The Asset owns
 
 ## Keep the whole run for debugging
 
-When the operator spins them down, Core, each gateway, and each Asset each
+When the operator spins them down, Core and each Asset, and later each gateway,
 write their own Reset ZIP. Core's ZIP holds:
 
-- Its event log: every accepted request and every stored report, in order.
+- Its run's data, including the event log: every accepted request and every
+  stored report, in order.
 - Its diagnostics, such as errors, link drops, and contact changes.
 - Its configuration, without secrets.
 - A plain readable summary: start and end, Assets, Tasks, and outcomes.

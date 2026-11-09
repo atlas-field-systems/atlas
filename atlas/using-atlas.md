@@ -36,9 +36,9 @@ one, calls the Core API itself. Different gateways can coexist as
 responsibilities, not a required network topology.
 
 The [first-flight setup](first-flight.md) runs the Asset app on a ground Raspberry
-Pi that reaches Core through a gateway. A separate SiK equipment link connects
-that Pi to the ArduPilot vehicle. The app represents the vehicle even though it is
-not aboard it.
+Pi that calls the Core API directly over IP, with no gateway. A separate SiK
+equipment link connects that Pi to the ArduPilot vehicle. The app represents the
+vehicle even though it is not aboard it.
 
 ## What the parts do
 
