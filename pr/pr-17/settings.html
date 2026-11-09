@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Settings</title>
 <link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html" class="on">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="settings">Settings</h1>
 <p>A setting is an Asset&#39;s current configuration, such as its lights, landing gear,
-or what it does when it loses its radio link. Changing one is quick and immediate.
+or what it does when it loses its radio link. A change takes effect immediately.
 It does not wait in the queue or go through a Task&#39;s steps.</p>
 <ul>
 <li>Operators can change an Asset&#39;s settings, and so can the Asset itself.
@@ -14,8 +14,7 @@ nothing.</li>
 its own local changes. It does not compare the operator&#39;s clock with its own.
 A delayed change can therefore override a local change made after the operator
 sent it.</li>
-<li>Retries are safe: a repeated request carries the same idempotency key, and
-Core records it once
+<li>A repeated request carries the same idempotency key, so Core records it once
 (<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#basics">Core API</a>).</li>
 <li>A settings Task puts a change in the queue, for example: fly here, lights on,
 fly there. It applies when that Task runs, regardless of when it was sent or
@@ -41,8 +40,8 @@ resolves home when it starts and keeps that destination for its execution.
 There is no separate backup landing-point setting.</li>
 </ul>
 <p>How an Asset responds when something goes wrong is in <a href="first-flight.html#when-something-goes-wrong">First flight</a>.</p>
-<p>Normal use is an operator choosing actions such as Takeoff, Move To, and Land,
-like issuing orders in an RTS game, rather than streaming high-rate controls.
+<p>In normal use, an operator chooses actions such as Takeoff, Move To, and Land
+rather than streaming high-rate controls.
 The Asset reports each resulting setting value. Core and interfaces follow those
 reports, not guesses based on which operator command was sent last.</p>
 <p><a href="using-atlas.html">Using Atlas</a></p>

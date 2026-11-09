@@ -7,8 +7,8 @@ connects to an ArduPilot quadcopter through a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
 such as QGroundControl. The vehicle remains the Asset represented in Atlas.</p>
 <p>The operator submits Takeoff, Move To a location, then Land as Tasks through the
-Command Interface. Core assigns each <code>task_id</code> and sends the Asset its queue
-whole: its version and every Task body together. The app sends equipment commands
+Command Interface. Core assigns each <code>task_id</code> and sends the Asset its whole queue,
+with its version and every Task body together. The app sends equipment commands
 to the flight controller and reports the observed outcomes. The operator sees the
 reported vehicle behavior.</p>
 <p>No runtime is built yet. The Pi can reach Core while vehicle equipment is still
@@ -81,8 +81,8 @@ the intended rules, including any battery response during an intentional wait.
 The Asset owns
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions, cancellation rule, overrides, and remaining decisions</a>.</p>
 <h2 id="keep-the-whole-run-for-debugging">Keep the whole run for debugging</h2>
-<p>When the operator spins them down, Core and each Asset, and later each gateway,
-write their own Reset ZIP. Core&#39;s ZIP holds:</p>
+<p>When the operator spins down the system, Core and each Asset write their own
+Reset ZIP. Gateways will do the same when added. Core&#39;s ZIP holds:</p>
 <ul>
 <li>Its run&#39;s data, including the event log: every accepted request and every
 stored report, in order.</li>
@@ -90,10 +90,9 @@ stored report, in order.</li>
 <li>Its configuration, without secrets.</li>
 <li>A plain readable summary: start and end, Assets, Tasks, and outcomes.</li>
 </ul>
-<p>Reset ZIPs are for after the system is used: dump them into an AI agent to give
-it full context on how the system was used and any errors. Each system&#39;s
-documentation defines its own ZIP contents and Reset procedure. Merging
-several ZIPs into one is a separate process.</p>
+<p>After using the system, give the Reset ZIPs to an AI agent for full context on
+the run and any errors. Each system&#39;s documentation defines its own ZIP contents
+and Reset procedure. Merging several ZIPs into one is a separate process.</p>
 <p>Core, gateways, and Assets keep detailed local diagnostic logs alongside their
 normal state. The SDK supplies events to the program using it, so those events
 join that program&#39;s archive. Logging does not depend on sending diagnostic

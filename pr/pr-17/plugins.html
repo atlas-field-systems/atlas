@@ -5,20 +5,19 @@
 No Plugin exists yet.</p>
 <p>A Plugin is a small program that runs beside Core and offers actions. An
 operator runs an action with inputs, such as an area or a building. The Plugin
-gathers information with the tools it has, often open-source services, and
-returns what it found.</p>
+uses its tools, often open-source services, to gather and return information.</p>
 <h2 id="where-plugins-sit">Where Plugins sit</h2>
 <ul>
 <li>Plugins sit in the second ring of the
 <a href="design-decisions.html#a-walled-city">walled city</a>. They reach Core only through
 its Plugin interface, never its storage. Reading Entities or storing Objects
-goes through that interface, which is Core&#39;s own business.</li>
-<li>The Core API will carry Plugin calls when Plugins return. That is how the
+goes through that interface.</li>
+<li>The Core API will carry Plugin calls after first flight. That is how the
 Command Interface uses a Plugin from outside the city.</li>
 <li>Operators call Plugins first. Assets will be able to call them later.</li>
 <li>Plugins do not direct Assets or issue Tasks.</li>
-<li>Fusion is not a Plugin. It sits inside the inner wall, runs on every
-Observation, and nobody calls it.</li>
+<li>Fusion is not a Plugin. It runs inside the inner wall on every Observation.
+Nobody calls it.</li>
 <li>A feed that sends data all the time, such as an internet aircraft feed, is an
 Asset, not a Plugin.</li>
 </ul>
@@ -34,8 +33,8 @@ Core, where the operator can find it later. Only fusion creates Tracks.</li>
 <h2 id="examples">Examples</h2>
 <h3 id="find-the-buildings-in-an-area">Find the buildings in an area</h3>
 <p>The operator passes a box and asks for every building in it. The Plugin asks
-the Overpass API (OpenStreetMap data) for the structures in that box and
-returns them as a list.</p>
+the Overpass API for OpenStreetMap structures in that box and returns them as
+a list.</p>
 <h3 id="analyze-a-building">Analyze a building</h3>
 <p>The operator picks a building and asks the Plugin to analyze it. The Plugin
 runs whatever open-source tools it has. It creates a geo feature on the
@@ -44,12 +43,12 @@ they come back as a list or as Objects attached to the geo feature. The output
 is a reference to that geo feature.</p>
 <h3 id="gather-imagery-for-an-intelligence-package">Gather imagery for an intelligence package</h3>
 <p>The operator passes an area and asks for satellite imagery of it. The Plugin
-collects what imagery its tools can reach and stores it in Core, for example
+collects imagery available through its tools and stores it in Core, for example
 as Objects. The output refers to what it stored.</p>
 <h3 id="ground-elevation-for-an-asset-later">Ground elevation for an Asset (later)</h3>
-<p>An Asset sends its position and asks for the ground elevation there. With it,
-the Asset can work out its height above the ground, whether it uses a
-barometer or the altitude of the place it took off from.</p>
+<p>An Asset sends its position and asks for the ground elevation there. The Asset
+can use that elevation to calculate its height above the ground, whether it uses
+a barometer or the altitude of its launch point.</p>
 <h3 id="more-plugins-that-fit">More Plugins that fit</h3>
 <ul>
 <li><strong>Points of interest.</strong> Takes a box and a kind, such as hospitals, helipads
