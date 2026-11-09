@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/operator_id.json",
+  "title": "operator_id",
+  "description": "An account's ID, admin or operator, chosen when the account is made. Up to 4 letters or digits, such as \"OP1\".",
+  "type": "string",
+  "examples": [
+    "OP1"
+  ],
+  "pattern": "^[A-Za-z0-9]{1,4}$",
+  "minLength": 1,
+  "maxLength": 4
+}

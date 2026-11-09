@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe/low_battery.json",
+  "title": "low_battery",
+  "description": "Trigger: the battery fell below what the Asset needs to get home safely.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "low_battery"
+    }
+  },
+  "examples": [
+    {
+      "kind": "low_battery"
+    }
+  ]
+}

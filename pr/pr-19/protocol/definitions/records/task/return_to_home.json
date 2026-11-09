@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task/return_to_home.json",
+  "title": "return_to_home",
+  "description": "Fly to the home_position setting and land there, at the transit altitude if given (else the current altitude).",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "return_to_home"
+    },
+    "transit_altitude": {
+      "$ref": "../../components/altitude.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "return_to_home"
+    }
+  ]
+}
