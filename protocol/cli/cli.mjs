@@ -35,7 +35,6 @@ function report(file, value) {
   console.log();
 }
 
-// Every definition to pick from: records as group › record › kind, then the other groups.
 // Kinds are shown under their records, so the group listing kind files is not repeated.
 function entries() {
   const out = [];

@@ -13,7 +13,6 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 $('title').textContent = protocol.index.title;
-// Records as a tree (group › record › kind) from the folders under records/; then the other groups.
 // Kinds appear under their records, so the group that lists kind files is not shown again.
 const tree = recordTree(protocol);
 const records = tree.flatMap((g) => g.records);
