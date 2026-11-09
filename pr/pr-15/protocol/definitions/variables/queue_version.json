@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/queue_version.json",
+  "title": "queue_version",
+  "description": "The version of an Asset's task list. The Asset owns it and raises it by one each time its list changes: a control.queue takes effect, or the Asset clears the list itself. Starting a Task does not change it. On control.queue it is the version the list was built on; the Asset ignores a list built on any other version. It is never reused during an operation.",
+  "type": "integer",
+  "minimum": 0,
+  "examples": [
+    3
+  ]
+}

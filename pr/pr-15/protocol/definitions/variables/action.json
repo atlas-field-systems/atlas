@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/action.json",
+  "title": "action",
+  "description": "One action a Plugin offers, the kind value of plugin.call and plugin.result. Each action is defined once in Protocol; several Plugins may offer the same one.",
+  "enum": [
+    "ground_elevation"
+  ],
+  "examples": [
+    "ground_elevation"
+  ]
+}
