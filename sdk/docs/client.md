@@ -25,8 +25,8 @@ key. The SDK never puts a credential in a record, a URL, or a
 
 The client loads Protocol's definitions and their hash from its Protocol package
 dependency. `connect()` calls `GET /about` and compares `definitions_hash` with its
-own. On a mismatch it refuses to work: `connect()` returns `definitions_mismatch`
-with both hashes, and every later call returns the same result without sending.
+own. On a mismatch, `connect()` returns `definitions_mismatch` with both hashes.
+Every later call returns the same result without sending.
 
 Every request carries `Atlas-Definitions: <hash>`, and the event stream carries
 `?definitions=<hash>` ([Basics](../../core/docs/api.md#basics)). A
@@ -37,7 +37,7 @@ The client never reinterprets records it cannot validate.
 
 Before sending, the client checks every body record (a Task, a queue, a settings
 change, a description, reports) with Protocol's validator. A body that fails is a
-programmer error: the call throws with the failing paths and sends nothing.
+programmer error. The call throws with the failing paths and sends nothing.
 `validate(record)` returns the same check as a value, so a form can show errors
 before the operator submits.
 
@@ -46,9 +46,9 @@ before the operator submits.
 Each state-changing call gets a fresh random `Idempotency-Key`. The client retries a network failure or a `5xx`
 with the same key and the same body, with backoff, until the request timeout.
 Core returns the stored response for a repeated key, so a retry never repeats an
-effect. A `4xx` is never retried.
+effect. The client never retries a `4xx`.
 
-If no response arrives before the timeout, the result is `unknown`: Core may or
+If no response arrives before the timeout, the result is `unknown`. Core may or
 may not have accepted the request. `unknown` is not failure. It carries `retry()`,
 which sends again with the same key and body. Reads retry the same way without a
 key.
@@ -67,8 +67,9 @@ type Result<T> =
 
 - `error` is Core's code (`invalid`, `definitions_mismatch` and the others in
   [Basics](../../core/docs/api.md#basics)), or `unknown` when no response arrived.
-- **Thrown:** a body that fails validation, a call before `connect()` or after
-  `close()`, and a call the credential cannot make, such as `login` on a keyed client.
+- The client throws for a body that fails validation, a call before `connect()`
+  or after `close()`, and a call the credential cannot make, such as `login` on a
+  keyed client.
 
 ## Accepted is not done
 
@@ -109,9 +110,9 @@ atlas.follow({ after, asset_id }, onEvent);              // see live.md
 atlas.close();
 ```
 
-Admin calls (accounts, Assets, gateways, keys) follow the same pattern. A key that
-Core returns once is handed to the caller and never logged. `history` follows
-`next_cursor` page by page and stops when the caller stops iterating.
+Admin calls (accounts, Assets, gateways, keys) follow the same pattern. The SDK
+hands a key that Core returns once to the caller and never logs it. `history`
+follows `next_cursor` page by page and stops when the caller stops iterating.
 
 ## Gateways
 

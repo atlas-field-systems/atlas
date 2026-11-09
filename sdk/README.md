@@ -1,14 +1,14 @@
 # Atlas SDK
 
-The TypeScript client for the [Core API](../core/docs/api.md). Programs outside
-Core's [inner wall](../atlas/design-decisions.md#a-walled-city) use it to reach Core:
+The SDK is the TypeScript client for the [Core API](../core/docs/api.md). Programs
+outside Core's [inner wall](../atlas/design-decisions.md#a-walled-city) use it to reach Core:
 
-- **The Command Interface**, in the browser, logged in to an operator or admin account.
-- **Assets on IP**, with their own key.
-- **Gateways**, with their own key, calling on behalf of the radio Assets they carry.
+- The Command Interface, in the browser, logged in to an operator or admin account.
+- Assets on IP, with their own key.
+- Gateways, with their own key, calling on behalf of the radio Assets they carry.
 
-The SDK handles credentials, the definitions check, idempotency keys and retries,
-following the event stream, and the Asset's report and queue bookkeeping. Core's
+The SDK handles credentials, the definitions check, idempotency keys and retries.
+It follows the event stream and manages the Asset's reports and queue. Core's
 [API doc](../core/docs/api.md) is the single source for endpoints and wire
 behavior; these pages describe only what the client adds and link there for the rest.
 
@@ -39,6 +39,6 @@ of its own. Nothing is generated.
 
 ## Status
 
-A draft, like everything in Atlas. These are docs only; no runtime code is built.
-TypeScript throughout: Node 24 runs the `.ts` sources directly, and browser builds
-may be bundled.
+These docs are a draft; no runtime code is built. The SDK uses TypeScript
+throughout. Node 24 runs the `.ts` sources directly, and browser builds may be
+bundled.

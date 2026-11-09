@@ -1,6 +1,6 @@
 # Live
 
-How the SDK follows Core's event log. Event shapes, kinds and the stream format
+The SDK follows Core's event log. Event shapes, kinds and the stream format
 are in [The event log and live stream](../../core/docs/api.md#the-event-log-and-live-stream).
 
 ## Following the stream
@@ -26,12 +26,12 @@ follow.stop();
 
 ## Reconnecting
 
-The client opens `/events?after=<cursor>` itself and manages reconnects, in the
-browser and in Node alike.
+The client opens `/events?after=<cursor>` and manages reconnects in both the
+browser and Node.
 
 - When the stream closes or errors, the client reopens it with backoff
-  ([configuration](../config.md)). A stream that Core closed because the reader fell
-  behind is reopened the same way.
+  ([configuration](../config.md)). The client uses the same backoff to reopen a
+  stream that Core closed because the reader fell behind.
 - With neither data nor a `: alive` comment for the idle timeout, the client
   treats the stream as dead and reopens it.
 - `stale` is true from the moment the stream drops until it reopens. Reads of
@@ -44,7 +44,8 @@ apply its own [contact rule](../../core/docs/api.md#contact).
 
 ## Live picture
 
-An optional in-memory view of Assets and Tasks for operator apps. Assets do not use it.
+The live picture is an optional in-memory view of Assets and Tasks for operator
+apps. Assets do not use it.
 
 ```ts
 const picture = createLivePicture(atlas, { asset_id });   // asset_id optional
@@ -60,7 +61,7 @@ picture.onChange(cb);
   finishes, `ready` is false; a read never returns an empty list as if it were true.
 - **Per-setting latest values.** A `report.settings` changes only the settings it
   contains. Each setting keeps its own latest value and the report it came from,
-  ordered by report time and then `event_id`, so a retained report that catches up
+  ordered by report time and then `event_id`, so a retained report received
   after a gap never replaces a newer value.
 - **Evidence stays separate.** Requests show as requested until reports arrive.
   Contact comes from `asset.contact` events. Neither stream state nor picture

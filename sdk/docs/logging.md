@@ -6,7 +6,7 @@ not use the SDK; [Asset logging](../../asset/docs/logging.md) collects them on a
 
 ## What it reports
 
-Every step, not only errors:
+The SDK reports every step, not only errors:
 
 - Requests: each attempt, its status, retries with their key, `unknown` results,
   and validation failures with their paths.
@@ -21,10 +21,10 @@ These are local diagnostics, not Protocol records.
 
 ## Rules
 
-- **Credentials are never logged.** Passwords, keys, keys that Core returns once,
-  and `Authorization` headers are removed before an event reaches the observer.
+- The SDK never logs credentials. It removes passwords, keys, keys that Core
+  returns once, and `Authorization` headers before an event reaches the observer.
 - **Observer errors never break requests.** The SDK calls the observer through
   `queueMicrotask`, catches what it throws, and attaches a handler to any promise
-  it returns without awaiting it. An observer failure is not reported to that
-  same observer.
+  it returns without awaiting it. The SDK does not report an observer failure to
+  that same observer.
 - **Gaps are visible.** If the SDK drops events, it counts them and reports the count.

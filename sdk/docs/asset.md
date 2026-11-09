@@ -1,9 +1,9 @@
 # Asset
 
-What the SDK gives an Asset: a startup sequence on IP, a report outbox, and a
+The SDK gives an Asset a startup sequence on IP, a report outbox, and a
 Task queue helper. The rules they follow are in
 [Asset and gateway calls](../../core/docs/api.md#asset-and-gateway-calls). Helpers
-never fly: the [Asset app](../../asset/docs/README.md) runs each Task, applies
+never fly. The [Asset app](../../asset/docs/README.md) runs each Task, applies
 settings, and owns its failsafes.
 
 ## The Asset link
@@ -24,7 +24,7 @@ The Asset app's code is the same on both.
 
 ## Startup on IP
 
-`startAsset(atlas, { description, settings, queue })` runs the order in
+`startAsset(atlas, { description, settings, queue })` follows the sequence in
 [Asset and gateway calls](../../core/docs/api.md#asset-and-gateway-calls) on every
 start and reconnect:
 
@@ -35,8 +35,8 @@ start and reconnect:
 4. Follow `/events` after the last handled `event_id`, or from the latest event on
    first start.
 
-A refused step stops startup and returns that result. A step with no response is
-retried with the same key until Core answers; later steps wait for it.
+A refused step stops startup and returns that result. If a step gets no response,
+the SDK retries it with the same key until Core answers. Later steps wait for it.
 
 ## Report outbox
 
@@ -49,14 +49,14 @@ The app hands reports to the outbox, which sends them in batches with
   batch never changes.
 - Final Task reports (`completed`, `failed`, `cancelled`) stay in the outbox until
   acknowledged, across reconnects. Other reports keep their original times when
-  they catch up after a gap. Which of them to keep during a gap is the
+  sent after a gap. Which of them to keep during a gap is the
   [Asset's choice](../../asset/docs/communications.md#report-from-local-state).
 - A report answering a request carries `request_id`, the request's `event_id`.
 
 ## The queue helper
 
-Optional: a reporting-only Asset with no queue does not use it. It holds the
-current list and hands Tasks to the app.
+The queue helper is optional. A reporting-only Asset with no queue does not use
+it. The helper holds the current list and hands Tasks to the app.
 
 - **Holds the list.** It keeps the current `queue_version` and the ordered Task
   bodies, plus every `task_id` it has started this run.
@@ -90,8 +90,8 @@ State is in memory for the run. Recovery after a process restart is not designed
 ## On a radio Asset
 
 A radio Asset runs the same Asset app, outbox and queue helper. Its Fieldlink
-implements the [Asset link](#the-asset-link): it delivers each request with its
-`event_id`, delivers a queue whole even if the gateway split it on the radio,
-resolves `sendReports` on end-to-end acknowledgement, and supplies contact. The
+implements the [Asset link](#the-asset-link). It delivers each request with its
+`event_id` and delivers a queue whole even if the gateway split it on the radio.
+It resolves `sendReports` on end-to-end acknowledgement and supplies contact. The
 Fieldlink owns its own startup and the hash check on its link. Fieldlinks are not
 part of the SDK.
