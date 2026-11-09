@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Experimental ideas</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html" class="on">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="experimental-ideas">Experimental ideas</h1>
+<p>These ideas are worth exploring. They are <strong>experimental and not committed</strong>.
+Nothing here is a requirement until it moves into another Charter page.</p>
+<h2 id="ground-elevation-at-connect">Ground elevation at connect</h2>
+<p>Some Assets know their height above their launch point but not above sea level.
+When an Asset connects to Core and knows it is on the ground, it can ask Core
+for the ground elevation at its position.
+Because the Asset is on the ground, that elevation is its altitude above sea level.
+From then on, the Asset can report altitude above sea level as well as above its launch point.</p>
+<p>The elevation comes from a Plugin that offers the <code>ground_elevation</code> action
+(see <a href="plugins.html#ground-elevation-for-an-asset-later">Plugins</a>). Only operators
+can call Plugins for now, so this waits until Assets can.</p>
+<p>Open question: how accurate the elevation must be.</p>
+<h2 id="links-not-just-messages">Links, not just messages</h2>
+<p>Every Atlas connection is now a two-way stream, like a WebSocket. So a radio&#39;s job
+is to keep a live link up between radios, not just to deliver single messages
+from A to B. This may become its own Charter section later.</p>
+<p>Open questions: how a radio link is set up and kept stable, how it reroutes when
+the mesh changes, how it copes with Assets moving, and what to call the stream
+idea, since it spans WebSocket and radio links.</p>
+<h2 id="passive-listening">Passive listening</h2>
+<p>On broadcast radio links (FLRC, LoRa; not IP), Assets can listen to traffic that
+is already on the air and build a passive picture of the operation without asking
+Core. For example:</p>
+<ul>
+<li>An Asset told to follow a Track it cannot see listens to another Asset&#39;s
+observation reports on that Track and steers itself.</li>
+<li>An Asset follows another Asset by hearing its status and position reports.</li>
+</ul>
+<p>Naming is still open for the always-open connection idea: &quot;session&quot; fits because
+the link stays open; &quot;link&quot; feels too generic.</p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

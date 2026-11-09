@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/admin/alive.json",
+  "title": "Alive",
+  "description": "From Core to an Asset when Core has sent it nothing new for a third of its link_loss_after_s (repeated answers to retries don't count), so the Asset can tell a quiet Core from a lost link. Contact is any new (non-duplicate) message after the accepted hello that names this Asset in asset_id and was not sent by this Asset; admin.alive is one such message.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "asset_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "admin.alive"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "admin.alive",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "from": "CORE"
+    }
+  ]
+}

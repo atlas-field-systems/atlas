@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/reply_to.json",
+  "title": "reply_to",
+  "description": "The seq of the message this one answers, paired with reply_from (that message's from). Together they name (from, seq).",
+  "type": "integer",
+  "minimum": 0,
+  "examples": [
+    9
+  ]
+}
