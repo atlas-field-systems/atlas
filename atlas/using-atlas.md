@@ -24,8 +24,8 @@ flowchart LR
     G <-->|Fieldlink| A[Radio Asset]
 ```
 
-Core and Fusion sit inside the inner wall. Plugins sit in the second ring and are
-parked until after first flight. Everything else sits outside the city and reaches
+Core and Fusion sit inside the inner wall. Plugins sit in the second ring.
+Everything else sits outside the city and reaches
 Core only through the [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md).
 [Design decisions](design-decisions.md#a-walled-city) has the layout.
 
@@ -47,9 +47,9 @@ vehicle even though it is not aboard it.
 | [Command Interface](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/README.md) | Human interaction and presentation |
 | [Protocol](https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md) | The shared records and their one validator |
 | [SDK](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md) | The client for the Core API |
-| Core | The shared picture, the event log, Tasks, and the Core API |
+| Core | The shared picture, the event log, its [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md), and the Core API |
 | Fusion | Combining evidence into the shared picture, inside Core |
-| [Plugins](plugins.md) | Actions that gather and publish information; parked until after first flight |
+| [Plugins](plugins.md) | Actions that gather and publish information |
 | Gateway | Uplinking to the Core API and running Fieldlinks |
 | Fieldlink | Carrying Atlas across one kind of field link |
 | [Asset app](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md) | Equipment control, local execution, failsafes, and reports of its effects |
@@ -66,8 +66,7 @@ An Asset's [settings](settings.md) are its current configuration, kept in its en
 
 ## Information-focused stories
 
-These stories describe intended use. Observations, Objects, and Plugins wait
-until after first flight.
+These stories describe intended use.
 
 ### Locate the tracker
 

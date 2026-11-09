@@ -37,7 +37,7 @@ explains why the API is the only way in.
 | Caller | Credential | Event stream shows |
 | --- | --- | --- |
 | Account (admin or operator) | Session cookie from `POST /login` | Everything |
-| Asset | Bearer key | Requests for that Asset |
+| Asset on IP | Bearer key | Requests for that Asset |
 | Gateway | Bearer key | Requests for the Assets it carries |
 
 - Accounts log in with `operator_id` and a password. Core stores password hashes
@@ -46,8 +46,9 @@ explains why the API is the only way in.
 - Asset and gateway keys are 16 random bytes as 22 characters of base64url. Core
   stores only their hashes and shows a key once, when an admin creates it.
 - The first admin account comes from [Core configuration](../config.md).
-- How a gateway is bound to the Assets it carries is part of gateway design, which
-  is deferred.
+- An Asset behind a gateway holds no Core key and never calls this API. It
+  authenticates to its gateway in whatever way its Fieldlink uses. That design is
+  [deferred](#not-defined-yet).
 
 ## The event log and live stream
 
@@ -141,10 +142,14 @@ An Asset on IP starts or reconnects in this order:
   owns execution, failsafes, and the overrides allowed during a failsafe.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key, and reports each Asset's contact as its Fieldlink observes it. Core trusts
-the gateway for which Asset sent what: a gateway key covers every Asset it
-carries, and proving a single Asset's identity across the radio is
-[not designed yet](#not-defined-yet).
+key, and reports each Asset's contact as its Fieldlink observes it. Core
+authenticates the gateway and trusts it for which Asset sent what. Each Asset
+authenticates to the gateway, not to Core.
+
+A gateway runs on its own computer, apart from Core. Its link to Core is IP with
+broadband speed, so the gateway follows the event stream for every Asset it
+carries, keeps their current state, and spends the radio only on what each Asset
+lacks.
 
 ## Contact
 
@@ -174,11 +179,14 @@ Only admins may use these calls, except login, logout, and `GET /me`.
 
 - Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
   defines what a run is.
-- Gateway binding to Assets, and the Fieldlink docs.
-- Per-Asset authentication across a Fieldlink. Until it exists, any node that
-  can send on a gateway's radio channel can claim to be any Asset that gateway
-  carries.
+- How an Asset authenticates to its gateway. Each Fieldlink decides this for its
+  radio, and the Fieldlinks may share nothing. On Meshtastic, for example, an
+  Asset could be admitted to a channel that every Asset's messages share. Until
+  this is designed, anything that can send on that channel can claim to be any
+  Asset the gateway carries.
+- How a gateway is bound to the Assets it carries, and the Fieldlink docs.
 - Records this page names that Protocol does not define yet
   ([Protocol open questions](../../protocol/docs/open-questions.md)).
-- Plugins, geo features, Objects, Observations, and Tracks, parked until after
-  first flight.
+- The API for geo features, Objects, Observations, Tracks, and the Plugin
+  interface. They are part of the product, built with the rest
+  ([pillars](pillars.md)), and their API is designed next.

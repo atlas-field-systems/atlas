@@ -29,7 +29,7 @@ Definitions and records carry none.
 
 Each record has its own definition with a description and examples. Geo feature,
 Object, Plugin, Observation and gimbal definitions are [parked](parked/README.md)
-until after first flight.
+until they are reworked into records.
 
 ## Try it
 
@@ -42,11 +42,11 @@ Both tools only display what the definitions say. They never send anything.
 
 ## Layout
 
-- `definitions/`: `variables/`, `components/`, `records/`, and `index.json`. The examples in each definition are the test vectors.
+- `definitions/`: `variables/`, `components/`, `records/`, and `index.json`. The examples in each definition are the validator's test vectors.
 - `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: choices behind the records. `docs/open-questions.md`: what is not decided.
 - `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer.
 - `scripts/check.mjs`: checks every definition and its examples (`npm ci && npm run check && npm test`).
-- `parked/`: definitions waiting until after first flight. Not checked.
+- `parked/`: earlier definitions waiting to be reworked into records. Not checked.
 
 The [SDK](../sdk/README.md) is the client for the Core API and loads these
 definitions. AI agents: read [AGENTS.md](AGENTS.md).

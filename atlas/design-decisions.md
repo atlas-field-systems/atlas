@@ -15,8 +15,8 @@ are precise, and they keep AI agents from drifting.
 
 ## Proven and lean
 
-Prefer proven existing systems over building our own. Keep designs lean and
-minimal: build only what is needed now.
+Prefer proven existing systems over building our own. Keep each design lean and
+minimal: give a part only what the product needs.
 
 ## Decisions stay near their source
 
@@ -52,13 +52,22 @@ owning docs. A prototype proves nothing on its own; the docs stay the source.
 Atlas code is written by hand and read by people. Do not generate code from
 definitions or docs. Programs load the definitions as data instead.
 
+## Tests come from behavior
+
+Tests check what a part must do. They are never generated from Protocol's
+definitions: a system and its tests built from the same definitions agree with
+each other even when both are wrong. Protocol's examples test record shapes and
+the validator only. Behavior tests come from the scenarios the owner states in
+each part's docs, from ArduPilot SITL, and from hardware.
+
 ## A walled city
 
 Atlas is laid out in rings, so each can change without breaking the others.
 
-- **Inside the inner wall.** Core and Fusion run in one process. Core keeps the
-  shared picture, the event log, Tasks, and storage. Fusion works on Core's state
-  directly, never through the public API.
+- **Inside the inner wall.** Core and Fusion run in one process. Core is built
+  from [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md),
+  among them Entities, Tasks, and Objects, over shared storage and the event
+  log. Fusion works on Core's state directly, never through the public API.
 - **The second ring.** Plugins run beside Core and reach it only through
   Core's Plugin interface, never its storage.
 - **Outside the city.** Gateways, Assets, and operator applications reach Core
@@ -67,14 +76,15 @@ Atlas is laid out in rings, so each can change without breaking the others.
 The parts:
 
 - **Protocol is the spec.** It owns the shared records, the data laws, the one
-  validator, and the examples every program tests against. Its published package
+  validator, and the examples that test record shapes. Its published package
   version is its only version; no version is embedded in definitions or records.
 - **Core owns the Core API.** It uses HTTP for requests and Server-Sent Events
   for live changes. Request and event bodies are Protocol records.
 - **The SDK is the client** for the Core API, used by operator applications,
   Assets on IP, and gateways.
-- **Gateways** uplink to the Core API and run the Fieldlinks their hardware
-  supports. A gateway is not an Asset.
+- **Gateways** run on their own computers, uplink to the Core API over
+  broadband IP, and run the Fieldlinks their hardware supports. A gateway is not
+  an Asset.
 - **Fieldlinks** carry Atlas across one kind of field link, such as Meshtastic
   LoRa. The same Fieldlink package runs on the gateway and on the radio Asset. It
   owns compact encoding, retries, duplicate handling, contact timing, and link
@@ -95,8 +105,12 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 - Operators log in to accounts, with admin and operator types. Admins provision
   accounts, Assets, and gateways. Sessions use HttpOnly cookies, so every browser
   tab shares one session.
-- An admin adds each Asset and gateway in Core and receives its ID and key for
-  its configuration. Keys are bearer tokens over TLS. There is no enrollment key.
+- An admin adds each gateway and each Asset on IP in Core and receives its ID
+  and key for its configuration. Keys are bearer tokens over TLS. There is no
+  enrollment key.
+- Core authenticates a gateway. An Asset behind a gateway authenticates to the
+  gateway, not to Core, in whatever way its Fieldlink uses. That is not designed
+  yet.
 - TLS secures IP links. Each Fieldlink uses its radio's own encryption and
   authentication. Records never carry credentials.
 
@@ -112,16 +126,17 @@ settings are end states, and the queue carries its version.
 - Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface
   use TypeScript. Node 24 runs `.ts` directly, so Node programs have
   no build step.
-- Core and Fusion ship as one Docker container running one process. Plugins
-  run in workers for now.
+- Core and Fusion ship as one Docker container running one process. Each Plugin
+  may run in its own container. Gateways run on their own computers.
 - Storage uses SQLite.
 
-## First flight comes first
+## Design the whole product, then build it
 
-Scope is frozen to first flight: Assets, Tasks, settings, telemetry, battery,
-failsafe reports, history, and accounts. Geo feature, Object, Plugin, and
-Observation contracts wait until after first flight. Asset tests run against
-ArduPilot SITL.
+Atlas is designed as the complete product before the real build: Assets, Tasks,
+settings, reports, history, accounts, geo features, Objects, Observations,
+Tracks, Fusion, and Plugins. Throwaway prototypes test the design first. The
+build then implements everything together from the finished design, not one
+slice at a time. First flight is the first field test of that build.
 
 ## Changes and releases
 
@@ -131,7 +146,6 @@ ArduPilot SITL.
 - The Core API and each Fieldlink report the hash of the Protocol definitions they
   use. A mismatch is refused with an explanation.
 - Protocol is an unpublished draft. Package publishing is not configured yet.
-- Programs select Protocol through their package dependency and test against its
-  examples.
+- Programs select Protocol through their package dependency.
 - All Atlas work lands in this repository through `main`. Only approved commits
   on `main` are released through `prod`.

@@ -44,7 +44,7 @@ flowchart LR
 The parts:
 
 - **Protocol** owns the records (Task, settings, telemetry and the rest), the
-  data laws, the validator, and the examples every implementation tests against.
+  data laws, the validator, and the examples that test record shapes.
   It no longer defines how programs talk.
 - **Core** owns the API: HTTP for requests, Server-Sent Events for live changes.
   Request and event bodies are Protocol records.
@@ -100,9 +100,10 @@ Names are illustrative. Core owns the exact API doc.
 - **Accounts.** Admin and operator accounts with hashed passwords and HttpOnly
   session cookies. Admins provision accounts, Assets and gateways. Each browser
   tab uses the same session.
-- **Provisioned Assets and gateways.** An admin adds one in Core and receives its
-  ID and key for its configuration. The key is a bearer token over TLS. There is
-  no enrollment key.
+- **Provisioned Assets and gateways.** An admin adds a gateway or an Asset on IP
+  in Core and receives its ID and key for its configuration. The key is a bearer
+  token over TLS. There is no enrollment key. An Asset behind a gateway
+  authenticates to the gateway, not to Core.
 - **IDs.** Admins choose `asset_id`, which people read. Core assigns Task, geo
   feature, Object and Track IDs. Event IDs are integers.
 - **Transport security.** TLS on IP. Each Fieldlink uses its radio's own
@@ -121,7 +122,11 @@ For the LoRa phase, the Fieldlink builds on Meshtastic: a private channel, a
 private app port, and its encryption, routing and per-hop acknowledgements.
 The Fieldlink adds end-to-end acknowledgement of queues and final reports,
 idempotency by `task_id`, and per-Asset contact reports to Core. Protocol defines
-no short keys, so each Fieldlink chooses its own compact encoding. It may send a
+no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
+also decides how an Asset authenticates to its gateway, and the Fieldlinks may
+share nothing; that design is deferred. The gateway's link to Core is broadband
+IP, so the gateway keeps its Assets' full state and spends the radio only on
+what each Asset lacks. It may send a
 queue as changes against the list the Asset holds rather than whole. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.
 
@@ -130,16 +135,17 @@ design is otherwise deferred.
 - **TypeScript everywhere:** Core, the SDK, gateways, Fieldlinks, the Asset app
   and the Command Interface. Node 24 runs `.ts` directly, so there is no build
   step for Node programs, and every program uses Protocol's one validator.
-- **Docker.** Core and Fusion ship as one container running one process.
-  Plugins run in workers for now.
+- **Docker.** Core and Fusion ship as one container running one process. Each
+  Plugin may run in its own container. Gateways run on their own computers.
 - **Storage.** SQLite.
 
 ## Scope
 
-Freeze to first flight: Assets, Tasks, settings, telemetry, battery, failsafe
-reports, history and accounts. Geo feature, Object, Plugin and Observation
-definitions are parked until after first flight. The retained Core prototype is
-deleted; git keeps its history. Asset tests run against ArduPilot SITL.
+This proposal first froze scope to first flight. The owner then chose to
+[design the whole product and build it together](design-decisions.md#design-the-whole-product-then-build-it),
+with geo features, Objects, Observations, Tracks, and Plugins included. The
+retained Core prototype is deleted; git keeps its history. Asset tests run
+against ArduPilot SITL.
 
 ## Documentation
 
@@ -152,7 +158,7 @@ plan are removed until there is code to plan.
 
 1. Update the Charter and design decisions to this direction.
 2. Write the Core API doc and trim Protocol to records and data laws.
-3. Build the Core API and event log, a client, and a direct-IP Asset flying
-   first flight against SITL.
-4. Add the gateway and the Meshtastic Fieldlink for the real first flight.
-5. Build the Command Interface on the client.
+3. Design the rest of the product: geo features, Objects, Observations, Tracks,
+   the Plugin interface, gateways, and Fieldlinks.
+4. Test the design with throwaway prototypes and write the findings back.
+5. Build everything together, then fly first flight.

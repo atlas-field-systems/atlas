@@ -1,8 +1,7 @@
 # Subsystem conditions
 
 Selected behavior, not implemented. The Asset chooses which subsystems it
-reports and when. Protocol has no subsystem-condition report yet, and it is
-outside the [first-flight scope](../../atlas/api-proposal.md#scope).
+reports and when. Protocol has no subsystem-condition report yet.
 
 ## Stable identities and shared meanings
 

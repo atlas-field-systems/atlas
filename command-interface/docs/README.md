@@ -37,8 +37,8 @@ panel. Selecting an item in the list or on the map shows it in the panel and
 keeps its map context visible.
 
 Each Asset also has its own addressable detail page. Operators can share or
-bookmark it, refresh it, or open it in another tab. Track and Observation pages,
-Geofeatures, and Objects wait until after first flight.
+bookmark it, refresh it, or open it in another tab. Track, Observation,
+Geofeature, and Object pages are not designed yet.
 
 An unfinished request draft stays in memory while the operator visits other
 pages. For example, opening another Asset's page to check its position does not
@@ -86,7 +86,7 @@ Commands to an offline Asset are refused, and the interface shows Core's
 explanation.
 
 Polygon and Geofeature inputs, and RidgeLine's drawing tools for authoring them,
-wait for Geofeatures after first flight. Drawing an area will never task an
+are not designed yet. Drawing an area will never task an
 Asset or create an enforced geofence by itself.
 
 ## Read Tasks, conditions, and history
@@ -156,8 +156,8 @@ the SDK docs.
   in this interface.
 - The model rocket's launch command, equipment layout, recording limits, and how
   review knows the record is complete.
-- After first flight: geometry and Geofeature Task inputs, Track and Observation
-  pages, and Object inspection and upload.
+- Geometry and Geofeature Task inputs, Track and Observation pages, and Object
+  inspection and upload.
 
 Natural-language interaction is out of scope. If revisited, it belongs on a
 separate page.

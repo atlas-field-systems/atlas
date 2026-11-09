@@ -12,7 +12,7 @@ This folder explains what Atlas is for and the environment its parts work in.
 3. [Using Atlas](using-atlas.md) shows the parts and their responsibilities in the walled city.
 4. [First flight](first-flight.md) follows the quadcopter flight workflow.
 5. [Settings](settings.md) explains quick changes to an Asset's configuration.
-6. [Plugins](plugins.md) explains Plugin actions with examples. Plugins wait until after first flight.
+6. [Plugins](plugins.md) explains Plugin actions with examples.
 7. [Scale](scale.md) gives design targets, such as about 20 Assets.
 8. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
 9. [Experimental ideas](experimental.md) lists ideas being explored, not committed.

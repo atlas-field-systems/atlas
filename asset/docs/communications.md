@@ -9,7 +9,10 @@ reports back. This behavior is planned, not implemented.
   [Core API's Asset calls](../../core/docs/api.md#asset-and-gateway-calls) over
   HTTPS and follow its event stream.
 - **On radio**, it uses a Fieldlink. The same Fieldlink package runs on the
-  gateway, which makes the Core API calls for the Asset. The Fieldlink owns
+  gateway, which makes the Core API calls for the Asset. The Asset holds no Core
+  key and never calls the Core API. It authenticates to its gateway as its
+  Fieldlink requires, which is [not designed yet](../../core/docs/api.md#not-defined-yet).
+  The Fieldlink owns
   compact encoding, retries, duplicate handling, contact timing, and link
   security for its medium ([walled city](../../atlas/api-proposal.md#the-shape)).
 
