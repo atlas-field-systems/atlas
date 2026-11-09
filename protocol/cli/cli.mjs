@@ -2,7 +2,7 @@
 // Atlas Protocol viewer for the terminal. Everything shown comes from definitions/.
 import { select, input } from '@inquirer/prompts';
 import { load, compress } from '../lib/node-protocol.mjs';
-import { fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, messageTree, splitId } from '../lib/protocol.mjs';
+import { fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, recordTree, splitId } from '../lib/protocol.mjs';
 
 const protocol = await load();
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
@@ -21,7 +21,7 @@ function printFields(n, depth = 0) {
 function report(file, value) {
   const v = validate(protocol, file, value);
   const m = measure(value, compress);
-  const left = ['Message JSON', ...JSON.stringify(value, null, 2).split('\n')];
+  const left = ['Record JSON', ...JSON.stringify(value, null, 2).split('\n')];
   const right = [`Compact JSON (sent minified on one line: ${m.bytes} bytes)`, ...m.aligned.split('\n'), '', `Compressed (deflate, ${m.compressed} bytes)`, ...m.hex.split('\n'), '', 'Base64:', ...(m.base64.match(/.{1,64}/g) ?? [])];
   const width = Math.max(...left.map((l) => l.length)) + 3;
   console.log();
@@ -35,16 +35,16 @@ function report(file, value) {
   console.log();
 }
 
-// Every definition to pick from: messages as group › type › kind, then the other groups.
-// Kinds are shown under their types, so the group listing kind files is not repeated.
+// Kinds are shown under their records, so the group listing kind files is not repeated.
 function entries() {
   const out = [];
-  for (const g of messageTree(protocol)) for (const t of g.types) {
-    const path = `${g.name} › ${t.file.split('/').pop().replace('.json', '')}`;
-    if (!t.kinds.length) out.push({ group: 'Messages', id: t.file, name: path, description: protocol.schemas[t.file].description });
-    for (const k of t.kinds) out.push({ group: 'Messages', id: `${t.file}@${k.name}`, name: `${path} › ${k.name}`, description: protocol.schemas[k.file].description });
+  const records = recordTree(protocol).flatMap((g) => g.records);
+  for (const r of records) {
+    const path = r.name.replaceAll('.', ' › ');
+    if (!r.kinds.length) out.push({ group: 'Records', id: r.file, name: path, description: protocol.schemas[r.file].description });
+    for (const k of r.kinds) out.push({ group: 'Records', id: `${r.file}@${k.name}`, name: `${path} › ${k.name}`, description: protocol.schemas[k.file].description });
   }
-  const shown = new Set(messageTree(protocol).flatMap((g) => g.types.flatMap((t) => [t.file, ...t.kinds.map((k) => k.file)])));
+  const shown = new Set(records.flatMap((r) => [r.file, ...r.kinds.map((k) => k.file)]));
   for (const g of protocol.index.groups) for (const f of g.files) if (!shown.has(f)) out.push({ group: g.name, id: f, name: protocol.schemas[f].title, description: protocol.schemas[f].description });
   return out;
 }
@@ -64,7 +64,7 @@ async function viewFile(id) {
       choices: [
         { name: 'Edit a field', value: 'edit' },
         { name: 'Use the example from the definition', value: 'example' },
-        { name: 'Generate a minimal message (required fields only)', value: 'generate' },
+        { name: 'Generate a minimal record (required fields only)', value: 'generate' },
         { name: 'Back', value: 'back' },
       ],
     });

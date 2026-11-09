@@ -1,14 +1,13 @@
 # Proposal: a Core API with gateways
 
-**Direction selected by the owner.** The Charter and design decisions follow it.
-Protocol, SDK, Core, Asset, and Command Interface docs still describe the earlier
-design. Later PRs update the owning docs for each change below.
+**Direction selected by the owner.** The Charter, design decisions and every
+part's docs follow it; this page records why.
 
 ## The problem
 
 Today every link uses one message model: the operator's browser, Core, gateways
 and the radio mesh all send the same messages with the same identity, duplicate
-and acknowledgement rules ([Communication](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/communication.md)).
+and acknowledgement rules ([Communication](https://github.com/atlas-field-systems/atlas/blob/c0502b7/protocol/docs/communication.md)).
 Most of those rules exist to survive a lossy radio, yet every IP program carries
 them: message identity on every message, unchanged forwarding, a bounded memory
 of seen messages, acknowledgements that are sometimes replies and sometimes

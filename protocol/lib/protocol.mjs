@@ -1,5 +1,5 @@
 // Shared viewer logic. Runs in Node and the browser.
-// Knows only JSON Schema, never any specific Atlas message.
+// Knows only JSON Schema, never any specific Atlas record.
 
 export async function loadProtocol(readJson, Ajv, addFormats) {
   const index = await readJson('index.json');
@@ -21,7 +21,7 @@ function join(base, ref) {
   return parts.join('/');
 }
 
-// A message type with kinds lists them in oneOf: messages/<group>/<type>/<kind>.json.
+// A record with kinds lists them in oneOf: records/<record>/<kind>.json.
 export function kindsOf(protocol, file) {
   return (protocol.schemas[file].oneOf ?? []).filter((b) => b.$ref).map((b) => {
     const kindFile = join(file, b.$ref);
@@ -29,23 +29,24 @@ export function kindsOf(protocol, file) {
   });
 }
 
-// The message types as a tree: group > type > kinds, from the folder names under messages/.
-export function messageTree(protocol) {
+// The records as a tree: group > record > kinds, from the folders under records/.
+// A record is records/<name>.json or records/<group>/<name>.json; its group is '' or <group>.
+export function recordTree(protocol) {
+  const files = protocol.index.groups.flatMap((g) => g.files);
+  const kindFiles = new Set(files.flatMap((f) => kindsOf(protocol, f).map((k) => k.file)));
   const groups = [];
-  for (const f of protocol.index.groups.flatMap((g) => g.files)) {
-    const m = f.match(/^messages\/([a-z_]+)\/[a-z_]+\.json$/);
-    if (!m) continue;
-    let g = groups.find((x) => x.name === m[1]);
-    if (!g) groups.push(g = { name: m[1], types: [] });
-    g.types.push({ file: f, type: protocol.schemas[f].properties.type.const, kinds: kindsOf(protocol, f) });
+  for (const f of files) {
+    const m = f.match(/^records\/(?:([a-z_]+)\/)?([a-z_]+)\.json$/);
+    if (!m || kindFiles.has(f)) continue;
+    const group = m[1] ?? '';
+    let g = groups.find((x) => x.name === group);
+    if (!g) groups.push(g = { name: group, records: [] });
+    g.records.push({ file: f, name: group ? `${group}.${m[2]}` : m[2], kinds: kindsOf(protocol, f) });
   }
   return groups;
 }
 
-// Which definition file a message belongs to: type <group>.<type> is messages/<group>/<type>.json.
-export const messageFile = (message) => `messages/${String(message.type).replace('.', '/')}.json`;
-
-// "messages/<group>/<type>.json@<kind>" names one kind of a type; the part before @ is the file.
+// "records/<record>.json@<kind>" names one kind of a record; the part before @ is the file.
 export const splitId = (id) => { const [file, kind] = id.split('@'); return { file, kind }; };
 
 // Turns a schema file (or file@kind) into a tree of fields with every $ref resolved.
@@ -151,7 +152,7 @@ export function parseInput(n, text) {
 export function validate(protocol, id, value) {
   const v = protocol.ajv.getSchema(protocol.schemas[splitId(id).file].$id);
   const ok = v(value);
-  return { ok, errors: ok ? [] : v.errors.map((e) => `${e.instancePath || '(message)'} ${e.message}`) };
+  return { ok, errors: ok ? [] : v.errors.map((e) => `${e.instancePath || '(record)'} ${e.message}`) };
 }
 
 // Sizes in bytes. compress is a function bytes -> bytes (deflate today; swappable later).

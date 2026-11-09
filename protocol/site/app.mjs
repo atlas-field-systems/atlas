@@ -4,8 +4,7 @@ import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { deflateSync } from 'fflate';
 import { marked } from 'marked';
-import { loadScenario } from '../lib/scenario.mjs';
-import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, messageTree, messageFile, splitId } from '../lib/protocol.mjs';
+import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, recordTree, splitId } from '../lib/protocol.mjs';
 
 const readJson = async (f) => (await fetch(`definitions/${f}`)).json();
 const protocol = await loadProtocol(readJson, Ajv, addFormats);
@@ -14,18 +13,16 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 $('title').textContent = protocol.index.title;
-// Messages as a tree (group › type › kind) from the folders under messages/; then the other groups.
-// Kinds appear under their types, so the group that lists kind files is not shown again.
-const tree = messageTree(protocol);
-const inTree = new Set(tree.flatMap((g) => g.types.flatMap((t) => [t.file, ...t.kinds.map((k) => k.file)])));
+// Kinds appear under their records, so the group that lists kind files is not shown again.
+const tree = recordTree(protocol);
+const records = tree.flatMap((g) => g.records);
+const inTree = new Set(records.flatMap((r) => [r.file, ...r.kinds.map((k) => k.file)]));
 const baseName = (f) => f.split('/').pop().replace('.json', '');
-$('nav').innerHTML = '<h3>Messages</h3>' + tree.map((g) => `<div class="grp">${esc(g.name)}</div>` + g.types.map((t) => t.kinds.length
-  ? `<div class="typ">${esc(baseName(t.file))}</div>` + t.kinds.map((k) => `<a class="knd" data-file="${esc(t.file)}@${esc(k.name)}">${esc(k.name)}</a>`).join('')
-  : `<a class="typ" data-file="${esc(t.file)}">${esc(baseName(t.file))}</a>`).join('')).join('') +
+$('nav').innerHTML = '<h3>Records</h3>' + tree.map((g) => (g.name ? `<div class="grp">${esc(g.name)}</div>` : '') + g.records.map((r) => r.kinds.length
+  ? `<div class="typ">${esc(baseName(r.file))}</div>` + r.kinds.map((k) => `<a class="knd" data-file="${esc(r.file)}@${esc(k.name)}">${esc(k.name)}</a>`).join('')
+  : `<a class="typ" data-file="${esc(r.file)}">${esc(baseName(r.file))}</a>`).join('')).join('') +
   protocol.index.groups.filter((g) => !g.files.every((f) => inTree.has(f))).map((g) => `<h3>${esc(g.name)}</h3>` +
     g.files.filter((f) => !inTree.has(f)).map((f) => `<a data-file="${esc(f)}">${esc(protocol.schemas[f].title ?? f)}</a>`).join('')).join('');
-const scenarios = await (await fetch('examples/index.json')).json();
-$('nav').innerHTML += '<h3>Scenarios</h3>' + scenarios.map((n) => `<a data-file="scenario:${esc(n)}">${esc(n.replace(/-/g, ' ').replace(/\//g, ' › '))}</a>`).join('');
 $('nav').onclick = (e) => { if (e.target.dataset.file) location.hash = e.target.dataset.file; };
 const docs = await (await fetch('docs/index.json')).json();
 $('nav').innerHTML += '<h3>Docs</h3>' + docs.map((d) => `<a data-file="doc:${esc(d)}">${esc(d.replace(/\.md$/, '').replace(/[-/]/g, ' '))}</a>`).join('');
@@ -35,7 +32,6 @@ if (location.hash) route(location.hash.slice(1));
 
 function route(h) {
   if (h.startsWith('doc:')) return showDoc(h.slice(4));
-  if (h.startsWith('scenario:')) return showScenario(h.slice(9));
   return show(h);
 }
 
@@ -62,28 +58,19 @@ async function branchBanner() {
     'Versions: ' + link(`${root}${sub}`, 'main', !here) + prs.map((p) => link(`${root}pr/pr-${p.number}/${sub}`, `#${p.number} ${p.title}`, p.number === here)).join('');
 }
 
-async function showScenario(name) {
-  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.file === `scenario:${name}`));
-  const s = await loadScenario(protocol, async (f) => (await fetch(`examples/${f}`)).json(), name, compress);
-  const row = (r) => r.gap
-    ? `<tr class="gap"><td>—</td><td></td><td><b>GAP: ${esc(r.gap)}</b></td><td>${esc(r.why)}</td><td></td><td></td></tr>`
-    : `<tr><td>${esc(r.file.split('-')[0])}</td><td>${esc(r.from)} → ${esc(r.to)}</td><td>${protocol.schemas[messageFile(r.message)] ? `<a href="#${esc(messageFile(r.message))}${r.message.kind ? `@${esc(r.message.kind)}` : ''}"><code>${esc(r.message.type)}</code>${r.message.kind ? ` <code>${esc(r.message.kind)}</code>` : ''}</a>` : `<code>${esc(r.message.type)}</code>`}${r.ok === false ? ' <b>invalid</b>' : ''}</td><td>${esc(r.why)}<details><summary>JSON</summary><pre>${esc(JSON.stringify(r.message, null, 2))}</pre></details></td><td>${r.bytes}</td><td>${r.compressed}</td></tr>`;
-  $('view').innerHTML = `<h2>${esc(s.title)}</h2><p>${esc(s.source)}</p>` + Object.entries(s.branches).map(([b, label]) =>
-    `<h3>${esc(label)}</h3><table class="scenario"><tr><th>#</th><th>From → To</th><th>Message</th><th>Why</th><th>Minified</th><th>Deflate</th></tr>${s.rows.filter((r) => r.branch === b).map(row).join('')}</table>`).join('');
-}
-
 function show(id) {
   const { file, kind } = splitId(id);
   if (!protocol.schemas[file]) return;
   document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.file === id));
   const s = protocol.schemas[file];
-  const k = kind && tree.flatMap((g) => g.types).find((t) => t.file === file)?.kinds.find((x) => x.name === kind);
+  const r = records.find((x) => x.file === file);
+  const k = kind && r?.kinds.find((x) => x.name === kind);
   const fields = fieldTree(protocol, id);
   let value = example(protocol, id);
-  $('view').innerHTML = `<h2>${k ? `<code>${esc(s.properties.type.const)}</code> <code>${esc(kind)}</code>` : esc(s.title ?? file)} <small><code>${esc(file)}</code></small></h2><p>${esc(s.description)}</p>${k ? `<p><b>${esc(kind)}:</b> ${esc(protocol.schemas[k.file].description)}</p>` : ''}
+  $('view').innerHTML = `<h2>${k ? `<code>${esc(r.name)}</code> <code>${esc(kind)}</code>` : esc(s.title ?? file)} <small><code>${esc(file)}</code></small></h2><p>${esc(s.description)}</p>${k ? `<p><b>${esc(kind)}:</b> ${esc(protocol.schemas[k.file].description)}</p>` : ''}
     <button id="ex">Use the example</button><button id="min">Minimal (required only)</button>
     <div class="cols"><div class="fieldcol"><h3>Fields</h3><table id="fields"></table></div>
-    <div><h3>Message JSON</h3><p class="lbl" id="readlbl"></p><textarea id="json" spellcheck="false"></textarea><div id="verdict"></div></div>
+    <div><h3>Record JSON</h3><p class="lbl" id="readlbl"></p><textarea id="json" spellcheck="false"></textarea><div id="verdict"></div></div>
     <div><h3>Compressed</h3><div id="compact"></div><div id="packed"></div></div></div>`;
   const render = (fromText) => {
     const rows = leaves(fields, value);
@@ -105,7 +92,7 @@ function show(id) {
     if (!fromText) $('json').value = JSON.stringify(value, null, 2);
     const v = validate(protocol, id, value);
     const m = measure(value, compress);
-    $('compact').innerHTML = `<p class="lbl">Compact JSON, line for line with the message JSON. Sent minified on one line: <b>${m.bytes}</b> bytes</p><pre class="aligned">${esc(m.aligned)}</pre>`;
+    $('compact').innerHTML = `<p class="lbl">Compact JSON, line for line with the record JSON. Sent minified on one line: <b>${m.bytes}</b> bytes</p><pre class="aligned">${esc(m.aligned)}</pre>`;
     $('readlbl').innerHTML = `Readable: <b>${m.readableBytes}</b> bytes`;
     $('json').rows = Math.max(m.aligned.split('\n').length, $('json').value.split('\n').length) + 1;
     renderPacked(m);

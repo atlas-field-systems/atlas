@@ -35,10 +35,8 @@ is locked. Propose changes to the owner rather than making them quietly. See
 - Want how gateways and Fieldlinks carry Atlas across a field link? Not written
   yet; see [Fieldlinks](atlas/api-proposal.md#fieldlinks).
 
-Atlas is moving from one shared message model to a
-[Core API with gateways](atlas/api-proposal.md). The Charter and design decisions
-follow it. Protocol, SDK, Core, Asset and Command Interface docs still describe
-the earlier model until each is updated.
+Atlas moved from one shared message model to a
+[Core API with gateways](atlas/api-proposal.md). Every part's docs follow it.
 
 Each folder has its own `AGENTS.md` with its local rules. Read it before working there.
 Links of the form `https://github.com/atlas-field-systems/atlas/blob/main/<path>` are
