@@ -19,8 +19,8 @@ lost fix.
 The first setup runs the Asset app on a Raspberry Pi on the ground. The Pi acts
 as the companion computer, with a SiK radio replacing the cable to the flight
 controller. Operation resembles a ground-control station such as QGroundControl,
-without integrating with it. The Pi reaches Core through a gateway; which field
-link it uses and how the gateway works are deferred to gateway design.
+without integrating with it. The Pi is a direct-IP Asset: it calls the Core API
+itself over IP, with no gateway.
 
 The vehicle is the Asset represented in Atlas, and the Pi hosts its runtime.
 Position and home come from vehicle measurements. An ArduPilot equipment driver

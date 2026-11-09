@@ -15,9 +15,10 @@ reports back. Planned behavior, not implemented.
 
 Inside the Asset, both sit behind one interface: requests in event order,
 reports out, and contact. The rest of the Asset code is the same either way.
-Gateway and Fieldlink design is deferred, including the link the
-[first setup](assets.md#ardupilot-quadcopter) uses. Its SiK radio is an
-equipment-driver connection to the flight controller, not an Atlas link.
+Gateway and Fieldlink design is deferred. The
+[first setup](assets.md#ardupilot-quadcopter) is on IP and needs neither. Its SiK
+radio is an equipment-driver connection to the flight controller, not an Atlas
+link.
 
 ## Requests and reports
 
@@ -63,4 +64,4 @@ not show that Core is reachable.
 
 - Reporting thresholds, rates, and priorities under congestion.
 - How several links, and relaying for peers, fit behind the one interface.
-- Gateway and Fieldlink design, including the first-flight link.
+- Gateway and Fieldlink design.
