@@ -4,8 +4,8 @@ Project-wide choices that every Atlas part follows.
 
 Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in [Keep judgment sharp](CHARTER.md#keep-judgment-sharp).
 
-The move from one shared message model to a Core API with gateways is recorded in
-the [API proposal](api-proposal.md). The decisions below follow it. Protocol, SDK,
+The [API proposal](api-proposal.md) records the move from one shared message model
+to a Core API with gateways. The decisions below follow it. Protocol, SDK,
 Core, Asset, and Command Interface docs still describe the earlier model until
 each is updated.
 
@@ -58,21 +58,21 @@ definitions or docs. Programs load the definitions as data instead.
 
 Atlas is laid out in rings, so each can change without breaking the others.
 
-- **Inside the inner wall:** Core and Fusion, in one process. Core keeps the
+- **Inside the inner wall.** Core and Fusion run in one process. Core keeps the
   shared picture, the event log, Tasks, and storage. Fusion works on Core's state
   directly, never through the public API.
-- **The second ring:** Plugins. They run beside Core and reach it only through
+- **The second ring.** Plugins run beside Core and reach it only through
   Core's Plugin interface, never its storage.
-- **Outside the city:** gateways, Assets, and operator applications. They reach
-  Core only through the public Core API.
+- **Outside the city.** Gateways, Assets, and operator applications reach Core
+  only through the public Core API.
 
 The parts:
 
 - **Protocol is the spec.** It owns the shared records, the data laws, the one
   validator, and the examples every program tests against. Its published package
   version is its only version; no version is embedded in definitions or records.
-- **Core owns the Core API:** HTTP for requests and Server-Sent Events for live
-  changes. Request and event bodies are Protocol records.
+- **Core owns the Core API.** It uses HTTP for requests and Server-Sent Events
+  for live changes. Request and event bodies are Protocol records.
 - **The SDK is the client** for the Core API, used by operator applications,
   Assets on IP, and gateways.
 - **Gateways** uplink to the Core API and run the Fieldlinks their hardware
@@ -109,12 +109,12 @@ settings are end states, and the queue carries its version.
 
 ## Stack
 
-- **TypeScript everywhere:** Core, the SDK, gateways, Fieldlinks, the Asset app,
-  and the Command Interface. Node 24 runs `.ts` directly, so Node programs have
+- Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface
+  use TypeScript. Node 24 runs `.ts` directly, so Node programs have
   no build step.
-- **Docker:** Core and Fusion ship as one container running one process. Plugins
+- Core and Fusion ship as one Docker container running one process. Plugins
   run in workers for now.
-- **Storage:** SQLite.
+- Storage uses SQLite.
 
 ## First flight comes first
 

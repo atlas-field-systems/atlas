@@ -2,7 +2,7 @@
 
 **Direction selected by the owner.** The Charter and design decisions follow it.
 Protocol, SDK, Core, Asset, and Command Interface docs still describe the earlier
-design; each change below lands through its owning docs in later PRs.
+design. Later PRs update the owning docs for each change below.
 
 ## The problem
 
