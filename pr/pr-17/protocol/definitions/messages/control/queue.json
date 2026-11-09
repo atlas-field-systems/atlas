@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/queue.json",
+  "title": "Queue",
+  "description": "From an operator interface (Core checks it and passes it on unchanged) or Core: the Asset's whole task list, in order, as task_ids only. Each Task's body travels once in its own control.command or control.settings with task_id. The list replaces the Asset's list, but only once the Asset holds the body of every Task in it; until then it keeps running its current list and names the missing bodies in its queue report, and Core resends them. queue_version is the version the list was built on; the Asset ignores a list built on any other version. A Task that leaves the list without starting is reported cancelled. The Asset answers with its queue report, reply_from and reply_to naming this message.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "asset_id",
+    "queue_version",
+    "task_ids"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "control.queue"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "queue_version": {
+      "$ref": "../../variables/queue_version.json"
+    },
+    "task_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../../variables/task_id.json"
+      },
+      "maxItems": 64
+    }
+  },
+  "examples": [
+    {
+      "type": "control.queue",
+      "time": 1793667605260,
+      "seq": 7,
+      "from": "CORE",
+      "asset_id": "A1",
+      "queue_version": 0,
+      "task_ids": [
+        "T1",
+        "T2",
+        "T3"
+      ]
+    }
+  ]
+}

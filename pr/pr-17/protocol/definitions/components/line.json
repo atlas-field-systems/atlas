@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/line.json",
+  "title": "line",
+  "description": "A path on the ground plan: 2 to 32 points in order, joined by straight edges.",
+  "type": "array",
+  "items": {
+    "$ref": "point.json"
+  },
+  "minItems": 2,
+  "maxItems": 32,
+  "examples": [
+    [
+      {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      },
+      {
+        "latitude": 42.2751,
+        "longitude": -71.8049
+      },
+      {
+        "latitude": 42.276,
+        "longitude": -71.8044
+      }
+    ]
+  ]
+}

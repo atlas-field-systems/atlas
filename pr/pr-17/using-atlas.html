@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Using Atlas</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html" class="on">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="using-atlas">Using Atlas</h1>
+<p>An operator uses the Command Interface to watch Assets and request work.
+Core keeps the shared picture, the requests, and the event log. A gateway carries
+Atlas across a field link. The Asset app controls its equipment and reports what
+happened.</p>
+<h2 id="the-walled-city">The walled city</h2>
+<pre class="mermaid">flowchart LR
+    subgraph City[Atlas deployment]
+        subgraph Inner[Inner wall]
+            C[Core: API, event log, Tasks, storage]
+            F[Fusion]
+        end
+        P[Plugins]
+    end
+    F &#60;--&#62;|Shared state| C
+    P &#60;--&#62;|Plugin interface| C
+    UI[Command Interface] &#60;--&#62;|Core API| C
+    D[Direct-IP Asset] &#60;--&#62;|Core API| C
+    G[Gateway] &#60;--&#62;|Core API| C
+    G &#60;--&#62;|Fieldlink| A[Radio Asset]</pre><p>Core and Fusion sit inside the inner wall. Plugins sit in the second ring and are
+parked until after first flight. Everything else sits outside the city and reaches
+Core only through the <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md">Core API</a>.
+<a href="design-decisions.html#a-walled-city">Design decisions</a> has the layout.</p>
+<p>Most physical Assets use the gateway path. The gateway and the radio Asset run the
+same Fieldlink package for their field link. A direct-IP Asset, often a digital
+one, calls the Core API itself. Different gateways can coexist as
+<a href="environment.html#connectivity-evolves">connectivity evolves</a>. The diagram shows
+responsibilities, not a required network topology.</p>
+<p>The <a href="first-flight.html">first-flight setup</a> runs the Asset app on a ground Raspberry
+Pi that reaches Core through a gateway. A separate SiK equipment link connects
+that Pi to the ArduPilot vehicle. The app represents the vehicle even though it is
+not aboard it.</p>
+<h2 id="what-the-parts-do">What the parts do</h2>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/README.md">Command Interface</a></td>
+<td>Human interaction and presentation</td>
+</tr>
+<tr>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md">Protocol</a></td>
+<td>The shared records and their one validator</td>
+</tr>
+<tr>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md">SDK</a></td>
+<td>The client for the Core API</td>
+</tr>
+<tr>
+<td>Core</td>
+<td>The shared picture, the event log, Tasks, and the Core API</td>
+</tr>
+<tr>
+<td>Fusion</td>
+<td>Combining evidence into the shared picture, inside Core</td>
+</tr>
+<tr>
+<td><a href="plugins.html">Plugins</a></td>
+<td>Actions that gather and publish information; parked until after first flight</td>
+</tr>
+<tr>
+<td>Gateway</td>
+<td>Uplinking to the Core API and running Fieldlinks</td>
+</tr>
+<tr>
+<td>Fieldlink</td>
+<td>Carrying Atlas across one kind of field link</td>
+</tr>
+<tr>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md">Asset app</a></td>
+<td>Equipment control, local execution, failsafes, and reports of its effects</td>
+</tr>
+</tbody></table>
+<h2 id="an-operation-runs-without-restarts">An operation runs without restarts</h2>
+<p>Core starts before any other part of an operation and stops after all of them.
+Core never restarts during an operation. Gateways and Assets stay running too.
+Links can drop and reconnect while those processes keep their state, and a
+refreshed Command Interface recovers from Core&#39;s event log. An Asset restart is
+rare; it means the system is spun down to evaluate the failure.</p>
+<p>An Asset&#39;s <a href="settings.html">settings</a> are its current configuration, kept in its entry.</p>
+<h2 id="information-focused-stories">Information-focused stories</h2>
+<p>These stories describe intended use. Observations, Objects, and Plugins wait
+until after first flight.</p>
+<h3 id="locate-the-tracker">Locate the tracker</h3>
+<p>A reporting-only Asset is a Raspberry Pi with a GPS peripheral and an uplink.
+It starts obtaining its own position and reports telemetry to Core for an operator
+to see. It accepts no equipment-control commands. If it loses its GPS fix, Atlas
+retains its last known position and the reported GPS condition. The tracker does
+not send the old position as a new fix.</p>
+<h3 id="observe-an-aircraft">Observe an aircraft</h3>
+<p>An ADS-B receiver is an Asset. It reports Observations about a passing aircraft.
+Atlas uses those Observations as evidence to maintain a shared Track of the
+aircraft for the operator to follow. The operator does not need to control that
+aircraft to observe it through Atlas.</p>
+<h3 id="research-a-place">Research a place</h3>
+<p>An operator selects a building or area and runs a Plugin action on it. The Plugin
+returns a list, or publishes its findings through Entities and any files through
+Objects. <a href="plugins.html">Plugins</a> has the examples.</p>
+<p><a href="first-flight.html">First flight</a> follows one complete use of these parts.</p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

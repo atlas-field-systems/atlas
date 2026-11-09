@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/asset.json",
+  "title": "Asset query",
+  "description": "Ask for one of an Asset's reports, any it lists in admin.describe. Core asks the Asset, which answers with that report as it normally sends it. An operator interface or edge link can ask Core instead, which answers with the latest copy it holds (latest telemetry gives the most recent position). With every_s, Core repeats its latest stored report at that interval until the same query arrives with every_s 0. Each repeat keeps the original from, seq and time. Readers receive replays, but replays cause no further action and do not make a measurement newer. Repeats matter mostly on slow edge links; fast links can just ask.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "asset_id",
+    "report"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "query.asset"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "report": {
+      "$ref": "../../variables/report.json"
+    },
+    "every_s": {
+      "$ref": "../../variables/every_s.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "query.asset",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "report": "settings",
+      "from": "OP1"
+    },
+    {
+      "type": "query.asset",
+      "time": 1793667600000,
+      "seq": 43,
+      "asset_id": "A1",
+      "report": "telemetry",
+      "every_s": 30,
+      "from": "OP1"
+    }
+  ]
+}

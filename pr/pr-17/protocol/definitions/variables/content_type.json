@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/content_type.json",
+  "title": "content_type",
+  "description": "What kind of file an Object is, as a lower-case media type, such as \"image/jpeg\".",
+  "type": "string",
+  "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$",
+  "maxLength": 127,
+  "examples": [
+    "image/jpeg"
+  ]
+}
