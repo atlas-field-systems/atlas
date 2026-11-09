@@ -10,14 +10,14 @@ environment in which its parts work together.
 
 1. [The charter](CHARTER.md) defines purpose, scope, and document ownership.
 2. [Operating environment](environment.md) explains field links and current assumptions.
-3. [Using Atlas](using-atlas.md) shows the parts and their responsibilities.
+3. [Using Atlas](using-atlas.md) shows the walled city: the parts and their responsibilities.
 4. [First flight](first-flight.md) follows the quadcopter flight workflow.
 5. [Settings](settings.md) explains quick changes to an Asset's configuration.
-6. [Plugins](plugins.md) explains Plugin actions, with examples.
+6. [Plugins](plugins.md) explains Plugin actions, with examples, parked until after first flight.
 7. [Scale](scale.md) sets how big Atlas is meant to be, such as about 20 Assets.
 8. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
 9. [Experimental ideas](experimental.md) lists ideas being explored, not committed.
-10. [API proposal](api-proposal.md) is the selected move to a Core API with gateways, not yet applied.
+10. [API proposal](api-proposal.md) is the selected move to a Core API with gateways, which the Charter follows.
 
 ## Keep subsystem documentation with its owner
 

@@ -9,28 +9,24 @@ Radio technology, IP connectivity, and edge networks will keep changing.
 Atlas is designed around constrained links with different capabilities.
 A LoRa-scale data rate is not a ceiling for the whole system.
 
-Initial Assets may use only Wi-Fi, only FLRC, or only LoRa. Multiple-link routing
-is not a prerequisite for those Assets. The longer-term direction includes a
-multimode radio with multiple transceivers:
+The field radio starts as pure LoRa. The direction after that is a multi-layer
+mesh: 2.4 GHz FLRC between Assets wherever FLRC is viable, and 915 MHz LoRa
+where it is not. Wi-Fi is a possible addition. FLRC is expected to carry more
+than single-digit kilobits per second. Initial Assets use a single link, so
+multiple-link routing is not a prerequisite for them. The radio project owns the
+detailed design as the hardware evolves.
 
-- 2.4 GHz FLRC as the primary field link.
-- 915 MHz LoRa for coverage when the FLRC link becomes unreliable.
-- Wi-Fi as a possible addition.
-
-A future flight can use FLRC nearby and LoRa when distance makes FLRC spotty.
-FLRC is expected to carry more than single-digit kilobits per second.
-The radio project owns the detailed design as the hardware evolves.
-
-Mesh networking is part of this direction, with some participation in Atlas.
-The radio links are mesh networks, building on Meshtastic and MeshCore, and
-they carry JSON messages. Their mechanisms belong in the radio project docs.
-
-Radio messages use a proven existing compression system, not a custom one.
-The choice is made once the message format settles.
+Field links carry Atlas through Fieldlinks. The same Fieldlink package runs on
+the gateway and on the radio Asset, and it sends compact frames in a proven
+existing encoding, not a custom one. The LoRa phase builds on Meshtastic, and
+FLRC gets its own Fieldlink. The [API proposal](api-proposal.md#fieldlinks)
+sketches the LoRa Fieldlink. Each Fieldlink's docs own its mechanisms, once
+written.
 
 ## IP mainly connects the supporting systems
 
-IP primarily connects Core, gateways, and operator interfaces.
+IP primarily connects Core, gateways, and the Command Interface, through the
+[Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md).
 Most physical Assets use the available field radios beyond the gateway.
 Direct-IP Assets are possible, especially purely digital Assets.
 
@@ -39,10 +35,11 @@ connectivity to every Asset.
 
 ## Gateway implementations can coexist
 
-Different radio systems can have different gateways. For example, an initial
-LoRa-only link could have a dedicated LoRa gateway. A later radio system could
-have a new gateway while the older gateway continues to be maintained.
-Atlas does not assume one permanent gateway design.
+Different radio systems can have different gateways. For example, the initial
+LoRa link could have a dedicated LoRa gateway. A later FLRC mesh could have a new
+gateway while the older gateway continues to be maintained. Gateways can coexist
+because each reaches Core only through the Core API. Atlas does not assume one
+permanent gateway design, and gateway design is otherwise deferred.
 
 ## Core is a deliberate dependency
 

@@ -1,23 +1,25 @@
 # Plugins
 
-A Plugin is a small program that runs inside Core and offers actions. An
+**Parked until after first flight.** This page records the owner's intended use.
+No Plugin exists yet.
+
+A Plugin is a small program that runs beside Core and offers actions. An
 operator runs an action with inputs, such as an area or a building. The Plugin
 gathers information with the tools it has, often open-source services, and
 returns what it found.
 
-This page records the owner's intended use. No Plugin exists yet.
-
 ## Where Plugins sit
 
-- Plugins run in Core's Plugins module. How a Plugin works with the rest of
-  Core, such as reading Entities or storing Objects, is Core's own business.
-  Protocol does not carry it, just as it does not carry traffic between
-  Entities and Tasks.
-- Protocol carries one thing for Plugins: a call to an action and its result.
-  That is how an operator interface uses a Plugin from outside Core.
-- Operators call Plugins today. Assets will be able to call them later.
+- Plugins sit in the second ring of the
+  [walled city](design-decisions.md#a-walled-city). They reach Core only through
+  its Plugin interface, never its storage. Reading Entities or storing Objects
+  goes through that interface, which is Core's own business.
+- The Core API will carry Plugin calls when Plugins return. That is how the
+  Command Interface uses a Plugin from outside the city.
+- Operators call Plugins first. Assets will be able to call them later.
 - Plugins do not direct Assets or issue Tasks.
-- Fusion is not a Plugin. Core runs it on every Observation, and nobody calls it.
+- Fusion is not a Plugin. It sits inside the inner wall, runs on every
+  Observation, and nobody calls it.
 - A feed that sends data all the time, such as an internet aircraft feed, is an
   Asset, not a Plugin.
 
@@ -80,15 +82,15 @@ barometer or the altitude of the place it took off from.
 - **A geofence alarm.** Nobody calls it; it reacts when a Track enters an area.
 - **An auto-patrol that sends Tasks to drones.** It directs Assets.
 - **Turning on Asset lights at dusk.** It changes Asset settings.
-- **A radio bridge.** That is a gateway and a transport adapter.
+- **A radio bridge.** That is a gateway and its Fieldlink.
 - **The Reset archive.** That is Core's own job.
-- **Map styling.** That belongs to the operator application.
+- **Map styling.** That belongs to the Command Interface.
 
 ## Not decided
 
-How the operator application shows Plugins and their results is not decided.
-How Plugins run inside Core, such as how one is installed and started, waits
-until Core's architecture is clearer.
+How the Command Interface shows Plugins and their results is not decided.
+The Plugin interface, the Core API's Plugin calls, and how a Plugin is installed
+and started wait until after first flight.
 
 These cases are borderline and need a decision before such a Plugin is built:
 
@@ -98,6 +100,3 @@ These cases are borderline and need a decision before such a Plugin is built:
   would direct Assets.
 - **Repeating a call,** such as weather every 10 minutes. This starts to look
   like a Plugin running in the background.
-
-The call and result messages are defined in
-[Protocol decisions](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#plugins).

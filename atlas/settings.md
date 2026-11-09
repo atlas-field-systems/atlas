@@ -2,27 +2,32 @@
 
 A setting is an Asset's current configuration, such as its lights, landing gear,
 or what it does when it loses its radio link. Changing one is quick and immediate.
-It does not wait in a queue or go through a Task's steps.
+It does not wait in the queue or go through a Task's steps.
 
 - Operators can change an Asset's settings, and so can the Asset itself.
   An Asset changes its own setting without asking Core, then reports the change.
-- The Asset applies new immediate changes in the order it receives them, alongside
+- A settings change always names the end state, such as "lights on" or "gear
+  down", never "switch the gear". Applying the same end state twice changes
+  nothing.
+- The Asset applies immediate changes in the order it receives them, alongside
   its own local changes. It does not compare the operator's clock with its own.
-  A delayed distinct command can therefore override a local change made later
-  than that command was sent.
-- A change always names the end state, such as "lights on" or "gear down",
-  never "switch the gear". A retry of the same message is not applied again.
-- A Change Setting Task puts a setting change in the queue, for example:
-  fly here, lights on, fly there. It applies when that Task runs, regardless of
-  when its body was sent or received.
-- Pause and Resume are settings, not Tasks. An Asset is set to "paused" or
-  "running", always as an explicit end state.
+  A delayed change can therefore override a local change made after the operator
+  sent it.
+- Retries are safe: a repeated request carries the same idempotency key, and
+  Core records it once
+  ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#basics)).
+- A settings Task puts a change in the queue, for example: fly here, lights on,
+  fly there. It applies when that Task runs, regardless of when it was sent or
+  received.
+- Pause is a setting, not a Task. An Asset is set to "paused" or "running",
+  always as an explicit end state.
 - Pause affects movement already underway. The Asset owns the
   [platform-specific response](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause).
-- A Change Setting Task can pause an Asset inside a queue. It waits there until
+- A settings Task can pause an Asset inside a queue. It waits there until
   someone resumes it, for example: fly here, pause, wait for the operator, continue.
 - An applicable failsafe overrides ordinary settings, including paused, and the
-  Asset carries out its configured safe response. The Asset owns
+  Asset carries out its configured safe response. The operator can still pause
+  as an [override](first-flight.md#when-something-goes-wrong). The Asset owns
   [the trigger conditions](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
 - Settings support is independent of current values. An Asset may support no
   live settings.
