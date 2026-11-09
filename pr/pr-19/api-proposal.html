@@ -48,13 +48,12 @@ supports. A gateway is not an Asset.</li>
 on both ends: in the gateway and on the radio Asset.</li>
 </ul>
 <h2 id="core-keeps-one-event-log">Core keeps one event log</h2>
-<p>Core appends every accepted request and every Asset report to an ordered event
-log with a rising integer <code>event_id</code>. Current-state tables are derived from it.
-Live updates, history, recovery after a refresh, and the Reset archive are all
-reads of that log.</p>
+<p>Core keeps current state in ordinary SQLite tables and, in the same transaction,
+appends every accepted request and every Asset report to an ordered event log
+with a rising integer <code>event_id</code>. Live updates, history and recovery after a
+refresh are reads of that log. Current state is never rebuilt from it.</p>
 <ul>
-<li>The log is stored on disk in SQLite. Core keeps current state, not the log,
-in memory.</li>
+<li>Both live on disk in SQLite. Core keeps no backlog of the log in memory.</li>
 <li>A reader follows the log from a cursor. A slow or disconnected reader is
 dropped and resumes from its last <code>event_id</code>; Core never buffers its backlog.</li>
 <li>Retention follows <a href="scale.html#runs-and-storage">Scale</a>: a run&#39;s events are
@@ -144,9 +143,9 @@ failsafe behavior stays deferred until field testing.</p>
 <p>For the LoRa phase, the Fieldlink builds on Meshtastic: a private channel, a
 private app port, and its encryption, routing and per-hop acknowledgements.
 The Fieldlink adds end-to-end acknowledgement of queues and final reports,
-idempotency by <code>task_id</code>, and per-Asset contact reports to Core. Frames use
-CBOR with integer keys taken from the definitions, and each link checks the
-definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
+idempotency by <code>task_id</code>, and per-Asset contact reports to Core. Protocol defines
+no short keys, so each Fieldlink chooses its own compact encoding. It may send a
+queue as changes against the list the Asset holds rather than whole. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.</p>
 <h2 id="stack">Stack</h2>
 <ul>
