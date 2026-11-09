@@ -2,9 +2,9 @@
 
 The Asset app keeps its own state, reports what it observes, and carries out
 supported work through configurable [modules and equipment drivers](assets.md).
-This is selected planning direction; no runtime is built yet.
+This is the selected plan. No runtime exists yet.
 
-Records named here are Protocol's: the description, Task, queue, settings
+Protocol owns the records named here: the description, Task, queue, settings
 change, and cancel, and the task, queue, telemetry, battery, settings, and
 failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
@@ -42,14 +42,14 @@ its first valid position. An explicitly configured or operator-set home takes
 precedence. A reconnect does not reset home; operators change it as a setting.
 
 The app and its link stay running for the operation, as Core does. An Asset
-restart is rare and means the system is spun down to evaluate; there is no
+restart is rare and means shutting down the system for evaluation; there is no
 mission recovery after one. A dropped link does not restart the app or clear
 its state.
 
 ## Carry out work and report its result
 
 Core [checks requests](../../core/docs/requests.md) before passing them on. The
-Asset keeps the decisions that need current equipment knowledge, because
+Asset makes decisions that need current equipment knowledge, because
 equipment can change after Core accepts a request. Receiving a Task is not
 completing it.
 
@@ -82,7 +82,8 @@ the new Task reports its outcome like any other.
 ### Cancel
 
 Cancel names one Task. A queued Task leaves the queue; an active Task stops its
-work. Either is reported `cancelled`, and the other Tasks stay in the queue.
+work. In either case, the Asset reports the Task `cancelled`. The other Tasks
+stay in the queue.
 Cancelling a Task that has already ended changes nothing.
 
 ### Prepare and take off
@@ -92,9 +93,9 @@ the platform requires and can control: establishing flight-controller control,
 selecting the mode and takeoff settings, and arming. The operator needs no
 separate arming action.
 
-Some platforms require a physical switch or button before arming. If it is
-unmet when Takeoff runs, the Task fails with an explanation; the app does not
-wait. Arming alone does not complete Takeoff; completion follows the observed
+Some platforms require a physical switch or button before arming. If that
+requirement is unmet when Takeoff runs, the Task fails with an explanation. The
+app does not wait. Arming alone does not complete Takeoff; completion follows the observed
 takeoff.
 
 ### Pause

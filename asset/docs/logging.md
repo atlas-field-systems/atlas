@@ -2,7 +2,7 @@
 
 The Asset records detailed evidence locally for the whole operation, including
 while it has no contact with Core. It collects its own app and equipment events
-and the diagnostics of its SDK client or Fieldlink. Nothing implements this yet.
+and the diagnostics of its SDK client or Fieldlink. Logging is not implemented yet.
 
 ## Record decisions and observed equipment behavior
 

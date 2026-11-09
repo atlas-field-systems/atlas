@@ -38,7 +38,7 @@ keeps its map context visible.
 
 Each Asset also has its own addressable detail page. Operators can share or
 bookmark it, refresh it, or open it in another tab. Track and Observation pages,
-Geofeatures, and Objects are parked until after first flight.
+Geofeatures, and Objects wait until after first flight.
 
 An unfinished request draft stays in memory while the operator visits other
 pages. For example, opening another Asset's page to check its position does not
@@ -48,7 +48,7 @@ discard the inputs already entered. Drafts do not survive a reload.
 
 Use [RidgeLine](https://github.com/the-Drunken-coder/Ridgeline) for mapping and
 reusable map tools. Atlas supplies its domain data, presentation, pages, command
-forms, and operator workflows on top. RidgeLine remains a general-purpose package.
+forms, and operator workflows. RidgeLine remains a general-purpose package.
 
 Document proposed RidgeLine changes here whenever Atlas needs them or they would
 simplify either project or provide another benefit. Explain the need, the
@@ -80,9 +80,10 @@ and simple actions stay short.
 - **Settings changes** are end states, applied at once or queued as a settings
   change Task.
 
-A request whose response is lost is retried with the same idempotency key, so it
-[never takes effect twice](../../core/docs/api.md#basics). Commands to an
-offline Asset are refused, and the interface shows Core's explanation.
+If a request's response is lost, the interface retries it with the same
+idempotency key, so it [never takes effect twice](../../core/docs/api.md#basics).
+Commands to an offline Asset are refused, and the interface shows Core's
+explanation.
 
 Polygon and Geofeature inputs, and RidgeLine's drawing tools for authoring them,
 wait for Geofeatures after first flight. Drawing an area will never task an
@@ -112,8 +113,8 @@ one selected Asset's trail and a few controls. Its latest position stays
 distinct from historical positions. Playback uses recorded sample times and
 shows gaps rather than inventing samples. Historical inspection is clearly
 labelled and has a way back to live. Playback never resends recorded commands.
-Keep it small: no separate history framework, and no synchronized
-reconstruction of every item on the map.
+Use no separate history framework or synchronized reconstruction of every item
+on the map.
 
 ### Review a model-rocket flight
 
@@ -123,7 +124,7 @@ ignition through a launch pad or its own equipment.
 The operator follows the flight until the rocket lands, then opens the recorded
 launch data and scrubs or plays it, with the map and flight measurements
 following the same playback time. Review includes every recorded sample,
-including those that did not arrive over the live link: the rocket
+including those that did not arrive over the live link. The rocket
 [records more than it sends live](../../asset/docs/README.md#record-and-send-report-history)
 and catches up after landing in report batches with their original times.
 Missing data stays distinct from a recorded absence of activity.
@@ -136,8 +137,8 @@ operator to read JSON.
 
 Simulation runs in a separate test context that always shows its label and
 destination. It supports cases such as stale reports, missing capabilities,
-refused requests, and unknown outcomes. Sample data never stands in for an
-outage, and a simulation warning never disappears.
+refused requests, and unknown outcomes. The interface never substitutes sample
+data during an outage, and a simulation warning never disappears.
 
 ## Responsibilities
 

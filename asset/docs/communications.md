@@ -1,7 +1,7 @@
 # Asset communications
 
 The communications module carries requests from Core to the Asset's modules, and
-reports back. Planned behavior, not implemented.
+reports back. This behavior is planned, not implemented.
 
 ## One interface for every link
 
@@ -13,8 +13,9 @@ reports back. Planned behavior, not implemented.
   compact encoding, retries, duplicate handling, contact timing, and link
   security for its medium ([walled city](../../atlas/api-proposal.md#the-shape)).
 
-Inside the Asset, both sit behind one interface: requests in event order,
-reports out, and contact. The rest of the Asset code is the same either way.
+Inside the Asset, both use one interface to receive requests in event order,
+send reports, and track contact. The rest of the Asset code is the same either
+way.
 Gateway and Fieldlink design is deferred. The
 [first setup](assets.md#ardupilot-quadcopter) is on IP and needs neither. Its SiK
 radio is an equipment-driver connection to the flight controller, not an Atlas
@@ -36,7 +37,7 @@ history catches up through the same calls, with original times.
 On IP, contact follows the [Core API's contact rule](../../core/docs/api.md#contact).
 On radio, the Fieldlink supplies it. Contact loss is an input to
 [failsafe conditions](failsafes.md#configure-conditions-as-well-as-responses).
-Contact is not freshness: hearing from Core proves nothing about measurements.
+Contact is not freshness. Hearing from Core proves nothing about measurements.
 
 ## Report from local state
 
@@ -56,9 +57,9 @@ traffic.
 
 Initial Assets use one link: Wi-Fi, FLRC, or LoRa. A later Asset may have
 several, for example Wi-Fi nearby, FLRC farther out, and LoRa at the edge of
-range, and report in less detail as the path narrows. The best path depends on
-current conditions, not a fixed ranking of radio types. A nearby radio peer does
-not show that Core is reachable.
+range, and report in less detail as link capacity decreases. The best path
+depends on current conditions, not a fixed ranking of radio types. A nearby
+radio peer does not show that Core is reachable.
 
 ## Open
 

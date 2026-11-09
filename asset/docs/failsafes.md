@@ -94,10 +94,10 @@ same module used for ordinary work. Each execution is its own Task with a
 reported outcome. Parameters are fixed when it starts: a response that uses home
 resolves home at activation and keeps that destination.
 
-A higher-priority matching rule interrupts the response: the interrupted Task is
-reported `cancelled` and a new Task starts for the new rule. Priority only rises
-for the rest of the operation, including after a response completes. Equal- or
-lower-priority matches never start another response.
+A higher-priority matching rule interrupts the response. The Asset reports the
+interrupted Task `cancelled` and starts a new Task for the new rule. Priority
+only rises for the rest of the operation, including after a response completes.
+Equal- or lower-priority matches never start another response.
 
 Each rule gets at most one primary attempt and one optional fallback Task, using
 the same executor. A failed primary starts the fallback once, and each failure is
@@ -125,8 +125,8 @@ other settings changes, and policy replacement. A refused Task is reported
 `failed`, with the failsafe as its explanation. A refused cancel or settings
 change is answered with the current Task state or settings, naming the request.
 
-Leaving failsafe state means spinning the system down to evaluate. Atlas has no
-remote restart and no way to clear the state.
+Leaving failsafe state means shutting down the system for evaluation. Atlas has
+no remote restart and no way to clear the state.
 
 ## Replace the policy during ordinary operation
 

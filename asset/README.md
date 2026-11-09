@@ -5,9 +5,9 @@ Core, keeps its own state, reports what it observes, and carries out supported
 work. A reporting-only Asset needs no equipment-control commands, task queue, or
 live settings.
 
-**Planning.** No runtime is built yet. The first setup runs on a Raspberry Pi on
+**Planning.** No runtime exists yet. The first setup runs on a Raspberry Pi on
 the ground that acts as the companion computer for an ArduPilot quadcopter over
-a SiK radio. The Pi is a direct-IP Asset: it calls the Core API itself.
+a SiK radio. The Pi is a direct-IP Asset and calls the Core API itself.
 The [first-flight story](../atlas/first-flight.md) describes the workflow.
 
 - [Behavior](docs/README.md): startup, work, link loss, and shutdown.

@@ -19,7 +19,7 @@ lost fix.
 The first setup runs the Asset app on a Raspberry Pi on the ground. The Pi acts
 as the companion computer, with a SiK radio replacing the cable to the flight
 controller. Operation resembles a ground-control station such as QGroundControl,
-without integrating with it. The Pi is a direct-IP Asset: it calls the Core API
+without integrating with it. The Pi is a direct-IP Asset and calls the Core API
 itself over IP, with no gateway.
 
 The vehicle is the Asset represented in Atlas, and the Pi hosts its runtime.
@@ -32,8 +32,8 @@ The gateway path carries Atlas traffic; SiK carries equipment commands and state
 between the Pi and ArduPilot. The two fail independently. A reachable Pi does
 not show that the vehicle is reachable or that it performed a command.
 
-The ground placement keeps the runtime within reach for local intervention
-during testing. Independent vehicle controls and
+Running the app on the ground allows local intervention during testing.
+Independent vehicle controls and
 [flight-controller protections](failsafes.md#independent-flight-controller-protections)
 stay part of the flight setup. Onboard placement is a later extension.
 
@@ -62,13 +62,13 @@ the turret and receiver are later Assets.
 
 ## Modules and equipment drivers
 
-The Asset app runs on ordinary Linux and is composed of behavior modules. Modules
+The Asset app runs on ordinary Linux and consists of behavior modules. Modules
 use equipment drivers where they need hardware. Use the full term **equipment
 driver** to distinguish it from an operating-system driver.
 
 The app explicitly selects and connects its configured modules and equipment
 drivers. Local files never silently override a built-in module with the same
-name. There is no leader module and no universal internal message bus: modules
+name. There is no leader module and no universal internal message bus. Modules
 use direct interfaces, with subscriptions where several consumers need the same
 observations.
 
@@ -114,8 +114,8 @@ is ready, so [connection readiness](README.md#start-and-connect) stays separate.
 
 A standard Linux service starts the app on boot and shuts it down in order. The
 service does not restart the app automatically during an operation; a restart
-means the system is spun down to evaluate. Link reconnects keep the same running
-app.
+means shutting down the system for evaluation. Link reconnects keep the same
+running app.
 
 Installation is repeatable on ordinary Linux, with example configurations for
 the tracker and quadcopter. No custom Raspberry Pi image is planned.
@@ -145,7 +145,7 @@ supported commands, and failsafe policy. It lists its supported commands
 explicitly in its description, and lists only commands the configured Asset can
 carry out. Configuration does not change shared meanings: advertised commands,
 Task outcomes, subsystem conditions, and failsafe policies keep their agreed
-semantics. See [configuration](../config.md) and [behavior](README.md).
+meanings. See [configuration](../config.md) and [behavior](README.md).
 
 ## Open
 
