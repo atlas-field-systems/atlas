@@ -1,13 +1,13 @@
 # Open questions
 
-Unresolved questions and work deliberately deferred. Selected answers live in
+Unresolved questions and deferred work. Selected answers live in
 [decisions](decisions.md), [communication](communication.md), and
 [storage](storage.md). Git history records earlier drafts.
 
 ## Unresolved
 
-- **Core-assigned IDs (proposal).** The owner is considering Core assigning and
-  retaining all IDs, including Asset IDs. Decide which IDs this covers, how a
+- **Core-assigned IDs (proposal).** The owner is considering having Core assign and
+  retain all IDs, including Asset IDs. Decide which IDs this covers, how a
   participant first enrolls without an ID, and what survives a manual Asset
   restart. Current IDs follow [law 22](laws.md).
 - **Task retrieval after interface refresh.** The interface uses the SDK to
@@ -25,8 +25,6 @@ Unresolved questions and work deliberately deferred. Selected answers live in
 - **Stored record formats.** [Storage](storage.md) describes the tables, but exact
   record formats are not defined yet. Protocol owns those formats, including
   storage on Assets and in the SDK cache ([law 1](laws.md)).
-- **Operator keys.** Where operator IDs and keys come from is not decided. Core's
-  prototype reads them from configuration ([prototype findings](../../core/docs/findings.md#remaining-gaps)).
 - **Report catch-up.** The [selected path](communication.md#report-catch-up) sends
   retained reports with original timestamps through ordinary report messages.
   Define bounded transfer that respects live traffic, how the Asset knows which
@@ -61,7 +59,7 @@ Unresolved questions and work deliberately deferred. Selected answers live in
   parameterized response Tasks, or the operation-long work lock. Agree these
   formats before aligning the definitions and SDK interfaces.
 
-Diagnostic logging and configuration choices are tracked with their owners in
+Diagnostic logging and configuration choices belong to their owners in
 [Core configuration](../../core/config.md), [Asset configuration](../../asset/config.md),
 and [SDK configuration](../../sdk/config.md). They are not Protocol options.
 
@@ -70,8 +68,8 @@ and [SDK configuration](../../sdk/config.md). They are not Protocol options.
 - **Errors back to an Asset.** Core drops and logs an invalid report, and the Asset
   gets only acknowledgements. Revisit after first flight.
 - **Uploads and other attachments.** Only Plugins make Objects. Uploads from
-  operators or Assets, and Objects attached to an Asset, Task or Track, wait for a
-  story.
+  operators or Assets, and Objects attached to an Asset, Task or Track, need a
+  use case.
 - **Offline command holding.** The selected behavior is to refuse commands to
   offline Assets and hold nothing ([communication](communication.md#when-core-counts-an-asset-offline)).
   Revisit only if it becomes a real problem.

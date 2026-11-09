@@ -6,7 +6,7 @@ This repository holds every part of it, one folder each:
 - [atlas/](atlas/): the Charter, what Atlas is for and how its parts fit together. Start here.
 - [protocol/](protocol/): shared messages and domain-storage formats.
 - [sdk/](sdk/): the SDK, the one implementation every program uses. Docs only so far.
-- [core/](core/): Atlas Core, the server. First-flight prototype.
+- [core/](core/): Atlas Core, the server, and the [Core API](core/docs/api.md). Planning.
 - [asset/](asset/): how an Asset behaves. Planning.
 - [command-interface/](command-interface/): the operator interface. Planning.
 
