@@ -1,24 +1,22 @@
 # Atlas Asset
 
 Atlas Asset is the configurable software representing an Asset. It connects to
-Atlas, maintains its own state, reports information, and carries out supported work.
-A reporting-only Asset needs no equipment-control commands, task queue, or live
-settings.
+Core, keeps its own state, reports what it observes, and carries out supported
+work. A reporting-only Asset needs no equipment-control commands, task queue, or
+live settings.
 
-**Planning.** No runtime is built yet. The first setup runs on a ground-based
-Raspberry Pi connected to Core over Wi-Fi and to an ArduPilot quadcopter over
-a SiK radio. The Pi acts as the companion computer. A GPS tracker, fixed camera
-turrets, and ADS-B receivers remain intended Assets. The
-[first-flight story](../atlas/first-flight.md) describes the initial
-quadcopter workflow.
+**Planning.** No runtime exists yet. The first setup runs on a Raspberry Pi on
+the ground that acts as the companion computer for an ArduPilot quadcopter over
+a SiK radio. The Pi is a direct-IP Asset and calls the Core API itself.
+The [first-flight story](../atlas/first-flight.md) describes the workflow.
 
-- [Behavior](docs/README.md): startup, execution, link loss, and shutdown.
+- [Behavior](docs/README.md): startup, work, link loss, and shutdown.
 - [Assets and their equipment](docs/assets.md): examples, modules, equipment drivers, and movement profiles.
-- [Subsystem conditions](docs/status.md): selective hardware-status reporting.
-- [Communications](docs/communications.md): local state reporting and goals for multiple links and mesh paths.
-- [Testing and CI](docs/testing.md): hardware-free scenarios, tests, and evals.
-- [Configuration](config.md): selected requirements and options still under discussion.
-- [Logging](docs/logging.md): local diagnostic evidence and Reset archives.
-- [Protocol](../protocol/README.md): exact shared data formats.
-- [SDK](../sdk/README.md): communication mechanics used by the Asset app.
+- [Communications](docs/communications.md): how the Asset reaches Core over IP or a Fieldlink.
+- [Command failures and failsafes](docs/failsafes.md): cancellation, configured rules, and operator overrides.
+- [Subsystem conditions](docs/status.md): hardware-status reporting.
+- [Testing and CI](docs/testing.md): ArduPilot SITL and simulated equipment.
+- [Configuration](config.md) and [logging](docs/logging.md): local options and diagnostic evidence.
+- [Core API](../core/docs/api.md): how the Asset talks to Core.
+- [Protocol](../protocol/README.md): the shared records.
 - AI agents: read [AGENTS.md](AGENTS.md).

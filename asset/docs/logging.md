@@ -1,54 +1,54 @@
 # Asset logging
 
-The Asset records detailed evidence locally throughout an operation, including
-while its Core link is down. It collects both equipment and app events and the
-[SDK's diagnostics](../../sdk/docs/logging.md). No Asset runtime implements this yet.
+The Asset records detailed evidence locally for the whole operation, including
+while it has no contact with Core. It collects its own app and equipment events
+and the diagnostics of its SDK client or Fieldlink. Logging is not implemented yet.
 
 ## Record decisions and observed equipment behavior
 
-- Startup, configured modules and movement profiles, connections to equipment
-  drivers, explicit capability declarations, configuration with secrets removed,
-  and the software and package versions in use.
-- Subsystem condition changes, reasons, and which updates the Asset chose to report.
-- Each requested action and whether it was queued, applied immediately, ignored
-  as a duplicate, cancelled, or rejected locally, with the reason.
-- Task start and final outcome, the equipment observations used to decide them,
-  and command or equipment errors.
-- Each applied setting change, whether operator-requested, locally initiated,
-  queued, or forced by a safe response. Record the resulting value and reason.
-- Failsafe conditions, equipment, contact, and work state, and the selected rule
-  and priority.
-- Interrupted Tasks, primary and fallback outcomes, refused commands, pause or
-  hold changes, and observed equipment behavior.
-- Local contact timing, link loss, continued local execution, reconnects,
-  outgoing reports, and their acknowledgements through the SDK.
-- Diagnostic output failures or gaps, even when the flight behavior continues.
+- Startup, configured modules and movement profiles, equipment-driver
+  connections, the supported commands, configuration with secrets removed, and
+  software and package versions, including the Protocol definitions hash.
+- Each request received, and whether it was queued, run now, ignored as already
+  handled, cancelled, or refused, with the reason.
+- Each Task's start and final state, the equipment observations behind them, and
+  command or equipment errors.
+- Each applied settings change, whether requested, local, queued, or forced by a
+  failsafe, with the resulting value and reason.
+- Failsafe conditions, the selected rule and priority, interrupted Tasks, primary
+  and fallback outcomes, and each operator override.
+- Subsystem condition changes, and which ones the Asset chose to report.
+- Contact changes, link loss and reconnects, report batches sent, and their
+  acknowledgements.
+- Gaps or failures in diagnostic output, even when flight continues.
 
-A command being handed to the flight controller is not proof that the drone
-performed it. Keep the requested action and observed result distinguishable in
-the log. Correlate using the existing message identity and `task_id` where present.
+Handing a command to the flight controller does not show that the drone
+performed it; the log keeps the requested action and the observed result apart.
+Records are correlated by `event_id`, `request_id`, `task_id`, and idempotency
+key where present.
 
 ## Keep the record available without Core
 
-The app owns its local diagnostic destination and combines SDK events with its
-equipment events. The SDK does not open another file or send logs over the radio.
-[Asset configuration](../config.md) inventories the proposed destination, detail,
-message-content, and storage-limit controls.
+The app owns its local diagnostic destination and merges its link's events with
+its equipment events. Neither the SDK client nor a Fieldlink opens another file
+or sends logs over the field link. [Asset configuration](../config.md) lists the
+proposed destination, detail, content, and storage-limit options.
 
-Proposed recording policy: structured local records, with a readable rendering
-and full tracing for the prototype. Exclude credentials. Preserve local event
-order; timestamps from another device do not establish a global event order.
-Do not silently sample or drop records and then call the log complete.
+The proposal is structured local records with a readable rendering, and full
+tracing for the prototype. Credentials are never recorded. Local event order is
+kept; timestamps from another device do not set a global order. The log never
+samples or drops records silently and then claims to be complete.
 
 ## Export the Asset's Reset ZIP
 
-The Asset's archive includes its local app, equipment, and SDK diagnostics;
-configuration with secrets removed; local settings and task outcomes; versions;
-and a readable run summary. It complements Core's archive with what the Asset
-observed while disconnected.
+The Asset's archive holds its app, equipment, and link diagnostics, its
+configuration with secrets removed, its settings and Task outcomes, its versions,
+and a readable run summary. It complements Core's archive with what the Asset saw
+while disconnected. The proposed procedure verifies the archive before
+discarding its source evidence.
 
-The export trigger, retrieval mechanism, file layout, retention, and cleanup
-procedure remain open. The proposed procedure verifies the archive before
-discarding its source evidence. Recording limits and failures must not turn into
-unbounded memory use or block the equipment-control loop indefinitely; the exact
-overflow and full-storage response still needs a decision.
+## Open
+
+- Export trigger, retrieval, file layout, retention, and cleanup.
+- What happens when storage fills or logging cannot keep up, without unbounded
+  memory use or blocking equipment control.

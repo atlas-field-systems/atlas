@@ -3,46 +3,56 @@
 Hardware-free tests and scenario evals are selected requirements for the Asset
 runtime. No runtime, test bench, or Asset CI job is built yet.
 
-Simulated equipment implements the same equipment-driver interfaces used by real
-hardware. Scenarios drive the configured app through its normal interfaces and
-observe state, reported outcomes, and diagnostic evidence. The first setup models
-the ground Pi's Wi-Fi connection to Core and its separate SiK equipment link to
-the quadcopter. Tracker scenarios also cover the minimal reporting-only case.
-Hardware testing remains necessary to check the real equipment integration.
+## ArduPilot SITL and simulated equipment
+
+Quadcopter tests run the Asset app against ArduPilot SITL, through the same
+ArduPilot equipment driver used with the real flight controller. Other equipment
+uses simulated equipment drivers that implement the same interfaces as the real
+drivers. Scenarios drive the configured app through its normal interfaces and
+observe its state, reports, and diagnostics.
+
+The first tests connect the app to Core directly over IP, as in the
+[order of work](../../atlas/api-proposal.md#order-of-work); the gateway path joins
+when the gateway exists. Tracker scenarios cover the minimal reporting-only case.
+Hardware testing is still needed for the real equipment, radios, and flight.
 
 ## Repeatable scenarios
 
-The test bench controls equipment observations, time, and link faults so scenarios
-can run without hardware or live external services. It supports interactive
-inspection and automated runs in CI. Scenario inputs and expected outcomes stay
-in the repository so failures can be reproduced locally.
+The test bench controls equipment observations, time, and link faults, so
+scenarios run without hardware or live external services, interactively or in
+CI. Scenario inputs and expected outcomes live in the repository, so a failure
+reproduces locally. Tests check behavior against the owning docs. Initial
+coverage:
 
-Tests and evals check behavior against the owning docs. Initial coverage includes:
-
-- Configuration, dependency startup order, partial startup cleanup, and shutdown.
-- Local configuration inspection without equipment movement, including missing
-  configuration and effective settings with secrets removed.
-- Connecting before GPS or other equipment is ready, losing a fix, and recovery
-  without presenting an old position as a new measurement.
-- Source and measurement age retained through local state updates and reporting.
-- Task execution, observed completion, failure, cancellation, configured
-  failsafes, and refusal of work after a failsafe locks the operation.
-- Link loss and reconnect while local execution continues, with required outcomes
-  delivered through the SDK.
-- Separate loss of the Core connection and the vehicle equipment link, including
-  a reachable Pi with unavailable vehicle state or control.
-- Rapid local updates with slower reporting, sensor overload, and the selected
+- Configuration, startup order, partial-startup cleanup, and shutdown.
+- Local configuration inspection without moving equipment, including missing
+  options and secrets removed.
+- The [connect sequence](README.md#start-and-connect), including a definitions
+  mismatch, and connecting before GPS or other equipment is ready.
+- Losing a GPS fix without presenting an old position as new, and source and
+  measurement time kept through reporting.
+- Queues arriving whole, stale queue versions, Tasks run with `now`, cancel by
+  `task_id`, repeated events, and a `task_id` never running twice.
+- Task completion, failure, and the cancellation of the remaining Tasks.
+- Configured failsafes, the operator overrides allowed in failsafe state, and
+  refusal of other work.
+- Link loss and reconnect while local execution continues, with final reports
+  resent until acknowledged and history catch-up in report batches.
+- Separate loss of the Core path and the vehicle equipment link, including a
+  reachable Pi with no vehicle state or control.
+- Fast local updates with slower reporting, sensor overload, and the selected
   overflow behavior.
-- Communications choices as paths become available, degraded, or unavailable,
-  once their interfaces and policies are defined.
-- Reporting priorities under congestion and configured relay resource limits,
-  once the SDK and transport policies are defined.
 - [Independent flight-controller protections](failsafes.md#independent-flight-controller-protections)
-  under Asset-app failure, cancellation and the work lock after detected autopilot
-  takeover, and interactions with Atlas responses.
+  under Asset-app failure, and an autopilot takeover during work or during an
+  Atlas response.
 
-CI runs the tests and scenario evals as the corresponding behavior is implemented.
-Failures retain inputs, expected and observed results, and diagnostics for review.
-Evals must name the behavior they assess and their pass criteria. Tools, scenario
-formats, and thresholds remain open. A simulated pass does not prove real flight
-behavior, radio performance, or mesh routing.
+CI runs these as the behavior is built. A failure keeps its inputs, expected and
+observed results, and diagnostics for review. Each eval names the behavior it
+assesses and its pass criteria. A simulated pass does not prove real flight,
+radio performance, or mesh routing.
+
+## Open
+
+- Test tools, scenario formats, and eval thresholds.
+- Scenarios for several links and congestion, once the gateway and Fieldlink
+  designs exist.
