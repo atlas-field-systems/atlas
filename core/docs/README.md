@@ -15,9 +15,9 @@ Selected behavior for the Core runtime. None of it is implemented yet.
 Core and Fusion run in one TypeScript process in one Docker container. Core keeps
 current state in SQLite tables and an ordered
 [event log](api.md#the-event-log-and-live-stream) beside them
-([storage](storage.md)). Plugins sit in the second ring and reach Core through
+([storage](storage.md)). Plugins run in the second ring and reach Core through
 its Plugin interface; for now they run in workers. See the
 [walled city](../../atlas/design-decisions.md#a-walled-city).
 
 [Prototyping findings](experiments/final-report.md) records lessons from earlier
-experiments. Their runtimes and the retained first-flight prototype were removed.
+experiments. Their runtimes and the first-flight prototype were removed.
