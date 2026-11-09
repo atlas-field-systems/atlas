@@ -1,0 +1,19 @@
+{
+  "type": "report.telemetry",
+  "time": 1793667609000,
+  "seq": 9,
+  "from": "A1",
+  "asset_id": "A1",
+  "position": {
+    "latitude": 42.2746,
+    "longitude": -71.8063,
+    "altitudes": [
+      {
+        "altitude_m": 15,
+        "altitude_reference": "launch"
+      }
+    ]
+  },
+  "ground_speed_mps": 0,
+  "heading_deg": 0
+}

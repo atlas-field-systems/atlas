@@ -1,0 +1,9 @@
+{
+  "type": "control.queue",
+  "time": 1793667704000,
+  "seq": 5,
+  "from": "OP1",
+  "asset_id": "A1",
+  "queue_version": 3,
+  "task_ids": []
+}

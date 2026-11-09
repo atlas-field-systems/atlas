@@ -1,0 +1,27 @@
+{
+  "type": "geofeature.set",
+  "time": 1793667800060,
+  "seq": 201,
+  "from": "CORE",
+  "kind": "area",
+  "geofeature_id": "G1",
+  "name": "North field",
+  "area": [
+    {
+      "latitude": 42.2761,
+      "longitude": -71.8031
+    },
+    {
+      "latitude": 42.2768,
+      "longitude": -71.8012
+    },
+    {
+      "latitude": 42.2752,
+      "longitude": -71.8004
+    },
+    {
+      "latitude": 42.2747,
+      "longitude": -71.8025
+    }
+  ]
+}

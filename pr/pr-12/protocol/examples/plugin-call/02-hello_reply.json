@@ -1,0 +1,8 @@
+{
+  "type": "admin.hello_reply",
+  "time": 1793667700050,
+  "seq": 100,
+  "from": "CORE",
+  "operator_id": "OP1",
+  "hello_result": "accepted"
+}
