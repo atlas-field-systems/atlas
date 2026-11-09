@@ -1,12 +1,12 @@
 # Core storage
 
-How Core keeps its data. Selected design, not implemented. Record shapes belong to
-[Protocol](../../protocol/README.md); this page says where Core puts them.
+This design for Core storage is selected but not implemented. Record shapes
+belong to [Protocol](../../protocol/README.md); this page says where Core puts them.
 
 ## Tables hold current state
 
 Core keeps one SQLite database in its `data_directory` ([configuration](../config.md)).
-Current state lives in ordinary tables, read and changed with plain SQL.
+Core reads and changes current state in ordinary tables with plain SQL.
 
 | Table | Holds |
 | --- | --- |

@@ -1,14 +1,14 @@
 # Fusion
 
-Selected direction, not implemented. Observations and Tracks are parked until
+This direction is selected but not implemented. Observations and Tracks wait until
 after first flight.
 [Protocol storage](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/storage.md#observations-and-tracks)
 owns observation and track data. This page owns how Core processes them.
 
 Fusion is a replaceable module inside Core's inner wall, in Core's process. It
 works on Core's state directly, never through the public API.
-Fusion combines Observations with other information to produce Tracks. Reference
-data, including digital elevation models (DEMs), is part of that responsibility.
+Fusion combines Observations with other information to produce Tracks. Fusion
+also handles reference data, including digital elevation models (DEMs).
 Terrain elevation can inform how fusion interprets and combines measurements.
 A target's missing altitude remains unmeasured; DEM data alone does not establish
 that the target is on the ground.
@@ -16,8 +16,8 @@ that the target is on the ground.
 ## Temporary first iteration
 
 The first iteration uses a temporary module that turns every new `asset_id`
-and `observation_id` pair into its own track, listing its source. This keeps
-the first implementation simple while testing the Core-to-fusion boundary.
+and `observation_id` pair into its own track, listing its source. This tests
+the Core-to-fusion boundary with a simple implementation.
 
 For a `coordinates` observation, the module copies its position and uncertainty
 onto the track. For a `bearing` observation, the track has no position. The
