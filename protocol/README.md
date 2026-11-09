@@ -1,17 +1,17 @@
 # Atlas Protocol
 
-The shared records of Atlas, the laws they follow, and the one validator every
+Protocol defines Atlas's shared records, their laws, and the one validator every
 program uses.
 
 A record is a piece of shared data: an Asset's description, a Task, a queue, a
 settings change, a cancel, or a report. Core, the SDK, gateways, and Assets all
 build, check, and store the same records from these plain JSON files. Protocol
-does not say how programs talk: the [Core API](../core/docs/api.md) carries
+does not define how programs talk. The [Core API](../core/docs/api.md) carries
 records over IP, and Fieldlinks carry them across field links. Local configuration
 and diagnostic logs belong to the components that use them.
 
-Protocol is an unpublished draft. When it is published, its package version is
-its only version; definitions and records carry none.
+Protocol is an unpublished draft. Its package version will be its only version.
+Definitions and records carry none.
 
 ## Records
 
@@ -33,12 +33,12 @@ until after first flight.
 
 ## Try it
 
-- **Web viewer:** https://atlas-field-systems.github.io/atlas/protocol/
-- **From a clone (Node 22+), in `protocol/`:** `npm ci && npm run cli`. Use `npm run site` for the web viewer at http://localhost:8080.
+- Web viewer: https://atlas-field-systems.github.io/atlas/protocol/
+- From a clone (Node 22+), in `protocol/`: `npm ci && npm run cli`. Use `npm run site` for the web viewer at http://localhost:8080.
 
 Pick a definition to see its description, its fields, an example, whether it is
 valid, and its size (compact and compressed). Edit any field to see the effect.
-Both tools only display what the definitions say; they never send anything.
+Both tools only display what the definitions say. They never send anything.
 
 ## Layout
 

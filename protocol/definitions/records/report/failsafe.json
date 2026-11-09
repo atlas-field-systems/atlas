@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe.json",
   "title": "Failsafe",
-  "description": "From an Asset, sent as soon as a failsafe triggers and it acts by itself. kind is the trigger (what happened). response is what the Asset does about it.",
+  "description": "The Asset sends this as soon as a failsafe triggers and it acts by itself. kind is the trigger. response is what the Asset does about it.",
   "type": "object",
   "required": [
     "type",
