@@ -20,18 +20,25 @@ is locked. Propose changes to the owner rather than making them quietly. See
 | Folder | What lives there | Status |
 |---|---|---|
 | [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide design decisions | Active |
-| [protocol/](protocol/) | The spec: shared domain data (messages and domain-storage records) as definitions, laws, examples and docs. Component configuration and diagnostic logs live with their owners. When published, its package version is its only version; definitions and messages carry no protocol version | Draft, unpublished |
-| [sdk/](sdk/) | The SDK: the one implementation every program uses (build, validate, parse, keys, retry, duplicates), plus transport adapters (WebSocket, Meshtastic, FLRC) as their own packages. Loads Protocol's definitions; defines no message itself. Runtime code is not built yet | Draft docs, runtime not built |
-| [core/](core/) | Atlas Core: the server that keeps the shared picture and requests work. First-flight prototype; pins a Protocol release tag. Will adopt the SDK front door (shared `check()`, no second validation engine) once the SDK exists | Prototype |
+| [protocol/](protocol/) | The spec: shared domain records as definitions, laws, examples and docs, plus the one validator. Component configuration and diagnostic logs live with their owners. When published, its package version is its only version; definitions and records carry no protocol version | Draft, unpublished |
+| [sdk/](sdk/) | The SDK: the client for the Core API, used by operator applications, Assets on IP and gateways. Loads Protocol's definitions; defines no record itself. Runtime code is not built yet | Draft docs, runtime not built |
+| [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the Core API, and runs Fusion. The retained first-flight prototype pins a historical Protocol release tag and will be removed | Prototype |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
-- Want the exact shape of a message or of stored data? Go to `protocol/`.
-- Want how Core works inside? Go to `core/`.
+- Want the exact shape of a record? Go to `protocol/`.
+- Want how Core works inside, or the Core API? Go to `core/`.
 - Want how an Asset behaves? Go to `asset/`.
 - Want how the command interface works? Go to `command-interface/`.
-- Want how a gateway, Asset or app talks to Core, or how bytes cross a link? Go to `sdk/`.
+- Want the client programs use to call the Core API? Go to `sdk/`.
+- Want how gateways and Fieldlinks carry Atlas across a field link? Not written
+  yet; see [Fieldlinks](atlas/api-proposal.md#fieldlinks).
+
+Atlas is moving from one shared message model to a
+[Core API with gateways](atlas/api-proposal.md). The Charter and design decisions
+follow it. Protocol, SDK, Core, Asset and Command Interface docs still describe
+the earlier model until each is updated.
 
 Each folder has its own `AGENTS.md` with its local rules. Read it before working there.
 Links of the form `https://github.com/atlas-field-systems/atlas/blob/main/<path>` are
