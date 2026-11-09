@@ -12,9 +12,8 @@ Because the Asset is on the ground, that elevation is its altitude above sea lev
 The Asset can then report altitude above sea level as well as above its launch point.
 
 The elevation comes from a Plugin that offers the `ground_elevation` action
-(see [Plugins](plugins.md#ground-elevation-for-an-asset-later)). Plugins wait
-until after first flight. Operators will call them before Assets can, so this
-idea waits for Plugins.
+(see [Plugins](plugins.md#ground-elevation-for-an-asset-later)). Operators will
+call Plugins before Assets can, so this idea waits until Assets can call them.
 
 Open question: how accurate the elevation must be.
 

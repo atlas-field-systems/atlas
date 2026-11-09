@@ -57,8 +57,7 @@ A Raspberry Pi with an uplink and an ADS-B receiver, such as an RTL-SDR, reports
 Observations about aircraft. Its own position is its telemetry, not an
 Observation. It needs no equipment-control commands. Core's Fusion decides Tracks.
 
-Observation contracts and pointing commands wait until after first flight, so
-the turret and receiver are later Assets.
+Observation records and pointing commands are not designed yet.
 
 ## Modules and equipment drivers
 

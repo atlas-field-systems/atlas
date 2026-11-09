@@ -29,8 +29,9 @@ Assets, and operator applications sit outside the city and reach Core only
 through the public Core API. [Design decisions](design-decisions.md#a-walled-city)
 has the layout.
 
-Inside Core, Entities, Tasks, and Objects keep interfaces small enough to rebuild
-one without rebuilding Atlas. Authentication and administration support them.
+Inside Core, [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md)
+such as Entities, Tasks, and Objects keep interfaces small enough to rebuild one
+without rebuilding Atlas.
 
 Core retains the shared picture and requests for work. Separate projects provide
 vehicle control, field links, map rendering, and operator applications.

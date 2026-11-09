@@ -1,8 +1,7 @@
 # Fusion
 
-This direction is selected but not implemented. Observations and Tracks wait until
-after first flight.
-Their record definitions wait in
+This direction is selected but not implemented. The Observation and Track records
+are not designed yet. Their earlier definitions wait in
 [Protocol's parked folder](https://github.com/atlas-field-systems/atlas/blob/main/protocol/parked/README.md). This page owns how Core processes them.
 
 Fusion is a replaceable module inside Core's inner wall, in Core's process. It

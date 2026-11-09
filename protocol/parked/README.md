@@ -1,7 +1,8 @@
 # Parked definitions
 
 Geo feature, Object, Plugin, Observation, and gimbal definitions wait here until
-after first flight, when [scope reopens](../../atlas/design-decisions.md#first-flight-comes-first).
+they are reworked into records. They are part of the product, which is
+[designed whole](../../atlas/design-decisions.md#design-the-whole-product-then-build-it).
 They keep the layout of `definitions/` but are not listed in its `index.json`,
 not checked, and not shown by the tools. They still use the earlier message shape
 (`seq`, `from`, replies, and hello references), and their references point at

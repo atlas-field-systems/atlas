@@ -44,4 +44,4 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
 
 ## Plugins
 
-Plugin records are [parked](../parked/README.md) until after first flight.
+Plugin records are [parked](../parked/README.md) until they are reworked.

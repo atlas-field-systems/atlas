@@ -1,7 +1,7 @@
 # Plugins
 
-**Parked until after first flight.** This page records the owner's intended use.
-No Plugin exists yet.
+This page records the owner's intended use. Plugins are part of the product and
+are built with the rest of it. No Plugin exists yet.
 
 A Plugin is a small program that runs beside Core and offers actions. An
 operator runs an action with inputs, such as an area or a building. The Plugin
@@ -13,7 +13,7 @@ uses its tools, often open-source services, to gather and return information.
   [walled city](design-decisions.md#a-walled-city). They reach Core only through
   its Plugin interface, never its storage. Reading Entities or storing Objects
   goes through that interface.
-- The Core API will carry Plugin calls after first flight. That is how the
+- The Core API will carry Plugin calls. That is how the
   Command Interface uses a Plugin from outside the city.
 - Operators call Plugins first. Assets will be able to call them later.
 - Plugins do not direct Assets or issue Tasks.
@@ -89,7 +89,7 @@ a barometer or the altitude of its launch point.
 
 How the Command Interface shows Plugins and their results is not decided.
 The Plugin interface, the Core API's Plugin calls, and how a Plugin is installed
-and started wait until after first flight.
+and started are not designed yet. Each Plugin may run in its own container.
 
 These cases are borderline and need a decision before such a Plugin is built:
 
