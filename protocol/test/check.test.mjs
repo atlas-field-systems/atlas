@@ -1,4 +1,3 @@
-// Proves npm run check enforces the checked laws: break a copy of definitions/ and it must fail.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -8,7 +7,6 @@ import { join } from 'node:path';
 
 const check = (defs) => spawnSync('node', ['scripts/check.mjs'], { env: { ...process.env, ATLAS_DEFINITIONS: defs }, encoding: 'utf8' });
 
-// Copies definitions/, lets change() edit the first record listed in index.json, and runs the check.
 const broken = (change) => {
   const defs = join(mkdtempSync(join(tmpdir(), 'atlas-check-')), 'definitions');
   cpSync('definitions', defs, { recursive: true });
