@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/queue.json",
   "title": "Queue",
-  "description": "An Asset's whole task list, in the order it runs: every Task it has not started, each a whole Task body. It replaces the Asset's list. queue_version is the version of the Asset's list it was built on. A Task that leaves the list without starting is reported cancelled. An empty list clears the queue.",
+  "description": "An Asset's whole task list in execution order. It includes every Task it has not started, each with its whole Task body. It replaces the Asset's list. queue_version is the version of the Asset's list it was built on. The Asset reports a Task cancelled if it leaves the list without starting. An empty list clears the queue.",
   "type": "object",
   "required": [
     "time",

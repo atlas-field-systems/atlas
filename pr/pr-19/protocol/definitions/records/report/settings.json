@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/settings.json",
   "title": "Settings",
-  "description": "From an Asset: some or all of its settings, each an explicit end state. A setting left out is unchanged. The Asset sends one when it starts or reconnects, with every setting it knows; when it changes a setting itself; and to confirm a settings_change, which request_id names. A Task of kind settings is confirmed by its report.status kind task instead. Each setting keeps the value from its newest report by time, then by event order; an older report never replaces a newer value.",
+  "description": "The Asset reports some or all of its settings, each an explicit end state. A setting left out is unchanged. The Asset sends every setting it knows when it starts or reconnects. It also sends a report when it changes a setting itself and to confirm a settings_change, which request_id names. A Task of kind settings is confirmed by its report.status kind task instead. Each setting keeps the value from its newest report by time, then by event order. An older report never replaces a newer value.",
   "type": "object",
   "required": [
     "type",
