@@ -1,78 +1,79 @@
 # Using Atlas
 
-An operator application shows field information and lets a person request work.
-Core holds the shared picture and the requests. A gateway carries traffic across
-the field link. The Asset runtime controls its equipment and reports what happened.
+An operator uses the Command Interface to watch Assets and request work.
+Core keeps the shared picture, the requests, and the event log. A gateway carries
+Atlas across a field link. The Asset app controls its equipment and reports what
+happened.
 
-## The usual field path
+## The walled city
 
 ```mermaid
-flowchart TD
-    subgraph Core
-        C[Shared state and requests]
-        P[Plugin subsystem] <--> C
+flowchart LR
+    subgraph City[Atlas deployment]
+        subgraph Inner[Inner wall]
+            C[Core: API, event log, Tasks, storage]
+            F[Fusion]
+        end
+        P[Plugins]
     end
-    U[Operator application] <-->|IP| C
-    C <-->|IP| G[Gateway]
-    G <-->|Available field links| A[Physical Asset runtime and equipment]
-    D[Direct-IP Asset, often digital] <-->|IP| C
+    F <-->|Shared state| C
+    P <-->|Plugin interface| C
+    UI[Command Interface] <-->|Core API| C
+    D[Direct-IP Asset] <-->|Core API| C
+    G[Gateway] <-->|Core API| C
+    G <-->|Fieldlink| A[Radio Asset]
 ```
 
-The direct-IP path is available. Most physical Assets use the gateway path.
-Applications and gateways can use an SDK or the public API.
-The gateway represents the implementation used for that field link. Different
-gateway implementations can coexist as [connectivity evolves](environment.md#connectivity-evolves).
-The diagram shows system responsibilities, not process boundaries, wire messages,
-or a required network topology.
+Core and Fusion sit inside the inner wall. Plugins sit in the second ring and are
+parked until after first flight. Everything else sits outside the city and reaches
+Core only through the [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md).
+[Design decisions](design-decisions.md#a-walled-city) has the layout.
 
-The [first-flight setup](first-flight.md) places the Asset runtime on a ground
-Raspberry Pi connected to Core over Wi-Fi. A separate SiK equipment link connects
-that Pi to the ArduPilot vehicle. The runtime represents the vehicle even though
-it is not aboard it.
+Most physical Assets use the gateway path. The gateway and the radio Asset run the
+same Fieldlink package for their field link. A direct-IP Asset, often a digital
+one, calls the Core API itself. Different gateways can coexist as
+[connectivity evolves](environment.md#connectivity-evolves). The diagram shows
+responsibilities, not a required network topology.
+
+The [first-flight setup](first-flight.md) runs the Asset app on a ground Raspberry
+Pi that calls the Core API directly over IP, with no gateway. A separate SiK
+equipment link connects that Pi to the ArduPilot vehicle. The app represents the
+vehicle even though it is not aboard it.
 
 ## What the parts do
 
 | Part | Responsibility |
 | --- | --- |
-| Operator application | Human interaction and presentation |
-| Protocol and SDK | Shared contracts and client access |
-| Core | Shared state, retained evidence, and requests for work |
-| Gateway | Translation and forwarding across the field link |
-| Asset runtime | Equipment control, local execution, and reports of its effects |
-| Plugin subsystem within Core | Acquiring, analyzing, and publishing information |
+| [Command Interface](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/README.md) | Human interaction and presentation |
+| [Protocol](https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md) | The shared records and their one validator |
+| [SDK](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md) | The client for the Core API |
+| Core | The shared picture, the event log, Tasks, and the Core API |
+| Fusion | Combining evidence into the shared picture, inside Core |
+| [Plugins](plugins.md) | Actions that gather and publish information; parked until after first flight |
+| Gateway | Uplinking to the Core API and running Fieldlinks |
+| Fieldlink | Carrying Atlas across one kind of field link |
+| [Asset app](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md) | Equipment control, local execution, failsafes, and reports of its effects |
 
-The Asset runtime is planned in [asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
-and the operator application in
-[command-interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface).
+## An operation runs without restarts
 
-## The four pillars
-
-Entities describe Assets, their Observations, shared Tracks, and authored Geofeatures.
-Tasks describe requested work and reported outcomes.
-Objects hold files and their metadata.
-[Plugins](plugins.md) run inside Core and offer actions, such as finding every
-building in an area. They do not control Assets.
-
-Core runs in Docker as a set of modules, such as the API and data storage.
-One module is the Plugins module. Plugins are small and run inside it.
 Core starts before any other part of an operation and stops after all of them.
-Core, gateways, Assets, and their SDK instances stay running for the operation.
-Process restarts during an operation are outside the current design. Links can
-drop and reconnect while those same processes keep their state.
-An Asset's [settings](settings.md) are its current configuration, kept in its entry.
+Core never restarts during an operation. Gateways and Assets stay running too.
+Links can drop and reconnect while those processes keep their state, and a
+refreshed Command Interface recovers from Core's event log. An Asset restart is
+rare. If one occurs, the system is spun down to evaluate the failure.
 
-Each subsystem's documentation defines its behavior. Authentication and
-administration support the pillars.
+An Asset's [settings](settings.md) are its current configuration, kept in its entry.
 
 ## Information-focused stories
 
-These stories describe intended use.
+These stories describe intended use. Observations, Objects, and Plugins wait
+until after first flight.
 
 ### Locate the tracker
 
 A reporting-only Asset is a Raspberry Pi with a GPS peripheral and an uplink.
-It starts obtaining its own position and reports telemetry to Core for an operator
-to see. It accepts no equipment-control commands. If it loses its GPS fix, Atlas
+It obtains its own position and reports telemetry to Core for the operator.
+It accepts no equipment-control commands. If it loses its GPS fix, Atlas
 retains its last known position and the reported GPS condition. The tracker does
 not send the old position as a new fix.
 
