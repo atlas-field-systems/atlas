@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/now.json",
+  "title": "now",
+  "description": "On a queue, replace the Asset's list at once, whatever version it was built on, and run its first Task now, even while paused. If left out, it means false.",
+  "type": "boolean",
+  "examples": [
+    true
+  ]
+}
