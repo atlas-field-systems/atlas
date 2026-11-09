@@ -1,0 +1,13 @@
+{
+  "type": "geofeature.set",
+  "time": 1793667801011,
+  "seq": 204,
+  "from": "CORE",
+  "kind": "point",
+  "geofeature_id": "G2",
+  "name": "Helipad",
+  "position": {
+    "latitude": 42.2746,
+    "longitude": -71.8063
+  }
+}

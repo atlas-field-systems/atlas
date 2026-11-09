@@ -1,0 +1,87 @@
+{
+  "title": "Plugin call",
+  "source": "An operator interface learns which Plugins Core has, runs a Plugin action, asks for the Plugin list again, and sees a call that fails.",
+  "branches": {
+    "main": "A call that finishes",
+    "failed": "A call that fails"
+  },
+  "steps": [
+    {
+      "branch": "main",
+      "from": "Operator",
+      "to": "Core",
+      "file": "01-operator_hello.json",
+      "why": "The operator interface says hello."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "02-hello_reply.json",
+      "why": "Core accepts."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "03-plugin-describe.json",
+      "why": "Core pushes one plugin.describe per Plugin with the Asset descriptions: Plugin DEM offers ground_elevation."
+    },
+    {
+      "branch": "main",
+      "from": "Operator",
+      "to": "Core",
+      "file": "04-call-ground_elevation.json",
+      "why": "The operator asks DEM for the ground elevation at a point."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "05-result-ground_elevation.json",
+      "why": "One result item, naming the call by reply_from and reply_to. Plugins are inside Core, so from is CORE."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "06-reply.json",
+      "why": "The reply comes last and marks the end: the call finished."
+    },
+    {
+      "branch": "main",
+      "from": "Operator",
+      "to": "Core",
+      "file": "07-query-core-plugins.json",
+      "why": "Later the operator asks again which Plugins Core has."
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "08-plugin-describe.json",
+      "why": "One plugin.describe per Plugin,"
+    },
+    {
+      "branch": "main",
+      "from": "Core",
+      "to": "Operator",
+      "file": "09-reply.json",
+      "why": "then the reply that ends the answer."
+    },
+    {
+      "branch": "failed",
+      "from": "Operator",
+      "to": "Core",
+      "file": "10-call-ground_elevation.json",
+      "why": "The operator asks for a point the Plugin's elevation data does not cover."
+    },
+    {
+      "branch": "failed",
+      "from": "Core",
+      "to": "Operator",
+      "file": "11-reply-failed.json",
+      "why": "The Plugin ran and broke, so the reply is failed with an explanation, not refused. Refused would mean Core never ran the call."
+    }
+  ]
+}
