@@ -1,137 +1,154 @@
-# Asset docs
+# Asset behavior
 
-The Asset app maintains its own state, reports information, and carries out
-supported work through configurable modules and equipment drivers. The
-[Asset model](assets.md) describes initial Assets and the selected structure.
-[Configuration](../config.md) separates selected requirements from proposed
-options. [Subsystem conditions](status.md) describes hardware-status reporting.
+The Asset app keeps its own state, reports what it observes, and carries out
+supported work through configurable [modules and equipment drivers](assets.md).
+This is selected planning direction; no runtime is built yet.
 
-This is selected planning direction. No Asset runtime is built yet, and several
-[shared contracts](../../protocol/docs/open-questions.md#unresolved) still need
-exact definitions. These pages do not claim that current schemas express them.
+Records named here are Protocol's: the description, Task, queue, settings
+change, and cancel, and the task, queue, telemetry, battery, settings, and
+failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
 ## Start and connect
 
-The communications module supplies the Asset's identity and explicit supported
-command list to the SDK. Once identity, clock, and communications are ready, the
-Asset can connect using the [SDK connection sequence](../../sdk/docs/links.md).
-Equipment readiness is separate from connection readiness. Waiting for GPS,
-a flight controller, a camera, or a detector does not hide an otherwise reachable
-Asset.
+An admin provisions the Asset in Core and copies its `asset_id` and key into its
+[configuration](../config.md). There is no enrollment key. Once its identity,
+clock, and communications are ready, the Asset connects in the order the
+[Core API](../../core/docs/api.md#asset-and-gateway-calls) sets: check the
+definitions hash, send its description, report its known settings, its queue,
+and any final Task reports Core has not acknowledged, then follow its requests
+from the last event it handled. Through a Fieldlink, the gateway makes these
+calls for it. A definitions mismatch stops the connection, and the Asset logs
+the explanation.
 
-Supported settings are separate from their currently known values. An Asset may
-support home before it has a position to establish home. A reporting-only Asset
-needs no artificial home, run state, task queue, or settings report when it
-supports none of those functions. Protocol's current connection rules do not yet
-express the complete [minimal startup path](../../protocol/docs/open-questions.md#unresolved).
+Equipment readiness is separate from connection readiness. Waiting for GPS, a
+flight controller, a camera, or a detector does not hide an otherwise reachable
+Asset. Supported settings are separate from their known values: an Asset may
+support home before it has a position to set it. A reporting-only Asset sends
+no artificial home, queue, or settings report.
 
-The example configurations start acquisition and reporting automatically.
-A tracker obtains position, an ADS-B receiver listens, and a turret observes from
-its current orientation. The quadcopter waits for work before arming or taking
-off. Startup behavior is configurable, as described in the [Asset model](assets.md#configuration-and-commitments).
+The example configurations start acquisition and reporting at once. A tracker
+obtains position, an ADS-B receiver listens, and a turret observes from its
+current orientation. The quadcopter waits for work before arming or taking off.
 
 ### Position and home
 
-Position can come from equipment or manual configuration for a stationary Asset.
+Position comes from equipment, or from configuration for a stationary Asset.
 Unknown position stays unknown. A GPS tracker without a valid fix sends no new
-position update. A lost fix leaves Core with its last known position and the
-reported GPS condition. A configured stationary position remains valid while it
-describes the installation.
+position, so Core keeps its last known position. A configured stationary
+position stays valid while it describes the installation.
 
-An Asset exposes home where its behavior uses it. The first quadcopter establishes
-home once its first valid startup position is available. An explicitly configured
-or operator-set home takes precedence over automatic initialization. Home is not
-reset by a reconnect. Operators can change it through supported settings.
+An Asset exposes home where its behavior uses it. The quadcopter sets home from
+its first valid position. An explicitly configured or operator-set home takes
+precedence. A reconnect does not reset home; operators change it as a setting.
 
-The app and its SDK instance stay running for the operation. The
-[operating assumption](../../atlas/using-atlas.md#the-four-pillars) excludes process
-restart recovery. A dropped field link does not restart the app or clear state.
+The app and its link stay running for the operation, as Core does. An Asset
+restart is rare and means the system is spun down to evaluate; there is no
+mission recovery after one. A dropped link does not restart the app or clear
+its state.
 
 ## Carry out work and report its result
 
-Core owns [request admission](../../core/docs/requests.md), using shared SDK
-validation before forwarding work. The Asset retains decisions that require
-current equipment knowledge. Equipment can change after Core accepts a request.
+Core [checks requests](../../core/docs/requests.md) before passing them on. The
+Asset keeps the decisions that need current equipment knowledge, because
+equipment can change after Core accepts a request. Receiving a Task is not
+completing it.
 
-For [first flight](../../atlas/first-flight.md), the ground Pi's Asset app holds
-the complete Takeoff, Move To, Land list before starting. The
-[SDK queue helper](../../sdk/docs/task-queue.md) holds and orders Tasks. The app
-coordinates execution through the appropriate module and equipment drivers.
-Receiving a Task is not completing it.
+The Asset reports each Task `active` when it starts, then one final state:
+`completed`, `failed`, or `cancelled`. Completion follows the observed equipment
+result. If required equipment or position is unavailable when a Task starts, the
+Task fails with an explanation rather than waiting. Becoming ready later does
+not revive failed work. A failed Task
+[cancels the remaining Tasks](failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
-If required equipment or position is unavailable when a Task starts, fail the
-attempt with an explanation rather than waiting indefinitely for readiness.
-Normal platform preparation remains part of execution. Becoming ready later
-does not revive failed work. Another attempt needs new Tasks.
+### The queue
 
-The app reports work starting and its completion, failure, or cancellation.
-Completion follows the observed equipment result. The SDK delivers final
-reports to Core, retrying through link loss until Core acknowledges them.
-[Subsystem conditions](status.md#reports-describe-equipment) do not impose a
-separate health gate on execution.
+The Asset holds its own queue. A queue reaches it whole, with its version and
+every Task body, and the Asset applies it under the
+[Core API's queue rule](../../core/docs/api.md#asset-and-gateway-calls). For
+[first flight](../../atlas/first-flight.md), the ground Pi therefore holds the
+complete Takeoff, Move To, Land list before starting it.
+
+The Asset never runs a `task_id` twice. A Task that has started or ended never
+starts again, whether it reappears in an old list, a repeated event, or after a
+reconnect. Another attempt needs a new Task.
+
+### Tasks that run now
+
+Every command is a Task, including immediate ones. A Task sent with `now`
+replaces the queue and runs at once, even while the Asset is paused. The Asset
+reports the Task it interrupted and every Task it dropped as `cancelled`, and
+the new Task reports its outcome like any other.
+
+### Cancel
+
+Cancel names one Task. A queued Task leaves the queue; an active Task stops its
+work. Either is reported `cancelled`, and the other Tasks stay in the queue.
+Cancelling a Task that has already ended changes nothing.
 
 ### Prepare and take off
 
 When a copter Takeoff Task runs, its movement profile performs the preparation
-that the platform requires and can control. This includes establishing
-flight-controller control, selecting the required mode and takeoff settings,
-and arming. The operator needs no separate software arming action.
+the platform requires and can control: establishing flight-controller control,
+selecting the mode and takeoff settings, and arming. The operator needs no
+separate arming action.
 
-Some platforms require a physical switch or button before arming. The app
-respects that requirement. If it is unmet when Takeoff runs, the app fails the
-Task with an explanation. It does not wait for someone to enable the switch or
-button. Enabling it later does not revive the failed Task.
-
-Arming alone does not complete Takeoff. Completion follows the observed takeoff
-result. Equipment-specific evidence, tolerances, and timeouts remain open.
+Some platforms require a physical switch or button before arming. If it is
+unmet when Takeoff runs, the Task fails with an explanation; the app does not
+wait. Arming alone does not complete Takeoff; completion follows the observed
+takeoff.
 
 ### Pause
 
-Pause suspends the current movement. Each Asset handles the physical response:
-copters stop and loiter at their current position, fixed-wing aircraft loiter,
-and ground vehicles brake and stop. Paused Assets do not advance their Task queue.
-Configured failsafes still override pause.
+Pause is a setting, not a Task. It suspends current movement with a
+platform-specific hold: copters stop and loiter in place, fixed-wing aircraft
+loiter, and ground vehicles brake and stop. A paused Asset does not advance its
+queue, though a Task sent with `now` still runs. Configured failsafes override
+pause.
 
-Task reporting and continuation after Resume remain
-[open](../../protocol/docs/open-questions.md#unresolved).
+### Settings
 
-### Other commands and settings
-
-Immediate commands and cancel follow
-[Protocol's rules](../../protocol/docs/communication.md#immediate-commands-and-cancel).
-The app performs the motion or hold. The SDK never controls equipment.
-Settings follow the [shared contract](../../protocol/docs/communication.md#settings).
-Apply new immediate changes in receipt order and queued changes when their Task
-runs. Report resulting values rather than comparing operator and Asset clocks.
+A settings change names end states, so repeating one changes nothing. The Asset
+applies immediate changes in event order, alongside its own local changes, and a
+settings change Task when that Task runs. It reports the resulting values in a
+settings report rather than comparing operator and Asset clocks.
 
 ## Handle failures and link loss
 
-The app monitors equipment, work, its queue where supported, and SDK contact
-information. [Command failures and failsafes](failsafes.md) owns cancellation,
-configured conditions, response Tasks, and the operation-long work lock.
-These decisions remain local so they can operate without Core contact.
+The app watches its equipment, its work, and its contact with Core. Contact
+comes from the [Core API's contact rule](../../core/docs/api.md#contact) on IP, or
+from the Fieldlink on radio. [Command failures and failsafes](failsafes.md) owns
+cancellation, configured conditions, response Tasks, and operator overrides.
+These decisions stay local so they work without Core.
 
-Link loss is timed locally under
-[Protocol's contact rules](../../protocol/docs/communication.md#losing-the-link).
-On reconnect the app keeps its execution state while the SDK restores message
-delivery and applicable queue reporting. Reconnecting alone never restarts a Task.
+On reconnect, the app keeps its execution state and repeats the connect
+sequence. Reconnecting never restarts a Task. Core refuses commands while the
+Asset is offline, so nothing waits to be delivered.
 
 ## Record and send report history
 
-An Asset can record more domain reports than its live link can carry. For the
+An Asset can record more reports than its live link can carry. For the
 [model-rocket flight](../../command-interface/docs/README.md#review-a-model-rocket-flight),
-retain the additional samples locally while sending a live subset. After landing,
-use restored contact or a faster link to deliver retained reports through the
-ordinary [report catch-up path](../../protocol/docs/communication.md#report-catch-up).
-Assets returning after a disconnection use the same path.
+it keeps the extra samples locally and sends a live subset. After landing, with
+contact restored or a faster link available, it sends the retained reports in
+[report batches with their original times](../../core/docs/api.md#asset-and-gateway-calls).
+An Asset returning after a disconnection catches up the same way.
 
-These reports populate shared history; they are separate from local diagnostic
-logs and Reset ZIP exports. Recording limits, delivery tracking, and completion
-evidence remain [open](../../protocol/docs/open-questions.md#unresolved).
+These reports fill shared history. They are separate from local diagnostic logs
+and Reset ZIPs.
 
 ## Shut down and retain evidence
 
-The app records equipment, module, and SDK evidence locally throughout the
+The app records equipment, module, and link evidence locally for the whole
 operation, including while disconnected. [Logging](logging.md) owns that record
-and the Asset's own Reset ZIP. Shutdown and archive retrieval mechanisms remain
-open. No remote shutdown command or process restart recovery is selected here.
+and the Asset's own Reset ZIP. There is no remote shutdown command.
+
+## Open
+
+- What a platform does when its active Task is cancelled, and whether the next
+  Task then starts.
+- Task reporting and continuation after a paused Asset is set running again.
+- Equipment-specific completion evidence, tolerances, and timeouts.
+- Recording limits, catch-up pacing, and how a reader knows history is complete.
+- Shutdown and archive retrieval.
+- The records this page names, as Protocol moves from messages to records
+  ([open questions](../../protocol/docs/open-questions.md)).
