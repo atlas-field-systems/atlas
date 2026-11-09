@@ -1,38 +1,52 @@
 # Atlas Protocol
 
-The single definition of every Atlas message, and the guide for how Atlas stores data.
+The shared records of Atlas, the laws they follow, and the one validator every
+program uses.
 
-It covers how shared data moves between parts of Atlas and how it is stored.
-Core, the SDK cache, and Assets store data built from these same definitions.
-Shared formats are described here, once, in plain JSON files. Local configuration
-and diagnostic logs belong to the runtime components that use them.
-Core, the SDK, Assets, and the tools all read from these files.
-When we improve the protocol, everything that uses it improves.
+A record is a piece of shared data: an Asset's description, a Task, a queue, a
+settings change, a cancel, or a report. Core, the SDK, gateways, and Assets all
+build, check, and store the same records from these plain JSON files. Protocol
+does not say how programs talk: the [Core API](../core/docs/api.md) carries
+records over IP, and Fieldlinks carry them across field links. Local configuration
+and diagnostic logs belong to the components that use them.
 
 Protocol is an unpublished draft. When it is published, its package version is
-its only version. Definitions and messages carry no protocol version, and links
-do not negotiate one.
+its only version; definitions and records carry none.
 
-A CLI and a web viewer show any message, its example, and its size.
-They only display what the definitions say, so changing the protocol never means
-changing the tools.
+## Records
+
+| Record | What it is | Who makes it |
+| --- | --- | --- |
+| `description` | What an Asset is: its reports, command kinds, and cameras | Asset |
+| `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
+| `queue` | An Asset's whole task list, with every Task body | Core |
+| `settings_change` | Settings to change now | Core, for an operator |
+| `cancel` | Cancel one Task | Core, for an operator |
+| `report.status` | How the Asset, one Task, or its task list stands | Asset |
+| `report.telemetry`, `report.battery` | Where it is and how it moves; its battery | Asset |
+| `report.settings` | Its settings' values | Asset |
+| `report.failsafe` | A failsafe triggered and what the Asset does | Asset |
+
+Each record has its own definition with a description and examples. Geo feature,
+Object, Plugin, Observation and gimbal definitions are [parked](parked/README.md)
+until after first flight.
 
 ## Try it
+
 - **Web viewer:** https://atlas-field-systems.github.io/atlas/protocol/
 - **From a clone (Node 22+), in `protocol/`:** `npm ci && npm run cli`. Use `npm run site` for the web viewer at http://localhost:8080.
 
-Pick a definition, and you'll see its description, its fields, an example, whether
-it's valid, its size (compact and compressed), and its largest fields. Edit any
-field to see the effect. Both tools only display; they never send anything.
+Pick a definition to see its description, its fields, an example, whether it is
+valid, and its size (compact and compressed). Edit any field to see the effect.
+Both tools only display what the definitions say; they never send anything.
 
 ## Layout
-- `definitions/`: variables, components, messages, and `index.json`
-- `docs/laws.md`: the rules every message must follow
-- `docs/decisions.md`: the decisions behind the format
-- `docs/communication.md`: how parts behave on a link. `docs/storage.md`: how Core stores what it knows
-- `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer
-- `scripts/check.mjs`: checks every definition and example (`npm ci && npm run check && npm test`)
 
-The [SDK](../sdk/README.md), the one implementation every program uses, has its own folder beside this one.
+- `definitions/`: `variables/`, `components/`, `records/`, and `index.json`. The examples in each definition are the test vectors.
+- `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: choices behind the records. `docs/open-questions.md`: what is not decided.
+- `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer.
+- `scripts/check.mjs`: checks every definition and its examples (`npm ci && npm run check && npm test`).
+- `parked/`: definitions waiting until after first flight. Not checked.
 
-AI agents: read [AGENTS.md](AGENTS.md). Undecided items: [docs/open-questions.md](docs/open-questions.md).
+The [SDK](../sdk/README.md) is the client for the Core API and loads these
+definitions. AI agents: read [AGENTS.md](AGENTS.md).

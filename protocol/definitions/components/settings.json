@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/settings.json",
   "title": "settings",
-  "description": "An Asset's settings, each an explicit end state (law 9). report.settings and control.settings carry them as settings. At least one is present. home_position is where return_to_home goes: the Asset sets it to where it starts up, before its hello, and an operator can move it.",
+  "description": "An Asset's settings, each an explicit end state. At least one is present. home_position is where return_to_home goes: the Asset sets it to where it starts up, and an operator can move it.",
   "type": "object",
   "additionalProperties": false,
   "minProperties": 1,

@@ -12,7 +12,6 @@ cpSync(defs, `${out}/definitions`, { recursive: true });
 cpSync('docs', `${out}/docs`, { recursive: true });
 const docs = readdirSync('docs', { recursive: true }).filter((f) => f.endsWith('.md')).sort();
 writeFileSync(`${out}/docs/index.json`, JSON.stringify(docs));
-cpSync('examples', `${out}/examples`, { recursive: true });
 const prs = process.env.SITE_PULL_REQUESTS ? JSON.parse(readFileSync(process.env.SITE_PULL_REQUESTS, 'utf8')) : [];
 writeFileSync(`${out}/pull-requests.json`, JSON.stringify(prs));
 console.log(`Built ${out}/`);

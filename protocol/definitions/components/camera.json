@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/camera.json",
   "title": "camera",
-  "description": "One camera, declared once in admin.hello. yaw_deg and pitch_deg give where it faces relative to the nose, and optional roll_deg its roll; for a gimbal, its rest direction. Live gimbal pointing is report.gimbal.",
+  "description": "One camera, declared in the Asset's description. yaw_deg and pitch_deg give where it faces relative to the nose, and optional roll_deg its roll; for a gimbal, its rest direction.",
   "type": "object",
   "required": [
     "camera_id",

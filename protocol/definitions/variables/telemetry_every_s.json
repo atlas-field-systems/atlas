@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/telemetry_every_s.json",
   "title": "telemetry_every_s",
-  "description": "Setting: seconds between the Asset's report.telemetry messages while it has a link. It sends one sooner when it has sent nothing new for a third of its link_loss_after_s, so Core keeps counting it connected. Fractions allowed (0.5 is twice a second).",
+  "description": "Setting: seconds between the Asset's report.telemetry records. Fractions allowed (0.5 is twice a second).",
   "type": "number",
   "minimum": 0.1,
   "maximum": 3600,
