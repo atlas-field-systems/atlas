@@ -23,12 +23,17 @@ Put a consequential restriction in its owning system's story before adopting it.
 
 ## Keep the systems replaceable
 
-Entities, Tasks, Objects, and Plugins are four replaceable pillars.
-Keep their interfaces small enough to rebuild one pillar without rebuilding Atlas.
-Authentication and administration support the pillars.
+Atlas is a walled city. Core and Fusion sit inside the inner wall. Plugins sit
+in the second ring and reach Core only through its Plugin interface. Gateways,
+Assets, and operator applications sit outside the city and reach Core only
+through the public Core API. [Design decisions](design-decisions.md#a-walled-city)
+has the layout.
+
+Inside Core, Entities, Tasks, and Objects keep interfaces small enough to rebuild
+one without rebuilding Atlas. Authentication and administration support them.
 
 Core retains the shared picture and requests for work. Separate projects provide
-vehicle control, radio transport, map rendering, and operator applications.
+vehicle control, field links, map rendering, and operator applications.
 The [system overview](using-atlas.md) shows how those parts fit together.
 
 ## Keep evidence honest
@@ -41,27 +46,28 @@ Each subsystem defines how it represents that evidence.
 
 The owner decides Atlas's data formats and data structures. Protocol follows them and adds the exact fields.
 
-- Each message has one time for the whole message. Mixed times are rare and need
-  their own case. Every message carries `from` (the creator), `time`, and `seq`.
-  Messages about one Asset also carry `asset_id`. The two often hold the same
-  ID but are not a repeat: `from` is who made the message and `asset_id` is who it
-  is about, as when Core asks a drone for its task list.
+- Shared domain data lives in Protocol as records, such as Tasks, settings, and
+  reports. Core, clients, gateways, and Assets use the same variables, names,
+  units, and shapes. Local process configuration and diagnostic logs belong to
+  the component that uses them; they are not Protocol contracts.
+- Each record has one time for the whole record. Mixed times are rare and need
+  their own case. Records about one Asset carry `asset_id`. Where it matters, a
+  record has a field for who requested or reported it.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
-- Shared domain data lives in Protocol, including messages and domain-storage
-  records. Core, the SDK cache, and Assets use the same variables, names, units,
-  and shapes. Local process configuration and diagnostic logs belong to the
-  component that uses them; they are not Protocol contracts.
-- Every ID is 1 to 4 letters or digits.
+- IDs that people read or that cross a field link are 1 to 4 letters or digits.
+  Admins choose `asset_id`; Core assigns the others. Event IDs are integers.
 
 ## Document ownership
 
 - This charter owns Atlas's purpose, operating context, project-wide principles,
   and end-to-end usage examples.
 - Subsystem documentation owns its behavior, failure cases, and planning decisions.
-- Protocol owns exact shared contracts within the charter's
-  [shared data rules](#keep-shared-data-simple). Core owns server mechanisms.
-  SDK owns client behavior. [Asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
+- Protocol owns the exact shared records and their validator within the charter's
+  [shared data rules](#keep-shared-data-simple). Core owns the Core API and
+  server mechanisms. The SDK owns the client for that API. Gateway documentation,
+  once written, owns gateways and their Fieldlinks.
+  [Asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
   owns how an Asset behaves, and
   [Command Interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface)
   owns how the operator application works. Other components own their runtime details.
@@ -86,17 +92,19 @@ an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.
 
-Protocol's published package version is its only version. Definitions and messages
-carry no protocol version, and links do not negotiate one. Package dependencies
-select the definitions a program uses. Never silently reinterpret unsupported
-messages or conceal incompatible behavior. Do not invent protocol fields to paper
-over attribution or routing the link or Core already owns.
+Protocol's published package version is its only version. Definitions and records
+carry no protocol version. Package dependencies select the definitions a program
+uses. The Core API and each Fieldlink report the hash of the definitions they use,
+and a mismatch is refused with an explanation. Never silently reinterpret
+unsupported records or conceal incompatible behavior. Do not invent record fields
+for attribution or routing that Core or a gateway already owns.
 
-Protocol is the spec. The SDK is the one implementation and front door. Core uses
-the SDK and keeps business rules only — no second validation or dedupe stack.
+Protocol is the spec and owns the one validator. Core implements the Core API and
+keeps the business rules. The SDK is the client for that API, and gateways run
+Fieldlinks. No program builds a second validator.
 See [design-decisions.md](design-decisions.md).
 
-How-it-works, laws, and communication docs beat an implementation plan when
+How-it-works docs, laws, and the Core API doc beat an implementation plan when
 they conflict. Change them on purpose with the owner; do not quietly diverge in
 code.
 
@@ -104,17 +112,17 @@ Accepted acknowledgment and observed Asset outcomes are different facts. Asset
 reports are the observed outcome under the contract, not the same fact as
 acceptance. Preserve uncertainty when the outcome is not known — see
 [Keep evidence honest](#keep-evidence-honest). State guarantees together with
-their assumptions and recovery boundaries. Preserve message identity when
-forwarding, and separate repeated effects from repeated delivery. Exact rules live
-in Protocol (`communication.md` / SDK docs).
+their assumptions and recovery boundaries. Make retries safe so a
+repeated request never repeats an effect. Exact rules belong in the Core API and
+Fieldlink docs.
 
-SDK helpers report contact, queues, and outcomes. The Asset app owns motion and
-failsafes. Helpers never fly.
+The SDK, gateways, and Fieldlinks carry requests, reports, and contact. The Asset
+app owns motion and failsafes. No other component controls flight.
 
-Core, Assets, and the SDK provide detailed diagnostic logging from the start.
-Core and Asset apps collect their own events and the SDK's events for their run
-archives. Their owning docs define logging and configurable options; Protocol
-defines shared data, not a runtime logging service.
+Core, gateways, Assets, and the libraries they use provide detailed diagnostic
+logging from the start. Each program collects its own events and its libraries'
+events for its run archive. Their owning docs define logging and configurable
+options; Protocol defines shared data, not a runtime logging service.
 
 Stress undecided ideas with small prototypes and write findings back into the docs.
 The docs stay the source.

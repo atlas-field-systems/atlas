@@ -4,6 +4,11 @@ Project-wide choices that every Atlas part follows.
 
 Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in [Keep judgment sharp](CHARTER.md#keep-judgment-sharp).
 
+The [API proposal](api-proposal.md) records the move from one shared message model
+to a Core API with gateways. The decisions below follow it. Protocol, SDK,
+Core, Asset, and Command Interface docs still describe the earlier model until
+each is updated.
+
 ## Two layers of documentation
 
 Each part has short pages a person can read, backed by exact definitions,
@@ -18,10 +23,10 @@ minimal: build only what is needed now.
 ## Decisions stay near their source
 
 Keep decisions with the part that has the authoritative information. Core checks
-requests before they cross the field link, using the SDK's shared validation.
-Assets own current equipment checks, execution, and local failsafes. The SDK and
-transport adapters supply communication mechanics. This keeps decisions local
-and avoids unnecessary exchanges over constrained links.
+requests before they cross a field link, using Protocol's validator.
+Assets own current equipment checks, execution, and local failsafes. Gateways and
+their Fieldlinks supply field-link mechanics. This keeps decisions local and
+avoids unnecessary exchanges over constrained links.
 
 [Core request admission](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/requests.md)
 and [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md)
@@ -49,49 +54,86 @@ owning docs. A prototype proves nothing on its own; the docs stay the source.
 Atlas code is written by hand and read by people. Do not generate code from
 definitions or docs. Programs load the definitions as data instead.
 
-## Spec, SDK and transports
+## A walled city
 
-Atlas is split into three layers, so each can change without breaking the others.
+Atlas is laid out in rings, so each can change without breaking the others.
 
-- **Protocol is the spec.** Definitions, laws, examples and docs. Its published
-  package version is its only version; no version is embedded in definitions or
-  messages.
-- **The SDK is the one implementation** and the stable front door every program
-  uses: Core, bridges and operator apps. It builds, validates and parses
-  messages, and handles keys, queueing and retry, and duplicates. Programs never
-  touch bytes, compression or framing. It has its own folder, `sdk/`, beside
-  Protocol, so each keeps its own history; a change to both can still land in one PR.
-- **Transport adapters** are small plug-in packages beside the SDK (WebSocket,
-  Meshtastic, FLRC, and others). They only move bytes, plus any compression or
-  splitting a link needs. Each is its own package, so a program installs only
-  the links it uses. Swapping one never changes the SDK's front door or the spec.
+- **Inside the inner wall.** Core and Fusion run in one process. Core keeps the
+  shared picture, the event log, Tasks, and storage. Fusion works on Core's state
+  directly, never through the public API.
+- **The second ring.** Plugins run beside Core and reach it only through
+  Core's Plugin interface, never its storage.
+- **Outside the city.** Gateways, Assets, and operator applications reach Core
+  only through the public Core API.
 
-How changes are made:
+The parts:
 
-- Internal changes, such as compression or encoding, are agreed between the two
-  ends when a link opens. Programs do not see them.
-- Changes to meaning are additive: new fields and messages, not changed ones.
+- **Protocol is the spec.** It owns the shared records, the data laws, the one
+  validator, and the examples every program tests against. Its published package
+  version is its only version; no version is embedded in definitions or records.
+- **Core owns the Core API.** It uses HTTP for requests and Server-Sent Events
+  for live changes. Request and event bodies are Protocol records.
+- **The SDK is the client** for the Core API, used by operator applications,
+  Assets on IP, and gateways.
+- **Gateways** uplink to the Core API and run the Fieldlinks their hardware
+  supports. A gateway is not an Asset.
+- **Fieldlinks** carry Atlas across one kind of field link, such as Meshtastic
+  LoRa. The same Fieldlink package runs on the gateway and on the radio Asset. It
+  owns compact encoding, retries, duplicate handling, contact timing, and link
+  security for its medium.
+
+## Core keeps one event log
+
+Core appends every accepted request and every Asset report to an ordered log
+with a rising integer `event_id`, stored on disk in SQLite. Current state is
+derived from it. Live updates, history, recovery after a refresh, and the Reset
+archive are all reads of the log. A slow or disconnected reader resumes from its
+last `event_id`; Core never buffers its backlog.
+
+## Identity and security
+
+- Operators log in to accounts, with admin and operator types. Admins provision
+  accounts, Assets, and gateways. Sessions use HttpOnly cookies, so every browser
+  tab shares one session.
+- An admin adds each Asset and gateway in Core and receives its ID and key for
+  its configuration. Keys are bearer tokens over TLS. There is no enrollment key.
+- TLS secures IP links. Each Fieldlink uses its radio's own encryption and
+  authentication. Records never carry credentials.
+
+## Work is always a Task
+
+Every command is a Task with a Core-assigned `task_id`, so every command reports
+an outcome. A Task can run now, clearing the queue. Cancel names its Task. Pause
+is a setting. Retries are safe by design: creates carry an idempotency key,
+settings are end states, and the queue carries its version.
+
+## Stack
+
+- Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface
+  use TypeScript. Node 24 runs `.ts` directly, so Node programs have
+  no build step.
+- Core and Fusion ship as one Docker container running one process. Plugins
+  run in workers for now.
+- Storage uses SQLite.
+
+## First flight comes first
+
+Scope is frozen to first flight: Assets, Tasks, settings, telemetry, battery,
+failsafe reports, history, and accounts. Geo feature, Object, Plugin, and
+Observation contracts wait until after first flight. Asset tests run against
+ArduPilot SITL.
+
+## Changes and releases
+
+- Changes to meaning are additive: new fields and records, not changed ones.
 - Published packages are immutable. Changes are released through the package
-  version, with no separate wire-version counter or handshake negotiation.
-
-How releases work:
-
+  version, with no separate version counter.
+- The Core API and each Fieldlink report the hash of the Protocol definitions they
+  use. A mismatch is refused with an explanation.
 - Protocol is an unpublished draft. Package publishing is not configured yet.
-  When published, the package version is the protocol version. No draft protocol
-  number or version-bump script is maintained in the spec.
-- Programs select Protocol through their package dependency. Protocol's JSON
-  definitions, examples, and messages contain no protocol-version metadata.
+- Programs select Protocol through their package dependency and test against its
+  examples.
 - All Atlas work lands in this repository through `main`. Only approved commits
   on `main` are released through `prod`.
-- The retained Core prototype uses a historical Protocol snapshot. Its pin keeps
-  that older runtime separate from current spec work until it is rebuilt or removed.
-
-How drift is prevented:
-
-- Protocol's examples run as SDK tests.
-- Programs pin the Protocol package they use and load its JSON definitions.
-
-How the SDK works is drafted in the
-[SDK docs](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md).
-Runtime SDK code is not started. The retained Core prototype is not an
-implementation of the current docs.
+- The retained Core prototype uses a historical Protocol snapshot. It predates
+  this design and will be removed.

@@ -1,8 +1,8 @@
 # Proposal: a Core API with gateways
 
-**Direction selected by the owner; not yet applied.** The rest of the repository
-still describes the earlier design. Each change below lands through its owning
-docs in later PRs.
+**Direction selected by the owner.** The Charter and design decisions follow it.
+Protocol, SDK, Core, Asset, and Command Interface docs still describe the earlier
+design. Later PRs update the owning docs for each change below.
 
 ## The problem
 

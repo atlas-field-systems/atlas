@@ -5,6 +5,9 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Term | Meaning |
 | --- | --- |
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
+| Gateway | A system outside Core that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A gateway is not an Asset. |
+| Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. The same package runs on the gateway and on the radio Asset. |
+| Event log | Core's ordered record of accepted requests and Asset reports. Current state, live updates, and history are read from it. |
 | Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
 | Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
 | Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |
