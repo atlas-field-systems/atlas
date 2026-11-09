@@ -6,9 +6,9 @@ not built yet.
 
 ## Keep diagnostics beside the event log
 
-The [event log](api.md#the-event-log-and-live-stream) is the domain record: which
-requests Core accepted and which reports it stored. A diagnostic log explains the
-requests, refusals, decisions, and errors around it. Core keeps both. The
+The [event log](api.md#the-event-log-and-live-stream) records which requests Core
+accepted and which reports it stored. A diagnostic log explains the requests,
+refusals, decisions, and errors around it. Core keeps both. The
 diagnostic record is append-only during a run, even when a request changes nothing.
 
 There is no Protocol logging process and no API call for a log entry. Diagnostic
@@ -36,25 +36,25 @@ correlation fields to Protocol. Detail and destination controls are proposed in
 
 ## Include the evidence in Reset
 
-Core's archive contains the run's database rows, including its events, its diagnostic files, configuration with
-secrets removed, and the summary required by
+Core's archive contains the run's database rows, including its events, its
+diagnostic files, configuration with secrets removed, and the summary required by
 [First flight](../../atlas/first-flight.md#keep-the-whole-run-for-debugging).
 It contains only what Core observed; Asset and gateway archives remain separate
 evidence.
 
-Proposed procedure: finish and verify the archive before discarding any run
-evidence. The Reset request, file layout, summary format, and subsequent cleanup
-remain open. A failed export must not be described as a complete archive.
+The proposed procedure is to finish and verify the archive before discarding
+any run evidence. The Reset request, file layout, summary format, and subsequent
+cleanup remain open. A failed export must not be described as a complete archive.
 
 ## Proposed recording policy
 
 Use structured local records with a readable rendering. Full tracing includes
-request and report content after credential redaction. The event log already
+request and report content with credentials removed. The event log already
 holds each accepted request and stored report; the diagnostic log adds the
 decisions around them rather than a second copy. Configuration selects output
 paths and limits, not changes to request handling.
 
 Logging must not block request handling indefinitely or exhaust memory. Rotation,
-backpressure, and full-disk behavior still need concrete choices. Any lost,
+backpressure, and full-disk behavior remain undecided. Any lost,
 truncated, or filtered evidence must be visible in the archive; do not silently
 claim a complete record.
