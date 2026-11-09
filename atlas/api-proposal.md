@@ -125,8 +125,8 @@ idempotency by `task_id`, and per-Asset contact reports to Core. Protocol define
 no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
 also decides how an Asset authenticates to its gateway, and the Fieldlinks may
 share nothing; that design is deferred. The gateway's link to Core is broadband
-IP, so the gateway keeps its Assets' full state and spends the radio only on
-what each Asset lacks. It may send a
+IP, so the gateway keeps its Assets' full state and sends over the radio only
+what each Asset does not already have. It may send a
 queue as changes against the list the Asset holds rather than whole. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.
 

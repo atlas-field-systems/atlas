@@ -54,10 +54,10 @@ definitions or docs. Programs load the definitions as data instead.
 
 ## Tests come from behavior
 
-Tests check what a part must do. They are never generated from Protocol's
-definitions: a system and its tests built from the same definitions agree with
-each other even when both are wrong. Protocol's examples test record shapes and
-the validator only. Behavior tests come from the scenarios the owner states in
+Write tests from what a part must do. Never generate them from Protocol's
+definitions. A system and its tests built from the same definitions agree with
+each other even when both are wrong. Protocol's examples test only record shapes
+and the validator. Behavior tests come from the scenarios the owner states in
 each part's docs, from ArduPilot SITL, and from hardware.
 
 ## A walled city
@@ -132,9 +132,9 @@ settings are end states, and the queue carries its version.
 
 ## Design the whole product, then build it
 
-Atlas is designed as the complete product before the real build: Assets, Tasks,
-settings, reports, history, accounts, geo features, Objects, Observations,
-Tracks, Fusion, and Plugins. Throwaway prototypes test the design first. The
+Atlas is designed as the complete product before the real build. That covers
+Assets, Tasks, settings, reports, history, accounts, geo features, Objects,
+Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first. The
 build then implements everything together from the finished design, not one
 slice at a time. First flight is the first field test of that build.
 

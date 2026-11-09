@@ -148,8 +148,8 @@ authenticates to the gateway, not to Core.
 
 A gateway runs on its own computer, apart from Core. Its link to Core is IP with
 broadband speed, so the gateway follows the event stream for every Asset it
-carries, keeps their current state, and spends the radio only on what each Asset
-lacks.
+carries, keeps their current state, and sends over the radio only what each
+Asset does not already have.
 
 ## Contact
 

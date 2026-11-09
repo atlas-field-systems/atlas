@@ -4,7 +4,7 @@ Selected behavior for the Core runtime. None of it is implemented yet.
 
 - [Core API](api.md): requests, reads, the event stream, Asset and gateway calls,
   contact, and provisioning.
-- [Pillars](pillars.md): Entities, Tasks, Objects, Fusion, and Accounts, and
+- [Pillars](pillars.md): Entities, Tasks, Objects, Fusion, and Administration, and
   how they share Core's process.
 - [Storage](storage.md): the SQLite tables, the event log, and runs.
 - [Request admission](requests.md): what Core checks before work reaches an Asset.

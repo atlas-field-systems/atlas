@@ -8,17 +8,16 @@ belong to [Protocol](../../protocol/README.md); this page says where Core puts t
 Core keeps one SQLite database in its `data_directory` ([configuration](../config.md)).
 Core reads and changes current state in ordinary tables with plain SQL.
 
-Each table belongs to one [pillar](pillars.md), or to the shared ground every
-pillar writes through.
+Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 
 | Table | Owner | Holds |
 | --- | --- | --- |
 | `runs` | Shared | Each run's `run_id`, start, and end |
 | `events` | Shared | The [event log](api.md#the-event-log-and-live-stream): `event_id`, `time`, `kind`, `asset_id`, and the record |
 | `idempotency_keys` | Shared | Each caller's keys for the run, with a hash of the body and the response |
-| `accounts` | Accounts | Admin and operator accounts and their password hashes |
-| `gateways` | Accounts | Provisioned gateways and their key hashes |
-| `asset_keys` | Accounts | Each Asset on IP's key hash |
+| `accounts` | Administration | Admin and operator accounts and their password hashes |
+| `gateways` | Administration | Provisioned gateways and their key hashes |
+| `asset_keys` | Administration | Each Asset on IP's key hash |
 | `assets` | Entities | Provisioned Assets: ID, type, latest description, and contact |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
 | `queues` | Tasks | Each Asset's latest reported list and `queue_version`, the list in flight, and the Tasks waiting ([one list in flight](api.md#operator-requests)) |
