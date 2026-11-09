@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>First flight</title>
 <link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="first-flight">First flight</h1>
 <p>The first setup uses a Raspberry Pi on the ground. The Pi runs the Asset app and
-reaches Core through a gateway; the gateway&#39;s details are deferred. The Pi
+is a direct-IP Asset: it calls the Core API itself, with no gateway. The Pi
 connects to an ArduPilot quadcopter through a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
 such as QGroundControl. The vehicle remains the Asset represented in Atlas.</p>
@@ -33,24 +33,19 @@ The Asset owns <a href="https://github.com/atlas-field-systems/atlas/blob/main/a
 <pre class="mermaid">sequenceDiagram
     participant Drone as ArduPilot vehicle
     participant Pi as Asset app on ground Pi
-    participant GW as Gateway
     participant Core
     participant UI as Command Interface
     Drone-&#62;&#62;Pi: Equipment state over SiK
-    Pi-&#62;&#62;GW: Description and vehicle reports
-    GW-&#62;&#62;Core: Reports through the Core API
+    Pi-&#62;&#62;Core: Description and vehicle reports through the Core API
     Core--&#62;&#62;UI: Show the reported state
     UI-&#62;&#62;Core: Submit Takeoff, Move To and Land as Tasks
-    Core-&#62;&#62;GW: The whole queue with every Task body
-    GW-&#62;&#62;Pi: Deliver the queue
-    Pi--&#62;&#62;GW: Report the queue it holds
-    GW--&#62;&#62;Core: Queue report
+    Core-&#62;&#62;Pi: The whole queue with every Task body
+    Pi--&#62;&#62;Core: Report the queue it holds
     Core--&#62;&#62;UI: Show the reported queue
     Note over Pi: Run Takeoff, Move To, then Land in order
     Pi-&#62;&#62;Drone: Equipment commands over SiK
     Drone--&#62;&#62;Pi: Observed equipment state over SiK
-    Pi--&#62;&#62;GW: Task reports
-    GW--&#62;&#62;Core: Task reports
+    Pi--&#62;&#62;Core: Task reports
     Core--&#62;&#62;UI: Show the reported outcomes</pre><p>Core keeps the requests and the reported evidence in its event log. The Asset app
 coordinates execution, and ArduPilot controls the vehicle. Core accepting a Task,
 or the Pi holding it, does not prove that the flight controller received or
@@ -86,10 +81,11 @@ the intended rules, including any battery response during an intentional wait.
 The Asset owns
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions, cancellation rule, overrides, and remaining decisions</a>.</p>
 <h2 id="keep-the-whole-run-for-debugging">Keep the whole run for debugging</h2>
-<p>When the operator spins them down, Core, each gateway, and each Asset each
+<p>When the operator spins them down, Core and each Asset, and later each gateway,
 write their own Reset ZIP. Core&#39;s ZIP holds:</p>
 <ul>
-<li>Its event log: every accepted request and every stored report, in order.</li>
+<li>Its run&#39;s data, including the event log: every accepted request and every
+stored report, in order.</li>
 <li>Its diagnostics, such as errors, link drops, and contact changes.</li>
 <li>Its configuration, without secrets.</li>
 <li>A plain readable summary: start and end, Assets, Tasks, and outcomes.</li>

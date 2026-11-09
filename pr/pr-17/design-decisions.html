@@ -65,11 +65,13 @@ owns compact encoding, retries, duplicate handling, contact timing, and link
 security for its medium.</li>
 </ul>
 <h2 id="core-keeps-one-event-log">Core keeps one event log</h2>
-<p>Core appends every accepted request and every Asset report to an ordered log
-with a rising integer <code>event_id</code>, stored on disk in SQLite. Current state is
-derived from it. Live updates, history, recovery after a refresh, and the Reset
-archive are all reads of the log. A slow or disconnected reader resumes from its
-last <code>event_id</code>; Core never buffers its backlog.</p>
+<p>Core keeps current state in ordinary SQLite tables. Every accepted request and
+every Asset report also adds a row to an append-only <code>events</code> table, with a
+rising integer <code>event_id</code>, in the same transaction. Live updates, history and
+recovery after a refresh read <code>events</code>; current state is read from the tables,
+never rebuilt from events. A slow or disconnected reader resumes from its last
+<code>event_id</code>; Core never buffers its backlog. See
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/storage.md">Core storage</a>.</p>
 <h2 id="identity-and-security">Identity and security</h2>
 <ul>
 <li>Operators log in to accounts, with admin and operator types. Admins provision
