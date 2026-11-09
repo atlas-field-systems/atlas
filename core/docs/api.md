@@ -170,8 +170,8 @@ Only admins may use these calls, except login, logout, and `GET /me`.
 | --- | --- |
 | `POST /login`, `POST /logout`, `GET /me` | Start, end, and read a session |
 | `POST /accounts`, `DELETE /accounts/{operator_id}` | Add or remove an admin or operator account |
-| `POST /assets` | Provision an Asset; returns its `asset_id` and key once |
-| `POST /assets/{asset_id}/key` | Replace an Asset's key; returns the new key once |
+| `POST /assets` | Provision an Asset on IP; returns its `asset_id` and key once |
+| `POST /assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
 | `DELETE /assets/{asset_id}` | Remove an Asset |
 | `POST /gateways`, `DELETE /gateways/{gateway_id}` | Provision or remove a gateway |
 
@@ -184,7 +184,8 @@ Only admins may use these calls, except login, logout, and `GET /me`.
   Asset could be admitted to a channel that every Asset's messages share. Until
   this is designed, anything that can send on that channel can claim to be any
   Asset the gateway carries.
-- How a gateway is bound to the Assets it carries, and the Fieldlink docs.
+- Whether an Asset behind a gateway is registered in Core, how a gateway is
+  bound to the Assets it carries, and the Fieldlink docs.
 - Records this page names that Protocol does not define yet
   ([Protocol open questions](../../protocol/docs/open-questions.md)).
 - The API for geo features, Objects, Observations, Tracks, and the Plugin
