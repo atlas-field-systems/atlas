@@ -82,11 +82,13 @@ The parts:
 
 ## Core keeps one event log
 
-Core appends every accepted request and every Asset report to an ordered log
-with a rising integer `event_id`, stored on disk in SQLite. Current state is
-derived from it. Live updates, history, recovery after a refresh, and the Reset
-archive are all reads of the log. A slow or disconnected reader resumes from its
-last `event_id`; Core never buffers its backlog.
+Core keeps current state in ordinary SQLite tables. Every accepted request and
+every Asset report also adds a row to an append-only `events` table, with a
+rising integer `event_id`, in the same transaction. Live updates, history and
+recovery after a refresh read `events`; current state is read from the tables,
+never rebuilt from events. A slow or disconnected reader resumes from its last
+`event_id`; Core never buffers its backlog. See
+[Core storage](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/storage.md).
 
 ## Identity and security
 

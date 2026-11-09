@@ -56,13 +56,12 @@ The parts:
 
 ## Core keeps one event log
 
-Core appends every accepted request and every Asset report to an ordered event
-log with a rising integer `event_id`. Current-state tables are derived from it.
-Live updates, history, recovery after a refresh, and the Reset archive are all
-reads of that log.
+Core keeps current state in ordinary SQLite tables and, in the same transaction,
+appends every accepted request and every Asset report to an ordered event log
+with a rising integer `event_id`. Live updates, history and recovery after a
+refresh are reads of that log. Current state is never rebuilt from it.
 
-- The log is stored on disk in SQLite. Core keeps current state, not the log,
-  in memory.
+- Both live on disk in SQLite. Core keeps no backlog of the log in memory.
 - A reader follows the log from a cursor. A slow or disconnected reader is
   dropped and resumes from its last `event_id`; Core never buffers its backlog.
 - Retention follows [Scale](scale.md#runs-and-storage): a run's events are
@@ -121,9 +120,9 @@ failsafe behavior stays deferred until field testing.
 For the LoRa phase, the Fieldlink builds on Meshtastic: a private channel, a
 private app port, and its encryption, routing and per-hop acknowledgements.
 The Fieldlink adds end-to-end acknowledgement of queues and final reports,
-idempotency by `task_id`, and per-Asset contact reports to Core. Frames use
-CBOR with integer keys taken from the definitions, and each link checks the
-definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
+idempotency by `task_id`, and per-Asset contact reports to Core. Protocol defines
+no short keys, so each Fieldlink chooses its own compact encoding. It may send a
+queue as changes against the list the Asset holds rather than whole. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.
 
 ## Stack
