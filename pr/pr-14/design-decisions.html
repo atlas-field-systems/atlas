@@ -3,8 +3,8 @@
 <link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html" class="on">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="design-decisions">Design decisions</h1>
 <p>Project-wide choices that every Atlas part follows.</p>
 <p>Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in <a href="CHARTER.html#keep-judgment-sharp">Keep judgment sharp</a>.</p>
-<p>The move from one shared message model to a Core API with gateways is recorded in
-the <a href="api-proposal.html">API proposal</a>. The decisions below follow it. Protocol, SDK,
+<p>The <a href="api-proposal.html">API proposal</a> records the move from one shared message model
+to a Core API with gateways. The decisions below follow it. Protocol, SDK,
 Core, Asset, and Command Interface docs still describe the earlier model until
 each is updated.</p>
 <h2 id="two-layers-of-documentation">Two layers of documentation</h2>
@@ -40,21 +40,21 @@ definitions or docs. Programs load the definitions as data instead.</p>
 <h2 id="a-walled-city">A walled city</h2>
 <p>Atlas is laid out in rings, so each can change without breaking the others.</p>
 <ul>
-<li><strong>Inside the inner wall:</strong> Core and Fusion, in one process. Core keeps the
+<li><strong>Inside the inner wall.</strong> Core and Fusion run in one process. Core keeps the
 shared picture, the event log, Tasks, and storage. Fusion works on Core&#39;s state
 directly, never through the public API.</li>
-<li><strong>The second ring:</strong> Plugins. They run beside Core and reach it only through
+<li><strong>The second ring.</strong> Plugins run beside Core and reach it only through
 Core&#39;s Plugin interface, never its storage.</li>
-<li><strong>Outside the city:</strong> gateways, Assets, and operator applications. They reach
-Core only through the public Core API.</li>
+<li><strong>Outside the city.</strong> Gateways, Assets, and operator applications reach Core
+only through the public Core API.</li>
 </ul>
 <p>The parts:</p>
 <ul>
 <li><strong>Protocol is the spec.</strong> It owns the shared records, the data laws, the one
 validator, and the examples every program tests against. Its published package
 version is its only version; no version is embedded in definitions or records.</li>
-<li><strong>Core owns the Core API:</strong> HTTP for requests and Server-Sent Events for live
-changes. Request and event bodies are Protocol records.</li>
+<li><strong>Core owns the Core API.</strong> It uses HTTP for requests and Server-Sent Events
+for live changes. Request and event bodies are Protocol records.</li>
 <li><strong>The SDK is the client</strong> for the Core API, used by operator applications,
 Assets on IP, and gateways.</li>
 <li><strong>Gateways</strong> uplink to the Core API and run the Fieldlinks their hardware
@@ -87,12 +87,12 @@ is a setting. Retries are safe by design: creates carry an idempotency key,
 settings are end states, and the queue carries its version.</p>
 <h2 id="stack">Stack</h2>
 <ul>
-<li><strong>TypeScript everywhere:</strong> Core, the SDK, gateways, Fieldlinks, the Asset app,
-and the Command Interface. Node 24 runs <code>.ts</code> directly, so Node programs have
+<li>Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface
+use TypeScript. Node 24 runs <code>.ts</code> directly, so Node programs have
 no build step.</li>
-<li><strong>Docker:</strong> Core and Fusion ship as one container running one process. Plugins
+<li>Core and Fusion ship as one Docker container running one process. Plugins
 run in workers for now.</li>
-<li><strong>Storage:</strong> SQLite.</li>
+<li>Storage uses SQLite.</li>
 </ul>
 <h2 id="first-flight-comes-first">First flight comes first</h2>
 <p>Scope is frozen to first flight: Assets, Tasks, settings, telemetry, battery,
