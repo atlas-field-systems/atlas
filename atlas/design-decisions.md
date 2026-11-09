@@ -135,5 +135,3 @@ ArduPilot SITL.
   examples.
 - All Atlas work lands in this repository through `main`. Only approved commits
   on `main` are released through `prod`.
-- The retained Core prototype uses a historical Protocol snapshot. It predates
-  this design and will be removed.

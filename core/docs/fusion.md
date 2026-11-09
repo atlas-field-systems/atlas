@@ -1,10 +1,12 @@
 # Fusion
 
-Selected direction, not implemented in the first-flight prototype.
+Selected direction, not implemented. Observations and Tracks are parked until
+after first flight.
 [Protocol storage](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/storage.md#observations-and-tracks)
 owns observation and track data. This page owns how Core processes them.
 
-Fusion is a replaceable module, run in Docker like the other Core pillars.
+Fusion is a replaceable module inside Core's inner wall, in Core's process. It
+works on Core's state directly, never through the public API.
 Fusion combines Observations with other information to produce Tracks. Reference
 data, including digital elevation models (DEMs), is part of that responsibility.
 Terrain elevation can inform how fusion interprets and combines measurements.

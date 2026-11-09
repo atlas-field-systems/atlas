@@ -25,8 +25,6 @@ Unresolved questions and work deliberately deferred. Selected answers live in
 - **Stored record formats.** [Storage](storage.md) describes the tables, but exact
   record formats are not defined yet. Protocol owns those formats, including
   storage on Assets and in the SDK cache ([law 1](laws.md)).
-- **Operator keys.** Where operator IDs and keys come from is not decided. Core's
-  prototype reads them from configuration ([prototype findings](../../core/docs/findings.md#remaining-gaps)).
 - **Report catch-up.** The [selected path](communication.md#report-catch-up) sends
   retained reports with original timestamps through ordinary report messages.
   Define bounded transfer that respects live traffic, how the Asset knows which
