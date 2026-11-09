@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/query/core/history.json",
+  "title": "history",
+  "description": "Stored reports, oldest first, from Core's append-only log. report picks one kind (telemetry gives the path flown); since and until limit the time. With asset_id on the query, one Asset's past path over a time range is one message. Leave any out to get everything. Core sends the matching messages and then its admin.reply, which marks the end: an accepted reply with nothing before it means nothing matched.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "history"
+    },
+    "report": {
+      "$ref": "../../../variables/report.json"
+    },
+    "since": {
+      "$ref": "../../../variables/time.json"
+    },
+    "until": {
+      "$ref": "../../../variables/time.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "history",
+      "report": "telemetry",
+      "since": 1793667600000
+    }
+  ]
+}

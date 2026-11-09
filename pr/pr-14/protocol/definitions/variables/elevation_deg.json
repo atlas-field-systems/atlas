@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/elevation_deg.json",
+  "title": "elevation_deg",
+  "description": "Up-down angle from the origin to the target, in degrees from level. 0 is level, -90 straight down, 90 straight up.",
+  "type": "number",
+  "minimum": -90,
+  "maximum": 90,
+  "examples": [
+    -4
+  ]
+}

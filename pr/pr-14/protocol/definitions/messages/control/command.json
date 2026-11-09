@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/control/command.json",
+  "title": "Command",
+  "description": "From Core or an operator interface (Core checks operator messages and passes them on unchanged): tell an Asset to do something. kind says what, and the Asset must list it in admin.describe commands. With task_id it is a Task's body, sent once; control.queue says when it runs. Without task_id it runs now: it clears the Asset's task list, and the Asset reports each cleared Task cancelled and then its empty queue. Settings changes use control.settings and do not touch the queue.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "seq",
+    "from",
+    "asset_id",
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "command/takeoff.json"
+    },
+    {
+      "$ref": "command/move_to.json"
+    },
+    {
+      "$ref": "command/land.json"
+    },
+    {
+      "$ref": "command/return_to_home.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "control.command"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "seq": {
+      "$ref": "../../variables/seq.json"
+    },
+    "from": {
+      "$ref": "../../variables/from.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    },
+    "task_id": {
+      "$ref": "../../variables/task_id.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "control.command",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "takeoff",
+      "target_altitude": {
+        "altitude_m": 30,
+        "altitude_reference": "launch"
+      },
+      "from": "A1"
+    },
+    {
+      "type": "control.command",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "move_to",
+      "task_id": "T2",
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "launch"
+          }
+        ]
+      },
+      "from": "A1"
+    },
+    {
+      "type": "control.command",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "land",
+      "task_id": "T3",
+      "landing_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      },
+      "transit_altitude": {
+        "altitude_m": 20,
+        "altitude_reference": "launch"
+      },
+      "from": "A1"
+    },
+    {
+      "type": "control.command",
+      "time": 1793667600000,
+      "seq": 42,
+      "asset_id": "A1",
+      "kind": "return_to_home",
+      "from": "A1"
+    }
+  ]
+}
