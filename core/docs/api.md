@@ -30,7 +30,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, or account |
-| `409` | Refused: Asset offline, command not supported, stale queue version, unknown Task, or definitions mismatch |
+| `409` | Refused: Asset offline, command not supported, stale queue version or a list waiting, unknown Task, or definitions mismatch |
 
 ## Callers and credentials
 
@@ -51,8 +51,8 @@ explains why the API is the only way in.
 
 ## The event log and live stream
 
-Core appends every accepted request and every stored report to its event log.
-Each event is `{event_id, time, kind, record}`: a rising integer, Core's receive
+Every accepted request and every stored report adds one event, written in the same
+transaction as the change it records ([storage](storage.md)). Each event is `{event_id, time, kind, record}`: a rising integer, Core's receive
 time in milliseconds, one of the kinds below, and its record.
 
 | Kind | Added when | Record |
@@ -62,6 +62,7 @@ time in milliseconds, one of the kinds below, and its record.
 | `asset.contact` | Core's view of the Asset's contact changes | `asset_id`, online or offline, last heard |
 | `task.requested` | An operator creates a Task | The Task body, with `task_id` and `requested_by` |
 | `queue.requested` | Core sends the Asset a new list | `asset_id`, `queue_version`, `now`, and every Task body in order |
+| `task.dropped` | Core discards a waiting Task it never sent | `asset_id`, `task_id` |
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
 | `cancel.requested` | An operator cancels a Task | `asset_id`, `task_id`, `requested_by` |
 | `report.<name>` | Core stores an Asset report | The report record |
@@ -74,7 +75,7 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 - **Snapshots resume cleanly.** Every read returns `as_of`, the last `event_id` it
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
   how a refresh or a new tab recovers everything.
-- **Readers never pile up in memory.** Core streams from the log on disk. When a
+- **Readers never pile up in memory.** Core streams from the `events` table. When a
   reader cannot keep up, Core closes its stream and the reader resumes from its
   last `event_id`.
 - **The cursor is the duplicate check.** A reader handles each `event_id` once and
@@ -92,12 +93,19 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 - Core validates the body, checks that the Asset is online and supports the
   command or settings, and assigns `task_id` (1 to 4 letters or digits, unique per
   Asset for the run). Commands to an offline Asset are refused; Core holds nothing.
-- A new Task joins the end of the Asset's latest reported list. With `now`, it
-  replaces the list and runs at once, even while the Asset is paused.
-- Core then adds a `queue.requested` event carrying the whole list with every
-  Task body, built on the Asset's latest reported `queue_version`.
-- `PUT /queue` reorders or drops Tasks that have not started. Core refuses a
-  version older than the Asset's latest report.
+- **One list in flight.** Core sends an Asset at most one list at a time: a
+  `queue.requested` event carrying every Task body, built on the Asset's latest
+  reported list and `queue_version`. The Asset's queue report naming that event
+  answers it.
+- A new Task joins the end of the list. While a list is in flight, new Tasks wait
+  in Core and go out together in the next list, built on the Asset's answer, so
+  Tasks sent back to back all arrive, in order.
+- With `now`, a Task replaces the list and runs at once, even while the Asset is
+  paused. It goes out immediately and discards waiting Tasks.
+- When the Asset goes offline or a `now` Task goes out, Core discards waiting
+  Tasks and adds `task.dropped` for each. They never reached the Asset.
+- `PUT /queue` reorders or drops Tasks that have not started. Core refuses it
+  unless its `queue_version` is the Asset's latest report and nothing is waiting.
 - Cancel names one Task. The Asset cancels it whether it is queued or running.
 
 ## Reads
@@ -133,7 +141,10 @@ An Asset on IP starts or reconnects in this order:
   owns execution, failsafes, and the overrides allowed during a failsafe.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key, and reports each Asset's contact as its Fieldlink observes it.
+key, and reports each Asset's contact as its Fieldlink observes it. Core trusts
+the gateway for which Asset sent what: a gateway key covers every Asset it
+carries, and proving a single Asset's identity across the radio is
+[not designed yet](#not-defined-yet).
 
 ## Contact
 
@@ -161,8 +172,12 @@ Admin-only, except login, logout, and `GET /me`.
 
 ## Not defined yet
 
-- Reset: archiving a run and starting the next.
+- Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
+  defines what a run is.
 - Gateway binding to Assets, and the Fieldlink docs.
+- Per-Asset authentication across a Fieldlink. Until it exists, any node that
+  can send on a gateway's radio channel can claim to be any Asset that gateway
+  carries.
 - The Protocol records this page names, as Protocol moves from messages to records.
 - Plugins, geo features, Objects, Observations, and Tracks, parked until after
   first flight.

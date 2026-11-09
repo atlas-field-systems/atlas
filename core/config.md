@@ -22,7 +22,7 @@ Names in this table are proposed configuration keys.
 | --- | --- | --- |
 | `listen_address`, `port` | Where the [Core API](docs/api.md) listens | Support hosted and field deployments; defaults are open |
 | `tls_certificate`, `tls_key` | HTTPS for the Core API | Source and renewal are open |
-| `data_directory` | The event log, derived state, and Object files | SQLite; directory layout is open |
+| `data_directory` | The SQLite database ([storage](docs/storage.md)) and Object files | Directory layout is open |
 | `first_admin` | The first admin account's `operator_id` and password | Used only when no account exists; secret source is open |
 | `offline_after_s` | How long without contact before Core counts an Asset offline | See [contact](docs/api.md#contact); default is open |
 | `log_level` | Detail of diagnostics | Detailed per-request logging is required; proposed prototype default is `trace` |
