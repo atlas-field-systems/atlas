@@ -36,7 +36,7 @@ correlation fields to Protocol. Detail and destination controls are proposed in
 
 ## Include the evidence in Reset
 
-Core's archive contains its event log, its diagnostic files, configuration with
+Core's archive contains the run's database rows, including its events, its diagnostic files, configuration with
 secrets removed, and the summary required by
 [First flight](../../atlas/first-flight.md#keep-the-whole-run-for-debugging).
 It contains only what Core observed; Asset and gateway archives remain separate
