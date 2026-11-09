@@ -1,8 +1,8 @@
 # Core API
 
-How every program outside Core's inner wall talks to Core: the Command Interface,
-Assets on IP, and gateways. Selected design, not implemented. Record shapes belong
-to [Protocol](../../protocol/README.md); this page names them and never redefines
+The Command Interface, Assets on IP, and gateways use this API to talk to Core
+from outside its inner wall. This design is selected but not implemented.
+Record shapes belong to [Protocol](../../protocol/README.md); this page names them and never redefines
 their fields. The [walled city](../../atlas/design-decisions.md#a-walled-city)
 explains why the API is the only way in.
 
@@ -21,7 +21,7 @@ explains why the API is the only way in.
 - **Retries are safe.** Every request that changes state carries an
   `Idempotency-Key` of up to 64 characters. Core keeps each key's response for the
   run. A repeat returns that response and changes nothing; the same key with a
-  different body is refused with `409`.
+  different body returns `409`.
 - **Errors** are a status and `{"error": "<code>", "explanation": "<text>"}`.
 
 | Status | Meaning |
@@ -51,9 +51,10 @@ explains why the API is the only way in.
 
 ## The event log and live stream
 
-Every accepted request and every stored report adds one event, written in the same
-transaction as the change it records ([storage](storage.md)). Each event is `{event_id, time, kind, record}`: a rising integer, Core's receive
-time in milliseconds, one of the kinds below, and its record.
+Core adds one event for every accepted request and stored report, in the same
+transaction as the change it records ([storage](storage.md)). Each event is
+`{event_id, time, kind, record}`: a rising integer, Core's receive time in
+milliseconds, one of the kinds below, and its record.
 
 | Kind | Added when | Record |
 | --- | --- | --- |
@@ -74,10 +75,9 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 - **Snapshots resume cleanly.** Every read returns `as_of`, the last `event_id` it
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
-  how a refresh or a new tab recovers everything.
-- **Readers never pile up in memory.** Core streams from the `events` table. When a
-  reader cannot keep up, Core closes its stream and the reader resumes from its
-  last `event_id`.
+  how a page recovers after a refresh or in a new tab.
+- Core streams from the `events` table. When a reader cannot keep up, Core closes
+  its stream and the reader resumes from its last `event_id`.
 - **The cursor is the duplicate check.** A reader handles each `event_id` once and
   resumes after the last one it handled, so nothing is missed or repeated.
 
@@ -92,7 +92,7 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 - Core validates the body, checks that the Asset is online and supports the
   command or settings, and assigns `task_id` (1 to 4 letters or digits, unique per
-  Asset for the run). Commands to an offline Asset are refused; Core holds nothing.
+  Asset for the run). Core refuses commands to an offline Asset and holds nothing.
 - **One list in flight.** Core sends an Asset at most one list at a time: a
   `queue.requested` event carrying every Task body, built on the Asset's latest
   reported list and `queue_version`. The Asset's queue report naming that event
@@ -159,7 +159,7 @@ carries, and proving a single Asset's identity across the radio is
 
 ## Accounts and provisioning
 
-Admin-only, except login, logout, and `GET /me`.
+Only admins may use these calls, except login, logout, and `GET /me`.
 
 | Request | Purpose |
 | --- | --- |

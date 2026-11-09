@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/task_state.json",
   "title": "task_state",
-  "description": "A Task's state is queued, active, completed, failed or cancelled. The Asset's reports move it forward from queued to active, then to one final state, completed, failed or cancelled. The final state never changes.",
+  "description": "A Task's state is queued, active, completed, failed or cancelled. The Asset's reports move it only forward, from queued to active, then to one final state, completed, failed or cancelled. The final state never changes.",
   "enum": [
     "queued",
     "active",
