@@ -150,5 +150,5 @@ and the Asset's own Reset ZIP. There is no remote shutdown command.
 - Equipment-specific completion evidence, tolerances, and timeouts.
 - Recording limits, catch-up pacing, and how a reader knows history is complete.
 - Shutdown and archive retrieval.
-- The records this page names, as Protocol moves from messages to records
+- Records this page names that Protocol does not define yet
   ([open questions](../../protocol/docs/open-questions.md)).
