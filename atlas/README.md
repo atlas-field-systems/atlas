@@ -17,6 +17,7 @@ environment in which its parts work together.
 7. [Scale](scale.md) sets how big Atlas is meant to be, such as about 20 Assets.
 8. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
 9. [Experimental ideas](experimental.md) lists ideas being explored, not committed.
+10. [API proposal](api-proposal.md) is the selected move to a Core API with gateways, not yet applied.
 
 ## Keep subsystem documentation with its owner
 
