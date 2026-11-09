@@ -9,7 +9,7 @@ rules below are proposals. None is implemented.
 Proposed setup: load one local configuration file, allow explicit deployment
 overrides, and show the effective configuration with secrets removed before
 accepting requests. Report an invalid option by name and explain what is wrong.
-This gives a field deployment and a hosted deployment the same starting point.
+Field and hosted deployments use the same setup.
 
 Decide the file format, override precedence, and command-line interface before
 implementation. There is no configuration server or live-reload requirement.
@@ -39,7 +39,7 @@ Plugin-specific configuration waits for the Plugin interface design.
 ## Logging and Reset
 
 [Core logging](docs/logging.md) owns what Core records and how that evidence
-contributes to its Reset ZIP. Configuration chooses the destination and level;
+contributes to its Reset ZIP. Configuration sets the destination and level;
 it does not redefine the logging contract or Protocol's records.
 
 ## Decisions still needed

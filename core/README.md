@@ -5,7 +5,7 @@ the event log, serves the [Core API](docs/api.md), and runs Fusion. Shared recor
 formats come from [Protocol](../protocol/README.md).
 
 **Planning.** No runtime is built yet. The earlier first-flight prototype was
-removed; git history keeps it.
+removed. Git history retains it.
 
 - [Core API](docs/api.md): how the Command Interface, Assets, and gateways talk to Core.
 - [Request admission](docs/requests.md): Core's checks before work reaches an Asset.

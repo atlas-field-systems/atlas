@@ -51,8 +51,8 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
   units, and shapes. Local process configuration and diagnostic logs belong to
   the component that uses them; they are not Protocol contracts.
 - Each record has one time for the whole record. Mixed times are rare and need
-  their own case. Records about one Asset carry `asset_id`. Who requested or
-  reported a record is a field on it where it matters.
+  their own case. Records about one Asset carry `asset_id`. Where it matters, a
+  record has a field for who requested or reported it.
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
 - IDs that people read or that cross a field link are 1 to 4 letters or digits.
@@ -97,7 +97,7 @@ carry no protocol version. Package dependencies select the definitions a program
 uses. The Core API and each Fieldlink report the hash of the definitions they use,
 and a mismatch is refused with an explanation. Never silently reinterpret
 unsupported records or conceal incompatible behavior. Do not invent record fields
-to paper over attribution or routing that Core or a gateway already owns.
+for attribution or routing that Core or a gateway already owns.
 
 Protocol is the spec and owns the one validator. Core implements the Core API and
 keeps the business rules. The SDK is the client for that API, and gateways run
@@ -112,12 +112,12 @@ Accepted acknowledgment and observed Asset outcomes are different facts. Asset
 reports are the observed outcome under the contract, not the same fact as
 acceptance. Preserve uncertainty when the outcome is not known — see
 [Keep evidence honest](#keep-evidence-honest). State guarantees together with
-their assumptions and recovery boundaries. Make retries safe by design, so a
+their assumptions and recovery boundaries. Make retries safe so a
 repeated request never repeats an effect. Exact rules belong in the Core API and
 Fieldlink docs.
 
 The SDK, gateways, and Fieldlinks carry requests, reports, and contact. The Asset
-app owns motion and failsafes. Nothing else flies.
+app owns motion and failsafes. No other component controls flight.
 
 Core, gateways, Assets, and the libraries they use provide detailed diagnostic
 logging from the start. Each program collects its own events and its libraries'
