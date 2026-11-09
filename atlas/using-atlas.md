@@ -60,7 +60,7 @@ Core starts before any other part of an operation and stops after all of them.
 Core never restarts during an operation. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log. An Asset restart is
-rare; it means the system is spun down to evaluate the failure.
+rare. If one occurs, the system is spun down to evaluate the failure.
 
 An Asset's [settings](settings.md) are its current configuration, kept in its entry.
 
@@ -72,8 +72,8 @@ until after first flight.
 ### Locate the tracker
 
 A reporting-only Asset is a Raspberry Pi with a GPS peripheral and an uplink.
-It starts obtaining its own position and reports telemetry to Core for an operator
-to see. It accepts no equipment-control commands. If it loses its GPS fix, Atlas
+It obtains its own position and reports telemetry to Core for the operator.
+It accepts no equipment-control commands. If it loses its GPS fix, Atlas
 retains its last known position and the reported GPS condition. The tracker does
 not send the old position as a new fix.
 

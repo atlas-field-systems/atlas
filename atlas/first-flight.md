@@ -7,8 +7,8 @@ companion computer from the ground, much like using a ground-control station
 such as QGroundControl. The vehicle remains the Asset represented in Atlas.
 
 The operator submits Takeoff, Move To a location, then Land as Tasks through the
-Command Interface. Core assigns each `task_id` and sends the Asset its queue
-whole: its version and every Task body together. The app sends equipment commands
+Command Interface. Core assigns each `task_id` and sends the Asset its whole queue,
+with its version and every Task body together. The app sends equipment commands
 to the flight controller and reports the observed outcomes. The operator sees the
 reported vehicle behavior.
 
@@ -97,8 +97,8 @@ The Asset owns
 
 ## Keep the whole run for debugging
 
-When the operator spins them down, Core and each Asset, and later each gateway,
-write their own Reset ZIP. Core's ZIP holds:
+When the operator spins down the system, Core and each Asset write their own
+Reset ZIP. Gateways will do the same when added. Core's ZIP holds:
 
 - Its run's data, including the event log: every accepted request and every
   stored report, in order.
@@ -106,10 +106,9 @@ write their own Reset ZIP. Core's ZIP holds:
 - Its configuration, without secrets.
 - A plain readable summary: start and end, Assets, Tasks, and outcomes.
 
-Reset ZIPs are for after the system is used: dump them into an AI agent to give
-it full context on how the system was used and any errors. Each system's
-documentation defines its own ZIP contents and Reset procedure. Merging
-several ZIPs into one is a separate process.
+After using the system, give the Reset ZIPs to an AI agent for full context on
+the run and any errors. Each system's documentation defines its own ZIP contents
+and Reset procedure. Merging several ZIPs into one is a separate process.
 
 Core, gateways, and Assets keep detailed local diagnostic logs alongside their
 normal state. The SDK supplies events to the program using it, so those events

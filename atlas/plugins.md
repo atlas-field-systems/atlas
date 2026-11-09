@@ -5,21 +5,20 @@ No Plugin exists yet.
 
 A Plugin is a small program that runs beside Core and offers actions. An
 operator runs an action with inputs, such as an area or a building. The Plugin
-gathers information with the tools it has, often open-source services, and
-returns what it found.
+uses its tools, often open-source services, to gather and return information.
 
 ## Where Plugins sit
 
 - Plugins sit in the second ring of the
   [walled city](design-decisions.md#a-walled-city). They reach Core only through
   its Plugin interface, never its storage. Reading Entities or storing Objects
-  goes through that interface, which is Core's own business.
-- The Core API will carry Plugin calls when Plugins return. That is how the
+  goes through that interface.
+- The Core API will carry Plugin calls after first flight. That is how the
   Command Interface uses a Plugin from outside the city.
 - Operators call Plugins first. Assets will be able to call them later.
 - Plugins do not direct Assets or issue Tasks.
-- Fusion is not a Plugin. It sits inside the inner wall, runs on every
-  Observation, and nobody calls it.
+- Fusion is not a Plugin. It runs inside the inner wall on every Observation.
+  Nobody calls it.
 - A feed that sends data all the time, such as an internet aircraft feed, is an
   Asset, not a Plugin.
 
@@ -38,8 +37,8 @@ returns one of two kinds of output:
 ### Find the buildings in an area
 
 The operator passes a box and asks for every building in it. The Plugin asks
-the Overpass API (OpenStreetMap data) for the structures in that box and
-returns them as a list.
+the Overpass API for OpenStreetMap structures in that box and returns them as
+a list.
 
 ### Analyze a building
 
@@ -52,14 +51,14 @@ is a reference to that geo feature.
 ### Gather imagery for an intelligence package
 
 The operator passes an area and asks for satellite imagery of it. The Plugin
-collects what imagery its tools can reach and stores it in Core, for example
+collects imagery available through its tools and stores it in Core, for example
 as Objects. The output refers to what it stored.
 
 ### Ground elevation for an Asset (later)
 
-An Asset sends its position and asks for the ground elevation there. With it,
-the Asset can work out its height above the ground, whether it uses a
-barometer or the altitude of the place it took off from.
+An Asset sends its position and asks for the ground elevation there. The Asset
+can use that elevation to calculate its height above the ground, whether it uses
+a barometer or the altitude of its launch point.
 
 ### More Plugins that fit
 

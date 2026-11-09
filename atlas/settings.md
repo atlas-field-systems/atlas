@@ -1,7 +1,7 @@
 # Settings
 
 A setting is an Asset's current configuration, such as its lights, landing gear,
-or what it does when it loses its radio link. Changing one is quick and immediate.
+or what it does when it loses its radio link. A change takes effect immediately.
 It does not wait in the queue or go through a Task's steps.
 
 - Operators can change an Asset's settings, and so can the Asset itself.
@@ -13,8 +13,7 @@ It does not wait in the queue or go through a Task's steps.
   its own local changes. It does not compare the operator's clock with its own.
   A delayed change can therefore override a local change made after the operator
   sent it.
-- Retries are safe: a repeated request carries the same idempotency key, and
-  Core records it once
+- A repeated request carries the same idempotency key, so Core records it once
   ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#basics)).
 - A settings Task puts a change in the queue, for example: fly here, lights on,
   fly there. It applies when that Task runs, regardless of when it was sent or
@@ -41,8 +40,8 @@ It does not wait in the queue or go through a Task's steps.
 
 How an Asset responds when something goes wrong is in [First flight](first-flight.md#when-something-goes-wrong).
 
-Normal use is an operator choosing actions such as Takeoff, Move To, and Land,
-like issuing orders in an RTS game, rather than streaming high-rate controls.
+In normal use, an operator chooses actions such as Takeoff, Move To, and Land
+rather than streaming high-rate controls.
 The Asset reports each resulting setting value. Core and interfaces follow those
 reports, not guesses based on which operator command was sent last.
 
