@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/description.json",
+  "title": "Description",
+  "description": "The Asset declares its optional entity_type, the reports it sends, the command kinds it accepts, and its cameras. The command list is empty for a receive-only Asset. The Asset sends it whenever it starts or reconnects. Core never sends a Task whose kind the Asset does not list.",
+  "type": "object",
+  "required": [
+    "time",
+    "asset_id",
+    "reports",
+    "commands"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "asset_id": {
+      "$ref": "../variables/asset_id.json"
+    },
+    "entity_type": {
+      "$ref": "../variables/entity_type.json"
+    },
+    "reports": {
+      "type": "array",
+      "items": {
+        "$ref": "../variables/report.json"
+      },
+      "minItems": 1,
+      "maxItems": 5
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "$ref": "../variables/command.json"
+      },
+      "minItems": 0,
+      "maxItems": 4
+    },
+    "cameras": {
+      "type": "array",
+      "items": {
+        "$ref": "../components/camera.json"
+      },
+      "minItems": 1,
+      "maxItems": 4
+    }
+  },
+  "examples": [
+    {
+      "time": 1793667600100,
+      "asset_id": "A1",
+      "entity_type": "drone",
+      "reports": [
+        "status",
+        "failsafe",
+        "telemetry",
+        "battery",
+        "settings"
+      ],
+      "commands": [
+        "takeoff",
+        "move_to",
+        "land",
+        "return_to_home"
+      ],
+      "cameras": [
+        {
+          "camera_id": "C1",
+          "mount": "gimbal",
+          "yaw_deg": 0,
+          "pitch_deg": -45,
+          "horizontal_fov_deg": 80,
+          "vertical_fov_deg": 60
+        }
+      ]
+    },
+    {
+      "time": 1793667600100,
+      "asset_id": "B1",
+      "entity_type": "fixed_sensor",
+      "reports": [
+        "status"
+      ],
+      "commands": []
+    }
+  ]
+}

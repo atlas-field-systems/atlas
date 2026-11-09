@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/link_loss_after_s.json",
   "title": "link_loss_after_s",
-  "description": "Setting: seconds without contact with Core before the Asset's link_loss failsafe triggers, timed on the Asset's own clock. Contact is any new (non-duplicate) message after the accepted hello that names this Asset in asset_id and was not sent by this Asset. Core sends admin.alive when it has sent nothing new for a third of this, and the Asset sends report.telemetry early. Core counts the Asset offline after this long with nothing new from it. 30 unless set. Fractions allowed.",
+  "description": "A setting for the seconds without contact before the Asset's link_loss trigger fires, timed on its own clock. The Core API and each Fieldlink define contact. The default is 30. Fractions are allowed.",
   "type": "number",
   "minimum": 1,
   "maximum": 3600,

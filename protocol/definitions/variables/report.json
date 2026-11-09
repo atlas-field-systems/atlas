@@ -8,9 +8,7 @@
     "failsafe",
     "telemetry",
     "battery",
-    "settings",
-    "gimbal",
-    "observation"
+    "settings"
   ],
   "examples": [
     "battery"

@@ -25,11 +25,6 @@ p.lbl { height: 3.2em; margin: 0 0 6px; overflow: hidden; font-size: 13px; }
 .branch.main { background: #eef3f8; border-color: #d5dde6; }
 .branch a { margin-right: 10px; } .branch b { margin-right: 10px; }
 .doc { max-width: 900px; } .doc table td, .doc table th { border: 1px solid #ddd; padding: 4px 6px; } .doc pre { white-space: pre-wrap; word-break: break-all; }
-table.scenario { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }
-table.scenario th, table.scenario td { border-bottom: 1px solid #ddd; padding: .35rem .5rem; text-align: left; vertical-align: top; overflow-wrap: break-word; }
-table.scenario td:nth-child(n+5) { text-align: right; white-space: nowrap; }
-table.scenario tr.gap td { background: #fff4d6; }
-table.scenario pre { font-size: .8rem; }
 nav .grp { font-weight: 600; margin: 8px 0 2px; text-transform: lowercase; }
 nav .typ { padding-left: 10px; }
 nav div.typ { color: #555; margin-top: 2px; }
