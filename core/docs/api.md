@@ -178,6 +178,7 @@ Admin-only, except login, logout, and `GET /me`.
 - Per-Asset authentication across a Fieldlink. Until it exists, any node that
   can send on a gateway's radio channel can claim to be any Asset that gateway
   carries.
-- The Protocol records this page names, as Protocol moves from messages to records.
+- Records this page names that Protocol does not define yet
+  ([Protocol open questions](../../protocol/docs/open-questions.md)).
 - Plugins, geo features, Objects, Observations, and Tracks, parked until after
   first flight.
