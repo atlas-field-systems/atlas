@@ -95,7 +95,8 @@ responds to an empty queue.
 
 Every command is a Task, including immediate ones. A Task sent with `now` runs
 at once, even while the Asset is paused, and cancels every Task with a lower
-`task_id`, including Tasks that have not arrived yet. The Asset reports the Task
+`task_id`, including Tasks that have not arrived yet. Core admits `now` even
+when 64 Tasks are already outstanding. The Asset reports the Task
 it interrupted and every Task it cancelled as `cancelled`, and the new Task
 reports its outcome like any other.
 
@@ -130,8 +131,8 @@ queue, though a Task sent with `now` still runs. Configured failsafes override
 pause. Paused work still counts toward Core's
 [64-Task outstanding-work cap](../../core/docs/api.md#operator-requests), including
 accepted Tasks that have not arrived yet. The Asset reports its complete held,
-unstarted queue, without truncation or windows; repeated requests cannot grow it
-past the capacity Core admits.
+unstarted queue, without truncation or windows; ordinary requests cannot grow it
+past the capacity Core admits. A `now` Task is still admitted at that cap.
 
 ### Settings
 
