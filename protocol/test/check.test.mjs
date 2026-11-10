@@ -62,6 +62,9 @@ const cases = [
   ['a kind that checks extra fields itself', ({ edit }) => edit(kind, (s) => { s.additionalProperties = false; }), /a kind leaves extra-field checks to its record/],
   ['an ID longer than 4 characters', ({ edit }) => edit(id, (s) => { s.pattern = '^[A-Za-z0-9]{1,8}$'; s.maxLength = 8; }), /variables\/asset_id\.json: law 10/],
   ['text without a length limit', ({ edit }) => edit(text, (s) => { delete s.maxLength; }), /variables\/explanation\.json: law 9: text needs a maxLength/],
+  ['a Task kind missing from the command list', ({ edit }) => edit('variables/command.json', (s) => { s.enum = s.enum.filter((c) => c !== 'land'); }), /variables\/command\.json: law 12: its values must be the kinds in records\/task\/ except settings: land, move_to, return_to_home, takeoff/],
+  ['a command in the list with no Task kind', ({ edit }) => edit('variables/command.json', (s) => { s.enum.push('hover'); }), /variables\/command\.json: law 12/],
+  ['a report missing from the report list', ({ edit }) => edit('variables/report.json', (s) => { s.enum = s.enum.filter((r) => r !== 'battery'); s.examples = ['status']; }), /variables\/report\.json: law 11: its values must be the records in records\/report\/: battery, failsafe, settings, status, telemetry/],
   ['a list without a length limit', ({ edit }) => edit('records/report/status/queue.json', (s) => { delete s.properties.task_ids.maxItems; }), /law 9: list "task_ids" needs a maxItems/],
 ];
 

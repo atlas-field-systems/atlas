@@ -109,6 +109,19 @@ for (const [file, s] of Object.entries(schemas)) {
 }
 for (const f of files) if (isKind(f) && !usedKinds.has(f)) errors.push(`${f}: law 5: no record uses this kind`);
 
+// A variable that lists kinds or records by name lists exactly the files that exist.
+const sameNames = (a, b) => a.length === b.length && a.every((n) => b.includes(n));
+const mirrors = [
+  ['variables/command.json', 'law 12', 'the kinds in records/task/ except settings',
+    files.filter((f) => isKind(f) && posix.dirname(f) === 'records/task' && base(f) !== 'settings')],
+  ['variables/report.json', 'law 11', 'the records in records/report/',
+    files.filter((f) => /^records\/report\/[a-z_]+\.json$/.test(f))],
+];
+for (const [file, law, what, named] of mirrors) {
+  const names = named.map(base);
+  if (schemas[file] && !sameNames(schemas[file].enum ?? [], names)) errors.push(`${file}: ${law}: its values must be ${what}: ${names.join(', ')}`);
+}
+
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);
