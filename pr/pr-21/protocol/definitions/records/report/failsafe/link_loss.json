@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe/link_loss.json",
+  "title": "link_loss",
+  "description": "The Asset has had no contact for link_loss_after_s. Its response is its link_loss_response setting. It triggers once, and again only after contact returns. It counts on the ground too.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "link_loss"
+    }
+  },
+  "examples": [
+    {
+      "kind": "link_loss"
+    }
+  ]
+}

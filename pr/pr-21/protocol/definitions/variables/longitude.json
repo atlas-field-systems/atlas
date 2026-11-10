@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/longitude.json",
+  "title": "longitude",
+  "description": "Longitude in WGS84 degrees, east positive.",
+  "type": "number",
+  "minimum": -180,
+  "maximum": 180,
+  "examples": [
+    -71.8063
+  ]
+}
