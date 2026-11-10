@@ -16,10 +16,11 @@ selected but not implemented.
 
 All five are part of the product and are built together.
 
-Each pillar is reached at its own root path: `/entities`, `/tasks`, `/objects`,
-and `/administration`. Plugins are not a pillar and still have a root path,
-`/plugins`. Kinds a pillar owns live under its root, so Assets are at
-`/entities/assets`. See [Root paths](api.md#root-paths).
+The public API reaches Entities, Tasks, Objects, and Administration at their own
+root paths: `/entities`, `/tasks`, `/objects`, and `/administration`. Fusion has
+no public root; it works on Core's state through the pillars' functions. Plugins
+are not a pillar and still have a root path, `/plugins`. Kinds a pillar owns live
+under its root, so Assets are at `/entities/assets`. See [Root paths](api.md#root-paths).
 
 Objects and the Plugin interface are [not designed yet](api.md#not-defined-yet).
 
