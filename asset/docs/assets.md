@@ -28,9 +28,9 @@ reads flight-controller state and sends equipment commands, over MAVLink as
 proposed. The app uses observed state to keep its own state, report to Core,
 and decide outcomes.
 
-The gateway path carries Atlas traffic; SiK carries equipment commands and state
-between the Pi and ArduPilot. The two fail independently. A reachable Pi does
-not show that the vehicle is reachable or that it performed a command.
+The Pi's IP link to Core carries Atlas traffic; SiK carries equipment commands
+and state between the Pi and ArduPilot. The two fail independently. A reachable
+Pi does not show that the vehicle is reachable or that it performed a command.
 
 Running the app on the ground allows local intervention during testing.
 Independent vehicle controls and
