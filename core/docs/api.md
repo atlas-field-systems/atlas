@@ -136,14 +136,22 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   including work held while paused. Core counts a Task until its final Asset
   report is stored. Dropping an unanswered request alone does not free capacity,
   because it may have reached the Asset. A queue report alone does not prove
-  that a missing Task has ended.
-  Core checks the total and reserves capacity for the whole request atomically
-  with acceptance, so concurrent requests cannot exceed 64. If acceptance would
-  exceed 64, Core refuses the whole request with `409 queue_full`, without
-  assigning Task IDs or adding accepted work. This includes `now`; expected
-  cancellations do not free capacity before final reports. A retry consumes no
-  extra capacity. After capacity is freed, a refused caller uses a new
-  idempotency key for a new admission attempt.
+  that a missing Task has ended. When the Asset returns, Core cancels each
+  dropped Task that the Asset reports neither holding, nor running, nor ended.
+  Those places free when those final reports are stored.
+  The 64 cap applies to ordinary requests: work that can sit in the unstarted
+  queue. Core checks the total and reserves capacity for the whole request
+  atomically with acceptance, so concurrent ordinary requests cannot exceed 64.
+  If acceptance would exceed 64, Core refuses the whole request with
+  `409 queue_full`, without assigning Task IDs or adding accepted work.
+  A `now` request is one Task that runs immediately and cancels every lower
+  `task_id`, so it is never a 65th held unstarted Task. Core admits `now` even
+  when 64 Tasks are already outstanding. Outstanding work may briefly exceed 64
+  until the cancelled Tasks' final reports are stored. That overage does not
+  refuse another `now`. Ordinary requests are still refused until the total
+  falls back to 64. A retry consumes no extra capacity. After capacity is
+  freed, a refused caller uses a new idempotency key for a new admission
+  attempt.
 - **Tasks are numbered.** Core gives each Task the next `task_id` for its Asset:
   1 for the Asset's first Task of the run, then 2, then 3. A `task_id` never
   changes and is never reused. The Asset runs its Tasks in `task_id` order, so
@@ -164,7 +172,8 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   exists.
 - With `now`, a request carries one Task. The Task runs at once, even while the
   Asset is paused, and cancels every Task with a lower `task_id`. The Asset
-  accepts it whatever its `clear_count`.
+  accepts it whatever its `clear_count`. Core admits `now` even at the 64 cap,
+  as the capacity rule above.
 - The Asset answers a Task request with a queue report that names the request
   and lists the Tasks the Asset holds.
 - **Unanswered requests end when the Asset goes offline.** Core stops delivering
@@ -173,7 +182,9 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   Asset never reported holding. The Asset's stream skips dropped requests when it
   returns, so no old request runs late. Core then cancels each dropped Task that
   the returning Asset reports neither holding, nor running, nor ended, so a
-  dropped `task_id` never blocks the Tasks after it. An operator who still wants the work sends it again.
+  dropped `task_id` never blocks the Tasks after it. Those cancelled Tasks
+  still hold their capacity places until those final reports are stored.
+  An operator who still wants the work sends it again.
 - A dropped request may have reached the Asset before contact ended. The Asset's
   later reports say what it did. `request.dropped` does not prove the request
   never arrived.

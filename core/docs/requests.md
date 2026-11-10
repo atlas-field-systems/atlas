@@ -7,7 +7,8 @@ validates request bodies with Protocol's validator, then checks the
 caller's session or key, the Asset's contact, explicitly advertised commands,
 supported settings, Task identities, and total outstanding Task capacity using
 the information it holds. The [operator request rules](api.md#operator-requests)
-own the 64-Task cap and atomic capacity reservation. Refusals follow the
+own the 64-Task cap, the `now` exception, and atomic capacity reservation.
+Refusals follow the
 [Core API's errors](api.md#basics).
 
 Core retains requested work in its event log and passes accepted requests to the
@@ -42,6 +43,24 @@ These are required outcomes for the future runtime, not implemented tests.
 
 Also check concurrent admission at 63 outstanding Tasks: two requests for one
 Task each allow exactly one acceptance. A request for two is refused whole.
-With one active Task and 63 accepted or held Tasks, new work is also refused.
-Dropping an unanswered request does not free its places before final Asset
-reports resolve its Tasks. An immediate `now` Task uses the same capacity check.
+With one active Task and 63 accepted or held Tasks, new ordinary work is also
+refused.
+Dropping an unanswered request does not free its places. When the Asset
+returns, Core cancels each dropped Task it reports neither holding, nor
+running, nor ended; the places free when those final reports are stored.
+
+## Scenario: now at capacity
+
+These are required outcomes for the future runtime, not implemented tests.
+
+1. An online Asset has 64 outstanding Tasks, held or still in flight. An
+   ordinary request for one more Task is refused with `409 queue_full`.
+2. The operator sends one Task with `now`, such as Land or return-to-home.
+   Core accepts it. Outstanding work is briefly 65. The complete queue
+   report still has at most 64 unstarted IDs, because the `now` Task is
+   active, not held.
+3. A further ordinary request in that window is refused with `409 queue_full`.
+   Another `now` request is accepted.
+4. After Core stores the final `cancelled` reports for the displaced work,
+   ordinary admission is open again up to a total of 64, counting the
+   `now` Task until its own final report is stored.

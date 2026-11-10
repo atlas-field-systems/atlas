@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/status/queue.json",
   "title": "queue",
-  "description": "The Asset's task list: the task_id of every Task it holds and has not started, in the order it will run them, and its clear_count. Sent whenever the list changes and when the Asset starts or reconnects with a list. An empty list means nothing is queued. When it answers a request, request_id names it. This is the complete list, never a truncated or windowed subset. Core admission limits total outstanding work to 64 Tasks per Asset, including accepted in-flight, held unstarted, and active Tasks, so every permitted queue fits this report.",
+  "description": "The Asset's task list: the task_id of every Task it holds and has not started, in the order it will run them, and its clear_count. Sent whenever the list changes and when the Asset starts or reconnects with a list. An empty list means nothing is queued. When it answers a request, request_id names it. This is the complete list, never a truncated or windowed subset. Core admits at most 64 ordinary outstanding Tasks per Asset, including accepted in-flight, held unstarted, and active Tasks, so every permitted unstarted queue fits this report. A `now` Task may briefly take outstanding work over 64; it is active, not a 65th held ID.",
   "type": "object",
   "required": [
     "kind",
