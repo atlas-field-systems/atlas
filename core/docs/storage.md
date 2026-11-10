@@ -14,7 +14,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | --- | --- | --- |
 | `runs` | Shared | Each run's `run_id`, start, and end |
 | `events` | Shared | The [event log](api.md#the-event-log-and-live-stream): `event_id`, `time`, `kind`, `asset_id`, and the record |
-| `idempotency_keys` | Shared | Each caller's keys for the run, with a hash of the body and the response |
+| `idempotency_keys` | Shared | Each caller's keys for the run, with a hash of the body and the non-secret response or credential acknowledgment ([retry rules](api.md#callers-and-credentials)) |
 | `accounts` | Administration | Admin and operator accounts and their password hashes |
 | `gateways` | Administration | Provisioned gateways and their key hashes |
 | `asset_keys` | Administration | Each Asset on IP's key hash |
