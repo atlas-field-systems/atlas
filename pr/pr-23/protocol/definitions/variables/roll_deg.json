@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/roll_deg.json",
+  "title": "roll_deg",
+  "description": "Camera roll around its view direction in degrees, positive is clockwise as seen from behind the camera. Missing means 0.",
+  "type": "number",
+  "minimum": -180,
+  "exclusiveMaximum": 180,
+  "examples": [
+    0
+  ]
+}
