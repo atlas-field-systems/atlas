@@ -82,11 +82,7 @@ archived, then removed after the retention period.</li>
 </tr>
 <tr>
 <td><code>POST /assets/{id}/tasks</code></td>
-<td>Create a Task; Core assigns <code>task_id</code>. <code>now: true</code> clears the queue and runs it</td>
-</tr>
-<tr>
-<td><code>PUT /assets/{id}/queue</code></td>
-<td>New order, with the <code>queue_version</code> it was built on</td>
+<td>Create one or more Tasks; Core numbers them with <code>task_id</code> and sends them at once. <code>now: true</code> runs one Task at once and cancels the Tasks before it</td>
 </tr>
 <tr>
 <td><code>PATCH /assets/{id}/settings</code></td>
@@ -115,9 +111,10 @@ state and setting values change only from the Asset&#39;s reports.</li>
 <li><strong>Every command is a Task</strong>, so immediate commands report outcomes too. Pause
 remains a setting.</li>
 <li><strong>Retries are safe by design.</strong> Creates carry an idempotency key, settings are
-end states, cancel names its Task, and the queue carries its version.</li>
-<li><strong>A queue reaches an IP Asset whole:</strong> its version and every Task body in one
-event. A gateway may split it on its radio.</li>
+end states, cancel names its Task, and each <code>task_id</code> runs once.</li>
+<li><strong>Tasks are numbered and sent at once.</strong> The Asset runs them in <code>task_id</code>
+order and starts a request&#39;s Tasks only when it has received them all. A gateway may
+send them one at a time on its radio.</li>
 <li><strong>Compatibility is visible.</strong> The API reports the hash of its Protocol
 definitions; a client refuses a mismatch with an explanation.</li>
 </ul>
@@ -143,14 +140,13 @@ failsafe behavior stays deferred until field testing.</p>
 <h2 id="fieldlinks">Fieldlinks</h2>
 <p>For the LoRa phase, the Fieldlink builds on Meshtastic: a private channel, a
 private app port, and its encryption, routing and per-hop acknowledgements.
-The Fieldlink adds end-to-end acknowledgement of queues and final reports,
+The Fieldlink adds end-to-end acknowledgement of Tasks and final reports,
 idempotency by <code>task_id</code>, and per-Asset contact reports to Core. Protocol defines
 no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
 also decides how an Asset authenticates to its gateway, and the Fieldlinks may
 share nothing; that design is deferred. The gateway&#39;s link to Core is broadband
 IP, so the gateway keeps its Assets&#39; full state and sends over the radio only
-what each Asset does not already have. It may send a
-queue as changes against the list the Asset holds rather than whole. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
+what each Asset does not already have. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.</p>
 <h2 id="stack">Stack</h2>
 <ul>

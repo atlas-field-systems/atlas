@@ -94,9 +94,12 @@ authentication. Records never carry credentials.</li>
 </ul>
 <h2 id="work-is-always-a-task">Work is always a Task</h2>
 <p>Every command is a Task with a Core-assigned <code>task_id</code>, so every command reports
-an outcome. A Task can run now, clearing the queue. Cancel names its Task. Pause
-is a setting. Retries are safe by design: creates carry an idempotency key,
-settings are end states, and the queue carries its version.</p>
+an outcome. Core numbers each Asset&#39;s Tasks in order and sends every Task as
+soon as it accepts it, so an Asset that loses contact already holds its work. The
+Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
+before it. Cancel names its Task. Pause is a setting. Retries are safe by design:
+creates carry an idempotency key, settings are end states, and each <code>task_id</code>
+runs once.</p>
 <h2 id="stack">Stack</h2>
 <ul>
 <li>Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface
@@ -114,7 +117,8 @@ build then implements everything together from the finished design, not one
 slice at a time. First flight is the first field test of that build.</p>
 <h2 id="changes-and-releases">Changes and releases</h2>
 <ul>
-<li>Changes to meaning are additive: new fields and records, not changed ones.</li>
+<li>Every program in a deployment uses the same Protocol definitions. A change to
+them reaches Core, gateways, Assets, and the Command Interface together.</li>
 <li>Published packages are immutable. Changes are released through the package
 version, with no separate version counter.</li>
 <li>The Core API and each Fieldlink report the hash of the Protocol definitions they

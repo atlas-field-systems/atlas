@@ -14,7 +14,7 @@ page disagree, fix one of them.
 - A **command** is something an Asset can do: takeoff, move_to, land, return_to_home. A **Task** is one use of a command, or a settings change made when the Task runs (kind `settings`). [Every command is a Task](../../atlas/design-decisions.md#work-is-always-a-task).
 - takeoff takes a target altitude. move_to takes a destination; without an altitude, the Asset keeps its current one. land takes a landing position and an optional transit altitude. return_to_home flies to the `home_position` setting.
 - `return_to_home` is a command, and the same name is a failsafe response.
-- There are no Plans. A queue is the list of an Asset's Tasks not started yet, in order. Core sends it whole, with every Task body, so the Asset never fetches a body.
+- There are no Plans. A queue is the list of an Asset's Tasks not started yet, in `task_id` order. Core numbers each Task and sends it once with its whole body, so the Asset never fetches a body and never receives a list to replace its own.
 - A Task's state only moves forward, and a final state never changes.
 - The description lists `commands`. Programs do not infer them from equipment. The list may be empty for a receive-only Asset such as an ADS-B receiver.
 
