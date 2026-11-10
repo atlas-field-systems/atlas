@@ -50,8 +50,8 @@ the equipment behavior and affected Task outcomes without claiming that Atlas
 started the maneuver. If the app fails, its reports and logs may be missing, and
 a missing report establishes no outcome.
 
-In the [ground-Pi setup](assets.md#ardupilot-quadcopter), losing the gateway
-path to Core and losing the SiK equipment link are independent failures. The
+In the [ground-Pi setup](assets.md#ardupilot-quadcopter), losing the link
+to Core and losing the SiK equipment link are independent failures. The
 app can stay reachable with no current vehicle measurements or control, and it
 cannot send a response through a lost equipment link. The flight setup defines
 the vehicle's own response and the operator's intervention path; both must work
