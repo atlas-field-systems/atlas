@@ -142,6 +142,8 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 | `GET /assets/{asset_id}/tasks` | Task bodies, latest states, and the Tasks the Asset reports holding |
 | `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
 
+Reads of the rest of the picture are under [Entities](#entities).
+
 ## Asset and gateway calls
 
 An Asset on IP starts or reconnects in this order:
@@ -219,6 +221,25 @@ Only admins may use these calls, except login, logout, and `GET /me`.
 `debug_endpoint` is on. Core makes the random segment when it starts.
 [Core logging](logging.md#read-the-log-while-core-runs) owns it.
 
+## Entities
+
+Entities is the shared picture: Assets, Observations, Tracks, and geo features.
+`GET /entities` returns one consistent cut of all four, with `as_of`. The event
+stream updates it. The Command Interface draws the map from this read.
+
+Each kind also has its own path, because each is written and used differently.
+These paths are part of the Entities API, not separate APIs.
+
+| Path | Role |
+| --- | --- |
+| `/assets` | The actor surface, already specified above: provisioning, contact, settings, Tasks, and reports. Observations an Asset reports arrive here as reports. |
+| `/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
+| `/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
+| `/geofeatures` | Places operators and Plugins create, edit, and delete. Tasks may name a `geofeature_id`. |
+
+The request and record shapes for `GET /entities`, `/observations`, `/tracks`,
+and `/geofeatures` are not designed yet. Objects are not Entities.
+
 ## Not defined yet
 
 - Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
@@ -237,6 +258,7 @@ Only admins may use these calls, except login, logout, and `GET /me`.
   the Asset.
 - Records this page names that Protocol does not define yet
   ([Protocol open questions](../../protocol/docs/open-questions.md)).
-- The API for geo features, Objects, Observations, Tracks, and the Plugin
-  interface. They are part of the product, built with the rest
-  ([pillars](pillars.md)), and their API is designed next.
+- The rest of the Entities API: `GET /entities`, `/observations`, `/tracks`, and
+  `/geofeatures`, as [sketched above](#entities). `/assets` is already specified.
+- The API for Objects and the Plugin interface. They are part of the product,
+  built with the rest ([pillars](pillars.md)), and their API is designed next.

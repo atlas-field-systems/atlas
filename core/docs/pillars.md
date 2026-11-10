@@ -14,9 +14,11 @@ selected but not implemented.
 | Fusion | Turning Observations into Tracks ([Fusion](fusion.md)) |
 | Administration | Accounts and their password hashes, sessions, Asset and gateway keys, and provisioning. Administrative work Core adds later goes here too |
 
-All five are part of the product and are built together. The Core API for
-Observations, Tracks, geo features, and Objects is
-[not designed yet](api.md#not-defined-yet).
+All five are part of the product and are built together.
+
+Entities owns the shared picture. The public Entities API is one API with
+several paths, not a separate API per kind. See [Entities](api.md#entities).
+Objects and the Plugin interface are [not designed yet](api.md#not-defined-yet).
 
 ## Rules
 
