@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/task_id.json",
+  "title": "task_id",
+  "description": "Which Task this is, and its place in the Asset's order. Core assigns it. The first Task for an Asset in a run is 1, and each later Task is one higher. It never changes and is never reused, even after the Task finishes. The Asset runs its Tasks in task_id order.",
+  "type": "integer",
+  "minimum": 1,
+  "maximum": 9999,
+  "examples": [
+    7
+  ]
+}
