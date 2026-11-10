@@ -69,7 +69,7 @@ archived, then removed after the retention period.</li>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>POST /login</code></td>
+<td><code>POST /administration/login</code></td>
 <td>Account login; returns a session cookie</td>
 </tr>
 <tr>
@@ -77,23 +77,23 @@ archived, then removed after the retention period.</li>
 <td>One cut of the shared picture: Assets, Observations, Tracks, and geo features</td>
 </tr>
 <tr>
-<td><code>GET /assets</code>, <code>GET /assets/{id}</code></td>
+<td><code>GET /entities/assets</code>, <code>GET /entities/assets/{id}</code></td>
 <td>Assets with their description, latest reports and settings</td>
 </tr>
 <tr>
-<td><code>GET /assets/{id}/tasks</code></td>
+<td><code>GET /tasks/{id}</code></td>
 <td>Task bodies, states and queue order</td>
 </tr>
 <tr>
-<td><code>POST /assets/{id}/tasks</code></td>
+<td><code>POST /tasks/{id}</code></td>
 <td>Create one or more Tasks; Core numbers them with <code>task_id</code> and sends them at once. <code>now: true</code> runs one Task at once and cancels the Tasks before it</td>
 </tr>
 <tr>
-<td><code>PATCH /assets/{id}/settings</code></td>
+<td><code>PATCH /entities/assets/{id}/settings</code></td>
 <td>Immediate settings change, as end states</td>
 </tr>
 <tr>
-<td><code>POST /assets/{id}/tasks/{task_id}/cancel</code></td>
+<td><code>POST /tasks/{id}/{task_id}/cancel</code></td>
 <td>Cancel that Task, and only that Task</td>
 </tr>
 <tr>
@@ -105,20 +105,21 @@ archived, then removed after the retention period.</li>
 <td>Live log events; reconnect resumes after <code>Last-Event-ID</code></td>
 </tr>
 <tr>
-<td><code>POST /assets/{id}/reports</code></td>
+<td><code>POST /entities/assets/{id}/reports</code></td>
 <td>Asset or gateway reports, in batches, keeping original times</td>
 </tr>
 <tr>
-<td><code>GET /observations</code>, <code>GET /tracks</code></td>
+<td><code>GET /entities/observations</code>, <code>GET /entities/tracks</code></td>
 <td>Evidence and conclusions in the picture, separately</td>
 </tr>
 <tr>
-<td><code>GET</code>, <code>POST</code>, <code>PATCH</code>, <code>DELETE /geofeatures</code></td>
+<td><code>GET</code>, <code>POST</code>, <code>PATCH</code>, <code>DELETE /entities/geofeatures</code></td>
 <td>Places operators and Plugins author</td>
 </tr>
 </tbody></table>
-<p>Assets, Observations, Tracks, and geo features belong to the Entities API. They
-have separate paths; they are not separate APIs.</p>
+<p>Each pillar has a root path (<code>/entities</code>, <code>/tasks</code>, <code>/objects</code>,
+<code>/administration</code>). Plugins have <code>/plugins</code>. Kinds live under their pillar&#39;s
+root. <code>/about</code>, <code>/events</code>, <code>/history</code>, and <code>/debug</code> belong to no pillar.</p>
 <ul>
 <li><strong>Accepted is not done.</strong> A create or change returns Core&#39;s acceptance. Task
 state and setting values change only from the Asset&#39;s reports.</li>
@@ -186,9 +187,9 @@ plan are removed until there is code to plan.</p>
 <ol>
 <li>Update the Charter and design decisions to this direction.</li>
 <li>Write the Core API doc and trim Protocol to records and data laws.</li>
-<li>Design the rest of the product: the Entities API (<code>GET /entities</code>,
-<code>/observations</code>, <code>/tracks</code>, <code>/geofeatures</code>), Objects, the Plugin interface,
-gateways, and Fieldlinks.</li>
+<li>Design the rest of the product: the remaining Entities paths
+(<code>/entities/observations</code>, <code>/entities/tracks</code>, <code>/entities/geofeatures</code>),
+<code>/objects</code>, <code>/plugins</code>, gateways, and Fieldlinks.</li>
 <li>Test the design with throwaway prototypes and write the findings back.</li>
 <li>Build everything together, then fly first flight.</li>
 </ol>
