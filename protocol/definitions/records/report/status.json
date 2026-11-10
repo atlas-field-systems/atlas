@@ -51,7 +51,7 @@
       "time": 1793667600000,
       "asset_id": "A1",
       "kind": "task",
-      "task_id": "T7",
+      "task_id": 7,
       "task_state": "active"
     },
     {
@@ -59,11 +59,11 @@
       "time": 1793667600000,
       "asset_id": "A1",
       "kind": "queue",
-      "queue_version": 1,
+      "clear_count": 1,
       "task_ids": [
-        "T1",
-        "T2",
-        "T3"
+        1,
+        2,
+        3
       ],
       "request_id": 120
     }

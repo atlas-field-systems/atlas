@@ -4,7 +4,7 @@ These numbers guide Atlas design. They are not hard limits.
 Design so Atlas works well at these sizes and does not break just past them.
 
 ## Fleet
-- Design for about 20 Assets at most. Larger fleets should still work, but without guarantees.
+- Design for about 20 Assets at most. Larger fleets should still work, but without guarantees. The number is a goal, not a requirement: a field link may carry fewer.
 - At this scale, IDs that people read or that cross a field link are 1 to 4 letters or digits, such as `A1` ([the ID rule](CHARTER.md#keep-shared-data-simple)). That gives over a million IDs and keeps field-link frames short.
 
 ## Setup

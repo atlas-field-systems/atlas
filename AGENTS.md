@@ -25,6 +25,7 @@ is locked. Propose changes to the owner rather than making them quietly. See
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is not built yet | Planning |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
+| [gateway/](gateway/) | Atlas Gateway: the gateway app and the Fieldlink packages installed on it, which carry Atlas across field links | Planning, design deferred |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
 - Want the exact shape of a record? Go to `protocol/`.
@@ -32,8 +33,9 @@ is locked. Propose changes to the owner rather than making them quietly. See
 - Want how an Asset behaves? Go to `asset/`.
 - Want how the command interface works? Go to `command-interface/`.
 - Want the client programs use to call the Core API? Go to `sdk/`.
-- Want how gateways and Fieldlinks carry Atlas across a field link? Not written
-  yet; see [Fieldlinks](atlas/api-proposal.md#fieldlinks).
+- Want how gateways and Fieldlinks carry Atlas across a field link? Go to
+  `gateway/`. The design is deferred; [Fieldlinks](atlas/api-proposal.md#fieldlinks)
+  has the sketch.
 
 Atlas moved from one shared message model to a
 [Core API with gateways](atlas/api-proposal.md). Every part's docs follow it.

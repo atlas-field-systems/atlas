@@ -66,8 +66,9 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
 - Subsystem documentation owns its behavior, failure cases, and planning decisions.
 - Protocol owns the exact shared records and their validator within the charter's
   [shared data rules](#keep-shared-data-simple). Core owns the Core API and
-  server mechanisms. The SDK owns the client for that API. Gateway documentation,
-  once written, owns gateways and their Fieldlinks.
+  server mechanisms. The SDK owns the client for that API.
+  [Gateway](https://github.com/atlas-field-systems/atlas/tree/main/gateway)
+  owns gateways and their Fieldlinks.
   [Asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
   owns how an Asset behaves, and
   [Command Interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface)

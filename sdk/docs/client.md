@@ -26,7 +26,9 @@ key. The SDK never puts a credential in a record, a URL, or a
 The client loads Protocol's definitions and their hash from its Protocol package
 dependency. `connect()` calls `GET /about` and compares `definitions_hash` with its
 own. On a mismatch, `connect()` returns `definitions_mismatch` with both hashes.
-Every later call returns the same result without sending.
+Every later call returns the same result without sending. A client with a key
+sends its key and hash on `GET /about`, so Core
+[records the mismatch](../../core/docs/api.md#basics) for operators.
 
 Every request carries `Atlas-Definitions: <hash>`, and the event stream carries
 `?definitions=<hash>` ([Basics](../../core/docs/api.md#basics)). A
@@ -35,7 +37,7 @@ The client never reinterprets records it cannot validate.
 
 ## Validation
 
-Before sending, the client checks every body record (a Task, a queue, a settings
+Before sending, the client checks every body record (a Task, a settings
 change, a description, reports) with Protocol's validator. A body that fails is a
 programmer error. The call throws with the failing paths and sends nothing.
 `validate(record)` returns the same check as a value, so a form can show errors
@@ -78,7 +80,7 @@ does not mean the Asset did anything. The outcome arrives later on the
 [event stream](live.md) as a report:
 
 - A Task's state arrives in `report.status` Task reports naming its `task_id`.
-- A settings change, a cancel or a queue is answered by a report whose
+- A Task request, a settings change or a cancel is answered by a report whose
   `request_id` is the request's `event_id`.
 
 The client offers no "wait until done" call. A program that needs the outcome
@@ -98,8 +100,7 @@ const ready = await atlas.connect();                     // GET /about, hash che
 if (!ready.ok) return show(ready.explanation);
 
 await atlas.login(operator_id, password);                // browser accounts
-const task = await atlas.createTask(asset_id, body);     // { task_id, event_id }
-await atlas.setQueue(asset_id, { queue_version, task_ids });
+const sent = await atlas.sendTasks(asset_id, { tasks }); // { task_ids, event_id }
 await atlas.changeSettings(asset_id, settings);
 await atlas.cancel(asset_id, task_id);
 

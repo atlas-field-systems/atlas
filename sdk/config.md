@@ -11,6 +11,7 @@ there is no SDK configuration file. Values are proposed defaults for discussion.
 | `backoff` | Retry and reconnect delays: minimum, maximum, factor, jitter | 500 ms, 30 s, 2, 0.2 |
 | `streamIdleMs` | No data or keepalive for this long and the stream is reopened | 30000 |
 | `maxBatch` | Most reports in one Asset batch | Open |
+| `heartbeatMs` | How often an idle Asset posts an empty batch | Open; shorter than Core's `offline_after_s` |
 | `observer` | Receives [diagnostic events](docs/logging.md) | None |
 
 Tests may also swap the clock and `fetch`. Those are test hooks, not settings.

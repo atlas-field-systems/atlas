@@ -25,10 +25,12 @@ Names in this table are proposed configuration keys.
 | `data_directory` | The SQLite database ([storage](docs/storage.md)) and Object files | Directory layout is open |
 | `first_admin` | The first admin account's `operator_id` and password | Used only when no account exists; secret source is open |
 | `offline_after_s` | How long without contact before Core counts an Asset offline | See [contact](docs/api.md#contact); default is open |
+| `clock_ahead_s` | How far ahead of Core's clock a report's time may be before Core [marks it](docs/api.md#asset-and-gateway-calls) | Default is open |
 | `log_level` | Detail of diagnostics | Detailed per-request logging is required; proposed prototype default is `trace` |
 | `log_directory` | Local diagnostic files | Keep apart from the event log; path is open |
 | `log_message_content` | Include request and report content in trace records | Proposed on, with credentials removed |
 | `log_file_limit_bytes`, `log_total_limit_bytes` | Rotation and disk usage | Limits are open; do not silently discard a run's evidence |
+| `debug_endpoint` | Serve the diagnostic log over HTTP with no credential ([logging](docs/logging.md#read-the-log-while-core-runs)) | Off by default. While it is on, anyone who has the URL that Core prints at startup can read the log |
 | `archive_directory` | Completed Reset ZIPs | Path and export trigger are open |
 | `run_retention_days` | Retention of completed runs | The [scale direction](../atlas/scale.md#runs-and-storage) is at least 30 days |
 

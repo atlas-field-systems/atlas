@@ -6,7 +6,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | --- | --- |
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
 | Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. Core authenticates the gateway; the Assets it carries authenticate to it. A gateway is not an Asset. |
-| Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. The same package runs on the gateway and on the radio Asset. |
+| Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
 | Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
 | Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |

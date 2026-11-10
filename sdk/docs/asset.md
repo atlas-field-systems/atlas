@@ -31,7 +31,7 @@ start and reconnect:
 1. `connect()`, which compares the definitions hash.
 2. Send the description.
 3. Send one report batch with the known settings, the queue report if the queue
-   helper holds a list, and every final Task report not yet acknowledged.
+   helper holds Tasks, and every final Task report not yet acknowledged.
 4. Follow `/events` after the last handled `event_id`, or from the latest event on
    first start.
 
@@ -52,33 +52,37 @@ The app hands reports to the outbox, which sends them in batches with
   sent after a gap. Which of them to keep during a gap is the
   [Asset's choice](../../asset/docs/communications.md#report-from-local-state).
 - A report answering a request carries `request_id`, the request's `event_id`.
+- With nothing to send, the outbox posts an empty batch every `heartbeatMs`
+  ([configuration](../config.md)), so Core keeps the Asset
+  [online](../../core/docs/api.md#contact).
 
 ## The queue helper
 
 The queue helper is optional. A reporting-only Asset with no queue does not use
-it. The helper holds the current list and hands Tasks to the app.
+it. The helper holds the Asset's Tasks and hands them to the app.
 
-- **Holds the list.** It keeps the current `queue_version` and the ordered Task
-  bodies, plus every `task_id` it has started this run.
-- **Applies a new list only when it fits.** A `queue.requested` takes effect only
-  when its `queue_version` is the helper's current one, unless `now` is set. The
-  list arrives whole, so it takes effect at once. The helper raises its
-  `queue_version` and sends a queue report with the request's `request_id`.
-- **Reports what it drops.** Tasks that leave the list without starting are
-  reported `cancelled`. Tasks of an ignored list that it never held are reported
-  `cancelled` too, and the queue report shows the list still in effect.
-- **Never runs a `task_id` twice.** A list that names a started or finished Task
-  does not run it again.
+- **Holds the Tasks.** It keeps every Task it has received and not started, its
+  `clear_count`, and every `task_id` that has started or ended this run.
+- **Orders by `task_id`.** Tasks may arrive in any order and more than once. The
+  helper hands out the lowest held Task, and only when every lower `task_id` has
+  ended and it holds every Task through that Task's `send_last`.
+- **Refuses stale Tasks.** It reports a Task `cancelled` when the Task's
+  `clear_count` is not the helper's own, unless `now` is set.
+- **Answers each request.** It sends a queue report with the `request_id` of each
+  `tasks.requested`, listing the Tasks it holds.
+- **Never runs a `task_id` twice.** A repeated Task changes nothing.
 - **The app pulls work.** The app calls `next()` when it is ready to run a Task,
   so pause, equipment checks and failsafes stay in the app. With `now`, the helper
-  tells the app to end the running Task and run the new one at once, even while paused.
+  cancels every lower `task_id` and tells the app to end the running Task and run
+  the new one at once, even while paused.
 - **Cancel names one Task.** A queued Task is removed and reported `cancelled`. A
-  running Task is handed to the app to stop; the app reports it. Either report
-  carries the cancel's `request_id`.
+  running Task is handed to the app to stop; the app reports it. A cancel for a
+  Task that has not arrived is kept, and the Task is reported `cancelled` without
+  running. Each report carries the cancel's `request_id`.
 - **Finishing.** The app calls `finish(task_id, state, fields)`. The helper builds
   the final `report.status` Task report and hands it to the outbox.
-- **Clearing.** `clear()` reports every listed Task `cancelled` and raises
-  `queue_version`. The app calls it when a command fails or a failsafe starts, as
+- **Clearing.** `clear()` reports every held Task `cancelled` and raises
+  `clear_count`. The app calls it when a command fails or a failsafe starts, as
   in [failsafes](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
 Settings requests are not Tasks unless they arrive as one. The helper passes
@@ -91,7 +95,8 @@ State is in memory for the run. Recovery after a process restart is not designed
 
 A radio Asset runs the same Asset app, outbox and queue helper. Its Fieldlink
 implements the [Asset link](#the-asset-link). It delivers each request with its
-`event_id` and delivers a queue whole even if the gateway split it on the radio.
+`event_id`. It may deliver a request's Tasks one at a time and in any order,
+because the queue helper orders them by `task_id`.
 It resolves `sendReports` on end-to-end acknowledgement and supplies contact. The
 Fieldlink owns its own startup and the hash check on its link. Fieldlinks are not
 part of the SDK.

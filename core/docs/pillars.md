@@ -9,7 +9,7 @@ selected but not implemented.
 | Pillar | Owns |
 | --- | --- |
 | Entities | The shared picture: Assets with their descriptions, contact, reports, and settings; Observations; Tracks; and geo features |
-| Tasks | Tasks, each Asset's queue, the list in flight, and cancels |
+| Tasks | Tasks, each Asset's queue, and cancels |
 | Objects | Files Core holds and what each one is |
 | Fusion | Turning Observations into Tracks ([Fusion](fusion.md)) |
 | Administration | Accounts and their password hashes, sessions, Asset and gateway keys, and provisioning. Administrative work Core adds later goes here too |

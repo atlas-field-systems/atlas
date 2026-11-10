@@ -5,7 +5,7 @@ This behavior is selected but not implemented.
 Core rejects requests it knows are invalid before they reach a field link. It
 validates request bodies with Protocol's validator, then checks the
 caller's session or key, the Asset's contact, explicitly advertised commands,
-supported settings, Task identities, and queue versions using the information it
+supported settings, and Task identities using the information it
 holds. Refusals follow the [Core API's errors](api.md#basics).
 
 Core retains requested work in its event log and passes accepted requests to the

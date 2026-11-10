@@ -6,7 +6,6 @@
       "files": [
         "records/description.json",
         "records/task.json",
-        "records/queue.json",
         "records/settings_change.json",
         "records/cancel.json",
         "records/report/status.json",
@@ -46,7 +45,8 @@
         "variables/type.json",
         "variables/kind.json",
         "variables/time.json",
-        "variables/queue_version.json",
+        "variables/clear_count.json",
+        "variables/send_last.json",
         "variables/low_battery_response.json",
         "variables/command.json",
         "variables/roll_deg.json",

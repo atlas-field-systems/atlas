@@ -66,7 +66,7 @@ for (const [file, s] of Object.entries(schemas)) {
   for (const prop of Object.keys(props)) {
     if (/^(header|sender|payload|data|body)$/.test(prop)) errors.push(`${file}: law 6: no "${prop}" wrapper field; fields sit directly in the record`);
     if (/^(seq|from)$/.test(prop)) errors.push(`${file}: law 6: records carry no "${prop}"`);
-    if (/(^|_)version$/.test(prop) && prop !== 'queue_version') errors.push(`${file}: law 14: definitions carry no version field ("${prop}")`);
+    if (/(^|_)version$/.test(prop)) errors.push(`${file}: law 14: definitions carry no version field ("${prop}")`);
   }
   if (isRecord(file)) {
     const name = nameOf(file);

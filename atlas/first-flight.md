@@ -6,11 +6,11 @@ connects to an ArduPilot quadcopter through a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
 such as QGroundControl. The vehicle remains the Asset represented in Atlas.
 
-The operator submits Takeoff, Move To a location, then Land as Tasks through the
-Command Interface. Core assigns each `task_id` and sends the Asset its whole queue,
-with its version and every Task body together. The app sends equipment commands
-to the flight controller and reports the observed outcomes. The operator sees the
-reported vehicle behavior.
+The operator drafts Takeoff, Move To a location, then Land in the Command
+Interface and sends them in one request. Core numbers the Tasks 1, 2, and 3 and
+sends them to the Asset at once. The Asset starts Takeoff only when it holds all
+three. The app sends equipment commands to the flight controller and reports the
+observed outcomes. The operator sees the reported vehicle behavior.
 
 No runtime is built yet. The Pi can reach Core while vehicle equipment is still
 starting or unreachable. Connection alone does not establish takeoff readiness.
@@ -43,8 +43,8 @@ sequenceDiagram
     Drone->>Pi: Equipment state over SiK
     Pi->>Core: Description and vehicle reports through the Core API
     Core-->>UI: Show the reported state
-    UI->>Core: Submit Takeoff, Move To and Land as Tasks
-    Core->>Pi: The whole queue with every Task body
+    UI->>Core: Send Takeoff, Move To and Land in one request
+    Core->>Pi: Tasks 1, 2 and 3, sent together
     Pi-->>Core: Report the queue it holds
     Core-->>UI: Show the reported queue
     Note over Pi: Run Takeoff, Move To, then Land in order
@@ -87,9 +87,10 @@ An applicable failsafe overrides ordinary work, including paused, and locks new
 work for the rest of the operation, even after its response Task succeeds.
 During a failsafe the operator can still override it with an immediate Land or
 Return to home, or with pause. The Asset records each as an override.
-Local intervention and a manual restart of the app on the ground Pi are required
-before another operation. Atlas does not manage that recovery. The system is spun
-down and the failure is evaluated from the Reset ZIPs.
+Once the vehicle is safely stopped, the app shuts itself down and Core shows the
+Asset offline. Local intervention and a manual restart of the app on the ground
+Pi are required before another operation. Atlas does not manage that recovery.
+The failure is evaluated from the Reset ZIPs.
 Atlas enables no failsafe rules by default. The flight setup explicitly supplies
 the intended rules, including any battery response during an intentional wait.
 The Asset owns

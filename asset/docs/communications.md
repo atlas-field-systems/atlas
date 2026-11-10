@@ -64,6 +64,11 @@ range, and report in less detail as link capacity decreases. The best path
 depends on current conditions, not a fixed ranking of radio types. A nearby
 radio peer does not show that Core is reachable.
 
+The owner intends every Asset to join known Wi-Fi networks by itself. An Asset
+uses Wi-Fi during setup before a flight, for administrative work such as setting
+its clock, and later for large transfers of retained reports. Wi-Fi is then one
+of the Asset's links. This is a direction, not a design.
+
 ## Open
 
 - Reporting thresholds, rates, and priorities under congestion.

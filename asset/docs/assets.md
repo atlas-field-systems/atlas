@@ -112,9 +112,9 @@ and cleans up after a partial startup. Modules can start before their equipment
 is ready, so [connection readiness](README.md#start-and-connect) stays separate.
 
 A standard Linux service starts the app on boot and shuts it down in order. The
-service does not restart the app automatically during an operation; a restart
-means shutting down the system for evaluation. Link reconnects keep the same
-running app.
+service does not restart the app automatically. A stopped Asset
+[stays out of the operation](../../atlas/using-atlas.md#an-operation-runs-without-restarts).
+Link reconnects keep the same running app.
 
 Installation is repeatable on ordinary Linux, with example configurations for
 the tracker and quadcopter. No custom Raspberry Pi image is planned.

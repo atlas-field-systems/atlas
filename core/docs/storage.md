@@ -20,7 +20,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `asset_keys` | Administration | Each Asset on IP's key hash |
 | `assets` | Entities | Provisioned Assets: ID, type, latest description, and contact |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
-| `queues` | Tasks | Each Asset's latest reported list and `queue_version`, the list in flight, and the Tasks waiting ([one list in flight](api.md#operator-requests)) |
+| `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
 
 Tables for Observations, Tracks, geo features, and Objects are designed with
 their API.
@@ -49,3 +49,5 @@ request, its archive, and what it clears are
 - Core holds no backlog in memory. Event streams and history pages read from disk.
 - Core removes a run's rows once the run is older than `run_retention_days`
   ([Scale](../../atlas/scale.md#runs-and-storage)). The current run is never removed.
+- Core builds archives and removes old runs only at Reset, so neither slows a
+  run in progress.
