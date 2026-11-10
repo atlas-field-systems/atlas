@@ -1,0 +1,8 @@
+{
+  "name": "atlas-throwaway-spike",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=24 <25"},
+  "scripts": {"test": "node --test test/*.test.ts asset/*.test.ts core/*.test.ts", "integration": "node --test test/*.test.ts"},
+  "dependencies": {"ajv": "8.20.0", "ajv-formats": "3.0.1", "fflate": "0.8.3"}
+}
