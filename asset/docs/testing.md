@@ -31,8 +31,9 @@ coverage:
   mismatch, and connecting before GPS or other equipment is ready.
 - Losing a GPS fix without presenting an old position as new, and source and
   measurement time kept through reporting.
-- Queues arriving whole, stale queue versions, Tasks run with `now`, cancel by
-  `task_id`, repeated events, and a `task_id` never running twice.
+- Tasks arriving out of order, more than once, or without the rest of their
+  request, Tasks sent before a clear, Tasks run with `now`, cancel by `task_id`,
+  repeated events, and a `task_id` never running twice.
 - Task completion, failure, and the cancellation of the remaining Tasks.
 - Configured failsafes, the operator overrides allowed in failsafe state, and
   refusal of other work.

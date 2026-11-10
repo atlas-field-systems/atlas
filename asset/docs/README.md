@@ -4,8 +4,8 @@ The Asset app keeps its own state, reports what it observes, and carries out
 supported work through configurable [modules and equipment drivers](assets.md).
 This is the selected plan. No runtime exists yet.
 
-Protocol owns the records named here: the description, Task, queue, settings
-change, and cancel, and the task, queue, telemetry, battery, settings, and
+Protocol owns the records named here: the description, Task, settings change,
+and cancel, and the task, queue, telemetry, battery, settings, and
 failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
 ## Start and connect
@@ -17,7 +17,7 @@ gateway holds no Core key. How it is set up and authenticates to its gateway is
 clock, and communications are ready, the Asset connects in the order the
 [Core API](../../core/docs/api.md#asset-and-gateway-calls) sets: check the
 definitions hash, send its description, report its known settings, its queue,
-and any final Task reports Core has not acknowledged, then follow its requests
+its active Task, and any final Task reports Core has not acknowledged, then follow its requests
 from the last event it handled. Through a Fieldlink, the gateway makes these
 calls for it. A definitions mismatch stops the connection, and the Asset logs
 the explanation.
@@ -44,9 +44,11 @@ its first valid position. An explicitly configured or operator-set home takes
 precedence. A reconnect does not reset home; operators change it as a setting.
 
 The app and its link stay running for the operation, as Core does. An Asset
-restart is rare and means shutting down the system for evaluation; there is no
-mission recovery after one. A dropped link does not restart the app or clear
-its state.
+that stops [leaves the operation](../../atlas/using-atlas.md#an-operation-runs-without-restarts),
+and the other Assets keep working. There is no mission recovery: an Asset keeps
+nothing from an earlier run when it starts. Atlas does not support an Asset
+rejoining the run it left. A dropped link does not restart the app or clear its
+state.
 
 ## Carry out work and report its result
 
@@ -64,28 +66,47 @@ not revive failed work. A failed Task
 
 ### The queue
 
-The Asset holds its own queue. A queue reaches it whole, with its version and
-every Task body, and the Asset applies it under the
-[Core API's queue rule](../../core/docs/api.md#asset-and-gateway-calls). For
-[first flight](../../atlas/first-flight.md), the ground Pi therefore holds the
-complete Takeoff, Move To, Land list before starting it.
+The Asset holds its own queue: the Tasks it has received and not started. Core
+[numbers each Task](../../core/docs/api.md#operator-requests) with its `task_id`,
+and the Asset runs its Tasks in that order, whatever order they arrive in.
+
+The Asset starts a Task only when both of these hold:
+
+- Every Task with a lower `task_id` has ended. A Task that is still crossing the
+  link blocks the Tasks after it.
+- The Asset has received every Task that was sent in the same request, so a
+  mission never starts in part. A cancelled Task counts as received.
+
+For [first flight](../../atlas/first-flight.md), the ground Pi therefore holds
+the complete Takeoff, Move To, Land list before starting it.
 
 The Asset never runs a `task_id` twice. A Task that has started or ended never
-starts again, whether it reappears in an old list, a repeated event, or after a
-reconnect. Another attempt needs a new Task.
+starts again, whether it reappears in a repeated event or after a reconnect.
+Another attempt needs a new Task.
+
+An Asset with no Task to run holds and waits for work, with the same
+[platform hold as pause](#pause). A copter that finishes its last Task in the air
+loiters there until an operator sends more. An empty queue is ordinary, and no
+Task has to follow another. Only a
+[configured failsafe rule](failsafes.md#configure-conditions-as-well-as-responses)
+responds to an empty queue.
 
 ### Tasks that run now
 
-Every command is a Task, including immediate ones. A Task sent with `now`
-replaces the queue and runs at once, even while the Asset is paused. The Asset
-reports the Task it interrupted and every Task it dropped as `cancelled`, and
-the new Task reports its outcome like any other.
+Every command is a Task, including immediate ones. A Task sent with `now` runs
+at once, even while the Asset is paused, and cancels every Task with a lower
+`task_id`, including Tasks that have not arrived yet. The Asset reports the Task
+it interrupted and every Task it cancelled as `cancelled`, and the new Task
+reports its outcome like any other.
 
 ### Cancel
 
 Cancel names one Task. A queued Task leaves the queue; an active Task stops its
 work. In either case, the Asset reports the Task `cancelled`. The other Tasks
-stay in the queue.
+stay in the queue, and after an active Task is cancelled the Asset starts the
+next one.
+A cancel for a Task that has not arrived yet still counts. The Asset reports the
+Task `cancelled` and never runs it.
 Cancelling a Task that has already ended changes nothing.
 
 ### Prepare and take off
@@ -125,7 +146,9 @@ These decisions stay local so they work without Core.
 
 On reconnect, the app keeps its execution state and repeats the connect
 sequence. Reconnecting never restarts a Task. Core refuses commands while the
-Asset is offline, so nothing waits to be delivered.
+Asset is offline and
+[drops the requests the Asset had not answered](../../core/docs/api.md#operator-requests),
+so no old request arrives late.
 
 ## Record and send report history
 
@@ -147,8 +170,6 @@ and the Asset's own Reset ZIP. There is no remote shutdown command.
 
 ## Open
 
-- What a platform does when its active Task is cancelled, and whether the next
-  Task then starts.
 - Task reporting and continuation after a paused Asset is set running again.
 - Equipment-specific completion evidence, tolerances, and timeouts.
 - Recording limits, catch-up pacing, and how a reader knows history is complete.

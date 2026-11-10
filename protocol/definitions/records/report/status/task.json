@@ -27,12 +27,12 @@
   "examples": [
     {
       "kind": "task",
-      "task_id": "T7",
+      "task_id": 7,
       "task_state": "active"
     },
     {
       "kind": "task",
-      "task_id": "T3",
+      "task_id": 3,
       "task_state": "failed",
       "explanation": "Landing position out of reach"
     }

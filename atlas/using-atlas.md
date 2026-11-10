@@ -50,7 +50,7 @@ vehicle even though it is not aboard it.
 | Core | The shared picture, the event log, its [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md), and the Core API |
 | Fusion | Combining evidence into the shared picture, inside Core |
 | [Plugins](plugins.md) | Actions that gather and publish information |
-| Gateway | Uplinking to the Core API and running Fieldlinks |
+| [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md) | Uplinking to the Core API and running Fieldlinks |
 | Fieldlink | Carrying Atlas across one kind of field link |
 | [Asset app](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md) | Equipment control, local execution, failsafes, and reports of its effects |
 
@@ -59,8 +59,11 @@ vehicle even though it is not aboard it.
 Core starts before any other part of an operation and stops after all of them.
 Core never restarts during an operation. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
-refreshed Command Interface recovers from Core's event log. An Asset restart is
-rare. If one occurs, the system is spun down to evaluate the failure.
+refreshed Command Interface recovers from Core's event log.
+
+An Asset that stops leaves the operation. Core shows it offline, and the other
+Assets keep working. An Asset that crashed is taken apart and evaluated before it
+runs again. An Asset keeps nothing from an earlier run when it starts.
 
 An Asset's [settings](settings.md) are its current configuration, kept in its entry.
 

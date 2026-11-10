@@ -3,7 +3,7 @@
 Protocol defines Atlas's shared records, their laws, and the one validator every
 program uses.
 
-A record is a piece of shared data: an Asset's description, a Task, a queue, a
+A record is a piece of shared data: an Asset's description, a Task, a
 settings change, a cancel, or a report. Core, the SDK, gateways, and Assets all
 build, check, and store the same records from these plain JSON files. Protocol
 does not define how programs talk. The [Core API](../core/docs/api.md) carries
@@ -19,7 +19,6 @@ Definitions and records carry none.
 | --- | --- | --- |
 | `description` | What an Asset is: its reports, command kinds, and cameras | Asset |
 | `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
-| `queue` | An Asset's whole task list, with every Task body | Core |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
 | `report.status` | How the Asset, one Task, or its task list stands | Asset |

@@ -21,8 +21,13 @@ not gate commands, cancel work, or select a response; only configured rules do.
 A failed command always cancels the remaining Tasks, whatever the failsafe
 configuration, because later work may depend on it. The Asset reports the
 failure and each cancelled Task. The failed Task stays failed, and cancelled work
-never returns through an old list or a reconnect. Another attempt needs new
+never returns through a repeated event or a reconnect. Another attempt needs new
 Tasks.
+
+The Asset raises its `clear_count` each time it clears its queue, for a failed
+command or a failsafe. A Task that Core accepted before it knew of the clear
+carries the old count, and the Asset reports that Task `cancelled` when it
+arrives.
 
 Cancellation alone does not enter failsafe state or start a maneuver. An Atlas
 response starts only when a configured rule matches.
@@ -69,9 +74,10 @@ Conditions can include:
 
 - Equipment faults, battery thresholds, and contact loss, alone or combined.
 - No Tasks for a configured duration, including zero: neither an active Task nor
-  an applied queue. A paused mission with queued Tasks is not idle. Telemetry
-  does not reset the timer, and a list the Asset has not applied leaves current
-  work in effect. Each new idle interval starts fresh.
+  a queued Task that can start. A paused mission with queued Tasks is not idle.
+  A queued Task that waits for a Task the Asset has not received is not work, so
+  an Asset that holds only such Tasks is idle. Telemetry does not reset the
+  timer. Each new idle interval starts fresh.
 - Being airborne, for example combined with contact loss and no remaining work.
 - Being outside a supplied horizontal polygon, even without an observed
   crossing, including at startup or after a policy replacement. A distance
@@ -120,13 +126,16 @@ In failsafe state the operator can still override the response:
 
 The Asset carries out an override through the same execution as ordinary work
 and records it as an override in its failsafe report and log. It refuses
-everything else that affects execution: other Tasks, queue changes, cancel,
+everything else that affects execution: other Tasks, cancel,
 other settings changes, and policy replacement. A refused Task is reported
 `failed`, with the failsafe as its explanation. A refused cancel or settings
 change is answered with the current Task state or settings, naming the request.
 
-Leaving failsafe state means shutting down the system for evaluation. Atlas has
-no remote restart and no way to clear the state.
+Failsafe state has no exit. When a response or an override ends with the Asset
+safely stopped, such as a completed landing, the app sends its final reports and
+shuts itself down. Core then shows the Asset offline, as it would after lost
+contact, and the other Assets keep working. Atlas has no remote restart and no
+way to clear the state.
 
 ## Replace the policy during ordinary operation
 
@@ -146,6 +155,8 @@ restarting idle or contact timers.
 - Exact detection of an autopilot takeover and its interaction with a running
   Atlas response.
 - Boundary details and measurement freshness limits.
+- What counts as safely stopped on each platform, and how long the app waits for
+  Core to acknowledge its final reports before it shuts down.
 - Shared records for the failsafe policy, the identity of locally started Tasks
   (Core assigns every other `task_id`), and override reporting
   ([open questions](../../protocol/docs/open-questions.md)).

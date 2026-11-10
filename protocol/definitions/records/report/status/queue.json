@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/status/queue.json",
   "title": "queue",
-  "description": "The Asset's task list: the task_id of every Task it has not started, in the order it will run them, and the list's queue_version. Sent whenever the list changes and when the Asset starts or reconnects with a list. An empty list means nothing is queued. When it answers a queue, request_id names it.",
+  "description": "The Asset's task list: the task_id of every Task it holds and has not started, in the order it will run them, and its clear_count. Sent whenever the list changes and when the Asset starts or reconnects with a list. An empty list means nothing is queued. When it answers a request, request_id names it.",
   "type": "object",
   "required": [
     "kind",
-    "queue_version",
+    "clear_count",
     "task_ids"
   ],
   "properties": {
@@ -14,8 +14,8 @@
       "$ref": "../../../variables/kind.json",
       "const": "queue"
     },
-    "queue_version": {
-      "$ref": "../../../variables/queue_version.json"
+    "clear_count": {
+      "$ref": "../../../variables/clear_count.json"
     },
     "task_ids": {
       "type": "array",
@@ -31,17 +31,17 @@
   "examples": [
     {
       "kind": "queue",
-      "queue_version": 1,
+      "clear_count": 1,
       "task_ids": [
-        "T1",
-        "T2",
-        "T3"
+        1,
+        2,
+        3
       ],
       "request_id": 120
     },
     {
       "kind": "queue",
-      "queue_version": 2,
+      "clear_count": 2,
       "task_ids": []
     }
   ]

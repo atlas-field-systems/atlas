@@ -117,9 +117,12 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 ## Work is always a Task
 
 Every command is a Task with a Core-assigned `task_id`, so every command reports
-an outcome. A Task can run now, clearing the queue. Cancel names its Task. Pause
-is a setting. Retries are safe by design: creates carry an idempotency key,
-settings are end states, and the queue carries its version.
+an outcome. Core numbers each Asset's Tasks in order and sends every Task as
+soon as it accepts it, so an Asset that loses contact already holds its work. The
+Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
+before it. Cancel names its Task. Pause is a setting. Retries are safe by design:
+creates carry an idempotency key, settings are end states, and each `task_id`
+runs once.
 
 ## Stack
 
@@ -140,7 +143,8 @@ slice at a time. First flight is the first field test of that build.
 
 ## Changes and releases
 
-- Changes to meaning are additive: new fields and records, not changed ones.
+- Every program in a deployment uses the same Protocol definitions. A change to
+  them reaches Core, gateways, Assets, and the Command Interface together.
 - Published packages are immutable. Changes are released through the package
   version, with no separate version counter.
 - The Core API and each Fieldlink report the hash of the Protocol definitions they

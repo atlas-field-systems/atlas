@@ -11,7 +11,7 @@ accepted and which reports it stored. A diagnostic log explains the requests,
 refusals, decisions, and errors around it. Core keeps both. The
 diagnostic record is append-only during a run, even when a request changes nothing.
 
-There is no Protocol logging process and no API call for a log entry. Diagnostic
+There is no Protocol logging process and no API call that writes a log entry. Diagnostic
 logs and local configuration are Core's own records, separate from Protocol's
 shared domain records.
 
@@ -45,6 +45,22 @@ evidence.
 The proposed procedure is to finish and verify the archive before discarding
 any run evidence. The Reset request, file layout, summary format, and subsequent
 cleanup remain open. A failed export must not be described as a complete archive.
+
+## Read the log while Core runs
+
+Each diagnostic record carries a rising local number. With `debug_endpoint` on
+([configuration](../config.md)), Core makes a random URL segment when it starts
+and prints the full URL. `GET /debug/<segment>/log?after=<number>` returns the
+records after that number, oldest first, one per line. A reader repeats the call
+with the last number it received to follow the log as Core writes it. An AI agent
+that is given the URL can then read a run while it happens.
+
+The call needs no credential and no definitions hash, so the URL is all a reader
+needs. The random segment stops someone who can reach Core, but was not given the
+URL, from finding the log by guessing its address. Records never contain
+credentials, but anyone who has the URL can read everything else in them,
+including Asset positions and request content. The option is off unless the
+configuration turns it on. Asset and gateway logs stay local.
 
 ## Proposed recording policy
 

@@ -3,7 +3,7 @@
 This page records selected behavior. No interface code exists yet. The interface
 reaches Core only through the [Core API](../../core/docs/api.md), using the
 [SDK](../../sdk/README.md)'s browser client. Records named here, such as Task,
-queue, settings change, cancel, description, and the Asset's reports, are
+settings change, cancel, description, and the Asset's reports, are
 [Protocol's](../../protocol/README.md).
 
 ## Operators and connectivity
@@ -40,9 +40,9 @@ Each Asset also has its own addressable detail page. Operators can share or
 bookmark it, refresh it, or open it in another tab. Track, Observation,
 Geofeature, and Object pages are not designed yet.
 
-An unfinished request draft stays in memory while the operator visits other
-pages. For example, opening another Asset's page to check its position does not
-discard the inputs already entered. Drafts do not survive a reload.
+[Draft Tasks](#draft-tasks-on-the-map-then-send-them) stay in memory while the
+operator visits other pages. For example, opening another Asset's page to check
+its position does not discard them. Drafts do not survive a reload.
 
 ## RidgeLine and Atlas responsibilities
 
@@ -55,27 +55,50 @@ simplify either project or provide another benefit. Explain the need, the
 package change, and the benefit compared with handling it in Atlas. The owner
 approves changes before work starts in the RidgeLine repository.
 
-## Prepare requests with the map
+## Draft Tasks on the map, then send them
 
 Offer the commands and settings the Asset lists in its description, with
 explanations beside the controls. Support is separate from whether a current
 setting value is known. A reporting-only tracker needs no movement controls,
 pause control, or artificial home.
 
-An operator fills a position input by picking a point on the map with "Pick on
-map". While picking, the interface shows which field is being filled. Escape
-cancels picking without discarding the rest of the draft.
+Commanding works as in a small tactical RTS game. An operator directs a few
+Assets one at a time, so there is no box selection and no order to a group.
 
-Before sending, show the target Asset, input values, units, and the effect on
-the queue. A new Task joins the end of the queue. **Run now** sends it with `now`:
-it replaces the queue and runs at once, even while the Asset is paused, so the
-confirmation lists the Tasks it will cancel. The operator submits explicitly,
-and simple actions stay short.
+With an Asset selected, a right-click on the map opens a menu of the commands the
+Asset lists. Choosing a command adds a draft at that point. For example, a
+right-click and then Move To adds a draft Move To there. A right-click never
+sends anything by itself.
 
-- **Reorder or drop** Tasks that have not started by sending a new queue built
-  on the latest reported version. If Core refuses a stale version, show the
-  latest queue and let the operator redo the change.
+A draft is not a Task. It exists only in the interface, and Core and the Asset
+never see it. Drafts follow the Asset's queue in the order the operator added
+them. The map and the queue list draw a draft differently from a sent Task, and
+show its target Asset, input values, and units. Nothing that happens on the Asset
+sends, changes, or removes a draft.
+
+The operator selects a draft to change its values or delete it. An operator
+fills a position input by picking a point on the map with "Pick on map". While
+picking, the interface shows which field is being filled. Escape cancels picking
+without discarding the rest of the draft.
+
+Each draft has two buttons:
+
+- **Confirm** keeps the values and marks the draft confirmed. It sends nothing.
+- **Confirm and Send** sends the draft and every draft before it
+  [in one request](../../core/docs/api.md#operator-requests). The Asset starts
+  none of them until it has received them all. Drafts after it stay drafts.
+
+For example, the operator drafts Takeoff, Move To, and Land, then presses
+**Confirm and Send** on Land. The Asset receives the whole flight before it
+takes off. A single action is one draft and one press.
+
+Sent Tasks join the end of the queue. **Run now** sends one draft with `now`: it
+runs at once, even while the Asset is paused, and cancels every Task sent before
+it, so the confirmation lists the Tasks it will cancel.
+
 - **Cancel** names one Task; the rest of the queue stays.
+- **Change the order** of sent Tasks by cancelling them and sending new ones.
+  Core has no reorder request.
 - **Pause and Resume** are a setting, sent as an end state.
 - **Settings changes** are end states, applied at once or queued as a settings
   change Task.
@@ -83,7 +106,11 @@ and simple actions stay short.
 If a request's response is lost, the interface retries it with the same
 idempotency key, so it [never takes effect twice](../../core/docs/api.md#basics).
 Commands to an offline Asset are refused, and the interface shows Core's
-explanation.
+explanation. A request that Core
+[dropped when the Asset went offline](../../core/docs/api.md#operator-requests)
+shows as unconfirmed, because it may have reached the Asset. The Asset's later
+reports show what it did. The operator sends it again only if those reports
+show it did not run.
 
 Polygon and Geofeature inputs, and RidgeLine's drawing tools for authoring them,
 are not designed yet. Drawing an area will never task an
@@ -91,9 +118,10 @@ Asset or create an enforced geofence by itself.
 
 ## Read Tasks, conditions, and history
 
-Task bodies, latest states, and queue order come from
-[the Asset's Tasks](../../core/docs/api.md#reads). For example, an active Move To
-Task shows its destination. Show active, queued, and finished Tasks. Distinguish
+Task bodies, latest states, and the Tasks the Asset holds come from
+[the Asset's Tasks](../../core/docs/api.md#reads). Show each sent Task's number
+and whether the Asset reports holding it, so the operator sees each Task arrive.
+For example, an active Move To Task shows its destination. Show active, queued, and finished Tasks. Distinguish
 the operator's request, Core's acceptance, and the Asset's reported outcome,
 with source and age. A cancel stays pending until the Asset reports the Task's
 state.
@@ -102,6 +130,9 @@ Show the Core connection, the Asset's contact as Core sees it, and its latest
 telemetry, battery, settings, and failsafe reports separately, each with its
 age. Receipt time proves neither fresh measurements nor two-way contact, and
 connection does not mean equipment is ready; do not invent an overall verdict.
+When Core [refused an Asset or gateway](../../core/docs/api.md#basics) for
+different Protocol definitions, show that refusal, so a missing Asset has a
+visible reason.
 When an Asset is in [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation),
 say so and offer only the overrides it accepts: Land now, Return to home now,
 and pause. [Subsystem conditions](../../asset/docs/status.md) join these views
@@ -158,6 +189,7 @@ the SDK docs.
   review knows the record is complete.
 - Geometry and Geofeature Task inputs, Track and Observation pages, and Object
   inspection and upload.
+- Reordering drafts, and keeping drafts across a reload.
 
 Natural-language interaction is out of scope. If revisited, it belongs on a
 separate page.
