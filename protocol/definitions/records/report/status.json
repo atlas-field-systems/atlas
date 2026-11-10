@@ -58,6 +58,15 @@
       "type": "report.status",
       "time": 1793667600000,
       "asset_id": "A1",
+      "kind": "task",
+      "task_id": 2,
+      "task_state": "cancelled",
+      "request_id": 121
+    },
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
       "kind": "queue",
       "clear_count": 1,
       "task_ids": [
