@@ -86,7 +86,7 @@ Each draft has two buttons:
 - **Confirm** keeps the values and marks the draft confirmed. It sends nothing.
 - **Confirm and Send** sends the draft and every draft before it
   [in one request](../../core/docs/api.md#operator-requests). The Asset starts
-  none of them until it holds them all. Drafts after it stay drafts.
+  none of them until it has received them all. Drafts after it stay drafts.
 
 For example, the operator drafts Takeoff, Move To, and Land, then presses
 **Confirm and Send** on Land. The Asset receives the whole flight before it
@@ -108,7 +108,9 @@ idempotency key, so it [never takes effect twice](../../core/docs/api.md#basics)
 Commands to an offline Asset are refused, and the interface shows Core's
 explanation. A request that Core
 [dropped when the Asset went offline](../../core/docs/api.md#operator-requests)
-shows as not delivered. The operator sends it again if it is still wanted.
+shows as unconfirmed, because it may have reached the Asset. The Asset's later
+reports show what it did. The operator sends it again only if those reports
+show it did not run.
 
 Polygon and Geofeature inputs, and RidgeLine's drawing tools for authoring them,
 are not designed yet. Drawing an area will never task an

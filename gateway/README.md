@@ -28,7 +28,7 @@ records the owner's intended shape.
 - [The Asset link](../sdk/docs/asset.md#the-asset-link): the interface a
   Fieldlink gives the Asset app. A Fieldlink may deliver Tasks one at a time and
   in any order. The Asset app orders them by `task_id` and starts a request's
-  Tasks only when it holds them all.
+  Tasks only when it has received them all.
 
 ## Not designed yet
 

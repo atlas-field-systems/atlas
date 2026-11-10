@@ -17,7 +17,7 @@ gateway holds no Core key. How it is set up and authenticates to its gateway is
 clock, and communications are ready, the Asset connects in the order the
 [Core API](../../core/docs/api.md#asset-and-gateway-calls) sets: check the
 definitions hash, send its description, report its known settings, its queue,
-and any final Task reports Core has not acknowledged, then follow its requests
+its active Task, and any final Task reports Core has not acknowledged, then follow its requests
 from the last event it handled. Through a Fieldlink, the gateway makes these
 calls for it. A definitions mismatch stops the connection, and the Asset logs
 the explanation.
@@ -74,8 +74,8 @@ The Asset starts a Task only when both of these hold:
 
 - Every Task with a lower `task_id` has ended. A Task that is still crossing the
   link blocks the Tasks after it.
-- The Asset holds every Task that was sent in the same request, so a mission
-  never starts in part.
+- The Asset has received every Task that was sent in the same request, so a
+  mission never starts in part. A cancelled Task counts as received.
 
 For [first flight](../../atlas/first-flight.md), the ground Pi therefore holds
 the complete Takeoff, Move To, Land list before starting it.

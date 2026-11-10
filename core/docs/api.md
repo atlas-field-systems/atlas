@@ -106,7 +106,8 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   whatever the Asset is doing, so the Asset already has its work if contact ends.
 - **Tasks sent together start together.** Each Task of a request carries
   `send_last`, the `task_id` of the request's last Task. The Asset starts none of
-  them until it holds all of them. An operator who wants a whole mission aboard
+  them until it has received all of them. A Task that was cancelled counts as
+  received. An operator who wants a whole mission aboard
   before it starts sends the mission in one request.
 - **A failure refuses the Tasks sent before Core knew of it.** A failed Task
   [clears the Asset's queue](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks),
@@ -124,8 +125,8 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   Core adds `request.dropped` for each, and `task.dropped` for each Task the
   Asset never reported holding. The Asset's stream skips dropped requests when it
   returns, so no old request runs late. Core then cancels each dropped Task that
-  the returning Asset does not report holding, so a dropped `task_id` never
-  blocks the Tasks after it. An operator who still wants the work sends it again.
+  the returning Asset reports neither holding, nor running, nor ended, so a
+  dropped `task_id` never blocks the Tasks after it. An operator who still wants the work sends it again.
 - A dropped request may have reached the Asset before contact ended. The Asset's
   later reports say what it did. `request.dropped` does not prove the request
   never arrived.
@@ -148,7 +149,8 @@ An Asset on IP starts or reconnects in this order:
 1. `GET /about` and compare the definitions hash.
 2. `PUT /assets/{asset_id}/description` with its description record.
 3. `POST /assets/{asset_id}/reports` with its known settings, its queue if it has
-   one, and any final Task reports Core has not yet acknowledged.
+   one, the report of its active Task, and any final Task reports Core has not
+   yet acknowledged.
 4. Open `/events?after=<last handled event_id>`. On first start, it follows from
    the latest event.
 
@@ -160,7 +162,7 @@ An Asset on IP starts or reconnects in this order:
   `event_id`. Task reports name their `task_id`.
 - The Asset keeps the Tasks of each `tasks.requested` and runs its Tasks in
   `task_id` order. It starts a Task only when every lower `task_id` has ended and
-  it holds every Task through the Task's `send_last`. A `task_id` the Asset has
+  every Task through the Task's `send_last` is held or has ended. A `task_id` the Asset has
   not received blocks the Tasks after it until it arrives or is cancelled.
 - The Asset reports a Task `cancelled` without running it in three cases: the
   Task's `clear_count` is not the Asset's own and `now` is not set, a cancel for

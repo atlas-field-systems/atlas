@@ -90,7 +90,7 @@ Names are illustrative. Core owns the exact API doc.
 - **Retries are safe by design.** Creates carry an idempotency key, settings are
   end states, cancel names its Task, and each `task_id` runs once.
 - **Tasks are numbered and sent at once.** The Asset runs them in `task_id`
-  order and starts a request's Tasks only when it holds them all. A gateway may
+  order and starts a request's Tasks only when it has received them all. A gateway may
   send them one at a time on its radio.
 - **Compatibility is visible.** The API reports the hash of its Protocol
   definitions; a client refuses a mismatch with an explanation.

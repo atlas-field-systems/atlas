@@ -31,7 +31,8 @@ start and reconnect:
 1. `connect()`, which compares the definitions hash.
 2. Send the description.
 3. Send one report batch with the known settings, the queue report if the queue
-   helper holds Tasks, and every final Task report not yet acknowledged.
+   helper holds Tasks, the active Task's report, and every final Task report not
+   yet acknowledged.
 4. Follow `/events` after the last handled `event_id`, or from the latest event on
    first start.
 
@@ -65,7 +66,7 @@ it. The helper holds the Asset's Tasks and hands them to the app.
   `clear_count`, and every `task_id` that has started or ended this run.
 - **Orders by `task_id`.** Tasks may arrive in any order and more than once. The
   helper hands out the lowest held Task, and only when every lower `task_id` has
-  ended and it holds every Task through that Task's `send_last`.
+  ended and every Task through that Task's `send_last` is held or has ended.
 - **Refuses stale Tasks.** It reports a Task `cancelled` when the Task's
   `clear_count` is not the helper's own, unless `now` is set.
 - **Answers each request.** It sends a queue report with the `request_id` of each
