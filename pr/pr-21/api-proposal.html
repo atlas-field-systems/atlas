@@ -113,7 +113,7 @@ remains a setting.</li>
 <li><strong>Retries are safe by design.</strong> Creates carry an idempotency key, settings are
 end states, cancel names its Task, and each <code>task_id</code> runs once.</li>
 <li><strong>Tasks are numbered and sent at once.</strong> The Asset runs them in <code>task_id</code>
-order and starts a request&#39;s Tasks only when it holds them all. A gateway may
+order and starts a request&#39;s Tasks only when it has received them all. A gateway may
 send them one at a time on its radio.</li>
 <li><strong>Compatibility is visible.</strong> The API reports the hash of its Protocol
 definitions; a client refuses a mismatch with an explanation.</li>
