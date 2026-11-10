@@ -47,8 +47,10 @@ before the operator submits.
 
 Each state-changing call gets a fresh random `Idempotency-Key`. The client retries a network failure or a `5xx`
 with the same key and the same body, with backoff, until the request timeout.
-Core returns the stored response for a repeated key, so a retry never repeats an
-effect. The client never retries a `4xx`.
+Core returns the retained non-secret response for a repeated key, so a retry
+never repeats an effect. Credential and login retries follow the
+[Core API's acknowledgment and recovery rules](../../core/docs/api.md#callers-and-credentials).
+The client never retries a `4xx`.
 
 If no response arrives before the timeout, the result is `unknown`. Core may or
 may not have accepted the request. `unknown` is not failure. It carries `retry()`,

@@ -114,8 +114,10 @@ do not establish a landing. A higher-priority rule may still act.
 ## Lock ordinary work for the rest of the operation
 
 Failsafe state lasts for the rest of the operation, including after a successful
-landing, renewed contact, or conditions becoming false. Cancelled Tasks never
-resume. Reports and logging continue.
+landing, renewed contact, or conditions becoming false. Losing contact again
+never restarts an equal- or lower-priority response. Higher-priority matches
+follow the [existing priority rule](#a-failsafe-activates-a-configured-task).
+Cancelled Tasks never resume. Reports and logging continue.
 
 In failsafe state the operator can still override the response:
 

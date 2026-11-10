@@ -127,7 +127,11 @@ Pause is a setting, not a Task. It suspends current movement with a
 platform-specific hold: copters stop and loiter in place, fixed-wing aircraft
 loiter, and ground vehicles brake and stop. A paused Asset does not advance its
 queue, though a Task sent with `now` still runs. Configured failsafes override
-pause.
+pause. Paused work still counts toward Core's
+[64-Task outstanding-work cap](../../core/docs/api.md#operator-requests), including
+accepted Tasks that have not arrived yet. The Asset reports its complete held,
+unstarted queue, without truncation or windows; repeated requests cannot grow it
+past the capacity Core admits.
 
 ### Settings
 

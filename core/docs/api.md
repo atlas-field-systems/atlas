@@ -22,9 +22,11 @@ explains why the API is the only way in.
   differs, Core adds a `definitions.refused` event, so operators see why the
   Asset or gateway is missing.
 - **Retries are safe.** Every request that changes state carries an
-  `Idempotency-Key` of up to 64 characters. Core keeps each key's response for the
-  run. A repeat returns that response and changes nothing; the same key with a
-  different body returns `409`.
+  `Idempotency-Key` of up to 64 characters. Core keeps each key's non-secret
+  response for the run. A repeat returns that response and changes nothing; the
+  same key with a different body returns `409`. Credential issuance and login
+  return secrets only in the first response. Their retained response is a
+  non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
 - **Errors** are a status and `{"error": "<code>", "explanation": "<text>"}`.
 
 | Status | Meaning |
@@ -33,7 +35,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, or account |
-| `409` | Refused: Asset offline, command not supported, unknown Task, or definitions mismatch |
+| `409` | Refused: Asset offline, queue full, command not supported, unknown Task, or definitions mismatch |
 
 ## Root paths
 
@@ -63,7 +65,23 @@ and `/debug` belong to no pillar and stay at the top level.
   (scrypt). The session cookie is `HttpOnly`, `Secure`, and `SameSite=Strict`, and
   Core accepts state changes only as JSON, so other sites cannot send them.
 - Asset and gateway keys are 16 random bytes as 22 characters of base64url. Core
-  stores only their hashes and shows a key once, when an admin creates it.
+  stores only their hashes and shows a key once, when an admin creates or replaces it.
+- A successful issuance retry with the same idempotency key returns an
+  acknowledgment identifying the Asset or gateway and confirming issuance. It
+  returns no bearer key and creates or rotates nothing. Core never retains the
+  secret response body in its retry cache, event log, or diagnostic logs.
+- If the first issuance response is lost, the key cannot be recovered. The admin
+  uses the returned ID to replace the Asset or gateway key with a new
+  idempotency key. Replacement invalidates the previous key and shows the new
+  key once. Retrying that replacement only acknowledges it; if its first
+  response is lost too, replace again with a new idempotency key.
+- A successful login creates a session and sends its cookie only in the first
+  response. Core stores only the session token's hash. Repeating the login with
+  the same idempotency key and body acknowledges the login without creating a
+  session or sending `Set-Cookie`. The retry cache never holds a recoverable
+  cookie. A caller that missed the cookie logs in with a new idempotency key to
+  create a new session. A caller that received it keeps using that session;
+  the acknowledgment alone does not authenticate a caller.
 - The first admin account comes from [Core configuration](../config.md).
 - An Asset behind a gateway holds no Core key and never calls this API. It
   authenticates to its gateway in whatever way its Fieldlink uses. That design is
@@ -113,6 +131,19 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 - Core validates the body, checks that the Asset is online and supports every
   command and setting in it, and accepts or refuses the request whole. Core
   refuses commands to an offline Asset and holds nothing.
+- **At most 64 Tasks may be outstanding per Asset.** Outstanding work includes
+  every accepted Task still crossing the link, held unstarted, or active,
+  including work held while paused. Core counts a Task until its final Asset
+  report is stored. Dropping an unanswered request alone does not free capacity,
+  because it may have reached the Asset. A queue report alone does not prove
+  that a missing Task has ended.
+  Core checks the total and reserves capacity for the whole request atomically
+  with acceptance, so concurrent requests cannot exceed 64. If acceptance would
+  exceed 64, Core refuses the whole request with `409 queue_full`, without
+  assigning Task IDs or adding accepted work. This includes `now`; expected
+  cancellations do not free capacity before final reports. A retry consumes no
+  extra capacity. After capacity is freed, a refused caller uses a new
+  idempotency key for a new admission attempt.
 - **Tasks are numbered.** Core gives each Task the next `task_id` for its Asset:
   1 for the Asset's first Task of the run, then 2, then 3. A `task_id` never
   changes and is never reused. The Asset runs its Tasks in `task_id` order, so
@@ -229,7 +260,28 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | `POST /administration/assets` | Provision an Asset on IP; returns its `asset_id` and key once |
 | `POST /administration/assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
 | `DELETE /administration/assets/{asset_id}` | Remove an Asset |
-| `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway |
+| `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
+| `POST /administration/gateways/{gateway_id}/key` | Replace a gateway key; returns the new key once |
+
+### Credential retry scenarios
+
+These are requirements to test when Core is built; no credential runtime exists yet.
+
+- Provision an Asset or gateway and lose the first response. Retry with the same
+  idempotency key and body. Expect the same provisioned ID and an issuance
+  acknowledgment, no key, and no second provisioning. Replace its key with a
+  new idempotency key; expect one new key and rejection of the old key.
+- Lose a replacement response and retry it. Expect acknowledgment without
+  another rotation or key. Replace again with a new idempotency key to recover.
+- Lose a login response and retry it. Expect acknowledgment without `Set-Cookie`
+  or another session. Log in with a new idempotency key to obtain a cookie.
+  If the original cookie arrived, verify that the retry leaves it usable.
+- Reuse any of these idempotency keys with a different body. Expect `409` and
+  no effect. Verify that failed login retries never create a session.
+- Inspect stored credential hashes, retry responses, events, and diagnostic
+  logs after issuance, replacement, login, and their retries. No bearer key or
+  session cookie is recoverable from stored state. Only hashes authenticate
+  the presented credentials.
 
 ## Debug log
 

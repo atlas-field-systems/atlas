@@ -36,7 +36,10 @@ coverage:
   repeated events, and a `task_id` never running twice.
 - Task completion, failure, and the cancellation of the remaining Tasks.
 - Configured failsafes, the operator overrides allowed in failsafe state, and
-  refusal of other work.
+  refusal of other work. Restore contact after activation, then lose it again;
+  expect the latch and ordinary-work lock to remain, with no repeated equal- or
+  lower-priority response. Check higher-priority interruption separately under
+  the [selected priority rules](failsafes.md#a-failsafe-activates-a-configured-task).
 - Link loss and reconnect while local execution continues, with final reports
   resent until acknowledged and history catch-up in report batches.
 - Separate loss of the Core path and the vehicle equipment link, including a
