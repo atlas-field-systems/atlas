@@ -9,7 +9,7 @@ client does around them.
 The caller's kind decides its credential, as in
 [Callers and credentials](../../core/docs/api.md#callers-and-credentials).
 
-- **Browser accounts.** `login(operator_id, password)` calls `POST /login`. Core
+- **Browser accounts.** `login(operator_id, password)` calls `POST /administration/login`. Core
   sets an `HttpOnly` session cookie, so the SDK never sees or stores it; the
   browser sends it on every request, and every tab shares one session.
 - **Assets and gateways.** The program passes its key when it creates the client.

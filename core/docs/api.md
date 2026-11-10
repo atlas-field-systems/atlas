@@ -35,11 +35,27 @@ explains why the API is the only way in.
 | `404` | No such Asset, Task, or account |
 | `409` | Refused: Asset offline, command not supported, unknown Task, or definitions mismatch |
 
+## Root paths
+
+Each Core pillar has a root path, and the kinds that pillar owns live under it.
+Plugins are not a pillar; their interface still has a root path, so every
+outside system is reached the same way. Fusion has no root path: it works on
+Core's state directly, never through this API. `/about`, `/events`, `/history`,
+and `/debug` belong to no pillar and stay at the top level.
+
+| Root | Owns |
+| --- | --- |
+| `/entities` | The shared picture. `GET /entities` returns it. Assets, Observations, Tracks, and geo features live under this root |
+| `/tasks` | Tasks, queues, and cancels |
+| `/objects` | Files Core holds. Not designed yet |
+| `/plugins` | The Plugin interface. Not designed yet |
+| `/administration` | Accounts, sessions, keys, and provisioning |
+
 ## Callers and credentials
 
 | Caller | Credential | Event stream shows |
 | --- | --- | --- |
-| Account (admin or operator) | Session cookie from `POST /login` | Everything |
+| Account (admin or operator) | Session cookie from `POST /administration/login` | Everything |
 | Asset on IP | Bearer key | Requests for that Asset |
 | Gateway | Bearer key | Requests for the Assets it carries |
 
@@ -90,9 +106,9 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 | Request | Body | Result |
 | --- | --- | --- |
-| `POST /assets/{asset_id}/tasks` | `tasks`: one or more Tasks in order, each one command kind and its fields, or a `settings` change; optional `now`, with one Task | `202 {task_ids, event_id}` |
-| `PATCH /assets/{asset_id}/settings` | `settings`, as end states | `202 {event_id}` |
-| `POST /assets/{asset_id}/tasks/{task_id}/cancel` | Nothing | `202 {event_id}` |
+| `POST /tasks/{asset_id}` | `tasks`: one or more Tasks in order, each one command kind and its fields, or a `settings` change; optional `now`, with one Task | `202 {task_ids, event_id}` |
+| `PATCH /entities/assets/{asset_id}/settings` | `settings`, as end states | `202 {event_id}` |
+| `POST /tasks/{asset_id}/{task_id}/cancel` | Nothing | `202 {event_id}` |
 
 - Core validates the body, checks that the Asset is online and supports every
   command and setting in it, and accepts or refuses the request whole. Core
@@ -137,26 +153,26 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 | Request | Returns |
 | --- | --- |
-| `GET /assets` | Every Asset: description, contact, latest reports, each setting's latest value, and its queue |
-| `GET /assets/{asset_id}` | One Asset, the same way |
-| `GET /assets/{asset_id}/tasks` | Task bodies, latest states, and the Tasks the Asset reports holding |
+| `GET /entities/assets` | Every Asset: description, contact, latest reports, and each setting's latest value |
+| `GET /entities/assets/{asset_id}` | One Asset, the same way |
+| `GET /tasks/{asset_id}` | Task bodies, latest states, and the Tasks the Asset reports holding |
 | `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
 
-Reads of the rest of the picture are under [Entities](#entities).
+The rest of the picture is under [Entities](#entities).
 
 ## Asset and gateway calls
 
 An Asset on IP starts or reconnects in this order:
 
 1. `GET /about` and compare the definitions hash.
-2. `PUT /assets/{asset_id}/description` with its description record.
-3. `POST /assets/{asset_id}/reports` with its known settings, its queue if it has
+2. `PUT /entities/assets/{asset_id}/description` with its description record.
+3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
 4. Open `/events?after=<last handled event_id>`. On first start, it follows from
    the latest event.
 
-- `POST /assets/{asset_id}/reports` takes `{"reports": [...]}` in batches. A `200`
+- `POST /entities/assets/{asset_id}/reports` takes `{"reports": [...]}` in batches. A `200`
   stores and acknowledges the whole batch. The Asset resends a batch with the same
   `Idempotency-Key` until it gets one. Retained reports catching up after a gap use
   the same call with their original times.
@@ -204,16 +220,16 @@ order, because the Asset orders them by `task_id`.
 
 ## Accounts and provisioning
 
-Only admins may use these calls, except login, logout, and `GET /me`.
+Only admins may use these calls, except login, logout, and `GET /administration/me`.
 
 | Request | Purpose |
 | --- | --- |
-| `POST /login`, `POST /logout`, `GET /me` | Start, end, and read a session |
-| `POST /accounts`, `DELETE /accounts/{operator_id}` | Add or remove an admin or operator account |
-| `POST /assets` | Provision an Asset on IP; returns its `asset_id` and key once |
-| `POST /assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
-| `DELETE /assets/{asset_id}` | Remove an Asset |
-| `POST /gateways`, `DELETE /gateways/{gateway_id}` | Provision or remove a gateway |
+| `POST /administration/login`, `POST /administration/logout`, `GET /administration/me` | Start, end, and read a session |
+| `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
+| `POST /administration/assets` | Provision an Asset on IP; returns its `asset_id` and key once |
+| `POST /administration/assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
+| `DELETE /administration/assets/{asset_id}` | Remove an Asset |
+| `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway |
 
 ## Debug log
 
@@ -227,18 +243,19 @@ Entities is the shared picture: Assets, Observations, Tracks, and geo features.
 `GET /entities` returns one consistent cut of all four, with `as_of`. The event
 stream updates it. The Command Interface draws the map from this read.
 
-Each kind also has its own path, because each is written and used differently.
-These paths are part of the Entities API, not separate APIs.
+Each kind lives under the `/entities` root, because each is written and used
+differently.
 
 | Path | Role |
 | --- | --- |
-| `/assets` | The actor surface, already specified above: provisioning, contact, settings, Tasks, and reports. Observations an Asset reports arrive here as reports. |
-| `/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
-| `/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/geofeatures` | Places operators and Plugins create, edit, and delete. Tasks may name a `geofeature_id`. |
+| `/entities/assets` | The actor surface, already specified above: description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Provisioning is under `/administration`. Tasks are under `/tasks`. |
+| `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
+| `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
+| `/entities/geofeatures` | Places operators and Plugins create, edit, and delete. Tasks may name a `geofeature_id`. |
 
-The request and record shapes for `GET /entities`, `/observations`, `/tracks`,
-and `/geofeatures` are not designed yet. Objects are not Entities.
+The request and record shapes for `GET /entities`, `/entities/observations`,
+`/entities/tracks`, and `/entities/geofeatures` are not designed yet. Objects
+are not Entities.
 
 ## Not defined yet
 
@@ -258,7 +275,8 @@ and `/geofeatures` are not designed yet. Objects are not Entities.
   the Asset.
 - Records this page names that Protocol does not define yet
   ([Protocol open questions](../../protocol/docs/open-questions.md)).
-- The rest of the Entities API: `GET /entities`, `/observations`, `/tracks`, and
-  `/geofeatures`, as [sketched above](#entities). `/assets` is already specified.
-- The API for Objects and the Plugin interface. They are part of the product,
-  built with the rest ([pillars](pillars.md)), and their API is designed next.
+- The rest of the Entities API: `GET /entities`, `/entities/observations`,
+  `/entities/tracks`, and `/entities/geofeatures`, as [sketched above](#entities).
+  `/entities/assets` is already specified.
+- The `/objects` and `/plugins` roots. They are part of the product, built with
+  the rest ([pillars](pillars.md)), and their API is designed next.

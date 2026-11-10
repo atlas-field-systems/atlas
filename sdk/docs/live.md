@@ -54,7 +54,7 @@ picture.tasks(asset_id); // { ready, stale, items }
 picture.onChange(cb);
 ```
 
-- **Loading.** It reads `GET /assets` and each Asset's `GET /assets/{asset_id}/tasks`
+- **Loading.** It reads `GET /entities/assets` and each Asset's `GET /tasks/{asset_id}`
   ([Reads](../../core/docs/api.md#reads)), then follows from the smallest `as_of`.
   For each part, it skips events at or below the `as_of` of the read that loaded it.
 - **Readiness is explicit.** Reads return `{ready, stale, items}`. Until loading
