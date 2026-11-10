@@ -42,7 +42,7 @@ the SDK retries it with the same key until Core answers. Later steps wait for it
 ## Report outbox
 
 The app hands reports to the outbox, which sends them in batches with
-`POST /assets/{asset_id}/reports`.
+`POST /entities/assets/{asset_id}/reports`.
 
 - Each batch gets one `Idempotency-Key` when it is formed. The outbox resends that
   same batch with the same key until it gets a `200`, then drops it.

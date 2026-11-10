@@ -24,11 +24,14 @@ distinct from loss of Core contact, and list and detail inspection keep working.
 
 ## Recover after a refresh or a new tab
 
-Each tab loads a snapshot of the Assets it shows, with their Tasks, then follows
-the [event stream](../../core/docs/api.md#the-event-log-and-live-stream) after the
-snapshot's `as_of`. A refresh, a new tab, or a dropped stream recovers the same
-way, and the stream resumes after the last event the tab handled. Nothing is
-missed or applied twice.
+Each tab loads the shared picture through `GET /entities`
+([Entities](../../core/docs/api.md#entities)) and reads the Tasks for the Assets
+it shows separately. It then follows the
+[event stream](../../core/docs/api.md#the-event-log-and-live-stream) from the
+smallest `as_of`, skipping events already included in each read, as the
+[SDK live picture](../../sdk/docs/live.md#live-picture) describes. A refresh or a
+new tab loads those snapshots again. After a dropped stream, the tab resumes
+after the last event it handled. Nothing is missed or applied twice.
 
 ## Map and detail pages
 

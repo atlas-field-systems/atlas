@@ -14,9 +14,15 @@ selected but not implemented.
 | Fusion | Turning Observations into Tracks ([Fusion](fusion.md)) |
 | Administration | Accounts and their password hashes, sessions, Asset and gateway keys, and provisioning. Administrative work Core adds later goes here too |
 
-All five are part of the product and are built together. The Core API for
-Observations, Tracks, geo features, and Objects is
-[not designed yet](api.md#not-defined-yet).
+All five are part of the product and are built together.
+
+The public API reaches Entities, Tasks, Objects, and Administration at their own
+root paths: `/entities`, `/tasks`, `/objects`, and `/administration`. Fusion has
+no public root; it works on Core's state through the pillars' functions. Plugins
+are not a pillar and still have a root path, `/plugins`. Kinds a pillar owns live
+under its root, so Assets are at `/entities/assets`. See [Root paths](api.md#root-paths).
+
+Objects and the Plugin interface are [not designed yet](api.md#not-defined-yet).
 
 ## Rules
 

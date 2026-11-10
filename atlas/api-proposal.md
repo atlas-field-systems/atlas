@@ -73,15 +73,22 @@ Names are illustrative. Core owns the exact API doc.
 
 | Request | Purpose |
 | --- | --- |
-| `POST /login` | Account login; returns a session cookie |
-| `GET /assets`, `GET /assets/{id}` | Assets with their description, latest reports and settings |
-| `GET /assets/{id}/tasks` | Task bodies, states and queue order |
-| `POST /assets/{id}/tasks` | Create one or more Tasks; Core numbers them with `task_id` and sends them at once. `now: true` runs one Task at once and cancels the Tasks before it |
-| `PATCH /assets/{id}/settings` | Immediate settings change, as end states |
-| `POST /assets/{id}/tasks/{task_id}/cancel` | Cancel that Task, and only that Task |
+| `POST /administration/login` | Account login; returns a session cookie |
+| `GET /entities` | One cut of the shared picture: Assets, Observations, Tracks, and geo features |
+| `GET /entities/assets`, `GET /entities/assets/{id}` | Assets with their description, latest reports and settings |
+| `GET /tasks/{id}` | Task bodies, states and queue order |
+| `POST /tasks/{id}` | Create one or more Tasks; Core numbers them with `task_id` and sends them at once. `now: true` runs one Task at once and cancels the Tasks before it |
+| `PATCH /entities/assets/{id}/settings` | Immediate settings change, as end states |
+| `POST /tasks/{id}/{task_id}/cancel` | Cancel that Task, and only that Task |
 | `GET /history?asset_id&report&since&until&cursor` | Paged history |
 | `GET /events` (Server-Sent Events) | Live log events; reconnect resumes after `Last-Event-ID` |
-| `POST /assets/{id}/reports` | Asset or gateway reports, in batches, keeping original times |
+| `POST /entities/assets/{id}/reports` | Asset or gateway reports, in batches, keeping original times |
+| `GET /entities/observations`, `GET /entities/tracks` | Evidence and conclusions in the picture, separately |
+| `GET`, `POST`, `PATCH`, `DELETE /entities/geofeatures` | Places operators and Plugins author |
+
+Each pillar has a root path (`/entities`, `/tasks`, `/objects`,
+`/administration`). Plugins have `/plugins`. Kinds live under their pillar's
+root. `/about`, `/events`, `/history`, and `/debug` belong to no pillar.
 
 - **Accepted is not done.** A create or change returns Core's acceptance. Task
   state and setting values change only from the Asset's reports.
@@ -104,8 +111,8 @@ Names are illustrative. Core owns the exact API doc.
   in Core and receives its ID and key for its configuration. The key is a bearer
   token over TLS. There is no enrollment key. An Asset behind a gateway
   authenticates to the gateway, not to Core.
-- **IDs.** Admins choose `asset_id`, which people read. Core assigns Task, geo
-  feature, Object and Track IDs. Event IDs are integers.
+- **IDs.** Admins choose `asset_id`, which people read. Core assigns Task,
+  Observation, Track, geo feature, and Object IDs. Event IDs are integers.
 - **Transport security.** TLS on IP. Each Fieldlink uses its radio's own
   encryption and authentication. Records never carry credentials.
 
@@ -157,7 +164,8 @@ plan are removed until there is code to plan.
 
 1. Update the Charter and design decisions to this direction.
 2. Write the Core API doc and trim Protocol to records and data laws.
-3. Design the rest of the product: geo features, Objects, Observations, Tracks,
-   the Plugin interface, gateways, and Fieldlinks.
+3. Design the rest of the product: the remaining Entities paths
+   (`/entities/observations`, `/entities/tracks`, `/entities/geofeatures`),
+   `/objects`, `/plugins`, gateways, and Fieldlinks.
 4. Test the design with throwaway prototypes and write the findings back.
 5. Build everything together, then fly first flight.

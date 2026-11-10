@@ -22,8 +22,8 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
 | `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
 
-Tables for Observations, Tracks, geo features, and Objects are designed with
-their API.
+Tables for Observations, Tracks, and geo features are designed with the rest of
+the [Entities API](api.md#entities). The Objects table is designed with its API.
 
 ## Every change writes one event
 
