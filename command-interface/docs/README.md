@@ -54,8 +54,9 @@ Tracks, and places (geo features).
   Tracks. An operator who disagrees with one hides it in their own view.
 - **Any operator or admin can create, change, or delete any place**, including
   places a Plugin made. A place is a point, line, area, or imagery, with an
-  optional name. A Task names its place, so an Asset working on it follows the
-  place as it stands now ([Area and place inputs](#area-and-place-inputs)).
+  optional name. A Task names its place, and an edit or deletion always goes
+  through; each Asset decides how its work handles the change
+  ([Area and place inputs](#area-and-place-inputs)).
 
 ### Hide items in your own view
 
@@ -91,9 +92,11 @@ just says "not found".
 ### Links and choices belong to one run
 
 A [run](../../core/docs/storage.md#runs) lasts from one start of Core to the next
-stop, and Core starts each run empty. IDs such as a Track's or a place's start
-again in a new run, so every page address names its run, and every view filter
-is kept for one run.
+stop, and Core starts each run with an empty picture. Every Asset registers
+again and comes back as a new Asset with a new ID that Core assigns. Tracks,
+places, Objects, and Plugin calls also get new IDs, and an ID from one run may
+name something else in the next. So every page address names its run, and
+every view filter is kept for one run.
 
 - **Stopping Core ends every session.** Everyone signs in again in the new run.
 - **A new run discards the old run's state.** When the tab finds that Core's run
@@ -199,19 +202,19 @@ search of an area, the operator fills it in either of two ways:
   Task carries it. It becomes a shared place only if the operator presses
   **Save as place**, and the Task then names that place instead.
 - **Pick a place.** The Task names the place; it carries no copy of its
-  shape. The Asset gets the place's current shape through Core and follows it,
-  so when an operator edits the place, the Asset's work follows the new shape
-  ([Core API](../../core/docs/api.md#geo-features)). The draft and the Task show
-  the place's name and link to its page.
+  shape. The Asset gets the place's current shape through Core, and hears of
+  each later edit or deletion ([Core API](../../core/docs/api.md#geo-features)).
+  The draft and the Task show the place's name and link to its page.
 
 A point place can also fill a position input, such as Move To a named helipad.
-The Task names the point place in the same way, so moving the helipad moves the
-destination.
+The Task names the point place in the same way.
 
-Editing a place that unfinished Tasks name says which Tasks will follow the
-new shape. An Asset out of contact keeps working on the shape it last received,
-so its Tasks show that they may be using an earlier shape until the Asset is
-heard again.
+Any operator may edit or delete a place that unfinished Tasks name. The change
+always goes through, and the confirmation lists those Tasks. What happens to
+the work is up to each Asset, as [Asset behavior](../../asset/docs/README.md#carry-out-work-and-report-its-result)
+allows: one may keep its original plan, another may follow the new shape. A
+changed or deleted place cancels nothing by itself. The Asset's own reports show
+what it did, so the interface never claims a Task follows the change.
 
 A failsafe rule's boundary is never a place. The Asset stores its failsafe
 policy itself, so the operator draws each boundary in the failsafe rule, apart
@@ -323,8 +326,6 @@ the SDK docs.
 - The model rocket's launch command, equipment layout, recording limits, and how
   review knows the record is complete.
 - Reordering drafts, and keeping drafts across a reload.
-- What happens when an operator deletes a place that unfinished Tasks name, or
-  turns it into a shape those Tasks cannot use.
 
 Natural-language interaction is out of scope. If revisited, it belongs on a
 separate page.

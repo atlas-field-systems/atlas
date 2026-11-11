@@ -67,9 +67,12 @@ not revive failed work. A failed Task
 [cancels the remaining Tasks](failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
 A Task may name a place instead of carrying a shape. The Asset reads the
-place's current shape through Core, or through its gateway, and follows each
-edit as it arrives ([Core API](../../core/docs/api.md#geo-features)). Out of
-contact, it keeps working on the shape it last received.
+place's current shape through Core, or through its gateway, and hears of each
+later edit or deletion ([Core API](../../core/docs/api.md#geo-features)). How
+it handles a change is its own behavior: one Asset may keep its original plan,
+another may follow the new shape. A changed or deleted place is not a failure
+by itself, so it never cancels the remaining Tasks. Out of contact, the Asset
+works with the shape it last received.
 
 ### The queue
 

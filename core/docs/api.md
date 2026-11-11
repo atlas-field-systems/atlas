@@ -389,7 +389,7 @@ differently.
 | `/entities/assets` | The actor surface, already specified above: description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Provisioning is under `/administration`. Tasks are under `/tasks`. |
 | `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. Tasks may name a `geofeature_id`, and the Asset follows that place as it stands now ([Geo features](#geo-features)). |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. Tasks may name a `geofeature_id`, and the Asset reads that place's current shape ([Geo features](#geo-features)). |
 
 Objects are not Entities.
 
@@ -462,8 +462,11 @@ and a removal adds `track.removed`.
   names no author. A geo feature a Plugin creates names the Plugin.
 - **A Task names its place.** A Task may name a `geofeature_id`, as Move To
   may name a point place. Core never copies the shape into the Task, and a
-  `geofeature_id` that does not exist is refused with `404`. The Asset follows
-  the place as it stands now:
+  `geofeature_id` that does not exist is refused with `404`. Editing or
+  deleting a geo feature that unfinished Tasks name always goes through, and
+  Core cancels nothing because of it. The Asset decides how its work handles
+  the change ([Asset behavior](../../asset/docs/README.md#carry-out-work-and-report-its-result)).
+  It learns of the place this way:
   - An Asset, or the gateway carrying it, may
     `GET /entities/geofeatures/{geofeature_id}` for a geo feature that one of the
     Asset's unfinished Tasks names. Any other geo feature gets `403`.

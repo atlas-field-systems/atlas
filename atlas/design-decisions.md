@@ -130,7 +130,9 @@ soon as it accepts it, so an Asset that loses contact already holds its work. Th
 Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
 before it. Cancel names its Task. Pause is a setting that holds the active Task
 without ending it; the Task continues on resume. A command that uses a place names it and carries no copy of its shape. The
-Asset gets the place's current shape through Core and follows later edits. Retries are safe by design:
+Asset gets the place's current shape through Core and hears of later edits.
+Editing or deleting the place always goes through and cancels nothing; each
+Asset decides whether its work keeps the original plan or follows the change. Retries are safe by design:
 creates carry an idempotency key, settings are end states, and each `task_id`
 runs once.
 
