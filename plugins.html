@@ -9,13 +9,16 @@ uses its tools, often open-source services, to gather and return information.</p
 <h2 id="where-plugins-sit">Where Plugins sit</h2>
 <ul>
 <li>Plugins sit in the second ring of the
-<a href="design-decisions.html#a-walled-city">walled city</a>. They reach Core only through
-its Plugin interface, never its storage. Reading Entities or storing Objects
-goes through that interface. The Plugin interface is the Core API with a
-Plugin credential, not a second protocol. Plugins read the
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities">shared picture</a> and author geo features there.</li>
-<li>The Core API will carry Plugin calls. That is how the
-Command Interface uses a Plugin from outside the city.</li>
+<a href="design-decisions.html#a-walled-city">walled city</a>. Each one runs on its own, in
+its own container if it needs one, and connects out to Core with a key an
+admin gave it. It reaches Core only through its Plugin interface, never its
+storage. The Plugin interface is the Core API with a Plugin key, not a second
+protocol. Reading the
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities">shared picture</a>,
+creating geo features, and storing Objects go through that interface.</li>
+<li>The Core API carries Plugin calls. That is how the Command Interface uses a
+Plugin from outside the city. The <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#plugins">Core API</a>
+has the calls.</li>
 <li>Operators call Plugins first. Assets will be able to call them later.</li>
 <li>Plugins do not direct Assets or issue Tasks.</li>
 <li>Fusion is not a Plugin. It runs inside the inner wall on every Observation.
@@ -24,13 +27,43 @@ Nobody calls it.</li>
 Asset, not a Plugin.</li>
 </ul>
 <h2 id="actions">Actions</h2>
-<p>Each Plugin lists its actions, and each action takes its own inputs. An action
-returns one of two kinds of output:</p>
+<p>Each Plugin lists its actions, and each action takes its own inputs. Protocol
+defines every action&#39;s inputs and its list output, so Core checks a call and its
+answer the same way it checks a Task. An action returns one of two kinds of
+output, or both:</p>
 <ul>
 <li><strong>A list.</strong> The output is the list itself, returned to the caller.</li>
-<li><strong>A reference.</strong> The Plugin creates something in Core, such as an Object, a
-geo feature or another Entity, and the output names it. The result stays in
-Core, where the operator can find it later. Only fusion creates Tracks.</li>
+<li><strong>A reference.</strong> The Plugin creates geo features or Objects in Core, and the
+output names them. The result stays in Core, where the operator can find it
+later. Plugins create nothing else: Observations come only from Assets, and
+only Fusion creates Tracks.</li>
+</ul>
+<h2 id="what-the-operator-sees">What the operator sees</h2>
+<ul>
+<li><strong>Only Plugins that are running can be used.</strong> If a Plugin is not connected,
+Atlas says so at once. Nothing waits and runs later.</li>
+<li><strong>A call ends with a result or a failure.</strong> If a Plugin fails or disconnects
+partway, whatever it already stored stays, and the call is marked not
+finished. Nothing reruns by itself; the operator calls again if they still
+want it.</li>
+<li><strong>There is no stop.</strong> An operator who no longer wants an answer ignores it.</li>
+<li><strong>Everyone sees every call.</strong> Every logged-in operator sees every Plugin call
+and its result, because Atlas keeps one shared picture and one history.</li>
+<li><strong>Calls are not repeated.</strong> The operator runs a call again when they want new
+data.</li>
+</ul>
+<h2 id="objects">Objects</h2>
+<p>An Object is a file Core holds, such as a photo or a satellite image. Plugins
+and operators add them. An operator can attach a photo to a building&#39;s geo
+feature, for example.</p>
+<ul>
+<li>A file never changes. An operator can move an Object to another geo feature
+or detach it, and can delete it. History keeps the record that it was stored
+and who deleted it.</li>
+<li>An Object belongs to at most one geo feature. Deleting the geo feature leaves
+its Objects.</li>
+<li>A file may be at most 100 MB unless an admin changes the limit.</li>
+<li>Files from Assets, such as drone photos, are not designed yet.</li>
 </ul>
 <h2 id="examples">Examples</h2>
 <h3 id="find-the-buildings-in-an-area">Find the buildings in an area</h3>
@@ -62,8 +95,6 @@ cloud base from an open weather service.</li>
 <li><strong>What is this place.</strong> Takes a position and returns its place name or address.</li>
 <li><strong>Line of sight.</strong> Takes a position and a height, and creates a geo feature
 showing what can be seen from there.</li>
-<li><strong>Road route.</strong> Takes two positions and returns the route between them as a
-line.</li>
 </ul>
 <h2 id="not-plugins">Not Plugins</h2>
 <ul>
@@ -71,23 +102,22 @@ line.</li>
 <li><strong>Fusion.</strong> Core runs it on every Observation.</li>
 <li><strong>A geofence alarm.</strong> Nobody calls it; it reacts when a Track enters an area.</li>
 <li><strong>An auto-patrol that sends Tasks to drones.</strong> It directs Assets.</li>
+<li><strong>A suggested flight path.</strong> A Plugin does not return a route or positions
+meant to be turned into Tasks.</li>
+<li><strong>Repeating a call,</strong> such as weather every 10 minutes. The operator calls
+again when they want new data.</li>
 <li><strong>Turning on Asset lights at dusk.</strong> It changes Asset settings.</li>
 <li><strong>A radio bridge.</strong> That is a gateway and its Fieldlink.</li>
 <li><strong>The Reset archive.</strong> That is Core&#39;s own job.</li>
 <li><strong>Map styling.</strong> That belongs to the Command Interface.</li>
 </ul>
 <h2 id="not-decided">Not decided</h2>
-<p>How the Command Interface shows Plugins and their results is not decided.
-The Plugin interface, the Core API&#39;s Plugin calls, and how a Plugin is installed
-and started are not designed yet. Each Plugin may run in its own container.</p>
-<p>These cases are borderline and need a decision before such a Plugin is built:</p>
+<p>How the Command Interface shows Plugins, their results, and Objects is not
+decided. Which actions Protocol defines first is not decided.</p>
+<p>This case is borderline and needs a decision before such a Plugin is built:</p>
 <ul>
 <li><strong>Detecting objects in an uploaded photo.</strong> The call fits, but the results
 would be Observations, which today come only from Assets.</li>
-<li><strong>A suggested flight path.</strong> Returning positions fits. Sending the Tasks
-would direct Assets.</li>
-<li><strong>Repeating a call,</strong> such as weather every 10 minutes. This starts to look
-like a Plugin running in the background.</li>
 </ul>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
