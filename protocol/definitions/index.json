@@ -17,7 +17,16 @@
         "records/track.json",
         "records/geofeature.json",
         "records/provisioning.json",
-        "records/contact.json"
+        "records/contact.json",
+        "records/object.json",
+        "records/deletion.json",
+        "records/carrier.json",
+        "records/drop.json",
+        "records/refusal.json",
+        "records/plugin/description.json",
+        "records/plugin/call.json",
+        "records/plugin/result.json",
+        "records/plugin/failure.json"
       ]
     },
     {
@@ -26,7 +35,9 @@
         "requests/tasks.json",
         "requests/task.json",
         "requests/settings.json",
-        "requests/geofeature.json"
+        "requests/geofeature.json",
+        "requests/plugin_call.json",
+        "requests/radio.json"
       ]
     },
     {
@@ -49,13 +60,21 @@
         "records/geofeature/point.json",
         "records/geofeature/line.json",
         "records/geofeature/area.json",
+        "records/geofeature/imagery.json",
         "components/failsafe_condition/contact_lost.json",
         "components/failsafe_condition/battery_below.json",
         "components/failsafe_condition/idle.json",
         "components/failsafe_condition/airborne.json",
         "components/failsafe_condition/outside_area.json",
         "components/failsafe_condition/measurement_stale.json",
-        "components/failsafe_condition/subsystem.json"
+        "components/failsafe_condition/subsystem.json",
+        "components/input_value/area.json",
+        "components/input_value/position.json",
+        "components/input_value/time.json",
+        "components/input_value/geofeature.json",
+        "components/input_value/number.json",
+        "components/input_value/text.json",
+        "components/input_value/choice.json"
       ]
     },
     {
@@ -74,7 +93,11 @@
         "components/subsystem.json",
         "components/failsafe_condition.json",
         "components/failsafe_response.json",
-        "components/failsafe_rule.json"
+        "components/failsafe_rule.json",
+        "components/input_value.json",
+        "components/plugin_input.json",
+        "components/plugin_action.json",
+        "components/fact.json"
       ]
     },
     {
@@ -145,7 +168,21 @@
         "variables/stale_after_s.json",
         "variables/subsystem_id.json",
         "variables/label.json",
-        "variables/trigger_condition.json"
+        "variables/trigger_condition.json",
+        "variables/plugin_id.json",
+        "variables/object_id.json",
+        "variables/content_type.json",
+        "variables/size_bytes.json",
+        "variables/radio_identity.json",
+        "variables/definitions_hash.json",
+        "variables/action.json",
+        "variables/input.json",
+        "variables/input_kind.json",
+        "variables/optional.json",
+        "variables/choice.json",
+        "variables/number.json",
+        "variables/text.json",
+        "variables/target_time.json"
       ]
     }
   ]

@@ -36,7 +36,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
-| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, removed radio, call already answered or ended, or definitions mismatch |
+| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, removed radio, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 
 ## Root paths
@@ -106,24 +106,24 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | --- | --- | --- |
 | `asset.provisioned`, `asset.removed` | An admin adds or removes an Asset, or a gateway adds a radio Asset | `provisioning` |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
-| `asset.carried` | A radio Asset moves to the gateway that heard it, or its gateway is removed | `asset_id`, and `gateway_id` unless no gateway carries it |
+| `asset.carried` | A radio Asset moves to the gateway that heard it, or its gateway is removed | `carrier`: `asset_id`, and `gateway_id` unless no gateway carries it |
 | `plugin.provisioned`, `plugin.removed` | An admin adds or removes a Plugin | `provisioning` |
-| `plugin.described` | A Plugin sends its description | Its Plugin description record |
+| `plugin.described` | A Plugin sends its description | `plugin.description` |
 | `plugin.contact` | Core's view of a Plugin's contact changes | `contact` |
-| `plugin.called` | An operator calls a Plugin action | The Plugin call record |
-| `plugin.result`, `plugin.failed` | A Plugin answers a call | The Plugin result or failure record |
-| `plugin.dropped` | Core ends a call the Plugin did not answer before it went offline or was removed | `plugin_id`, `request_id` |
-| `object.stored` | An operator or a Plugin stores a file | The Object record |
-| `object.changed` | An operator attaches an Object to a geo feature, moves it, or detaches it | The Object record |
-| `object.deleted` | An operator deletes an Object | `object_id`, `requested_by` |
+| `plugin.called` | An operator calls a Plugin action | `plugin.call` |
+| `plugin.result`, `plugin.failed` | A Plugin answers a call | `plugin.result` or `plugin.failure` |
+| `plugin.dropped` | Core ends a call the Plugin did not answer before it went offline or was removed | `drop`: `plugin_id`, `request_id` |
+| `object.stored` | An operator or a Plugin stores a file | `object` |
+| `object.changed` | An operator attaches an Object to a geo feature, moves it, or detaches it | `object` |
+| `object.deleted` | An operator deletes an Object | `deletion`: `object_id`, `requested_by` |
 | `asset.described` | The Asset sends its description | Its description record |
 | `asset.contact` | Core's view of the Asset's contact changes | `contact` |
 | `gateway.contact` | Core's view of the gateway's contact changes | `contact` |
-| `definitions.refused` | An Asset, gateway, radio, or Plugin connects with a different definitions hash | Its `asset_id`, `gateway_id`, or `plugin_id`, and its hash. For a radio: the `gateway_id`, the radio identity, its `asset_id` if it has one, and its hash |
-| `radio.refused` | A gateway hears a radio whose Asset an admin removed | `gateway_id`, the radio identity, and the removed `asset_id` |
+| `definitions.refused` | An Asset, gateway, radio, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash`. For a radio: the `gateway_id`, the `radio_identity`, its `asset_id` if it has one, and its hash |
+| `radio.refused` | A gateway hears a radio whose Asset an admin removed | `refusal`: `gateway_id`, the `radio_identity`, and the removed `asset_id` |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
-| `task.dropped` | Core discards a Task the Asset never confirmed it holds | `asset_id`, `task_id` |
-| `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `asset_id`, `request_id` |
+| `task.dropped` | Core discards a Task the Asset never confirmed it holds | `drop`: `asset_id`, `task_id` |
+| `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `drop`: `asset_id`, `request_id` |
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
 | `cancel.requested` | An operator cancels a Task | `asset_id`, `task_id`, `requested_by` |
 | `report.<name>` | Core stores an Asset report, including `report.observation` | The report record |
@@ -291,8 +291,8 @@ order, because the Asset orders them by `task_id`.
 results; these are the calls behind them.
 
 - Each time a radio's link to it opens, including after a gateway restart, the
-  gateway sends `POST /entities/assets/radios` with the radio identity and the
-  radio's definitions hash. Core answers
+  gateway sends `POST /entities/assets/radios` with `requests.radio`: the
+  radio's `radio_identity` and its `definitions_hash`. Core answers
   `200 {asset_id}`:
   - a radio Core knows keeps its `asset_id`;
   - a radio an admin set up in advance gets the `asset_id` the admin chose;
@@ -341,7 +341,7 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | --- | --- |
 | `POST /administration/login`, `POST /administration/logout`, `GET /administration/me` | Start, end, and read a session |
 | `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
-| `POST /administration/assets` | Provision an Asset with the `asset_id` the admin chooses. An Asset on IP gets its key once. A radio Asset names its radio identity and gets no key |
+| `POST /administration/assets` | Provision an Asset with the `asset_id` the admin chooses. An Asset on IP gets its key once. A radio Asset names its `radio_identity` and gets no key |
 | `POST /administration/assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
 | `DELETE /administration/assets/{asset_id}` | Remove an Asset. A removed radio is refused until an admin provisions it again |
 | `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
@@ -452,7 +452,7 @@ and a removal adds `track.removed`.
   change.
 - `POST` creates a geo feature, and Core assigns its `geofeature_id`. `PUT`
   replaces one whole, so a name left out is cleared and its shape may change
-  kind. `DELETE` removes it from the picture. Core never reuses a
+  kind, except imagery. `DELETE` removes it from the picture. Core never reuses a
   `geofeature_id` in the run, and a deleted one returns `404`.
 - Any admin or operator may create, replace, or delete any geo feature,
   including one a Plugin made. A Plugin may only create geo features, with its
@@ -461,10 +461,17 @@ and a removal adds `track.removed`.
   names no author. A geo feature a Plugin creates names the Plugin.
 - Editing or deleting a geo feature never changes a Task already sent. Geo
   features are not sent to Assets.
+- **Imagery shows a GeoTIFF on the map.** An imagery geo feature names one
+  stored Object, and the map draws that file where the file says it belongs.
+  Core refuses an Object that is not a GeoTIFF with `409`, and an `object_id`
+  that does not exist with `404`. A `PUT` on imagery may change only its name;
+  any other change, or turning another kind into imagery, is refused with
+  `409`. To correct the image, add a new imagery geo feature. Deleting imagery
+  leaves its Object.
 
 ## Objects
 
-An Object is a file Core holds, with an Object record that says what it is:
+An Object is a file Core holds, with an `object` record that says what it is:
 `object_id`, `name`, `content_type`, `size_bytes`, and an optional
 `geofeature_id`. Operators and Plugins store Objects. Core never sends them to
 Assets or gateways.
@@ -500,7 +507,9 @@ Assets or gateways.
   [Entities](#entities) design must keep.
 - **Delete removes the file.** The `object.stored` and `object.deleted` events
   stay in history, so the record of the upload and of who deleted it remains.
-  Only an operator deletes an Object.
+  Only an operator deletes an Object. Core refuses to delete an Object that an
+  imagery geo feature still shows with `409`; the operator deletes the imagery
+  first.
 - **Who stored it** is `requested_by` in the Object record: the account that
   uploaded it or the Plugin that stored it. Core stamps it, as for Tasks.
 - **Objects belong to their run.** They are kept until the run is removed under
@@ -532,9 +541,12 @@ not call Plugins yet.
 ### A Plugin starts
 
 1. `GET /about` with its key, and compare the definitions hash.
-2. `PUT /plugins/{plugin_id}/description` with its Plugin description record:
-   its name and the actions it offers. Core refuses an action Protocol does not
-   define with `400 invalid`.
+2. `PUT /plugins/{plugin_id}/description` with its `plugin.description`
+   record: its name and the actions it offers, each with a label and its
+   inputs. The Plugin names and describes its own actions from Protocol's
+   common input kinds, so a new action needs no Protocol change. Core checks
+   the description with Protocol's validator and refuses an invalid one with
+   `400 invalid`.
 3. Open `/events?after=<last handled event_id>`. Its stream shows only
    `plugin.called` events addressed to it.
 
@@ -549,15 +561,20 @@ they can use.
 
 | Request | Body | Result |
 | --- | --- | --- |
-| `POST /plugins/{plugin_id}/actions/{action}` | The action's inputs, as Protocol defines for that action | `202 {event_id}` |
+| `POST /plugins/{plugin_id}/actions/{action}` | `requests.plugin_call`: a value for each of the action's inputs | `202 {event_id}` |
 | `GET /plugins` | | Every Plugin: description, contact, and its unanswered calls, with `as_of` |
 | `GET /plugins/{plugin_id}/calls?cursor&limit` | | Its calls with their answers, newest first; at most 1000 per page, with `next_cursor` |
 | `GET /plugins/{plugin_id}/calls/{event_id}` | | One call and its answer, if any |
 
-- Core validates the inputs, checks that the Plugin is online and that its
-  description lists the action, and accepts or refuses the call. A Plugin that
+- Core validates the inputs with Protocol's validator, checks that the Plugin
+  is online and that its description lists the action, and checks the values
+  against that action: each names one of its inputs with the same kind, a
+  choice is one the Plugin listed, and every input not marked optional is
+  given once. A value that does not match is refused with `400 invalid`. Core
+  then accepts the call or refuses it. A Plugin that
   is not online is refused at once with `409`. Nothing waits for it to return.
-- An accepted call is one `plugin.called` event. Its `event_id` names the call
+- An accepted call is one `plugin.called` event, carrying the `plugin.call`
+  record Core stamps from the body. Its `event_id` names the call
   from then on, as a request's `event_id` does for an Asset. There is no other
   call ID.
 - Every account sees every call and its answer, because Atlas keeps one shared
@@ -568,14 +585,18 @@ they can use.
 
 ### Plugins answer
 
-`POST /plugins/{plugin_id}/answers` takes one answer, which names its call with
-`request_id`, the call's `event_id`:
+`POST /plugins/{plugin_id}/answers` takes one answer record, which names its
+call with `request_id`, the call's `event_id`. Every action answers the same
+way:
 
-- **A result**: the action's list output as Protocol defines it, or the IDs of
-  the geo features and Objects it created, or both. Core stores it as
-  `plugin.result`.
-- **A failure**: an `explanation`, and the IDs of anything it had already
-  created. Core stores it as `plugin.failed`.
+- **A result** (`plugin.result`): places it lists without storing them, short
+  facts, and the IDs of the geo features and Objects it created, in any mix.
+  An empty result means it found nothing. Core stores it as `plugin.result`.
+- **A failure** (`plugin.failure`): an `explanation`, and the IDs of anything
+  it had already created. Core stores it as `plugin.failed`.
+- **No partial lists.** Each list in an answer holds at most 1000 items. A
+  Plugin with more fails with an explanation, such as "Area too large", so a
+  partial list is never mistaken for the whole answer.
 
 - Core checks the answer with Protocol's validator. An invalid answer is
   refused with `400 invalid`, and the call stays unanswered.
@@ -599,14 +620,3 @@ marked not finished, and an operator who still wants it calls again.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
-- Protocol records for the events this page lists by field: `definitions.refused`,
-  `radio.refused`, `asset.carried`, `task.dropped`, and `request.dropped`; and
-  Protocol's form of the radio identity and the bodies that carry it.
-- Protocol definitions for Objects and Plugins: the Object record, the Plugin
-  description record, the Plugin call, result, and failure records, the
-  `object.deleted` and `plugin.dropped` event records, each
-  action's request and list output, and `plugin_id` in `provisioning`,
-  `contact`, and `requested_by`. The [parked](../../protocol/parked/README.md)
-  definitions are the starting point.
-- Which Plugin actions Protocol defines first. [Plugins](../../atlas/plugins.md)
-  lists the intended ones.

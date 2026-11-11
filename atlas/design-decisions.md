@@ -166,16 +166,26 @@ The Asset runs failsafes locally, and the records follow that
 
 ## Plugin actions and Objects
 
-- Protocol defines every Plugin action's inputs and list output, as it defines
-  command kinds. A Plugin only lists the actions it offers, and Core checks
-  calls and answers with Protocol's one validator. A new action is a Protocol
-  change.
+- Each Plugin names and describes its own actions. Protocol defines only the
+  common pieces they are built from: a fixed set of input kinds, and one answer
+  shape for every action, made of places, short facts, and the geo features
+  and Objects the Plugin created. Core checks each call against the Plugin's
+  description and each answer with Protocol's one validator. A new Plugin or
+  action needs no Protocol change; a new common piece does, and the owner
+  decides it. This keeps one-off definitions for single Plugins out of
+  Protocol.
+- An answer never holds a partial list. A Plugin whose list would exceed the
+  limit fails with an explanation instead.
 - A Plugin call is accepted, not done, like a Task. It ends with the Plugin's
   result or failure, or is dropped when the Plugin goes offline or is removed. Plugins create
   only geo features and Objects, and never direct Assets.
 - An Object is a file Core holds. Plugins and operators add Objects; files from
   Assets are not designed yet. A file never changes, and Core records who
   stored it.
+- Imagery is a geo feature that shows one GeoTIFF Object on the map, where the
+  file says it belongs. Operators and Plugins add it. It can be renamed or
+  deleted, never moved or reshaped. Deleting it leaves the file, and Core
+  refuses to delete a file that imagery still shows.
 
 The [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects)
 owns the calls and [Plugins](plugins.md) the intended use.

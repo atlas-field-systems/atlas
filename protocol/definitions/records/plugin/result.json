@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/plugin/result.json",
+  "title": "Plugin result",
+  "description": "A Plugin's successful answer to one call, named by request_id. It holds places it lists without storing them, facts, and the IDs of geo features and Objects it created for this call. Any of them may be left out, so an empty result means it found nothing. Each list holds at most 1000 items; a Plugin with more answers with plugin.failure instead of a partial result. Core adds it as plugin.result.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "plugin_id",
+    "request_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "plugin.result"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "plugin_id": {
+      "$ref": "../../variables/plugin_id.json"
+    },
+    "request_id": {
+      "$ref": "../../variables/request_id.json"
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "$ref": "../../requests/geofeature.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "$ref": "../../components/fact.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "geofeature_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../../variables/geofeature_id.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "object_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../../variables/object_id.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    }
+  },
+  "examples": [
+    {
+      "type": "plugin.result",
+      "time": 1793667703000,
+      "plugin_id": "P1",
+      "request_id": 118,
+      "places": [
+        {
+          "kind": "area",
+          "name": "Town hall",
+          "area": [
+            {
+              "latitude": 42.2761,
+              "longitude": -71.8031
+            },
+            {
+              "latitude": 42.2768,
+              "longitude": -71.8012
+            },
+            {
+              "latitude": 42.2752,
+              "longitude": -71.8004
+            }
+          ]
+        },
+        {
+          "kind": "point",
+          "name": "Main St Hospital",
+          "position": {
+            "latitude": 42.2746,
+            "longitude": -71.8063
+          }
+        }
+      ]
+    },
+    {
+      "type": "plugin.result",
+      "time": 1793667704000,
+      "plugin_id": "P1",
+      "request_id": 119,
+      "facts": [
+        {
+          "label": "Wind",
+          "text": "12 m/s from the west"
+        },
+        {
+          "label": "Visibility",
+          "text": "10 km"
+        }
+      ]
+    },
+    {
+      "type": "plugin.result",
+      "time": 1793667705000,
+      "plugin_id": "P2",
+      "request_id": 120,
+      "geofeature_ids": [
+        "G4"
+      ],
+      "object_ids": [
+        "F1",
+        "F2"
+      ]
+    },
+    {
+      "type": "plugin.result",
+      "time": 1793667706000,
+      "plugin_id": "P1",
+      "request_id": 121
+    }
+  ]
+}

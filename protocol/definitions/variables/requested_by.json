@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/requested_by.json",
   "title": "requested_by",
-  "description": "Who requested this: an account's operator_id, or the gateway_id of a gateway that added a radio Asset. Core keeps operator and gateway IDs distinct, so one ID names one requester.",
+  "description": "Who requested this: an account's operator_id, the gateway_id of a gateway that added a radio Asset, or the plugin_id of a Plugin that stored an Object or created a geo feature. Core keeps operator, gateway, and Plugin IDs distinct, so one ID names one requester.",
   "examples": [
     "OP1"
   ],

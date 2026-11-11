@@ -46,7 +46,8 @@ page disagree, fix one of them.
 - **The Asset chooses `observation_id`**, unique for that Asset within a run, and keeps it while it keeps seeing the same target. Core assigns `track_id` and `geofeature_id`.
 - **A `coordinates` Observation** says where the target is, with an optional uncertainty. **A `bearing` Observation** says which way it is from where the sensor was, with optional elevation and range.
 - **A `track` is Fusion's conclusion.** Its `time` is the last sighting, the newest Observation report it uses. `sources` names the Observations it rests on. It has a position only when Fusion can place the target; a Track from bearings alone has none. Only Fusion writes Tracks.
-- **A `geofeature` is a point, line, or area with an optional name**, and nothing else. A change replaces it whole. It names no author; the event that stores it carries `requested_by`.
+- **A `geofeature` is a point, line, area, or imagery, with an optional name**, and nothing else. A change replaces it whole. It names no author; the event that stores it carries `requested_by`.
+- **Imagery names one GeoTIFF Object** by `object_id`. Its map position comes from the file, so the record carries no outline. A replacement may change only its name.
 - No record carries a stale flag. Every record keeps its `time`, and readers show its age.
 
 ## Failsafes
@@ -64,7 +65,11 @@ page disagree, fix one of them.
 - One `provisioning` record covers an Asset or a gateway being added or removed. The event kind says which, so the record does not. It names `asset_id` or `gateway_id`, and `requested_by`: the admin, or the gateway that added a radio Asset on first contact. What an Asset is comes from its description, not from provisioning.
 - Key replacements, logins, and account changes have no shared record. They stay in Core's diagnostic log.
 - One `contact` record says whether an Asset or gateway is `online` or `offline`. Its `time` is when it was last heard, so an offline record keeps that time and the record still has one time. Core uses it for `asset.contact`, and a gateway sends it for each Asset it carries, with its Fieldlink deciding online or offline.
-- `requested_by` names an account or a gateway. Core keeps operator and gateway IDs distinct.
+- `provisioning` and `contact` name exactly one of `asset_id`, `gateway_id`, or `plugin_id`. A radio Asset's `provisioning` also names its `radio_identity`.
+- `requested_by` names an account, a gateway, or a Plugin. Core keeps operator, gateway, and Plugin IDs distinct.
+- **A `radio_identity` is the Fieldlink's name, a colon, and the identity** in the form that Fieldlink's docs define, such as `meshtastic:` and a node's public key. The name keeps identities from different kinds of link apart.
+- `carrier` records which gateway carries a radio Asset, or none, for `asset.carried`.
+- One `drop` record covers `task.dropped`, `request.dropped`, and `plugin.dropped`; one `refusal` record covers `definitions.refused` and `radio.refused`. The event kind says which, as for `provisioning`.
 
 ## Limits
 
@@ -78,15 +83,19 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
 
 ## Objects and Plugins
 
-The records are [parked](../parked/README.md) until they are reworked. When they
-are, they follow these choices:
-
-- The Object record is `object_id`, `name`, `content_type`, `size_bytes`, an
-  optional `geofeature_id`, and `requested_by`, the account or Plugin that stored
-  it. The parked `plugin_id` field is dropped: Core stamps who stored it.
-- Each Plugin action has a request definition for its inputs and a definition
-  for its list output, as Task kinds do. The Plugin description lists actions by
-  name only.
-- `provisioning`, `contact`, and `requested_by` can name a Plugin with
-  `plugin_id`. The parked `plugin_id` describes a Plugin inside Core; it becomes
-  a Plugin beside Core.
+- The `object` record is `object_id`, `name`, `content_type`, `size_bytes`, an
+  optional `geofeature_id`, and `requested_by`, the account or Plugin that
+  stored it. `deletion` records an operator deleting one.
+- **Plugins describe their own actions.** `plugin.description` lists each
+  action by name, with a label and its inputs, each a `plugin_input` that names
+  one of the fixed `input_kind` values. A call carries one `input_value` per
+  input given. Protocol does not list actions, so a new Plugin or action needs
+  no Protocol change; a new input kind does.
+- **Every action answers the same way.** `plugin.result` holds `places`
+  (bodies of geo features listed, not stored), `facts` (a label and a text
+  value), and the `geofeature_ids` and `object_ids` the Plugin created. All are
+  optional, so an empty result means nothing was found. `plugin.failure` holds
+  an `explanation` and what was already created. Each list holds at most 1000
+  items; a Plugin with more fails rather than answering in part.
+- The Plugin records are grouped under `plugin`, with `type`, because one
+  answer call takes either a result or a failure.
