@@ -21,7 +21,8 @@ Definitions and records carry none.
 | `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
-| `provisioning` | An Asset registered or was removed, or a gateway or Plugin was provisioned or removed | Core, for an admin, a gateway, or the Asset |
+| `registration` | An Asset registered in the run or was removed from it | Core, for the Asset, its gateway, or an admin |
+| `provisioning` | An admin provisioned or removed a gateway or Plugin | Core, for an admin |
 | `contact` | Whether an Asset, gateway, or Plugin is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
 | `carrier` | Which gateway carries a radio Asset, or none | Core |
 | `drop` | A Task, request, or Plugin call Core stopped waiting on | Core |
@@ -62,7 +63,7 @@ Both tools only display what the definitions say. They never send anything.
 ## Layout
 
 - `definitions/`: `variables/`, `components/`, `records/`, `requests/`, and `index.json`. The examples in each definition are the validator's test vectors.
-- `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: choices behind the records. `docs/open-questions.md`: what is not decided.
+- `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: working choices behind the records, below the [decision log](../atlas/decision-log.md). `docs/open-questions.md`: what is not decided.
 - `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer.
 - `scripts/check.mjs`: checks every definition and its examples (`npm ci && npm run check && npm test`).
 - `parked/`: earlier definitions waiting to be reworked into records. Not checked.

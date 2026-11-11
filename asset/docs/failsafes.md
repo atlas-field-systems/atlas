@@ -163,6 +163,16 @@ shuts itself down. Core then shows the Asset offline, as it would after lost
 contact, and the other Assets keep working. Atlas has no remote restart and no
 way to clear the state.
 
+## A restart mid-flight is a failsafe
+
+If the app restarts during a run while the Asset is out on a Task, it rejoins
+Core as the same Asset, with the same `asset_id`
+([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)),
+and enters failsafe state instead of resuming its work. From there it is like
+any failsafe: operators see it as itself, in failsafe, the
+[overrides above](#lock-ordinary-work-for-the-rest-of-the-operation) apply, and
+the state has no exit. A dropped link is not a restart.
+
 ## Replace the policy during ordinary operation
 
 Outside failsafe state, operators can replace the complete policy. The Asset
@@ -181,5 +191,7 @@ restarting idle or contact timers.
 - Exact detection of an autopilot takeover and its interaction with a running
   Atlas response.
 - Boundary details and measurement freshness limits.
+- Which response a restart mid-flight runs, since an Asset may have no rule
+  configured and starts from its configured policy, not one an operator sent.
 - What counts as safely stopped on each platform, and how long the app waits for
   Core to acknowledge its final reports before it shuts down.

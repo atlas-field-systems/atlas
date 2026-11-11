@@ -116,7 +116,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 
 | Kind | Added when | Record |
 | --- | --- | --- |
-| `asset.provisioned`, `asset.removed` | An Asset [registers](#asset-and-gateway-calls), a gateway registers a radio Asset, or an admin removes an Asset | `provisioning` |
+| `asset.registered`, `asset.removed` | An Asset [registers](#asset-and-gateway-calls), a gateway registers a radio Asset, or an admin removes an Asset | `registration` |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
 | `asset.carried` | A radio Asset moves to another gateway during the run, or its gateway is removed | `carrier`: `asset_id`, and `gateway_id` unless no gateway carries it |
 | `plugin.provisioned`, `plugin.removed` | An admin adds or removes a Plugin | `provisioning` |
@@ -256,12 +256,12 @@ starts in this order, and on reconnect within the run repeats it from step 2:
 
 1. `GET /about` with its Asset key, and compare the definitions hash.
 2. On start, `POST /entities/assets` with its description record. Core assigns
-   the next `asset_id`, adds `asset.provisioned`, and answers `201 {asset_id}`.
+   the next `asset_id`, adds `asset.registered`, and answers `201 {asset_id}`.
    The Asset uses that ID for the rest of the run. Registering again with the
-   same key in the run returns the same `asset_id`, unless an admin removed that
-   Asset; then it becomes a new Asset with a new ID. This includes an app that
-   restarted and forgot its ID. A key registers at most one Asset at a time. On reconnect, `PUT /entities/assets/{asset_id}/description`
-   instead.
+   same key in the run returns the same `asset_id`, even for an app that
+   restarted and forgot its ID, unless an admin removed that Asset; then it
+   becomes a new Asset with a new ID. A key registers at most one Asset at a
+   time. On reconnect, `PUT /entities/assets/{asset_id}/description` instead.
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
@@ -313,7 +313,7 @@ Asset on its own side and speaks to Core only by `asset_id`.
 
 - When the gateway hears a radio that has no `asset_id` in this run, it sends
   `POST /entities/assets/radios` with `requests.radio`: the radio's
-  definitions hash. Core assigns the next `asset_id`, adds `asset.provisioned`
+  definitions hash. Core assigns the next `asset_id`, adds `asset.registered`
   with the gateway as `requested_by`, and answers `201 {asset_id}`. The gateway
   carries that Asset, keeps which radio has which ID, and tells the radio its
   ID through the Fieldlink.
@@ -326,7 +326,8 @@ Asset on its own side and speaks to Core only by `asset_id`.
   `PUT /entities/assets/{asset_id}/contact`. Core records the new carrier and
   adds `asset.carried`. The Asset keeps its ID and its unfinished Tasks. A swap
   is within the run; IDs change only with the next run. A radio whose app
-  restarted mid-run rejoins the same way.
+  restarted mid-run rejoins the same way and keeps its ID, but its work does
+  not resume ([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
 - When an admin removes a radio Asset, its ID ends. If the radio is heard
   again, its gateway registers it as a new Asset with a new ID.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset
