@@ -66,6 +66,11 @@ Task fails with an explanation rather than waiting. Becoming ready later does
 not revive failed work. A failed Task
 [cancels the remaining Tasks](failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
+A Task may name a place instead of carrying a shape. The Asset reads the
+place's current shape through Core, or through its gateway, and follows each
+edit as it arrives ([Core API](../../core/docs/api.md#geo-features)). Out of
+contact, it keeps working on the shape it last received.
+
 ### The queue
 
 The Asset holds its own queue: the Tasks it has received and not started. Core

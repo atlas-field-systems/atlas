@@ -14,7 +14,8 @@ result, or display that the interface does not know yet, that kind is added
 once, and every Plugin can then use it.
 
 Each Plugin's description also carries its display choices. They ship with the
-Plugin, and admins only add and remove Plugins. For each action:
+Plugin, and admins only add and remove Plugins. Every choice has a default, so
+a Plugin that sets none still works. For each action:
 
 - its label and help text;
 - whether its action appears in the right-click menu of an area, a place, or a
@@ -61,7 +62,7 @@ A call's result shows on its page:
   with a position can show on the map as a result overlay that only that
   operator sees, and that never enters the shared picture. Each item has
   **Save as place**, which saves it as an ordinary place made by that operator.
-- **Places the Plugin made** appear on everyone's map like other places. Their
+- **Places the Plugin made**, imagery included, appear on everyone's map like other places. Their
   page names the Plugin and links to the call.
 - **Objects the Plugin stored** appear in the Objects list and on the page of
   the place they are attached to, naming the Plugin and the call.
@@ -79,11 +80,17 @@ An Object is a file Core holds, such as a photo.
   on the Objects list. The interface says when a file is over Core's size limit.
 - **Move** by picking another place, or **Detach**. **Delete** asks for
   confirmation.
+- **A file shown as imagery cannot be deleted.** Its Delete button says "This
+  file is shown on the map as imagery *North field photo*. Delete that imagery
+  first," with a link to the imagery's page. If Core refuses the delete with
+  `409` anyway, the interface shows the same message.
+- **Add imagery** from a GeoTIFF Object's page, or upload a GeoTIFF as imagery
+  ([Draw places](README.md#draw-places)).
 - An Object has no position of its own, so it shows on the map only through its
   place.
 
 An Object's page shows its name, type, size, who stored it, the place it is
-attached to, and a preview or download. A deleted Object's page says it was
+attached to, any imagery that shows it, and a preview or download. A deleted Object's page says it was
 deleted, by whom, and when. Core has [no read for that yet](../../core/docs/api.md#not-defined-yet).
 
 Files from Assets, such as drone photos, are not designed yet.

@@ -53,15 +53,16 @@ Tracks, and places (geo features).
 - **Operators cannot move, rename, or delete a Track.** Only Fusion changes
   Tracks. An operator who disagrees with one hides it in their own view.
 - **Any operator or admin can create, change, or delete any place**, including
-  places a Plugin made. A place is a point, line, or area with an optional
-  name. Changing or deleting a place never changes a Task already sent.
+  places a Plugin made. A place is a point, line, area, or imagery, with an
+  optional name. A Task names its place, so an Asset working on it follows the
+  place as it stands now ([Area and place inputs](#area-and-place-inputs)).
 
 ### Hide items in your own view
 
 Hiding a Track and hiding old Tracks and sightings are view filters. A view
-filter belongs to one browser: it survives a refresh and carries into new tabs,
-but it does not follow the operator to another computer, and other operators
-never see it. The map and list always show how many items are hidden, with a
+filter belongs to one browser and one [run](#links-and-choices-belong-to-one-run):
+it survives a refresh and carries into new tabs, but it does not follow the
+operator to another computer, and other operators never see it. The map and list always show how many items are hidden, with a
 **Show all** button, so a hidden item is never silently lost.
 
 ### Every item has its own page
@@ -76,15 +77,33 @@ the panel, and the map around it.
 | Asset | Its Tasks, conditions, and history, as [below](#read-tasks-conditions-and-history). |
 | Track | What Fusion concluded, its position or direction, its age, the sightings it rests on with the Asset and age of each, and its past path. A **Hide** button adds it to the view filter. Nothing on the page changes the Track. |
 | Sighting | The Asset that reported it, what it reports, its age, the Track that uses it, and its earlier reports from history. |
-| Place | Its shape and name, who made it, and the Plugin call that made it if a Plugin did. Its attached Objects, edit and delete, and the Plugin actions that take a place. |
+| Place | Its shape and name, who made it, and the Plugin call that made it if a Plugin did. The unfinished Tasks that name it, its attached Objects, edit and delete, and the Plugin actions that take a place. |
+| Imagery | Its name, the GeoTIFF it shows with a link to that Object's page, who added it, rename, and delete. |
 | Object | See [Objects](plugins-and-objects.md#objects). |
 | Plugin call | See [Run a Plugin](plugins-and-objects.md#run-a-plugin). |
 
-A page for something that is gone says what happened. It shows when the item
-went and who removed it, shows the item as it last stood, and offers to open it
-in history. A Track Fusion removed and a deleted place come from
-[Track and geo feature history](../../core/docs/api.md#reads). A page never just
-says "not found".
+A page for something that is gone during the run says what happened. It shows
+when the item went and who removed it, shows the item as it last stood, and
+offers to open it in history. A Track Fusion removed and a deleted place come
+from [Track and geo feature history](../../core/docs/api.md#reads). A page never
+just says "not found".
+
+### Links and choices belong to one run
+
+A [run](../../core/docs/storage.md#runs) lasts from one start of Core to the next
+stop, and Core starts each run empty. IDs such as a Track's or a place's start
+again in a new run, so every page address names its run, and every view filter
+is kept for one run.
+
+- **Stopping Core ends every session.** Everyone signs in again in the new run.
+- **A new run discards the old run's state.** When the tab finds that Core's run
+  has changed, it drops everything it held from the earlier run: the picture,
+  drafts, view filters, result overlays, and open pages. Nothing from that run
+  lingers in the interface.
+- **An old link never opens a new item.** A link from an earlier run opens a
+  page that says its run has ended and that the run's record is in that run's
+  Reset ZIP, not in Core. It never opens an item of the new run that has the
+  same ID, and it offers no history, because Core no longer holds that run.
 
 [Draft Tasks](#draft-tasks-on-the-map-then-send-them) stay in memory while the
 operator visits other pages. For example, opening another Asset's page to check
@@ -110,7 +129,7 @@ approved yet:
 | --- | --- | --- |
 | Drawing a point place | A point tool in the drawing rail | Points draw like every other shape. Without it, Atlas adds points through its right-click menu. |
 | Areas of at most 32 corners | An optional corner limit for areas and circles | The limit shows while drawing, instead of a refusal when the operator presses Finish. |
-| Imagery places, being designed with the Protocol records | A layer that draws a georeferenced image from its corners | Any RidgeLine user can lay an image on the map. Atlas reads the GeoTIFF and passes its image and corners. |
+| Imagery places | A layer that draws a georeferenced image from its corners | Any RidgeLine user can lay an image on the map. Atlas reads the GeoTIFF and passes its image and corners. |
 
 ## Draft Tasks on the map, then send them
 
@@ -176,16 +195,27 @@ show it did not run.
 None of today's commands takes an area or a place. When one does, such as a
 search of an area, the operator fills it in either of two ways:
 
-- **Draw it on the spot.** The drawn area belongs to that draft only. It
-  becomes a shared place only if the operator presses **Save as place**.
-- **Pick a place.** The Task carries the place itself, its shape and name as
-  they stood when it was sent, and shows which place it came from. Editing or
-  deleting the place later never changes the Task.
+- **Draw it on the spot.** The drawn area belongs to that draft only, and the
+  Task carries it. It becomes a shared place only if the operator presses
+  **Save as place**, and the Task then names that place instead.
+- **Pick a place.** The Task names the place; it carries no copy of its
+  shape. The Asset gets the place's current shape through Core and follows it,
+  so when an operator edits the place, the Asset's work follows the new shape
+  ([Core API](../../core/docs/api.md#geo-features)). The draft and the Task show
+  the place's name and link to its page.
 
 A point place can also fill a position input, such as Move To a named helipad.
-The draft shows the place's name beside the position. A failsafe rule's
-boundary is filled the same way, and the policy keeps its own copy of the
-outline.
+The Task names the point place in the same way, so moving the helipad moves the
+destination.
+
+Editing a place that unfinished Tasks name says which Tasks will follow the
+new shape. An Asset out of contact keeps working on the shape it last received,
+so its Tasks show that they may be using an earlier shape until the Asset is
+heard again.
+
+A failsafe rule's boundary is never a place. The Asset stores its failsafe
+policy itself, so the operator draws each boundary in the failsafe rule, apart
+from the places on the map.
 
 Drawing an area never sends anything, tasks an Asset, or creates an enforced
 geofence by itself.
@@ -198,6 +228,13 @@ many-sided shape. An area has no holes. A finished drawing asks for an optional
 name and is saved as a place at once, shared with everyone. An area holds 3
 to 32 corners, as [Protocol's area](../../protocol/definitions/components/area.json)
 does, and the tools say so while drawing.
+
+**Add imagery** takes a GeoTIFF file. The interface stores it as an Object,
+then adds an imagery place that shows it on the map where the file says it
+belongs. Only a GeoTIFF can become imagery; other files stay ordinary Objects.
+Imagery can be renamed or deleted, never moved or reshaped. To correct one, the
+operator adds a new imagery place from a corrected file. Deleting imagery leaves
+its file. Plugins add imagery the same way.
 
 Any operator or admin edits or deletes any place, including one a Plugin made.
 Deleting asks for confirmation, and when Objects are attached it says they
@@ -286,6 +323,8 @@ the SDK docs.
 - The model rocket's launch command, equipment layout, recording limits, and how
   review knows the record is complete.
 - Reordering drafts, and keeping drafts across a reload.
+- What happens when an operator deletes a place that unfinished Tasks name, or
+  turns it into a shape those Tasks cannot use.
 
 Natural-language interaction is out of scope. If revisited, it belongs on a
 separate page.

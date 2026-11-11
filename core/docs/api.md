@@ -389,7 +389,7 @@ differently.
 | `/entities/assets` | The actor surface, already specified above: description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Provisioning is under `/administration`. Tasks are under `/tasks`. |
 | `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task that takes a place carries the geo feature itself, as it stood when sent. |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. Tasks may name a `geofeature_id`, and the Asset follows that place as it stands now ([Geo features](#geo-features)). |
 
 Objects are not Entities.
 
@@ -414,7 +414,8 @@ Objects are not Entities.
 - **Accounts and Plugins read the picture.** A Plugin uses this same API with
   its Plugin key, through the [Plugin interface](#plugins).
   Assets and gateways get `403` on these paths and keep only their own
-  `/entities/assets/{asset_id}` calls.
+  `/entities/assets/{asset_id}` calls, plus the geo features their Tasks
+  [name](#geo-features).
 - **Nothing expires during a run.** Observations stay in the picture for the
   whole run, and a Track stays until Fusion removes it. Core adds no stale
   status. Every record keeps its `time`, and readers show its age. A status
@@ -459,9 +460,18 @@ and a removal adds `track.removed`.
   key ([Plugins](#plugins)). Assets and gateways get `403`.
 - The event names who asked with `requested_by`, because the geo feature record
   names no author. A geo feature a Plugin creates names the Plugin.
-- Editing or deleting a geo feature never changes a Task already sent. Geo
-  features are not sent to Assets on their own. A Task that takes a place
-  carries its own copy.
+- **A Task names its place.** A Task may name a `geofeature_id`, as Move To
+  may name a point place. Core never copies the shape into the Task, and a
+  `geofeature_id` that does not exist is refused with `404`. The Asset follows
+  the place as it stands now:
+  - An Asset, or the gateway carrying it, may
+    `GET /entities/geofeatures/{geofeature_id}` for a geo feature that one of the
+    Asset's unfinished Tasks names. Any other geo feature gets `403`.
+  - The Asset's event stream carries `geofeature.replaced` and
+    `geofeature.deleted` for those geo features, so an edit reaches it as a new
+    Task does. The gateway sends over the radio only what the Asset lacks.
+  - Geo features are not otherwise sent to Assets, and Assets and gateways read
+    nothing else of the picture.
 
 ## Objects
 
