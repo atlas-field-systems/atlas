@@ -23,6 +23,12 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
+<td>An Asset that restarts while not out on a Task, for example on the ground, drops its queued Tasks. Operators see them marked not done and send again whatever still matters. Nothing resumes on its own.</td>
+<td>An app restart during a run, not mid-flight.</td>
+<td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>An Asset that restarts mid-flight, while out on a Task, enters failsafe state instead of resuming its work. It still rejoins Core as the same Asset with the same <code>asset_id</code>, through its key or through its gateway, so operators see it as itself, in failsafe.</td>
 <td>An app restart during a run, on IP or radio. A gateway swap is not a restart.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-mid-flight-is-a-failsafe">Failsafes</a></td>
@@ -106,6 +112,18 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
+<td>There are no multi-step Plans, only individual Tasks.</td>
+<td>All work.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks">Protocol working choices</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>Assets have no custom per-Asset settings yet.</td>
+<td>Asset settings.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#settings">Protocol working choices</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>A Task holds a live reference to a place (<code>geofeature_id</code>). The Asset obtains the current shape; Core never copies or snapshots it. Assets get read access to the named place only. Edits reach the Asset as <code>geofeature.replaced</code> or <code>geofeature.deleted</code>.</td>
 <td>A named place. A shape drawn into one Task is carried by that Task.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features">Core API, geo features</a></td>
@@ -152,6 +170,18 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-11</td>
+<td>A restarted Asset with no failsafe rule for the restart falls back to a built-in safe action its maker chose, such as landing or returning home. Operators may configure a rule to choose something specific.</td>
+<td>A restart mid-flight. Otherwise no rule runs unless configured.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-mid-flight-is-a-failsafe">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A failsafe response is always protective. There is no &quot;keep going&quot; or continue response: a condition whose response would be to keep going is not a failsafe.</td>
+<td>Failsafe responses.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default">Failsafes</a></td>
+</tr>
+<tr>
 <td>2026-11-11</td>
 <td>During a failsafe the operator may override with Land, Return to home, or Hold sent with <code>now</code>, or with pause.</td>
 <td>Failsafe state.</td>
