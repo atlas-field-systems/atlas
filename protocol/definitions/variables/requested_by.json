@@ -2,9 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/requested_by.json",
   "title": "requested_by",
-  "description": "The account that requested this: its operator_id.",
-  "$ref": "operator_id.json",
+  "description": "Who requested this: an account's operator_id, or the gateway_id of a gateway that added a radio Asset. Core keeps operator and gateway IDs distinct, so one ID names one requester.",
   "examples": [
     "OP1"
-  ]
+  ],
+  "type": "string",
+  "pattern": "^[A-Za-z0-9]{1,4}$",
+  "minLength": 1,
+  "maxLength": 4
 }

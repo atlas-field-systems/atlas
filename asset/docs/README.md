@@ -24,8 +24,9 @@ the explanation.
 
 Equipment readiness is separate from connection readiness. Waiting for GPS, a
 flight controller, a camera, or a detector does not hide an otherwise reachable
-Asset. Supported settings are separate from their known values: an Asset may
-support home before it has a position to set it. A reporting-only Asset sends
+Asset. Supported settings are separate from their known values: the
+description lists the settings an Asset supports, and an Asset may support home
+before it has a position to set it. A reporting-only Asset sends
 no artificial home, queue, or settings report.
 
 The example configurations start acquisition and reporting at once. A tracker
@@ -127,7 +128,13 @@ takeoff.
 Pause is a setting, not a Task. It suspends current movement with a
 platform-specific hold: copters stop and loiter in place, fixed-wing aircraft
 loiter, and ground vehicles brake and stop. A paused Asset does not advance its
-queue, though a Task sent with `now` still runs. Configured failsafes override
+queue, though a Task sent with `now` still runs.
+
+Pause holds the active Task; it does not end it. The Task stays `active` and
+continues when the Asset is set running again. The settings report showing
+`run_state` paused is the evidence of the hold. A Task that cannot continue after
+the pause fails with an explanation, like any failed Task. Pause never cancels
+work the way `now` does. Configured failsafes override
 pause. Paused work still counts toward Core's
 [64-Task outstanding-work cap](../../core/docs/api.md#operator-requests), including
 accepted Tasks that have not arrived yet. The Asset reports its complete held,
@@ -175,7 +182,6 @@ and the Asset's own Reset ZIP. There is no remote shutdown command.
 
 ## Open
 
-- Task reporting and continuation after a paused Asset is set running again.
 - Equipment-specific completion evidence, tolerances, and timeouts.
 - Recording limits, catch-up pacing, and how a reader knows history is complete.
 - Shutdown and archive retrieval.

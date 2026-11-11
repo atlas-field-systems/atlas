@@ -4,8 +4,8 @@ This behavior is selected but not implemented.
 
 Core rejects requests it knows are invalid before they reach a field link. It
 validates request bodies with Protocol's validator, then checks the
-caller's session or key, the Asset's contact, explicitly advertised commands,
-supported settings, Task identities, and total outstanding Task capacity using
+caller's session or key, the Asset's contact, the commands and settings its
+description lists, Task identities, and total outstanding Task capacity using
 the information it holds. The [operator request rules](api.md#operator-requests)
 own the 64-Task cap, the `now` exception, and atomic capacity reservation.
 Refusals follow the

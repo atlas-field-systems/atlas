@@ -79,7 +79,9 @@ The parts:
   validator, and the examples that test record shapes. Its published package
   version is its only version; no version is embedded in definitions or records.
 - **Core owns the Core API.** It uses HTTP for requests and Server-Sent Events
-  for live changes. Request and event bodies are Protocol records.
+  for live changes. Event bodies are Protocol records. Request bodies are
+  Protocol request definitions, not records: Core stamps the record fields,
+  such as time, Task ID, and who asked.
 - **The SDK is the client** for the Core API, used by operator applications,
   Assets on IP, and gateways.
 - **Gateways** run on their own computers, uplink to the Core API over
@@ -120,7 +122,8 @@ Every command is a Task with a Core-assigned `task_id`, so every command reports
 an outcome. Core numbers each Asset's Tasks in order and sends every Task as
 soon as it accepts it, so an Asset that loses contact already holds its work. The
 Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
-before it. Cancel names its Task. Pause is a setting. Retries are safe by design:
+before it. Cancel names its Task. Pause is a setting that holds the active Task
+without ending it; the Task continues on resume. Retries are safe by design:
 creates carry an idempotency key, settings are end states, and each `task_id`
 runs once.
 

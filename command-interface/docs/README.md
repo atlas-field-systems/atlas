@@ -103,6 +103,8 @@ it, so the confirmation lists the Tasks it will cancel.
 - **Change the order** of sent Tasks by cancelling them and sending new ones.
   Core has no reorder request.
 - **Pause and Resume** are a setting, sent as an end state.
+  While paused, the active Task shows as held, not ended, and it continues on
+  Resume. Pause is offered only when the Asset lists it as a supported setting.
 - **Settings changes** are end states, applied at once or queued as a settings
   change Task.
 

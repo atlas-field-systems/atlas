@@ -18,7 +18,7 @@ const onlyReferences = (d) => {
   const list = Object.keys(d).filter((k) => !['minItems', 'maxItems'].includes(k)).sort().join();
   return d.type === 'array' && list === 'items,type' && Object.keys(d.items).join() === '$ref';
 };
-const files = ['variables', 'components', 'records'].flatMap((k) =>
+const files = ['variables', 'components', 'records', 'requests'].flatMap((k) =>
   readdirSync(join(root, k), { recursive: true }).filter((f) => f.endsWith('.json')).map((f) => `${k}/${f}`)).sort();
 const schemas = Object.fromEntries(files.map((f) => [f, JSON.parse(readFileSync(join(root, f), 'utf8'))]));
 
@@ -92,6 +92,11 @@ for (const [file, s] of Object.entries(schemas)) {
       if (props.kind) errors.push(`${file}: law 5: "kind" only appears on records that have kinds (oneOf)`);
     }
   }
+  // Requests are bodies, not records: Core stamps the record fields, so a request carries none of them.
+  if (file.startsWith('requests/')) {
+    for (const f of ['type', 'time', 'asset_id', 'task_id', 'clear_count', 'send_last', 'requested_by']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
+    if (s.additionalProperties !== false && s.unevaluatedProperties !== false) errors.push(`${file}: law 1: a request sets additionalProperties or unevaluatedProperties to false`);
+  }
   if (isKind(file)) {
     if (props.kind?.const !== base(file) || !refTo(file, props.kind, 'variables/kind.json') || !s.required?.includes('kind')) errors.push(`${file}: law 5: must require "kind" from variables/kind.json fixed to "${base(file)}"`);
     for (const h of ['type', 'time', 'asset_id']) if (props[h]) errors.push(`${file}: law 5: "${h}" belongs to the record, not the kind`);
@@ -121,6 +126,11 @@ for (const [file, law, what, named] of mirrors) {
   const names = named.map(base);
   if (schemas[file] && !sameNames(schemas[file].enum ?? [], names)) errors.push(`${file}: ${law}: its values must be ${what}: ${names.join(', ')}`);
 }
+const settingNames = Object.keys(schemas['components/settings.json']?.properties ?? {});
+if (schemas['variables/setting.json'] && !sameNames(schemas['variables/setting.json'].enum ?? [], settingNames)) errors.push(`variables/setting.json: law 12: its values must be the settings in components/settings.json: ${settingNames.join(', ')}`);
+// A Task request takes exactly the Task record's kinds.
+const kindTargets = (file) => (schemas[file]?.oneOf ?? []).map((b) => b.$ref && resolve(file, b.$ref));
+if (schemas['requests/task.json'] && !sameNames(kindTargets('requests/task.json'), kindTargets('records/task.json'))) errors.push('requests/task.json: law 12: its kinds must be exactly the kinds of records/task.json');
 
 if (errors.length) {
   console.error(errors.join('\n'));

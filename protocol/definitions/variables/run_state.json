@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/run_state.json",
   "title": "run_state",
-  "description": "Whether the Asset is working through its Tasks (running) or holding and waiting (paused).",
+  "description": "Whether the Asset is working through its Tasks (running) or holding and waiting (paused). Pausing holds the active Task: it stays active and continues when the Asset is set running again. A Task that cannot continue then fails with an explanation. A paused Asset starts no queued Task, though a Task sent with now still runs.",
   "enum": [
     "paused",
     "running"

@@ -15,6 +15,11 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Movement module | The Asset module that carries out commands for physical platform movement. |
 | Movement profile | Platform-specific execution behavior and parameters used by a movement module, distinct from an autopilot flight mode. |
 | Command | A request to perform a supported action, such as Takeoff or Land. |
+| Request body | What an operator sends to Core to ask for work or a settings change. It is not a record: Core adds the time, the IDs, and who asked to make the record. |
+| Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
+| Pause | A setting that holds an Asset in place. The active Task stays active and continues when the Asset is set running again. |
+| Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
+| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a radio Asset it carries. |
 | Task | One instance of requested work with a reported execution outcome. |
 | Failsafe condition | A test of an Asset's equipment, contact, or work state. |
 | Failsafe rule | Conditions, a priority, and a configured response. |
