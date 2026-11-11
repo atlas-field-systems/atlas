@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/size_bytes.json",
+  "title": "size_bytes",
+  "description": "How big a file is, in bytes.",
+  "type": "integer",
+  "minimum": 0,
+  "examples": [
+    2483117
+  ]
+}

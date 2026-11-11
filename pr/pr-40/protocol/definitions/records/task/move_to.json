@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task/move_to.json",
+  "title": "move_to",
+  "description": "Fly to a position, given either as destination or as a point geo feature by geofeature_id. A geo feature is a live reference: the Asset flies to the place as it stands when it gets there, and if the place is changed or deleted first, the Asset decides how to carry on. If the position has no altitude, the Asset keeps its current altitude.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "move_to"
+    },
+    "destination": {
+      "$ref": "../../components/position.json"
+    },
+    "geofeature_id": {
+      "$ref": "../../variables/geofeature_id.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "move_to",
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "launch"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "move_to",
+      "geofeature_id": "G2"
+    }
+  ],
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "required": [
+            "destination"
+          ]
+        },
+        {
+          "required": [
+            "geofeature_id"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/status.json",
+  "title": "Status",
+  "description": "The Asset reports one subsystem's condition, the state of one of its Tasks, or its task list. kind says which.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "asset_id",
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "status/subsystem.json"
+    },
+    {
+      "$ref": "status/task.json"
+    },
+    {
+      "$ref": "status/queue.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "report.status"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "subsystem",
+      "subsystem_id": "GPS",
+      "condition": "degraded",
+      "explanation": "4 satellites, position error over 10 m"
+    },
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "subsystem",
+      "subsystem_id": "C1",
+      "condition": "healthy"
+    },
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "task",
+      "task_id": 7,
+      "task_state": "active"
+    },
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "task",
+      "task_id": 2,
+      "task_state": "cancelled",
+      "request_id": 121
+    },
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "queue",
+      "clear_count": 1,
+      "task_ids": [
+        1,
+        2,
+        3
+      ],
+      "request_id": 120
+    }
+  ]
+}
