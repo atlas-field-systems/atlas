@@ -83,9 +83,9 @@ The Asset owns
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions, cancellation rule, overrides, and remaining decisions</a>.</p>
 <h2 id="keep-the-whole-run-for-debugging">Keep the whole run for debugging</h2>
 <p>When the operator spins down the system, Core and each Asset write their own
-Reset ZIP. Gateways will do the same when added. The operator shuts the Assets
+Reset ZIP, and so does each gateway. The operator shuts the Assets
 down first, and then the admin stops Core on its own computer. Stopping Core
-ends the run. Core&#39;s ZIP holds:</p>
+ends the run, and everyone signs in again for the next one. Core&#39;s ZIP holds:</p>
 <ul>
 <li>Its run&#39;s data, including the event log: every accepted request and every
 stored report, in order.</li>
