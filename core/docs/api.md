@@ -36,7 +36,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
-| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, removed radio, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
+| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 
 ## Root paths
@@ -87,8 +87,9 @@ and `/debug` belong to no pillar and stay at the top level.
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
 - The first admin account comes from [Core configuration](../config.md).
-- A radio Asset holds no Core key and never calls this API. It authenticates to
-  its gateway with its own radio identity, as
+- A radio Asset holds no Core key and never calls this API. Its gateway speaks
+  for it. Core holds no radio identity: how a radio proves itself to its
+  gateway stays with the gateway and its Fieldlink, as
   [every Fieldlink provides](../../gateway/README.md#what-every-fieldlink-provides).
 
 ## The event log and live stream
@@ -119,8 +120,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `asset.described` | The Asset sends its description | Its description record |
 | `asset.contact` | Core's view of the Asset's contact changes | `contact` |
 | `gateway.contact` | Core's view of the gateway's contact changes | `contact` |
-| `definitions.refused` | An Asset, gateway, radio, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash`. For a radio: the `gateway_id`, the `radio_identity`, its `asset_id` if it has one, and its hash |
-| `radio.refused` | A gateway hears a radio whose Asset an admin removed | `refusal`: `gateway_id`, the `radio_identity`, and the removed `asset_id` |
+| `definitions.refused` | An Asset on IP, gateway, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash` |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `task.dropped` | Core discards a Task the Asset never confirmed it holds | `drop`: `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `drop`: `asset_id`, `request_id` |
@@ -290,26 +290,19 @@ order, because the Asset orders them by `task_id`.
 [Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves) owns the
 results; these are the calls behind them.
 
-- Each time a radio's link to it opens, including after a gateway restart, the
-  gateway sends `POST /entities/assets/radios` with `requests.radio`: the
-  radio's `radio_identity` and its `definitions_hash`. Core answers
-  `200 {asset_id}`:
-  - a radio Core knows keeps its `asset_id`;
-  - a radio an admin set up in advance gets the `asset_id` the admin chose;
-  - a radio Core has never seen becomes a new Asset with an `asset_id` Core
-    assigns, and Core adds `asset.provisioned` with the gateway as `requested_by`.
-
-  If another gateway, or none, carried the Asset, Core records the calling
+- Core holds no radio identity. A gateway is an IP bridge: it matches each
+  radio to its Asset on its own side and speaks to Core only by `asset_id`.
+  Its Fieldlink checks the radio's definitions hash when the link opens.
+- When a radio's link opens, the gateway names the radio's Asset to Core with
+  `POST /entities/assets/radios`. A radio new to the gateway becomes a new
+  Asset with an `asset_id` Core assigns, and Core adds `asset.provisioned` with
+  the gateway as `requested_by`. What this call carries, whether a radio keeps
+  its `asset_id` across runs, setting up a radio in advance, and what happens
+  when a removed radio is heard again are [not defined yet](#not-defined-yet).
+- If another gateway, or none, carried the Asset, Core records the calling
   gateway as its carrier and adds `asset.carried`.
-- Core refuses a radio whose Asset an admin removed with `409 radio_removed` and
-  adds `radio.refused`. Otherwise it refuses a different definitions hash with
-  `409 definitions_mismatch` and adds `definitions.refused`. Neither refusal adds
-  an Asset.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset
   get `403`.
-- An admin who provisions a radio identity that a provisioned Asset holds gets
-  `409`. An admin may provision a removed radio again, under any `asset_id`;
-  that ends its refusal.
 - Removing a gateway leaves its radio Assets in place, offline, and carried by
   no gateway. Replacing its key changes nothing for them.
 
@@ -341,9 +334,9 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | --- | --- |
 | `POST /administration/login`, `POST /administration/logout`, `GET /administration/me` | Start, end, and read a session |
 | `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
-| `POST /administration/assets` | Provision an Asset with the `asset_id` the admin chooses. An Asset on IP gets its key once. A radio Asset names its `radio_identity` and gets no key |
+| `POST /administration/assets` | Provision an Asset with the `asset_id` the admin chooses. An Asset on IP gets its key once. A radio Asset gets no key |
 | `POST /administration/assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
-| `DELETE /administration/assets/{asset_id}` | Remove an Asset. A removed radio is refused until an admin provisions it again |
+| `DELETE /administration/assets/{asset_id}` | Remove an Asset |
 | `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
 | `POST /administration/gateways/{gateway_id}/key` | Replace a gateway key; returns the new key once |
 | `POST /administration/plugins`, `DELETE /administration/plugins/{plugin_id}` | Provision or remove a Plugin; provisioning returns its `plugin_id` and key once |
@@ -459,8 +452,10 @@ and a removal adds `track.removed`.
   key ([Plugins](#plugins)). Assets and gateways get `403`.
 - The event names who asked with `requested_by`, because the geo feature record
   names no author. A geo feature a Plugin creates names the Plugin.
-- Editing or deleting a geo feature never changes a Task already sent. Geo
-  features are not sent to Assets.
+- A Task that names a geo feature refers to it as it stands: Core does not
+  copy its shape into the Task, and the Asset obtains the current shape, so
+  editing the place changes that work. Failsafe boundaries are never taken
+  from geo features.
 - **Imagery shows a GeoTIFF on the map.** An imagery geo feature names one
   stored Object, and the map draws that file where the file says it belongs.
   Core refuses an Object that is not a GeoTIFF with `409`, and an `object_id`
@@ -542,8 +537,10 @@ not call Plugins yet.
 
 1. `GET /about` with its key, and compare the definitions hash.
 2. `PUT /plugins/{plugin_id}/description` with its `plugin.description`
-   record: its name and the actions it offers, each with a label and its
-   inputs. The Plugin names and describes its own actions from Protocol's
+   record: its name and the actions it offers, each with a label, optional
+   help text, its inputs, and its display choices: whether it appears in the
+   right-click menu, and whether its listed places show on the map by
+   default. The Plugin names and describes its own actions from Protocol's
    common input kinds, so a new action needs no Protocol change. Core checks
    the description with Protocol's validator and refuses an invalid one with
    `400 invalid`.
@@ -589,8 +586,8 @@ they can use.
 call with `request_id`, the call's `event_id`. Every action answers the same
 way:
 
-- **A result** (`plugin.result`): places it lists without storing them, short
-  facts, and the IDs of the geo features and Objects it created, in any mix.
+- **A result** (`plugin.result`): places it lists without storing them, of
+  any kind (point, line, area, or imagery), short facts, and the IDs of the geo features and Objects it created, in any mix.
   An empty result means it found nothing. Core stores it as `plugin.result`.
 - **A failure** (`plugin.failure`): an `explanation`, and the IDs of anything
   it had already created. Core stores it as `plugin.failed`.
@@ -620,3 +617,9 @@ marked not finished, and an operator who still wants it calls again.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
+- Radio Assets without radio identity in Core
+  ([issue #35](https://github.com/atlas-field-systems/atlas/issues/35)): what
+  `POST /entities/assets/radios` carries, whether a radio keeps its `asset_id`
+  across runs, whether an admin can set up a radio in advance, and what
+  operators see when a removed radio is heard again. Radio identity stays with
+  the gateway and its Fieldlink.

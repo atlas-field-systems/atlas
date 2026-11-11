@@ -25,7 +25,7 @@ Definitions and records carry none.
 | `contact` | Whether an Asset, gateway, or Plugin is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
 | `carrier` | Which gateway carries a radio Asset, or none | Core |
 | `drop` | A Task, request, or Plugin call Core stopped waiting on | Core |
-| `refusal` | A caller or radio Core refused: definitions mismatch or removed radio | Core |
+| `refusal` | A caller Core refused for a different definitions hash | Core |
 | `report.status` | One subsystem's condition, one Task's state, or its task list | Asset |
 | `report.telemetry`, `report.battery` | Where it is and how it moves; its battery | Asset |
 | `report.settings` | Its settings' values | Asset |
@@ -46,8 +46,7 @@ is reworked into a record.
 
 Requests are not records. `requests/` defines the bodies callers send to the
 Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`,
-`geofeature`, `plugin_call`, and `radio`, which a gateway sends when a radio's
-link opens. Core stamps the record fields, such as `time`, `task_id`,
+`geofeature`, and `plugin_call`. Core stamps the record fields, such as `time`, `task_id`,
 `geofeature_id`, and `requested_by`, to make the `task`, `settings_change`,
 `geofeature`, and `plugin.call` records.
 

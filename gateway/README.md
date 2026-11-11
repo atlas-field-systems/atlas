@@ -37,9 +37,7 @@ same for all of them.
 - **Each radio has its own identity**, made with the field link's own
   cryptography, such as a Meshtastic node's public key or a Reticulum identity.
   This **radio identity** names one radio. It is public, not a secret, so Core
-  may store and show it. Protocol writes it as the Fieldlink's name, a colon,
-  and the identity in the form that Fieldlink's docs define, so identities
-  from different kinds of link never clash.
+  may store and show it.
 - **Only that radio can speak as its Asset.** The gateway accepts a frame for
   `asset_id` X only when it comes from X's radio identity, and it rejects
   replayed frames. A shared channel key alone is not enough: another radio, or

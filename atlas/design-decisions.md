@@ -115,8 +115,9 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
   There is no enrollment key. Only gateways, Assets on IP, and Plugins hold Core
   keys.
 - Core authenticates a gateway and trusts it for which radio Asset sent what. A
-  radio Asset authenticates to the gateway with its own radio identity, not to
-  Core, and appears as an Asset when the gateway first hears it.
+  radio Asset authenticates to the gateway, not to Core, and appears as an
+  Asset when the gateway first hears it. Core holds no radio identity; it stays
+  with the gateway and its Fieldlink.
   [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md)
   owns these rules.
 - TLS secures IP links. Each Fieldlink uses its radio's own encryption and
@@ -173,7 +174,9 @@ The Asset runs failsafes locally, and the records follow that
   description and each answer with Protocol's one validator. A new Plugin or
   action needs no Protocol change; a new common piece does, and the owner
   decides it. This keeps one-off definitions for single Plugins out of
-  Protocol.
+  Protocol. Each action also carries its display choices: help text, whether
+  it appears in the right-click menu, and whether its listed places show on
+  the map by default.
 - An answer never holds a partial list. A Plugin whose list would exceed the
   limit fails with an explanation instead.
 - A Plugin call is accepted, not done, like a Task. It ends with the Plugin's

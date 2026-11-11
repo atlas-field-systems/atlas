@@ -7,7 +7,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
 | Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time, and each radio Asset is carried by that gateway. Core authenticates the gateway; the Assets it carries authenticate to it. A gateway is not an Asset. |
 | Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
-| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It is public, not a secret. Only the radio that holds it can speak as its Asset. |
+| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It is public, not a secret. Only the radio that holds it can speak as its Asset. It stays with the gateway and its Fieldlink; Core does not hold it. |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
 | Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
 | Shared picture | Everything the Entities pillar holds about the field: Assets, Observations, Tracks, and geo features. The Command Interface draws its map from it. Nothing in it expires during a run. |
@@ -30,7 +30,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
 | Pause | A setting that holds an Asset in place. The active Task stays active and continues when the Asset is set running again. |
 | Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
-| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a radio Core has never seen. |
+| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a new radio Asset it carries. |
 | Task | One instance of requested work with a reported execution outcome. |
 | Hold | A command that stops an Asset where it is and keeps it there. Unlike pause, it keeps no earlier work to resume. |
 | Subsystem | A part of an Asset, hardware or equipment software, that the Asset declares and reports a condition for, such as a GPS receiver or camera. |

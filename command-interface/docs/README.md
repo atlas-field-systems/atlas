@@ -52,8 +52,9 @@ Tracks, and places (geo features).
 - **Operators cannot move, rename, or delete a Track.** Only Fusion changes
   Tracks. An operator who disagrees with one hides it in their own view.
 - **Any operator or admin can create, change, or delete any place**, including
-  places a Plugin made. A place is a point, line, or area with an optional
-  name. Changing or deleting a place never changes a Task already sent.
+  places a Plugin made. A place is a point, line, area, or imagery, with an
+  optional name; imagery can only be renamed. A Task that names a place uses it
+  as it stands, so changing the place changes that work.
 
 Each Asset also has its own addressable detail page. Operators can share or
 bookmark it, refresh it, or open it in another tab. Track, Observation,
