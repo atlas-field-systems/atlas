@@ -137,15 +137,16 @@ definitions; a client refuses a mismatch with an explanation.</li>
 <h2 id="identity-and-security">Identity and security</h2>
 <ul>
 <li><strong>Accounts.</strong> Admin and operator accounts with hashed passwords and HttpOnly
-session cookies. Admins provision accounts and keys. Each browser
+session cookies. Admins provision accounts and the keys of Assets on IP and
+gateways. Each browser
 tab uses the same session.</li>
-<li><strong>Keys for Assets and gateways.</strong> An admin creates a key for a gateway or an
-Asset on IP in Core for its configuration. The key is a bearer
+<li><strong>Provisioned keys.</strong> An admin creates a key for a gateway or an Asset on IP
+in Core and copies it into its configuration; a gateway gets its ID with it. The key is a bearer
 token over TLS. There is no enrollment key. An Asset behind a gateway
 authenticates to the gateway, not to Core.</li>
-<li><strong>IDs.</strong> Core assigns <code>asset_id</code>, which people read, when an Asset registers
-each run, whether it registers itself or a gateway registers it. Assets choose
-<code>observation_id</code>. Core assigns Task, Track, geo feature, and Object IDs.
+<li><strong>IDs.</strong> Core assigns <code>asset_id</code> when an Asset registers, every run, and
+tells the registrant: an Asset on IP, or the gateway for a radio Asset. Assets
+choose <code>observation_id</code>. Core assigns Task, Track, geo feature, and Object IDs.
 Event IDs are integers.</li>
 <li><strong>Transport security.</strong> TLS on IP. Each Fieldlink uses its radio&#39;s own
 encryption and authentication. Records never carry credentials.</li>
@@ -163,7 +164,7 @@ idempotency by <code>task_id</code>, and per-Asset contact reports to Core. Prot
 no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
 decides how an Asset authenticates to its gateway, within the rules
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides">every Fieldlink provides</a>:
-a per-radio identity from the link&#39;s own cryptography and replay rejection. The gateway&#39;s link to Core is broadband
+a per-radio identity from the link&#39;s own cryptography, kept on the gateway side, and replay rejection. The gateway&#39;s link to Core is broadband
 IP, so the gateway keeps its Assets&#39; full state and sends over the radio only
 what each Asset does not already have. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.</p>
