@@ -50,7 +50,7 @@ Each topic has one home. Other pages link to it.
 | Runs, Reset, what carries over, registration, IDs, keys, gateway swaps | [atlas/runs-and-identity.md](atlas/runs-and-identity.md) |
 | Project-wide principles and architecture | [atlas/CHARTER.md](atlas/CHARTER.md), [atlas/design-decisions.md](atlas/design-decisions.md) |
 | Terms | [GLOSSARY.md](GLOSSARY.md), one line each |
-| Record shapes and the choices behind them | [protocol/definitions/](protocol/definitions/), [protocol/docs/decisions.md](protocol/docs/decisions.md) |
+| Record shapes and the working choices behind them | [protocol/definitions/](protocol/definitions/), [protocol/docs/decisions.md](protocol/docs/decisions.md) |
 | Endpoints, events, admission, the Task cap, contact, places, Objects, Plugin calls | [core/docs/api.md](core/docs/api.md) |
 | Core's Reset ZIP, storage, logging | [core/docs/reset.md](core/docs/reset.md), [storage.md](core/docs/storage.md), [logging.md](core/docs/logging.md) |
 | Asset behavior: the queue, pause, cancel, places in Tasks | [asset/docs/README.md](asset/docs/README.md) |
@@ -84,6 +84,10 @@ replace the Charter.
   When the owner says yes to a recommendation, record only the question that
   was asked and answered, with its scope; the rest of the recommendation stays a
   proposal.
+- **Working choices never override the decision log.** A choice made in a
+  design thread, such as those in
+  [Protocol's working choices](protocol/docs/decisions.md), may change with a
+  stated reason. It is not an owner decision until the owner makes it.
 - **A reversal updates every file that still teaches the old rule**, in the same
   PR: search the whole repository, Protocol definitions included, and add the old
   wording to [the retired phrases](.github/retired-phrases.json).

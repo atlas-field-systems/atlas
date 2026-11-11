@@ -145,5 +145,40 @@
     "unless": "\\b(removed|next run)\\b",
     "why": "An Asset whose app restarts mid-run, on IP or radio, rejoins as itself and keeps its asset_id.",
     "example": "A restarted radio is registered again with a new ID."
+  },
+  {
+    "phrase": "\\brestart(s|ed)?\\b[^.]*\\b(keeps?|resumes?|gets? back|continues?|with) (its |their )?(unfinished )?(work|tasks?)\\b",
+    "unless": "\\b(not|never|no|instead)\\b",
+    "why": "Work does not resume after an app restart; a restart mid-flight enters failsafe state.",
+    "example": "A restarted app rejoins as the same Asset with its unfinished work."
+  },
+  {
+    "phrase": "\\basset\\.provisioned\\b",
+    "why": "An Asset joining a run is registration: the event is asset.registered.",
+    "example": "Core adds asset.provisioned and answers 201."
+  },
+  {
+    "phrase": "\\b(assets?|radios?) (is |are |was |were )?provisioned\\b|\\bprovisions? (an |the |a |each )?(radio )?assets?\\b|\\bprovisioning record\\b[^.]*\\bassets?\\b",
+    "unless": "\\b(not|never)\\b",
+    "why": "Provisioning is admin setup work; an Asset joins a run by registration, recorded in the registration record.",
+    "example": "The gateway provisions the radio Asset."
+  },
+  {
+    "phrase": "\\b(a |the )?(continue|keep[- ]going) (failsafe )?response\\b|\\bresponse (is|of) (to )?(continue|keep going)\\b",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "A failsafe response is always protective; there is no continue or keep-going response.",
+    "example": "A lost-link rule may use the continue response."
+  },
+  {
+    "phrase": "\\b(multi-step |mission )plans?\\b|\\ba plan of tasks\\b",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "There are no multi-step Plans, only individual Tasks.",
+    "example": "An operator sends a multi-step plan to the Asset."
+  },
+  {
+    "phrase": "\\b(queued|waiting) tasks?\\b[^.]*\\b(resume|continue|run again)s? after (a |the |an app )?restart",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "A restart on the ground drops queued Tasks; nothing resumes on its own.",
+    "example": "Queued Tasks resume after a restart."
   }
 ]

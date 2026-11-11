@@ -164,7 +164,7 @@ without Core. A failsafe's response stops ordinary work and is reported apart
 from Core's numbered Tasks.
 [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md)
 owns the behavior, and
-[Protocol decisions](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#failsafes)
+[Protocol's working choices](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#failsafes)
 the records.
 
 ## Plugins describe their own actions

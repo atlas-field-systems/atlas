@@ -68,9 +68,15 @@ new one.
   then it registers as a new Asset with a new ID.
 - **A restarted app rejoins as itself.** If an Asset's app stops and starts
   again during a run, it registers with its key and comes back as the same
-  Asset, with the same `asset_id` and its unfinished work. This holds even if it
-  forgot its ID: the key proves which Asset it is. It still never picks or
-  configures its own ID.
+  Asset, with the same `asset_id`. This holds even if it forgot its ID: the key
+  proves which Asset it is. It still never picks or configures its own ID.
+- **Work does not resume after a restart.** An Asset that restarts mid-flight,
+  while out on a Task, enters failsafe state instead of resuming its work
+  ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-mid-flight-is-a-failsafe)).
+  Operators see it as itself, in failsafe. An Asset that restarts while not out
+  on a Task, for example on the ground, drops its queued Tasks: operators see
+  them marked not done and send again whatever still matters. Nothing resumes
+  on its own.
 - **A removed Asset's ID ends.** If it registers again, it is a new Asset.
 
 ## Radio Assets
@@ -84,8 +90,8 @@ new one.
   There is no approval step.
 - **A restarted radio rejoins as itself.** If a radio Asset's app stops and
   starts again during a run, it identifies itself to the gateway through its
-  Fieldlink, the same way as in a gateway swap, and keeps its `asset_id` and its
-  unfinished work.
+  Fieldlink, the same way as in a gateway swap, and keeps its `asset_id`. Its
+  work does not resume, as for any restarted app.
 - **A removed radio can come back.** If it is heard again, the gateway
   registers it as a new Asset with a new ID.
 - **One gateway per site** at a time ([Scale](scale.md#setup)).
@@ -93,7 +99,8 @@ new one.
 ## When the gateway changes
 
 - **Swapped mid-run.** Radios stay the same Assets. Each tells the new gateway
-  its `asset_id` and keeps it and its unfinished work. The new gateway takes a
+  its `asset_id` and keeps it and its unfinished work: its app keeps running, so
+  this is not a restart. The new gateway takes a
   radio over only when its old carrier is offline, removed, or none.
 - **Removed and not replaced.** Its radio Assets stay in the picture, offline,
   as the same Assets, carried by no gateway until another one hears them.
@@ -104,4 +111,4 @@ a new Asset.
 
 ## Open
 
-- How a restarted Asset app gets its unfinished work back from Core.
+- Which reports mark a restarted Asset's dropped Tasks not done.

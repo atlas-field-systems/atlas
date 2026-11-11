@@ -9,15 +9,16 @@ No Asset runtime is built yet. Terms are in the [Atlas glossary](../../GLOSSARY.
 
 An Asset starts with no Atlas failsafe rules, battery rules included. Rules and
 their responses are configured explicitly for the Asset and the operation, using
-only actions the Asset supports. A reporting-only beacon has no failsafe.
+only actions the Asset supports. A reporting-only beacon has no failsafe. The one
+built-in response is the [restart fallback](#a-restart-mid-flight-is-a-failsafe).
 
 The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
 up to 16 rules. Its starting value comes from the Asset's
 [configuration](../config.md), and any operator can replace it as they change
 other settings. Each response is a command the Asset supports, such as Land,
-Return to home, or Hold. Atlas has no "continue" response: activation always
-stops ordinary work, so an Asset that should keep working through a situation has
-no rule for it. [Protocol](../../protocol/docs/decisions.md#failsafes) defines the
+Return to home, or Hold. A response is always protective. Atlas has no
+"continue" response: a situation the Asset should keep working through is not a
+failsafe, so the Asset has no rule for it. [Protocol](../../protocol/docs/decisions.md#failsafes) defines the
 records.
 
 An empty rule list leaves the flight controller's own protections unchanged;
@@ -163,6 +164,21 @@ shuts itself down. Core then shows the Asset offline, as it would after lost
 contact, and the other Assets keep working. Atlas has no remote restart and no
 way to clear the state.
 
+## A restart mid-flight is a failsafe
+
+If the app restarts during a run while the Asset is out on a Task, it rejoins
+Core as the same Asset, with the same `asset_id`
+([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)),
+and enters failsafe state instead of resuming its work. From there it is like
+any failsafe: operators see it as itself, in failsafe, the
+[overrides above](#lock-ordinary-work-for-the-rest-of-the-operation) apply, and
+the state has no exit. A dropped link is not a restart.
+
+The response is the policy's, when a rule covers the restart. With no rule for
+it, the Asset falls back to a built-in safe action its maker chose, such as
+landing or returning home. Operators who want something specific configure a
+rule. This is the one response that runs without a configured rule.
+
 ## Replace the policy during ordinary operation
 
 Outside failsafe state, operators can replace the complete policy. The Asset
@@ -181,5 +197,6 @@ restarting idle or contact timers.
 - Exact detection of an autopilot takeover and its interaction with a running
   Atlas response.
 - Boundary details and measurement freshness limits.
+- How a rule names a restart: no condition kind covers it yet.
 - What counts as safely stopped on each platform, and how long the app waits for
   Core to acknowledge its final reports before it shuts down.

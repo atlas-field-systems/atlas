@@ -16,6 +16,7 @@
         "records/report/observation.json",
         "records/track.json",
         "records/geofeature.json",
+        "records/registration.json",
         "records/provisioning.json",
         "records/contact.json",
         "records/object.json",

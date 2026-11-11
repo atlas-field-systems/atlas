@@ -64,9 +64,10 @@ Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log.
 
 An Asset whose app stops shows offline in Core, and the other Assets keep
-working. If its app starts again in the same run, it rejoins as the same Asset,
-with the same ID and its unfinished work, because its key proves which Asset it
-is ([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset
+working. If its app starts again in the same run, it rejoins as the same Asset
+with the same ID, because its key proves which Asset it is, but its work does
+not resume. An Asset that restarts mid-flight enters failsafe state
+([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset
 that crashed is inspected before it runs again. An Asset keeps nothing from an
 earlier run. A dropped link is not a stop: the app keeps its state and
 reconnects as the same Asset.
