@@ -29,9 +29,20 @@ explains why the API is the only way in.
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
 - **Runs.** A run lasts from one start of Core to the next stop, and
-  [Reset](reset.md) clears it. A caller that finds a new `run_id` on `GET /about`
-  drops what it held from the earlier run and starts again from a fresh read.
-  `event_id` keeps rising across runs, so an old cursor never matches a new event.
+  [Reset](reset.md) clears it. Every read, history page, and event stream covers
+  only the current run. After a Reset, Core holds no history of the earlier run;
+  it lives only in that run's Reset ZIP. `event_id` keeps rising across runs, so
+  an old cursor never matches a new event. Other IDs, such as `task_id`,
+  `track_id`, `geofeature_id`, and `object_id`, start again each run, so the
+  same ID can name a different item in the next run.
+- **A new run discards the old one.** A caller that finds a new `run_id` on
+  `GET /about` throws away everything it held from the earlier run: its copy of
+  the picture and history, its cursors, its links, and the operator's choices
+  in their own view, such as hidden Tracks. It then starts again from a fresh
+  read. A link or saved reference to an item names its run. When that run has
+  ended, the caller never looks the item up in Core, because the same ID may now
+  name something else. It says the item belonged to an ended run, whose record
+  is in its Reset ZIP. Sessions end with the run, so everyone signs in again.
 - **Errors** are a status and `{"error": "<code>", "explanation": "<text>"}`.
 
 | Status | Meaning |
@@ -504,7 +515,8 @@ Assets or gateways.
   relies on a `geofeature_id` never being reused in a run, which the
   [Entities](#entities) design must keep.
 - **Delete removes the file.** The `object.stored` and `object.deleted` events
-  stay in history, so the record of the upload and of who deleted it remains.
+  stay in history for the rest of the run, and then in its Reset ZIP, so the
+  record of the upload and of who deleted it remains.
   Only an operator deletes an Object.
 - **Who stored it** is `requested_by` in the Object record: the account that
   uploaded it or the Plugin that stored it. Core stamps it, as for Tasks.

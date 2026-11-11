@@ -52,9 +52,10 @@ unique `task_id`s, `track_id`s, `geofeature_id`s, and idempotency keys, hold
 within one `run_id`. `event_id` keeps rising across runs and is never reused.
 
 When a run ends, Core writes its Reset ZIP, checks it, and then deletes the
-run's rows and files. Accounts, provisioning, and radio identities belong to no
-run and stay. Normally the database holds only the current run. An earlier run
-stays only while its ZIP has not been written; Core retries it at each start.
+run's rows and files. Accounts and provisioning belong to no run and stay.
+Normally the database holds only the current run. An earlier run stays only
+while its ZIP has not been written; Core retries it at each start and never
+serves it through the Core API.
 [Reset](reset.md) owns the procedure.
 
 ## Memory and full disks

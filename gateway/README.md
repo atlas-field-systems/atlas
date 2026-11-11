@@ -113,7 +113,7 @@ computer by hand.
 | File | Holds |
 | --- | --- |
 | `README.md` | What each file is |
-| `summary.md` | The time covered, the Core `run_id`, contact with Core, each radio heard and when, refused radios and rejected frames, and every gap |
+| `summary.md` | The time covered, the Core `run_id`, contact with Core, each radio heard and when, and every gap |
 | `manifest.json` | Every file with its size and SHA-256, whether the gateway stopped normally, and every known gap |
 | `diagnostics/` | The gateway app's and each Fieldlink's diagnostics, as written |
 | `config.json` | The configuration, with secrets removed |

@@ -76,11 +76,17 @@ the run. A ZIP with any other name is not a Reset ZIP.
 
 Clearing removes everything that belongs to the run: its events, Tasks, queues,
 Tracks, geo features, Objects and their files, idempotency keys, and diagnostic
-files. Sessions end too, so operators log in again in the next run. Core keeps
-what is not part of any run: accounts, the Assets, gateways, and Plugins an
-admin set up with their key hashes, and each radio Asset's `asset_id` and radio
-identity. Each Asset, gateway, and Plugin starts the next run offline until it
-is heard. An Asset sends its description again when it connects.
+files. Every session ends, so everyone, admins and operators, signs in again
+for the next run. Nothing from the run lingers in Core: no history, no shared
+links that still open, no operator's view choices such as hidden Tracks.
+Operator applications drop what they held when they see the new `run_id`, and
+an old link never opens a different item in the new run
+([Core API basics](api.md#basics)).
+
+Core keeps the site's setup, which belongs to no run: accounts, the Assets,
+gateways, and Plugins an admin set up with their key hashes, and each radio
+Asset's `asset_id`. Each Asset, gateway, and Plugin starts the next run offline
+until it is heard. An Asset sends its description again when it connects.
 
 The ZIP is then the only copy of the run. Core never deletes a ZIP. The owner
 deletes old ZIPs by hand.
@@ -111,7 +117,11 @@ Behavior tests come from these, once Core exists.
 
 - Run a short flight, stop the Asset, then stop Core. `archive_directory` holds
   one ZIP whose summary lists the Asset, its Tasks and their outcomes. Start
-  Core: the map is empty, the Asset is offline, and accounts still log in.
+  Core: the map is empty, the Asset is offline, every account must sign in
+  again, and accounts still work.
+- Open a link to a Task from the earlier run after Reset. The operator
+  application says it belongs to an ended run and does not show the new run's
+  Task with the same ID.
 - Store an Object in a run, then stop Core. The ZIP holds the file under
   `objects/`; the next run has no Objects.
 - Fill the disk, then stop Core. No ZIP appears under its final name, and Core

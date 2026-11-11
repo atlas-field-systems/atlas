@@ -76,8 +76,12 @@ a new operation with nothing kept from the earlier one.
 ## When logging cannot keep up
 
 Equipment control never waits for logging, and logging never grows memory
-without limit. The app hands each record to a writer through a fixed-size
-queue and drops a record the queue cannot take. Past `log_total_limit_bytes`,
+without limit. The app hands each diagnostic record to a writer through a
+fixed-size queue and drops a record the queue cannot take. The queue holds
+diagnostic records only. Reports the Asset keeps so it can send them later
+never pass through it, and logging never drops or overwrites a report that is
+still waiting to be sent. How the Asset catches up is
+[not designed yet](README.md#open). Past `log_total_limit_bytes`,
 or with the disk full, it stops writing. It counts everything it drops and
 writes one gap record when writing works again and at shutdown: how many
 records, between which times, and why. The ZIP lists every gap. Flight goes on

@@ -99,9 +99,9 @@ The Asset owns
 ## Keep the whole run for debugging
 
 When the operator spins down the system, Core and each Asset write their own
-Reset ZIP. Gateways will do the same when added. The operator shuts the Assets
+Reset ZIP, and so does each gateway. The operator shuts the Assets
 down first, and then the admin stops Core on its own computer. Stopping Core
-ends the run. Core's ZIP holds:
+ends the run, and everyone signs in again for the next one. Core's ZIP holds:
 
 - Its run's data, including the event log: every accepted request and every
   stored report, in order.
