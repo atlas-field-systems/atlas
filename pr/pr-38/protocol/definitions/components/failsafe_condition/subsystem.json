@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/subsystem.json",
+  "title": "subsystem",
+  "description": "One of the Asset's declared subsystems reports a condition at least as bad as trigger_condition.",
+  "type": "object",
+  "required": [
+    "kind",
+    "subsystem_id",
+    "trigger_condition"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "subsystem"
+    },
+    "subsystem_id": {
+      "$ref": "../../variables/subsystem_id.json"
+    },
+    "trigger_condition": {
+      "$ref": "../../variables/trigger_condition.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "subsystem",
+      "subsystem_id": "GPS",
+      "trigger_condition": "degraded"
+    }
+  ]
+}

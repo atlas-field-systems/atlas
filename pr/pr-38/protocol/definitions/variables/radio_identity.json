@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/radio_identity.json",
+  "title": "radio_identity",
+  "description": "The identity one radio has on its field link, made with that link's own cryptography. It is public, not a secret. It is written as the Fieldlink's name, a colon, and the identity in the form that Fieldlink's docs define, such as a Meshtastic node's public key in base64. The Fieldlink name keeps identities from different kinds of link apart.",
+  "type": "string",
+  "pattern": "^[a-z0-9_]{1,32}:[A-Za-z0-9+/=_.-]{1,128}$",
+  "maxLength": 161,
+  "examples": [
+    "meshtastic:q3Vb0n8fW2aJ6kXyR1tLmE4sP9dZcHgU7oNiTvB5wQA="
+  ]
+}
