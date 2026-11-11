@@ -18,6 +18,8 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `accounts` | Administration | Admin and operator accounts and their password hashes |
 | `gateways` | Administration | Provisioned gateways, their key hashes, and contact |
 | `asset_keys` | Administration | Each Asset on IP's key hash |
+| `plugins` | Administration | Provisioned Plugins: ID, key hash, latest description, and contact |
+| `objects` | Objects | Each Object record that is not deleted. The files sit in the `data_directory` beside the database |
 | `assets` | Entities | Provisioned Assets: ID, latest description, and contact; for a radio Asset, its radio identity and carrying gateway. A removed radio keeps its row, marked removed and not listed as an Asset, so Core refuses it. Provisioning it again, under any `asset_id`, replaces that row |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
 | `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
@@ -26,7 +28,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 
 Observations have no table. They are Asset reports, so each Observation is an
 indexed query for the latest `report.observation` of its `asset_id` and
-`observation_id`, as below. The Objects table is designed with its API.
+`observation_id`, as below.
 
 ## Every change writes one event
 
@@ -34,18 +36,20 @@ A change updates its tables and appends its event in the same transaction. The
 event stream therefore never shows a change that was not stored, and every stored
 change appears in it. Core never rebuilds tables from events.
 
-Asset reports are stored only as events. History, the latest report of each
-kind, each setting's latest value, and each subsystem's latest condition are
-indexed queries on `events`, so no report is kept twice.
+Asset reports, Plugin calls, and Plugin answers are stored only as events.
+History, the latest report of each kind, each setting's latest value, and each
+subsystem's latest condition are indexed queries on `events`, so no report is
+kept twice.
 
 ## Runs
 
 A run is the span between two Resets. Every row in `tasks`, `queues`, `tracks`,
-`geofeatures`, `idempotency_keys`, and `events` carries its `run_id`. Rules
-scoped to a run, such as unique `task_id`s, `track_id`s, `geofeature_id`s,
-and idempotency keys, hold within one `run_id`. Rows from earlier runs stay
-readable as history until retention removes them. The Reset request, its
-archive, and what it clears are [not defined yet](api.md#not-defined-yet).
+`geofeatures`, `objects`, `idempotency_keys`, and `events` carries its `run_id`,
+and each Object's file is kept with its run. Rules scoped to a run, such as
+unique `task_id`s, `track_id`s, `geofeature_id`s, and idempotency keys, hold
+within one `run_id`. Rows from earlier runs stay readable as history until
+retention removes them. The Reset request, its archive, and what it clears are
+[not defined yet](api.md#not-defined-yet).
 
 ## Memory and retention
 

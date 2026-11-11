@@ -13,7 +13,12 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Shared picture | Everything the Entities pillar holds about the field: Assets, Observations, Tracks, and geo features. The Command Interface draws its map from it. Nothing in it expires during a run. |
 | Observation | What one Asset currently reports seeing of one target, named by the Asset and its own `observation_id`. Evidence, not a conclusion. Operators may call it a sighting. |
 | Track | Fusion's conclusion about one target, resting on one or more Observations. Only Fusion creates, changes, or removes one. |
-| Geo feature | A place on the map: a point, line, or area, with an optional name. Operators, admins, and Plugins create, change, and delete them. Operators may call it a place. |
+| Geo feature | A place on the map: a point, line, or area, with an optional name. Operators and admins create, change, and delete them; Plugins may create them. Operators may call it a place. |
+| Object | A file Core holds, with a description of what it is. An Object never changes; a different file is a new Object. Plugins and operators add Objects. It may be attached to one geo feature. Objects are not Entities. |
+| Plugin | A program beside Core, in the second ring, that offers actions. It connects out to Core with its own key and reaches Core only through its Plugin interface. Plugins do not direct Assets. See [Plugins](atlas/plugins.md). |
+| Plugin interface | The Core API calls a Plugin's key may use. |
+| Plugin action | One thing a Plugin offers to do, such as find the buildings in an area. Its inputs and output are defined in Protocol. |
+| Plugin call | One run of a Plugin action with its inputs. It ends with a result or a failure, or is dropped if the Plugin goes offline or is removed first. |
 | Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
 | Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
 | Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |

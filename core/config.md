@@ -24,7 +24,8 @@ Names in this table are proposed configuration keys.
 | `tls_certificate`, `tls_key` | HTTPS for the Core API | Source and renewal are open |
 | `data_directory` | The SQLite database ([storage](docs/storage.md)) and Object files | Directory layout is open |
 | `first_admin` | The first admin account's `operator_id` and password | Used only when no account exists; secret source is open |
-| `offline_after_s` | How long without contact before Core counts an Asset or gateway offline | See [contact](docs/api.md#contact); default is open |
+| `offline_after_s` | How long without contact before Core counts an Asset, gateway, or Plugin offline | See [contact](docs/api.md#contact) and [Plugins](docs/api.md#a-plugin-starts); default is open |
+| `max_object_bytes` | The largest file an [Object](docs/api.md#objects) may be | 100 MB; an admin may change it |
 | `clock_ahead_s` | How far ahead of Core's clock a report's time may be before Core [marks it](docs/api.md#asset-and-gateway-calls) | Default is open |
 | `log_level` | Detail of diagnostics | Detailed per-request logging is required; proposed prototype default is `trace` |
 | `log_directory` | Local diagnostic files | Keep apart from the event log; path is open |
@@ -34,9 +35,9 @@ Names in this table are proposed configuration keys.
 | `archive_directory` | Completed Reset ZIPs | Path and export trigger are open |
 | `run_retention_days` | Retention of completed runs | The [scale direction](../atlas/scale.md#runs-and-storage) is at least 30 days |
 
-Accounts, Assets, and gateways are provisioned through the
-[Core API](docs/api.md#accounts-and-provisioning), not configuration.
-Plugin-specific configuration waits for the Plugin interface design.
+Accounts, Assets, gateways, and Plugins are provisioned through the
+[Core API](docs/api.md#accounts-and-provisioning), not configuration. A Plugin's
+own settings, such as which services it uses, belong to the Plugin, not to Core.
 
 ## Logging and Reset
 
