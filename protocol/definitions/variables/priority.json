@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/priority.json",
+  "title": "priority",
+  "description": "A failsafe rule's priority. A higher number wins, and no two rules in one policy share a priority. Once a rule has run, only a rule with a higher priority can start another response for the rest of the operation.",
+  "type": "integer",
+  "minimum": 1,
+  "maximum": 99,
+  "examples": [
+    50
+  ]
+}
