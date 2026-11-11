@@ -195,6 +195,10 @@ The Asset runs failsafes locally, and the records follow that
 - A Plugin call is accepted, not done, like a Task. It ends with the Plugin's
   result or failure, or is dropped when the Plugin goes offline or is removed. Plugins create
   only geo features and Objects, and never direct Assets.
+- The Command Interface builds each Plugin action's form, menus, and result
+  view from its description, with display choices that ship with the Plugin.
+  A new Plugin needs no interface change. Plugins bring no screens or code into
+  the interface; custom Plugin screens are a possible later step.
 - An Object is a file Core holds. Plugins and operators add Objects; files from
   Assets are not designed yet. A file never changes, and Core records who
   stored it.

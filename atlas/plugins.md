@@ -150,5 +150,6 @@ a barometer or the altitude of its launch point.
 
 ## Not decided
 
-How the Command Interface shows Plugins, their results, and Objects is not
-decided.
+[Plugins and Objects in the interface](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/plugins-and-objects.md)
+shows how operators run Plugins and see their results and Objects. A new Plugin
+needs no change to the Command Interface.

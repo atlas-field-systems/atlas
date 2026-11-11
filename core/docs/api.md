@@ -406,7 +406,7 @@ differently.
 | `/entities/assets` | The actor surface, already specified above: registration, description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Keys are under `/administration`. Tasks are under `/tasks`. |
 | `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task may name a place by `geofeature_id`, as a live reference. |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task may name a place by `geofeature_id`, as a live reference, and the Asset reads that place's current shape ([Geo features](#geo-features)). |
 
 Objects are not Entities.
 
@@ -431,7 +431,8 @@ Objects are not Entities.
 - **Accounts and Plugins read the picture.** A Plugin uses this same API with
   its Plugin key, through the [Plugin interface](#plugins).
   Assets and gateways get `403` on these paths and keep only their own
-  `/entities/assets/{asset_id}` calls.
+  `/entities/assets/{asset_id}` calls, plus the geo features their Tasks
+  [name](#geo-features).
 - **Nothing expires during a run.** Observations stay in the picture for the
   whole run, and a Track stays until Fusion removes it. Core adds no stale
   status. Every record keeps its `time`, and readers show its age. A status
@@ -478,16 +479,25 @@ and a removal adds `track.removed`.
   names no author. A geo feature a Plugin creates names the Plugin.
 - **A Task names a place live.** `move_to` and `land` may name a point geo
   feature by `geofeature_id` instead of a position. Core checks that it exists
-  and is a point when it accepts the Task, and does not copy its shape into
-  the Task. The Asset's event stream carries that geo feature's current record,
-  and each later replacement or deletion, while an unfinished Task names it,
-  so the Asset (or its gateway) always holds the current shape. Failsafe
-  boundaries and failsafe responses never name a geo feature.
+  and is a point when it accepts the Task, refuses a `geofeature_id` that does
+  not exist with `404`, and never copies its shape into the Task. The Asset
+  learns of the place this way:
+  - An Asset, or the gateway carrying it, may
+    `GET /entities/geofeatures/{geofeature_id}` for a geo feature that one of the
+    Asset's unfinished Tasks names. Any other geo feature gets `403`.
+  - The Asset's event stream carries that geo feature's current record, and
+    each later `geofeature.replaced` or `geofeature.deleted`, while an
+    unfinished Task names it, so an edit reaches it as a new Task does. The
+    gateway sends over the radio only what the Asset lacks.
+  - Geo features are not otherwise sent to Assets, and Assets and gateways read
+    nothing else of the picture. Failsafe boundaries and failsafe responses
+    never name a geo feature.
 - **Edits are never blocked.** An operator may replace or delete a place while
   unfinished Tasks name it. Core does not refuse the change and does not
   cancel any Task. The Asset decides how to carry on: it may keep its original
   plan or follow the new shape, and a Task whose place was deleted runs or
-  fails as the Asset decides, reporting what it did.
+  fails as the Asset decides, reporting what it did
+  ([Asset behavior](../../asset/docs/README.md#carry-out-work-and-report-its-result)).
 - **Imagery shows a GeoTIFF on the map.** An imagery geo feature names one
   stored Object, and the map draws that file where the file says it belongs.
   Core refuses an Object that is not a GeoTIFF with `409`, and an `object_id`
@@ -649,3 +659,5 @@ marked not finished, and an operator who still wants it calls again.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
+- A read of a deleted Object: who deleted it and when, so a link to it can say
+  what happened ([Command Interface](../../command-interface/docs/plugins-and-objects.md#objects)).
