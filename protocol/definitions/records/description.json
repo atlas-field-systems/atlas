@@ -27,7 +27,7 @@
         "$ref": "../variables/report.json"
       },
       "minItems": 1,
-      "maxItems": 5
+      "maxItems": 6
     },
     "commands": {
       "type": "array",
@@ -120,7 +120,8 @@
       "asset_id": "B1",
       "entity_type": "fixed_sensor",
       "reports": [
-        "status"
+        "status",
+        "observation"
       ],
       "commands": []
     }
