@@ -45,10 +45,10 @@ record has a field for who requested or reported it.</li>
 <li>Times are in milliseconds. Only specialized radio data uses nanosecond timing.</li>
 <li>Counters are ordinary numbers, not long numbers written as text.</li>
 <li>IDs that people read or that cross a field link are 1 to 4 letters or digits.
-Admins choose <code>asset_id</code> when they provision an Asset on IP. Assets choose
-<code>observation_id</code>, unique for that Asset within a run. Core assigns the
-others, including the <code>asset_id</code> of a radio Asset a gateway adds on first
-contact. Event IDs are integers.</li>
+Assets choose <code>observation_id</code>, unique for that Asset within a run. Core
+assigns the others. It assigns <code>asset_id</code> when an Asset registers, every
+run, and the acknowledgement tells the registrant its ID; nothing picks its
+own <code>asset_id</code>. Event IDs are integers.</li>
 </ul>
 <h2 id="document-ownership">Document ownership</h2>
 <ul>
