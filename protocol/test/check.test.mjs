@@ -33,6 +33,7 @@ const id = 'variables/asset_id.json';
 const base = 'https://atlas-field-systems.github.io/protocol/definitions/';
 
 const cases = [
+  ['an input kind with no input value kind', ({ edit }) => edit('variables/input_kind.json', (s) => { s.enum.push('zz_extra'); }), /variables\/input_kind\.json: law 2: its values must be/],
   ['a definition missing from index.json', ({ edit }) => edit('index.json', (i) => { i.groups[0].files = i.groups[0].files.filter((f) => f !== record); }), /records\/cancel\.json: not listed in index\.json/],
   ['an index.json entry with no file', ({ edit }) => edit('index.json', (i) => i.groups[0].files.push('records/zz_missing.json')), /index\.json: records\/zz_missing\.json does not exist/],
   ['a record nested too deep', ({ read, add }) => add('records/zz_a/zz_b/zz_c.json', { ...read(record), $id: `${base}records/zz_a/zz_b/zz_c.json` }), /law 5: records live at/],

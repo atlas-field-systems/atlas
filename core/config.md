@@ -35,9 +35,10 @@ Names in this table are proposed configuration keys.
 | `archive_directory` | Completed Reset ZIPs | Path and export trigger are open |
 | `run_retention_days` | Retention of completed runs | The [scale direction](../atlas/scale.md#runs-and-storage) is at least 30 days |
 
-Accounts, Assets, gateways, and Plugins are provisioned through the
-[Core API](docs/api.md#accounts-and-provisioning), not configuration. A Plugin's
-own settings, such as which services it uses, belong to the Plugin, not to Core.
+Accounts and the keys of Assets on IP, gateways, and Plugins are provisioned
+through the [Core API](docs/api.md#accounts-and-provisioning), not
+configuration. Assets register each run. A Plugin's own settings, such as which
+services it uses, belong to the Plugin, not to Core.
 
 ## Logging and Reset
 

@@ -138,6 +138,8 @@ const mirrors = [
     files.filter((f) => isKind(f) && posix.dirname(f) === 'records/task' && base(f) !== 'settings')],
   ['variables/report.json', 'law 11', 'the records in records/report/',
     files.filter((f) => /^records\/report\/[a-z_]+\.json$/.test(f))],
+  ['variables/input_kind.json', 'law 2', 'the kinds in components/input_value/',
+    files.filter((f) => isKind(f) && posix.dirname(f) === 'components/input_value')],
 ];
 for (const [file, law, what, named] of mirrors) {
   const names = named.map(base);

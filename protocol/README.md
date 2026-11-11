@@ -21,25 +21,34 @@ Definitions and records carry none.
 | `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
-| `provisioning` | An Asset or gateway was added or removed | Core, for an admin or a gateway |
-| `contact` | Whether an Asset or gateway is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
+| `provisioning` | An Asset registered or was removed, or a gateway or Plugin was provisioned or removed | Core, for an admin, a gateway, or the Asset |
+| `contact` | Whether an Asset, gateway, or Plugin is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
+| `carrier` | Which gateway carries a radio Asset, or none | Core |
+| `drop` | A Task, request, or Plugin call Core stopped waiting on | Core |
+| `refusal` | A caller or radio Core refused for a different definitions hash | Core |
 | `report.status` | One subsystem's condition, one Task's state, or its task list | Asset |
 | `report.telemetry`, `report.battery` | Where it is and how it moves; its battery | Asset |
 | `report.settings` | Its settings' values | Asset |
 | `report.failsafe` | A failsafe Task's state, an operator override, or a flight-controller takeover | Asset |
 | `report.observation` | Something the Asset sees: where it is, or which way | Asset |
 | `track` | Fusion's conclusion about one target, and the Observations it rests on | Core's Fusion |
-| `geofeature` | A place on the map: a point, line, or area, with an optional name | Core, for an account or a Plugin |
+| `geofeature` | A place on the map: a point, line, area, or GeoTIFF imagery, with an optional name | Core, for an account or a Plugin |
+| `object` | A file Core holds: its name, type, size, and geo feature | Core, for an account or a Plugin |
+| `deletion` | An Object was deleted | Core, for an operator |
+| `plugin.description` | A Plugin's name and the actions it offers, with their inputs | Plugin |
+| `plugin.call` | One call of a Plugin action, with its input values | Core, for an operator |
+| `plugin.result`, `plugin.failure` | A Plugin's answer: places, facts, and what it created; or why it failed | Plugin |
 
-Each record has its own definition with a description and examples. Object,
-Plugin, and gimbal definitions are [parked](parked/README.md) until they are
-reworked into records.
+Each record has its own definition with a description and examples. Plugins
+describe their own actions from Protocol's common input kinds, so Protocol
+lists no actions. The gimbal definition is [parked](parked/README.md) until it
+is reworked into a record.
 
-Requests are not records. `requests/` defines the bodies operators send to the
-Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`, and
-`geofeature`. Core stamps the record fields, such as `time`, `task_id`,
-`geofeature_id`, and `requested_by`, to make the `task`, `settings_change`, and
-`geofeature` records.
+Requests are not records. `requests/` defines the bodies callers send to the
+Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`,
+`geofeature`, `plugin_call`, and `radio`, with which a gateway registers a radio Asset. Core stamps the record fields, such as `time`, `task_id`,
+`geofeature_id`, and `requested_by`, to make the `task`, `settings_change`,
+`geofeature`, and `plugin.call` records.
 
 ## Try it
 
