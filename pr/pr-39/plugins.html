@@ -1,0 +1,145 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Plugins</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html" class="on">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="plugins">Plugins</h1>
+<p>This page records the owner&#39;s intended use. Plugins are part of the product and
+are built with the rest of it. No Plugin exists yet.</p>
+<p>A Plugin is a small program that runs beside Core and offers actions. An
+operator runs an action with inputs, such as an area or a building. The Plugin
+uses its tools, often open-source services, to gather and return information.</p>
+<h2 id="where-plugins-sit">Where Plugins sit</h2>
+<ul>
+<li>Plugins sit in the second ring of the
+<a href="design-decisions.html#a-walled-city">walled city</a>. Each one runs on its own, in
+its own container if it needs one, and connects out to Core with a key an
+admin gave it. It reaches Core only through its Plugin interface, never its
+storage. The Plugin interface is the Core API with a Plugin key, not a second
+protocol. Reading the
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities">shared picture</a>,
+creating geo features, and storing Objects go through that interface.</li>
+<li>The Core API carries Plugin calls. That is how the Command Interface uses a
+Plugin from outside the city. The <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#plugins">Core API</a>
+has the calls.</li>
+<li>Operators call Plugins first. Assets will be able to call them later.</li>
+<li>Plugins do not direct Assets or issue Tasks.</li>
+<li>Fusion is not a Plugin. It runs inside the inner wall on every Observation.
+Nobody calls it.</li>
+<li>A feed that sends data all the time, such as an internet aircraft feed, is an
+Asset, not a Plugin.</li>
+</ul>
+<h2 id="actions">Actions</h2>
+<p>Each Plugin describes its own actions, like a form: a name, a label, and the
+inputs each one takes. Inputs come from a fixed set of common pieces Atlas
+defines: an area, a position, a time, a place already on the map, a number, a
+short text, or a choice from a list the Plugin gives. An input may be optional.
+Core checks every call against the Plugin&#39;s form and every answer against
+Atlas&#39;s one answer shape, so adding or changing a Plugin never changes
+Protocol. Each action also carries its display choices, which ship with the
+Plugin: optional help text, whether it appears in the right-click menu of an
+area, a place, or a point, and whether its listed places show on the map by
+default. The menu and the map are off unless the Plugin turns them on. A Plugin
+should be really easy to configure: an admin only adds or removes it. The
+Command Interface builds each action&#39;s form, menu entry, and result view from
+the description. A new kind of common piece is a Protocol change the owner
+decides.</p>
+<p>An answer is made of the same three things for every action, in any mix:</p>
+<ul>
+<li><strong>Places.</strong> Points, lines, areas, or imagery the Plugin lists and returns
+to the caller, such as &quot;Main St Hospital&quot; at a position. They are not stored as geo
+features.</li>
+<li><strong>Short facts.</strong> A label and a value, such as &quot;Wind: 12 m/s from the west&quot;.</li>
+<li><strong>References.</strong> The Plugin creates geo features or Objects in Core, and the
+answer names them. They stay in Core, where the operator can find them later.
+Plugins create nothing else: Observations come only from Assets, and only
+Fusion creates Tracks.</li>
+</ul>
+<p>An empty answer means the Plugin found nothing. A list never holds more than
+1000 items. A Plugin that would need more fails with a clear message, such as
+&quot;Area too large, pick a smaller area&quot;, so a partial list is never mistaken for
+the whole answer.</p>
+<h2 id="what-the-operator-sees">What the operator sees</h2>
+<ul>
+<li><strong>Only Plugins that are running can be used.</strong> If a Plugin is not connected,
+Atlas says so at once. Nothing waits and runs later.</li>
+<li><strong>A call ends with a result or a failure.</strong> If a Plugin fails or disconnects
+partway, whatever it already stored stays, and the call is marked not
+finished. Nothing reruns by itself; the operator calls again if they still
+want it.</li>
+<li><strong>There is no stop.</strong> An operator who no longer wants an answer ignores it.</li>
+<li><strong>Everyone sees every call.</strong> Every logged-in operator sees every Plugin call
+and its result, because Atlas keeps one shared picture and one history.</li>
+<li><strong>Calls are not repeated.</strong> The operator runs a call again when they want new
+data.</li>
+</ul>
+<h2 id="objects">Objects</h2>
+<p>An Object is a file Core holds, such as a photo or a satellite image. Plugins
+and operators add them. An operator can attach a photo to a building&#39;s geo
+feature, for example.</p>
+<ul>
+<li>A file never changes. An operator can move an Object to another geo feature
+or detach it, and can delete it. History keeps the record that it was stored
+and who deleted it.</li>
+<li>An Object belongs to at most one geo feature. Deleting the geo feature leaves
+its Objects.</li>
+<li>A file may be at most 100 MB unless an admin changes the limit.</li>
+<li>Files from Assets, such as drone photos, are not designed yet.</li>
+<li>A GeoTIFF, an image that carries its own map position, can be shown on the
+map as an imagery geo feature, added by operators and Plugins
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features">imagery rules</a>).</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<p>These show how Plugins could be used. No specific Plugin or action is part of
+the first build.</p>
+<h3 id="find-the-buildings-in-an-area">Find the buildings in an area</h3>
+<p>The operator passes a box and asks for every building in it. The Plugin asks
+the Overpass API for OpenStreetMap structures in that box and returns them as
+a list.</p>
+<h3 id="analyze-a-building">Analyze a building</h3>
+<p>The operator picks a building and asks the Plugin to analyze it. The Plugin
+runs whatever open-source tools it has. It creates a geo feature on the
+building. Its findings never go on the geo feature. Depending on the action,
+they come back as a list or as Objects attached to the geo feature. The output
+is a reference to that geo feature.</p>
+<h3 id="gather-imagery-for-an-intelligence-package">Gather imagery for an intelligence package</h3>
+<p>The operator passes an area and asks for satellite imagery of it. The Plugin
+collects GeoTIFF imagery through its tools, stores each file as an Object, and
+adds an imagery geo feature for each, so the images show on the map where they
+belong. The output refers to what it stored.</p>
+<h3 id="ground-elevation-for-an-asset-later">Ground elevation for an Asset (later)</h3>
+<p>An Asset sends its position and asks for the ground elevation there. The Asset
+can use that elevation to calculate its height above the ground, whether it uses
+a barometer or the altitude of its launch point.</p>
+<h3 id="more-plugins-that-fit">More Plugins that fit</h3>
+<ul>
+<li><strong>Points of interest.</strong> Takes a box and a kind, such as hospitals, helipads
+or open fields, and returns named positions found through Overpass.</li>
+<li><strong>Airspace.</strong> Takes a box and returns airspace shapes with their altitude
+limits, from open airspace data.</li>
+<li><strong>Weather.</strong> Takes a position and a time, and returns wind, visibility and
+cloud base from an open weather service.</li>
+<li><strong>What is this place.</strong> Takes a position and returns its place name or address.</li>
+<li><strong>Line of sight.</strong> Takes a position and a height, and creates a geo feature
+showing what can be seen from there.</li>
+</ul>
+<h2 id="not-plugins">Not Plugins</h2>
+<ul>
+<li><strong>A live aircraft or ship feed.</strong> It runs all the time, so it is an Asset.</li>
+<li><strong>Fusion.</strong> Core runs it on every Observation.</li>
+<li><strong>A geofence alarm.</strong> Nobody calls it; it reacts when a Track enters an area.</li>
+<li><strong>An auto-patrol that sends Tasks to drones.</strong> It directs Assets.</li>
+<li><strong>A suggested flight path.</strong> A Plugin does not return a route or positions
+meant to be turned into Tasks.</li>
+<li><strong>Repeating a call,</strong> such as weather every 10 minutes. The operator calls
+again when they want new data.</li>
+<li><strong>Turning on Asset lights at dusk.</strong> It changes Asset settings.</li>
+<li><strong>A radio bridge.</strong> That is a gateway and its Fieldlink.</li>
+<li><strong>The Reset archive.</strong> That is Core&#39;s own job.</li>
+<li><strong>Map styling.</strong> That belongs to the Command Interface.</li>
+</ul>
+<h2 id="not-decided">Not decided</h2>
+<p><a href="https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/plugins-and-objects.md">Plugins and Objects in the interface</a>
+shows how operators run Plugins and see their results and Objects. A new Plugin
+needs no change to the Command Interface.</p>
+<p>Whether a Plugin writes its own Reset ZIP is not decided; for now, Core&#39;s ZIP records every call
+and answer.</p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
