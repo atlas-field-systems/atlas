@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Scale</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html" class="on">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="scale">Scale</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html" class="on">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="scale">Scale</h1>
 <p>These numbers guide Atlas design. They are not hard limits.
 Design so Atlas works well at these sizes and does not break just past them.</p>
 <h2 id="fleet">Fleet</h2>
@@ -23,8 +23,7 @@ Design so Atlas works well at these sizes and does not break just past them.</p>
 <h2 id="runs-and-storage">Runs and storage</h2>
 <ul>
 <li>Each run lasts up to about 2 hours, limited by battery. Core should run all day across many runs.</li>
-<li>Each Reset ZIP can be up to about 1 GB. Size is not a concern.</li>
-<li>Nothing deletes a Reset ZIP automatically. The owner deletes old ones by hand.</li>
+<li>Each Reset ZIP can be up to about 1 GB. Size is not a concern. The owner deletes old ZIPs by hand.</li>
 </ul>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

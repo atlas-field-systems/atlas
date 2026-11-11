@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>First flight</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="first-flight">First flight</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="first-flight">First flight</h1>
 <p>The first setup uses a Raspberry Pi on the ground. The Pi runs the Asset app and
 is a direct-IP Asset: it calls the Core API itself, with no gateway. The Pi
 connects to an ArduPilot quadcopter through a SiK radio link. It acts as the
@@ -71,8 +71,9 @@ can use Atlas execution or ArduPilot&#39;s own behavior, as selected for the set
 A requested response is not proof that the vehicle returned or landed.</p>
 <p>An applicable failsafe overrides ordinary work, including paused, and locks new
 work for the rest of the operation, even after its response Task succeeds.
-During a failsafe the operator can still override it with an immediate Land or
-Return to home, or with pause. The Asset records each as an override.
+During a failsafe the operator can still
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation">override it</a>,
+for example with an immediate Land.
 Once the vehicle is safely stopped, the app shuts itself down and Core shows the
 Asset offline. Local intervention and a manual restart of the app on the ground
 Pi are required before another operation. Atlas does not manage that recovery.
@@ -85,7 +86,8 @@ The Asset owns
 <p>When the operator spins down the system, Core and each Asset write their own
 Reset ZIP, and so does each gateway. The operator shuts the Assets
 down first, and then the admin stops Core on its own computer. Stopping Core
-ends the run, and everyone signs in again for the next one. Core&#39;s ZIP holds:</p>
+ends the run (<a href="runs-and-identity.html#a-run-and-reset">Runs and identity</a>).
+Core&#39;s ZIP holds:</p>
 <ul>
 <li>Its run&#39;s data, including the event log: every accepted request and every
 stored report, in order.</li>
@@ -94,10 +96,8 @@ stored report, in order.</li>
 <li>A plain readable summary: start and end, Assets, Tasks, and outcomes.</li>
 </ul>
 <p>Core checks its ZIP and then clears the run, so the next start of Core begins
-with an empty map. The ZIP is then the only copy of the run, and nothing deletes
-it automatically. If Core crashes, its next start writes the ZIP of the
-interrupted run, marked as possibly incomplete. Each ZIP lands in a folder on
-its own computer, and a person copies the ZIPs off by hand.</p>
+with an empty map. Each ZIP lands in a folder on its own computer, and a person
+copies the ZIPs off by hand.</p>
 <p>After using the system, give the Reset ZIPs to an AI agent for full context on
 the run and any errors. Each system&#39;s documentation defines its own ZIP contents
 and Reset procedure: <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Core</a>,

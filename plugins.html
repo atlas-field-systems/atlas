@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Plugins</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html" class="on">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="plugins">Plugins</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html" class="on">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="plugins">Plugins</h1>
 <p>This page records the owner&#39;s intended use. Plugins are part of the product and
 are built with the rest of it. No Plugin exists yet.</p>
 <p>A Plugin is a small program that runs beside Core and offers actions. An
@@ -36,8 +36,11 @@ Atlas&#39;s one answer shape, so adding or changing a Plugin never changes
 Protocol. Each action also carries its display choices, which ship with the
 Plugin: optional help text, whether it appears in the right-click menu of an
 area, a place, or a point, and whether its listed places show on the map by
-default. The Command Interface builds each action&#39;s form, menu entry, and
-result view from the description. A new kind of common piece is a Protocol change the owner decides.</p>
+default. The menu and the map are off unless the Plugin turns them on. A Plugin
+should be really easy to configure: an admin only adds or removes it. The
+Command Interface builds each action&#39;s form, menu entry, and result view from
+the description. A new kind of common piece is a Protocol change the owner
+decides.</p>
 <p>An answer is made of the same three things for every action, in any mix:</p>
 <ul>
 <li><strong>Places.</strong> Points, lines, areas, or imagery the Plugin lists and returns
@@ -77,12 +80,12 @@ or detach it, and can delete it. History keeps the record that it was stored
 and who deleted it.</li>
 <li>An Object belongs to at most one geo feature. Deleting the geo feature leaves
 its Objects.</li>
-<li>A file may be at most 100 MB unless an admin changes the limit.</li>
+<li>A file may be at most 100 MB by default; an admin may change the limit with
+the <code>max_object_bytes</code> setting.</li>
 <li>Files from Assets, such as drone photos, are not designed yet.</li>
 <li>A GeoTIFF, an image that carries its own map position, can be shown on the
-map as an imagery geo feature. Operators and Plugins add imagery. It can be
-renamed or deleted, never moved or reshaped. Deleting it leaves the file, and
-a file that imagery still shows cannot be deleted until the imagery is.</li>
+map as an imagery geo feature, added by operators and Plugins
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features">imagery rules</a>).</li>
 </ul>
 <h2 id="examples">Examples</h2>
 <p>These show how Plugins could be used. No specific Plugin or action is part of

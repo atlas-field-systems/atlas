@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Operating environment</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html" class="on">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="operating-environment">Operating environment</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html" class="on">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="operating-environment">Operating environment</h1>
 <p>Atlas connects operators to physical and digital Assets. Its normal field path
 crosses a gateway and a radio link.</p>
 <h2 id="connectivity-evolves">Connectivity evolves</h2>
@@ -16,7 +16,8 @@ detailed design as the hardware evolves.</p>
 <p>Field links carry Atlas through Fieldlinks. The same Fieldlink package runs on
 the gateway and on the radio Asset, and it sends compact frames in a proven
 existing encoding, not a custom one. The LoRa phase builds on Meshtastic, and
-FLRC gets its own Fieldlink. The <a href="api-proposal.html#fieldlinks">API proposal</a>
+FLRC gets its own Fieldlink.
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-lora-fieldlink-sketch">Gateway</a>
 sketches the LoRa Fieldlink. Each Fieldlink&#39;s docs own its mechanisms, once
 written.</p>
 <h2 id="ip-mainly-connects-the-supporting-systems">IP mainly connects the supporting systems</h2>
@@ -32,9 +33,7 @@ LoRa link could have a dedicated LoRa gateway, and a later FLRC mesh a new one,
 while the older design is still maintained for sites that use it. Several gateway
 designs can be maintained at once because each reaches Core only through the
 Core API. A site still runs one gateway at a time (<a href="scale.html#setup">Scale</a>).
-Atlas does not assume one permanent gateway design.
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md">Gateway</a>
-owns how radio Assets join through it.</p>
+Atlas does not assume one permanent gateway design.</p>
 <h2 id="core-is-a-deliberate-dependency">Core is a deliberate dependency</h2>
 <p>Atlas communications depend on Core to keep the system simpler.
 Offline authorization of new work is not a current requirement.

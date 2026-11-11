@@ -1,10 +1,10 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Design decisions</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html" class="on">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="design-decisions">Design decisions</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html" class="on">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="design-decisions">Design decisions</h1>
 <p>Project-wide choices that every Atlas part follows.</p>
 <p>Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in <a href="CHARTER.html#keep-judgment-sharp">Keep judgment sharp</a>.</p>
-<p>The <a href="api-proposal.html">API proposal</a> records the move from one shared message model
-to a Core API with gateways. The decisions below follow it.</p>
+<p>The owner&#39;s dated product decisions are in the <a href="decision-log.html">decision log</a>,
+which wins over this page.</p>
 <h2 id="two-layers-of-documentation">Two layers of documentation</h2>
 <p>Each part has short pages a person can read, backed by exact definitions,
 examples, and tests. The pages explain. The definitions, examples, and tests
@@ -84,45 +84,27 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 <code>event_id</code>; Core never buffers its backlog. See
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/storage.md">Core storage</a>.</p>
 <h2 id="stopping-core-ends-the-run">Stopping Core ends the run</h2>
-<p>A run lasts from one start of Core to the next stop. There is no Reset request:
-the admin stops Core on its own computer, and the operator is trusted to shut
-the Assets down first. Core, each Asset, and each gateway write their own Reset
-ZIP, check it, and only then clear what it holds. Core starts every run with an
-empty picture and keeps only accounts and keys. Every Asset registers anew
-and comes back as a new Asset with a new ID. Everyone signs in
-again, and nothing from the earlier run lingers: an operator application drops
-what it held, and an old link never opens a different item. The ZIP is then the
-only copy of the run, and nothing deletes a ZIP automatically. A crash ends the run
-too; the next start writes its ZIP, marked as possibly incomplete. A failed ZIP
-clears nothing and never holds up the next run. Logging never blocks equipment
-control or request handling, and every gap is listed in the ZIP. Core refuses a
-change it cannot store. Each part&#39;s docs own its ZIP:
+<p>A run lasts from one start of Core to the next stop, and stopping Core is
+Reset. Core, each Asset, and each gateway write their own Reset ZIP, and the ZIP
+is the only copy of the run. <a href="runs-and-identity.html">Runs and identity</a> owns the
+rules: what carries over, signing in again, and how Assets get their IDs. Each
+part&#39;s docs own its ZIP:
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Core</a>,
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip">Asset</a>,
-and <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip">gateway</a>.</p>
+and <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip">gateway</a>.
+Logging never blocks equipment control or request handling, and every gap is
+listed in the ZIP.</p>
 <h2 id="identity-and-security">Identity and security</h2>
 <ul>
-<li>Operators log in to accounts, with admin and operator types. Admins provision
-accounts and the keys of Assets on IP, gateways, and Plugins. Sessions use
+<li>Operators log in to accounts, with admin and operator types. Sessions use
 HttpOnly cookies, so every browser tab shares one session.</li>
-<li>An admin creates a key for each gateway, each Asset on IP, and each Plugin in
-Core and copies it into that program&#39;s configuration. Gateways and Plugins
-get their ID with it. Keys are bearer tokens over TLS and carry across runs.
-There is no enrollment key. Only gateways, Assets on IP, and Plugins hold Core
-keys. An Asset key belongs to one Asset at a time.</li>
-<li>Every Asset registers anew each run. Core assigns its <code>asset_id</code> then, and
-the acknowledgement tells the registrant. An Asset on IP registers with its
-key; a gateway registers each radio Asset the first time it hears it in a
-run. Within the run the Asset keeps its ID: an Asset on IP that registers
-again with the same key gets the same ID, and a radio Asset that moves to
-another gateway keeps its ID and its unfinished work. A removed Asset may
-register again and comes back as a new Asset.</li>
+<li>Admins provision accounts and the keys of gateways, Assets on IP, and
+Plugins. Keys are bearer tokens over TLS. Only those programs hold Core keys.
+Core assigns every <code>asset_id</code>; <a href="runs-and-identity.html#keys-and-registration">Runs and identity</a>
+owns registration and IDs.</li>
 <li>Core authenticates a gateway and trusts it for which radio Asset sent what. A
 radio Asset authenticates to the gateway through its Fieldlink, never to
-Core. The gateway is an IP bridge: radio identity stays on its side, and Core
-knows radio Assets only by <code>asset_id</code>.
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md">Gateway</a>
-owns these rules.</li>
+Core (<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides">Gateway</a>).</li>
 <li>TLS secures IP links. Each Fieldlink uses its radio&#39;s own encryption and
 authentication. Records never carry credentials.</li>
 </ul>
@@ -131,15 +113,12 @@ authentication. Records never carry credentials.</li>
 an outcome. Core numbers each Asset&#39;s Tasks in order and sends every Task as
 soon as it accepts it, so an Asset that loses contact already holds its work. The
 Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
-before it. Cancel names its Task. Pause is a setting that holds the active Task
-without ending it; the Task continues on resume. A command may name a saved
-place by its <code>geofeature_id</code>. That is a live reference: Core does not copy the
-shape into the Task, the Asset obtains the current shape, and a later edit
-changes the work. Core never blocks editing or deleting a place that
-unfinished Tasks use, and cancels nothing; the Asset decides how to carry on.
-Failsafe boundaries never come from places. Retries are safe by design:
-creates carry an idempotency key, settings are end states, and each <code>task_id</code>
-runs once.</p>
+before it. Cancel names its Task. Hold is a command like Land; pause is a
+setting, not a Task (<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause">pause</a>).
+A command may name a saved place, as a live reference
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features">geo features</a>).
+Retries are safe by design: creates carry an idempotency key, settings are end
+states, and each <code>task_id</code> runs once.</p>
 <h2 id="evidence-and-conclusions-stay-apart">Evidence and conclusions stay apart</h2>
 <p>The shared picture holds Assets, Observations, Tracks, and geo features.
 Observations are evidence: what an Asset reports seeing, and they change only
@@ -151,54 +130,21 @@ status: every record keeps its time, and the Command Interface shows its age.
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities">Core API, Entities</a>
 owns the exact rules.</p>
 <h2 id="failsafes-are-configured-rules-reported-apart-from-tasks">Failsafes are configured rules, reported apart from Tasks</h2>
-<p>The Asset runs failsafes locally, and the records follow that
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">behavior</a>.</p>
-<ul>
-<li>An Asset&#39;s failsafe rules are one setting, its failsafe policy, always
-replaced whole. Any operator may replace it outside failsafe state, as with
-other settings.</li>
-<li>A rule&#39;s response is always a command the Asset supports. There is no
-&quot;continue&quot;: activation always stops ordinary work, so an Asset that should
-keep working has no rule for that situation. A battery rule uses a set
-percentage, not an estimate of the charge needed to get home.</li>
-<li>A failsafe Task gets no Core <code>task_id</code>. Its rule and attempt name it, and its
-state travels in the failsafe report, apart from Core&#39;s numbered Tasks.</li>
-<li>Once a failsafe latches, it stays latched: ordinary work stays locked for the
-rest of the operation, and an equal- or lower-priority rule never runs again.</li>
-<li>Subsystems are declared in the description and reported one at a time. There
-is no overall Asset condition, and a condition never gates work by itself.</li>
-</ul>
-<h2 id="plugin-actions-and-objects">Plugin actions and Objects</h2>
-<ul>
-<li>Each Plugin names and describes its own actions. Protocol defines only the
-common pieces they are built from: a fixed set of input kinds, and one answer
-shape for every action, made of places, short facts, and the geo features
-and Objects the Plugin created. Core checks each call against the Plugin&#39;s
-description and each answer with Protocol&#39;s one validator. A new Plugin or
-action needs no Protocol change; a new common piece does, and the owner
-decides it. This keeps one-off definitions for single Plugins out of
-Protocol. Each action also carries its display choices: help text, whether
-it appears in the right-click menu, and whether its listed places show on
-the map by default.</li>
-<li>An answer never holds a partial list. A Plugin whose list would exceed the
-limit fails with an explanation instead.</li>
-<li>A Plugin call is accepted, not done, like a Task. It ends with the Plugin&#39;s
-result or failure, or is dropped when the Plugin goes offline or is removed. Plugins create
-only geo features and Objects, and never direct Assets.</li>
-<li>The Command Interface builds each Plugin action&#39;s form, menus, and result
-view from its description, with display choices that ship with the Plugin.
-A new Plugin needs no interface change. Plugins bring no screens or code into
-the interface; custom Plugin screens are a possible later step.</li>
-<li>An Object is a file Core holds. Plugins and operators add Objects; files from
-Assets are not designed yet. A file never changes, and Core records who
-stored it.</li>
-<li>Imagery is a geo feature that shows one GeoTIFF Object on the map, where the
-file says it belongs. Operators and Plugins add it. It can be renamed or
-deleted, never moved or reshaped. Deleting it leaves the file, and Core
-refuses to delete a file that imagery still shows.</li>
-</ul>
-<p>The <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects">Core API</a>
-owns the calls and <a href="plugins.html">Plugins</a> the intended use.</p>
+<p>The Asset runs failsafes locally, from rules configured for it, so they work
+without Core. A failsafe&#39;s response stops ordinary work and is reported apart
+from Core&#39;s numbered Tasks.
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">Failsafes</a>
+owns the behavior, and
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#failsafes">Protocol decisions</a>
+the records.</p>
+<h2 id="plugins-describe-their-own-actions">Plugins describe their own actions</h2>
+<p>Each Plugin names and describes its own actions, built from a fixed set of
+common pieces Protocol defines, so a new Plugin or action needs no Protocol or
+Command Interface change. A new common piece is a Protocol change the owner
+decides. Plugins create only geo features and Objects and never direct Assets.
+<a href="plugins.html">Plugins</a> has the intended use, and the
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#plugins">Core API</a>
+the calls.</p>
 <h2 id="stack">Stack</h2>
 <ul>
 <li>Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface

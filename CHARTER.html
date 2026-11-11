@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>The Atlas charter</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html">API proposal</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
 <p>Atlas helps operators understand field systems, request work, and retain evidence.
 Read the <a href="environment.html">operating environment</a> before designing a subsystem.</p>
 <h2 id="everything-is-a-draft">Everything is a draft</h2>
@@ -9,7 +9,9 @@ Every part of this repository, this Charter included, is a draft: any decision, 
 message, plan or piece of code may be reworked, rewritten or removed, and new ideas
 are welcome. Nothing is locked. When something has a problem, consider reworking it
 from the ground up before patching it.</p>
-<p>Draft does not mean quiet change. Propose the change and its reason; the owner decides.</p>
+<p>Draft does not mean quiet change. Propose the change and its reason; the owner decides.
+The owner&#39;s current decisions are in the <a href="decision-log.html">decision log</a>. A
+reversal updates every page that still teaches the old rule.</p>
 <h2 id="keep-atlas-understandable">Keep Atlas understandable</h2>
 <p>The owner must be able to read the docs whenever they change.
 Use short user stories and visible data flows to expose mismatches with intended use.
@@ -45,10 +47,8 @@ record has a field for who requested or reported it.</li>
 <li>Times are in milliseconds. Only specialized radio data uses nanosecond timing.</li>
 <li>Counters are ordinary numbers, not long numbers written as text.</li>
 <li>IDs that people read or that cross a field link are 1 to 4 letters or digits.
-Assets choose <code>observation_id</code>, unique for that Asset within a run. Core
-assigns the others. It assigns <code>asset_id</code> when an Asset registers, every
-run, and the acknowledgement tells the registrant its ID; nothing picks its
-own <code>asset_id</code>. Event IDs are integers.</li>
+Event IDs are integers. Assets choose <code>observation_id</code>; Core assigns the
+others, <code>asset_id</code> included (<a href="runs-and-identity.html#ids">Runs and identity</a>).</li>
 </ul>
 <h2 id="document-ownership">Document ownership</h2>
 <ul>
@@ -90,8 +90,8 @@ for attribution or routing that Core or a gateway already owns.</p>
 keeps the business rules. The SDK is the client for that API, and gateways run
 Fieldlinks. No program builds a second validator.
 See <a href="design-decisions.html">design-decisions.md</a>.</p>
-<p>How-it-works docs, laws, and the Core API doc beat an implementation plan when
-they conflict. Change them on purpose with the owner; do not quietly diverge in
+<p>The <a href="decision-log.html">decision log</a> beats every other page. How-it-works docs,
+laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose with the owner; do not quietly diverge in
 code.</p>
 <p>Accepted acknowledgment and observed Asset outcomes are different facts. Asset
 reports are the observed outcome under the contract, not the same fact as
