@@ -1,0 +1,201 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Proposal: a Core API with gateways</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a><a href="api-proposal.html" class="on">API proposal</a></nav><main><h1 id="proposal-a-core-api-with-gateways">Proposal: a Core API with gateways</h1>
+<p><strong>Direction selected by the owner.</strong> The Charter, design decisions and every
+part&#39;s docs follow it; this page records why.</p>
+<h2 id="the-problem">The problem</h2>
+<p>Today every link uses one message model: the operator&#39;s browser, Core, gateways
+and the radio mesh all send the same messages with the same identity, duplicate
+and acknowledgement rules (<a href="https://github.com/atlas-field-systems/atlas/blob/c0502b7/protocol/docs/communication.md">Communication</a>).
+Most of those rules exist to survive a lossy radio, yet every IP program carries
+them: message identity on every message, unchanged forwarding, a bounded memory
+of seen messages, acknowledgements that are sometimes replies and sometimes
+reports, reply-ended queries, keys in the hello, and one link per ID. A browser
+refresh restarts the operator&#39;s counter and a second tab replaces the first link.</p>
+<h2 id="the-shape">The shape</h2>
+<p>Atlas is a walled city with three rings.</p>
+<pre class="mermaid">flowchart LR
+    subgraph City[Atlas deployment]
+        subgraph Inner[Inner wall: Core]
+            C[API, event log, Tasks, storage]
+            F[Fusion]
+        end
+        P[Plugins]
+    end
+    P &#60;--&#62;|Plugin interface| C
+    UI[Command Interface] &#60;--&#62;|Core API| C
+    D[Direct-IP Asset] &#60;--&#62;|Core API| C
+    G[Gateway] &#60;--&#62;|Core API| C
+    G &#60;--&#62;|Fieldlink: LoRa, FLRC| A[Radio Asset]</pre><ul>
+<li><strong>Inside the inner wall:</strong> Core and Fusion, in one process. Fusion reads and
+writes Core&#39;s state directly and never goes through the public API.</li>
+<li><strong>The second ring:</strong> Plugins. They run beside Core in its deployment and reach
+it only through Core&#39;s Plugin interface, never its storage.</li>
+<li><strong>Outside the city:</strong> gateways, Assets and the Command Interface. They reach
+Core only through the public Core API.</li>
+</ul>
+<p>The parts:</p>
+<ul>
+<li><strong>Protocol</strong> owns the records (Task, settings, telemetry and the rest), the
+data laws, the validator, and the examples that test record shapes.
+It no longer defines how programs talk.</li>
+<li><strong>Core</strong> owns the API: HTTP for requests, Server-Sent Events for live changes.
+Event bodies are Protocol records; request bodies are Protocol request
+definitions.</li>
+<li><strong>The SDK</strong> is a client for the Core API.</li>
+<li><strong>Gateways</strong> uplink to the Core API and run the Fieldlinks their hardware
+supports. A gateway is not an Asset.</li>
+<li><strong>Fieldlinks</strong> carry Atlas across a field link. The same Fieldlink package runs
+on both ends: in the gateway and on the radio Asset.</li>
+</ul>
+<h2 id="core-keeps-one-event-log">Core keeps one event log</h2>
+<p>Core keeps current state in ordinary SQLite tables and, in the same transaction,
+appends every accepted request and every Asset report to an ordered event log
+with a rising integer <code>event_id</code>. Live updates, history and recovery after a
+refresh are reads of that log. Current state is never rebuilt from it.</p>
+<ul>
+<li>Both live on disk in SQLite. Core keeps no backlog of the log in memory.</li>
+<li>A reader follows the log from a cursor. A slow or disconnected reader is
+dropped and resumes from its last <code>event_id</code>; Core never buffers its backlog.</li>
+<li>When a run ends, its events go into Core&#39;s Reset ZIP and are cleared from
+Core (<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Reset</a>).</li>
+</ul>
+<h2 id="the-core-api-sketch">The Core API (sketch)</h2>
+<p>Names are illustrative. Core owns the exact API doc.</p>
+<table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /administration/login</code></td>
+<td>Account login; returns a session cookie</td>
+</tr>
+<tr>
+<td><code>GET /entities</code></td>
+<td>One cut of the shared picture: Assets, Observations, Tracks, and geo features</td>
+</tr>
+<tr>
+<td><code>GET /entities/assets</code>, <code>GET /entities/assets/{id}</code></td>
+<td>Assets with their description, latest reports and settings</td>
+</tr>
+<tr>
+<td><code>GET /tasks/{id}</code></td>
+<td>Task bodies, states and queue order</td>
+</tr>
+<tr>
+<td><code>POST /tasks/{id}</code></td>
+<td>Create one or more Tasks; Core numbers them with <code>task_id</code> and sends them at once. <code>now: true</code> runs one Task at once and cancels the Tasks before it</td>
+</tr>
+<tr>
+<td><code>PATCH /entities/assets/{id}/settings</code></td>
+<td>Immediate settings change, as end states</td>
+</tr>
+<tr>
+<td><code>POST /tasks/{id}/{task_id}/cancel</code></td>
+<td>Cancel that Task, and only that Task</td>
+</tr>
+<tr>
+<td><code>GET /history?asset_id&amp;report&amp;since&amp;until&amp;cursor</code></td>
+<td>Paged history</td>
+</tr>
+<tr>
+<td><code>GET /events</code> (Server-Sent Events)</td>
+<td>Live log events; reconnect resumes after <code>Last-Event-ID</code></td>
+</tr>
+<tr>
+<td><code>POST /entities/assets/{id}/reports</code></td>
+<td>Asset or gateway reports, in batches, keeping original times</td>
+</tr>
+<tr>
+<td><code>GET /entities/observations</code>, <code>GET /entities/tracks</code></td>
+<td>Evidence and conclusions in the picture, separately</td>
+</tr>
+<tr>
+<td><code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE /entities/geofeatures</code></td>
+<td>Places operators author and Plugins create; a change replaces one whole</td>
+</tr>
+</tbody></table>
+<p>Each pillar has a root path (<code>/entities</code>, <code>/tasks</code>, <code>/objects</code>,
+<code>/administration</code>). Plugins have <code>/plugins</code>. Kinds live under their pillar&#39;s
+root. <code>/about</code>, <code>/events</code>, <code>/history</code>, and <code>/debug</code> belong to no pillar.</p>
+<ul>
+<li><strong>Accepted is not done.</strong> A create or change returns Core&#39;s acceptance. Task
+state and setting values change only from the Asset&#39;s reports.</li>
+<li><strong>Every command is a Task</strong>, so immediate commands report outcomes too. Pause
+remains a setting.</li>
+<li><strong>Retries are safe by design.</strong> Creates carry an idempotency key, settings are
+end states, cancel names its Task, and each <code>task_id</code> runs once.</li>
+<li><strong>Tasks are numbered and sent at once.</strong> The Asset runs them in <code>task_id</code>
+order and starts a request&#39;s Tasks only when it has received them all. A gateway may
+send them one at a time on its radio.</li>
+<li><strong>Compatibility is visible.</strong> The API reports the hash of its Protocol
+definitions; a client refuses a mismatch with an explanation.</li>
+</ul>
+<h2 id="identity-and-security">Identity and security</h2>
+<ul>
+<li><strong>Accounts.</strong> Admin and operator accounts with hashed passwords and HttpOnly
+session cookies. Admins provision accounts, Assets and gateways. Each browser
+tab uses the same session.</li>
+<li><strong>Provisioned Assets and gateways.</strong> An admin adds a gateway or an Asset on IP
+in Core and receives its ID and key for its configuration. The key is a bearer
+token over TLS. There is no enrollment key. An Asset behind a gateway
+authenticates to the gateway, not to Core.</li>
+<li><strong>IDs.</strong> Admins choose <code>asset_id</code>, which people read, when they provision an
+Asset on IP; Core assigns it for a radio Asset a gateway adds. Assets choose
+<code>observation_id</code>. Core assigns Task, Track, geo feature, and Object IDs.
+Event IDs are integers.</li>
+<li><strong>Transport security.</strong> TLS on IP. Each Fieldlink uses its radio&#39;s own
+encryption and authentication. Records never carry credentials.</li>
+</ul>
+<h2 id="assets-and-failsafes">Assets and failsafes</h2>
+<p>The Asset holds its complete queue, runs its Tasks, reports observed outcomes,
+and owns its failsafes. During a failsafe, operators can still pause,
+land now or return home; the Asset records these as overrides. Longer-running
+failsafe behavior stays deferred until field testing.</p>
+<h2 id="fieldlinks">Fieldlinks</h2>
+<p>For the LoRa phase, the Fieldlink builds on Meshtastic: a private channel, a
+private app port, and its encryption, routing and per-hop acknowledgements.
+The Fieldlink adds end-to-end acknowledgement of Tasks and final reports,
+idempotency by <code>task_id</code>, and per-Asset contact reports to Core. Protocol defines
+no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
+decides how an Asset authenticates to its gateway, within the rules
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides">every Fieldlink provides</a>:
+a per-radio identity from the link&#39;s own cryptography and replay rejection. The gateway&#39;s link to Core is broadband
+IP, so the gateway keeps its Assets&#39; full state and sends over the radio only
+what each Asset does not already have. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
+design is otherwise deferred.</p>
+<h2 id="stack">Stack</h2>
+<ul>
+<li><strong>TypeScript everywhere:</strong> Core, the SDK, gateways, Fieldlinks, the Asset app
+and the Command Interface. Node 24 runs <code>.ts</code> directly, so there is no build
+step for Node programs, and every program uses Protocol&#39;s one validator.</li>
+<li><strong>Docker.</strong> Core and Fusion ship as one container running one process. Each
+Plugin may run in its own container. Gateways run on their own computers.</li>
+<li><strong>Storage.</strong> SQLite.</li>
+</ul>
+<h2 id="scope">Scope</h2>
+<p>This proposal first froze scope to first flight. The owner then chose to
+<a href="design-decisions.html#design-the-whole-product-then-build-it">design the whole product and build it together</a>,
+with geo features, Objects, Observations, Tracks, and Plugins included. The
+retained Core prototype is deleted; git keeps its history. Asset tests run
+against ArduPilot SITL.</p>
+<h2 id="documentation">Documentation</h2>
+<p>Rewrite in one pass rather than patching. One rule lives in one place, and each
+part keeps one open-questions list. <code>communication.md</code> becomes the Core API doc
+and a Fieldlink doc. <code>past-interface-ideas.md</code> and the SDK implementation
+plan are removed until there is code to plan.</p>
+<h2 id="order-of-work">Order of work</h2>
+<ol>
+<li>Update the Charter and design decisions to this direction.</li>
+<li>Write the Core API doc and trim Protocol to records and data laws.</li>
+<li>Design the rest of the product: the remaining Entities paths
+(<code>/entities/observations</code>, <code>/entities/tracks</code>, <code>/entities/geofeatures</code>),
+<code>/objects</code>, <code>/plugins</code>, gateways, and Fieldlinks.</li>
+<li>Test the design with throwaway prototypes and write the findings back.</li>
+<li>Build everything together, then fly first flight.</li>
+</ol>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
