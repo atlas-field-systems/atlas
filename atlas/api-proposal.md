@@ -106,15 +106,16 @@ root. `/about`, `/events`, `/history`, and `/debug` belong to no pillar.
 ## Identity and security
 
 - **Accounts.** Admin and operator accounts with hashed passwords and HttpOnly
-  session cookies. Admins provision accounts and keys. Each browser
+  session cookies. Admins provision accounts and the keys of Assets on IP and
+  gateways. Each browser
   tab uses the same session.
-- **Keys for Assets and gateways.** An admin creates a key for a gateway or an
-  Asset on IP in Core for its configuration. The key is a bearer
+- **Provisioned keys.** An admin creates a key for a gateway or an Asset on IP
+  in Core and copies it into its configuration; a gateway gets its ID with it. The key is a bearer
   token over TLS. There is no enrollment key. An Asset behind a gateway
   authenticates to the gateway, not to Core.
-- **IDs.** Core assigns `asset_id`, which people read, when an Asset registers
-  each run, whether it registers itself or a gateway registers it. Assets choose
-  `observation_id`. Core assigns Task, Track, geo feature, and Object IDs.
+- **IDs.** Core assigns `asset_id` when an Asset registers, every run, and
+  tells the registrant: an Asset on IP, or the gateway for a radio Asset. Assets
+  choose `observation_id`. Core assigns Task, Track, geo feature, and Object IDs.
   Event IDs are integers.
 - **Transport security.** TLS on IP. Each Fieldlink uses its radio's own
   encryption and authentication. Records never carry credentials.
@@ -135,7 +136,7 @@ idempotency by `task_id`, and per-Asset contact reports to Core. Protocol define
 no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
 decides how an Asset authenticates to its gateway, within the rules
 [every Fieldlink provides](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides):
-a per-radio identity from the link's own cryptography and replay rejection. The gateway's link to Core is broadband
+a per-radio identity from the link's own cryptography, kept on the gateway side, and replay rejection. The gateway's link to Core is broadband
 IP, so the gateway keeps its Assets' full state and sends over the radio only
 what each Asset does not already have. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.

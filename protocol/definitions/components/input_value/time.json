@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/input_value/time.json",
+  "title": "time",
+  "description": "A time, such as the time a forecast is for.",
+  "type": "object",
+  "required": [
+    "kind",
+    "target_time"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "time"
+    },
+    "target_time": {
+      "$ref": "../../variables/target_time.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "time",
+      "target_time": 1793671200000
+    }
+  ]
+}

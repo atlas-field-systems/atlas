@@ -34,9 +34,10 @@ Names in this table are proposed configuration keys.
 | `debug_endpoint` | Serve the diagnostic log over HTTP with no credential ([logging](docs/logging.md#read-the-log-while-core-runs)) | Off by default. While it is on, anyone who has the URL that Core prints at startup can read the log |
 | `archive_directory` | Where Core writes each run's [Reset ZIP](docs/reset.md) when it stops | Path is open. Core never deletes from it |
 
-Accounts and the keys of Assets, gateways, and Plugins are provisioned through the
-[Core API](docs/api.md#accounts-and-provisioning), not configuration. A Plugin's
-own settings, such as which services it uses, belong to the Plugin, not to Core.
+Accounts and the keys of Assets on IP, gateways, and Plugins are provisioned
+through the [Core API](docs/api.md#accounts-and-provisioning), not
+configuration. Assets register each run. A Plugin's own settings, such as which
+services it uses, belong to the Plugin, not to Core.
 
 ## Logging and Reset
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/geofeature.json",
   "title": "Geo feature request",
-  "description": "The body of POST /entities/geofeatures, which creates a geo feature, and PUT /entities/geofeatures/{geofeature_id}, which replaces one whole: its shape and an optional name. A name left out of a replacement is cleared. Core stamps time and, on creation, assigns geofeature_id to make the geofeature record. Its kinds are exactly the geofeature record's kinds.",
+  "description": "The body of POST /entities/geofeatures, which creates a geo feature, and PUT /entities/geofeatures/{geofeature_id}, which replaces one whole: its kind and an optional name. A name left out of a replacement is cleared. Core stamps time and, on creation, assigns geofeature_id to make the geofeature record. Its kinds are exactly the geofeature record's kinds.",
   "type": "object",
   "required": [
     "kind"
@@ -16,6 +16,9 @@
     },
     {
       "$ref": "../records/geofeature/area.json"
+    },
+    {
+      "$ref": "../records/geofeature/imagery.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -56,6 +59,11 @@
         "latitude": 42.2746,
         "longitude": -71.8063
       }
+    },
+    {
+      "kind": "imagery",
+      "name": "North field imagery",
+      "object_id": "F2"
     }
   ]
 }

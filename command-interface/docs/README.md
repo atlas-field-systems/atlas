@@ -4,7 +4,8 @@ This page records selected behavior. No interface code exists yet. The interface
 reaches Core only through the [Core API](../../core/docs/api.md), using the
 [SDK](../../sdk/README.md)'s browser client. Records named here, such as Task,
 settings change, cancel, description, and the Asset's reports, are
-[Protocol's](../../protocol/README.md).
+[Protocol's](../../protocol/README.md). How operators use Plugins and Objects is
+in [Plugins and Objects](plugins-and-objects.md).
 
 ## Operators and connectivity
 
@@ -52,12 +53,60 @@ Tracks, and places (geo features).
 - **Operators cannot move, rename, or delete a Track.** Only Fusion changes
   Tracks. An operator who disagrees with one hides it in their own view.
 - **Any operator or admin can create, change, or delete any place**, including
-  places a Plugin made. A place is a point, line, or area with an optional
-  name. Changing or deleting a place never changes a Task already sent.
+  places a Plugin made. A place is a point, line, area, or imagery, with an
+  optional name; imagery can only be renamed. A Task names its place, and an
+  edit or deletion always goes through; each Asset decides how its work handles
+  the change ([Area and place inputs](#area-and-place-inputs)).
 
-Each Asset also has its own addressable detail page. Operators can share or
-bookmark it, refresh it, or open it in another tab. Track, Observation,
-Geofeature, and Object pages are not designed yet.
+### Hide items in your own view
+
+Hiding a Track and hiding old Tracks and sightings are view filters. A view
+filter belongs to one browser and one [run](#links-and-choices-belong-to-one-run):
+it survives a refresh and carries into new tabs, but it does not follow the
+operator to another computer, and other operators never see it. The map and list always show how many items are hidden, with a
+**Show all** button, so a hidden item is never silently lost.
+
+### Every item has its own page
+
+Every Asset, Track, sighting, place, Object, and [Plugin call](plugins-and-objects.md#run-a-plugin)
+has its own address. Operators can share or bookmark it, refresh it, or open it
+in another tab. The address opens `/map` with that item selected, its details in
+the panel, and the map around it.
+
+| Page | Shows |
+| --- | --- |
+| Asset | Its Tasks, conditions, and history, as [below](#read-tasks-conditions-and-history). |
+| Track | What Fusion concluded, its position or direction, its age, the sightings it rests on with the Asset and age of each, and its past path. A **Hide** button adds it to the view filter. Nothing on the page changes the Track. |
+| Sighting | The Asset that reported it, what it reports, its age, the Track that uses it, and its earlier reports from history. |
+| Place | Its shape and name, who made it, and the Plugin call that made it if a Plugin did. The unfinished Tasks that name it, its attached Objects, edit and delete, and the Plugin actions that take a place. |
+| Imagery | Its name, the GeoTIFF it shows with a link to that Object's page, who added it, rename, and delete. |
+| Object | See [Objects](plugins-and-objects.md#objects). |
+| Plugin call | See [Run a Plugin](plugins-and-objects.md#run-a-plugin). |
+
+A page for something that is gone during the run says what happened. It shows
+when the item went and who removed it, shows the item as it last stood, and
+offers to open it in history. A Track Fusion removed and a deleted place come
+from [Track and geo feature history](../../core/docs/api.md#reads). A page never
+just says "not found".
+
+### Links and choices belong to one run
+
+A [run](../../core/docs/storage.md#runs) lasts from one start of Core to the next
+stop, and Core starts each run with an empty picture. Every Asset registers
+again and comes back as a new Asset with a new ID that Core assigns. Tracks,
+places, Objects, and Plugin calls also get new IDs, and an ID from one run may
+name something else in the next. So every page address names its run, and
+every view filter is kept for one run.
+
+- **Stopping Core ends every session.** Everyone signs in again in the new run.
+- **A new run discards the old run's state.** When the tab finds that Core's run
+  has changed, it drops everything it held from the earlier run: the picture,
+  drafts, view filters, result overlays, and open pages. Nothing from that run
+  lingers in the interface.
+- **An old link never opens a new item.** A link from an earlier run opens a
+  page that says its run has ended and that the run's record is in that run's
+  Reset ZIP, not in Core. It never opens an item of the new run that has the
+  same ID, and it offers no history, because Core no longer holds that run.
 
 [Draft Tasks](#draft-tasks-on-the-map-then-send-them) stay in memory while the
 operator visits other pages. For example, opening another Asset's page to check
@@ -73,6 +122,17 @@ Document proposed RidgeLine changes here whenever Atlas needs them or they would
 simplify either project or provide another benefit. Explain the need, the
 package change, and the benefit compared with handling it in Atlas. The owner
 approves changes before work starts in the RidgeLine repository.
+
+[Drawing places](#draw-places) uses RidgeLine's drawing tools, limited to
+lines and areas without holes, rectangles, and circles. Atlas turns a rectangle
+or circle into area corners when it saves. These changes are proposed, none
+approved yet:
+
+| Need | Proposed RidgeLine change | Benefit over doing it in Atlas |
+| --- | --- | --- |
+| Drawing a point place | A point tool in the drawing rail | Points draw like every other shape. Without it, Atlas adds points through its right-click menu. |
+| Areas of at most 32 corners | An optional corner limit for areas and circles | The limit shows while drawing, instead of a refusal when the operator presses Finish. |
+| Imagery places | A layer that draws a georeferenced image from its corners | Any RidgeLine user can lay an image on the map. Atlas reads the GeoTIFF and passes its image and corners. |
 
 ## Draft Tasks on the map, then send them
 
@@ -133,9 +193,55 @@ shows as unconfirmed, because it may have reached the Asset. The Asset's later
 reports show what it did. The operator sends it again only if those reports
 show it did not run.
 
-Polygon and Geofeature Task inputs, and RidgeLine's drawing tools for authoring
-places, are not designed yet. Drawing an area will never task an
-Asset or create an enforced geofence by itself.
+### Area and place inputs
+
+None of today's commands takes an area or a place. When one does, such as a
+search of an area, the operator fills it in either of two ways:
+
+- **Draw it on the spot.** The drawn area belongs to that draft only, and the
+  Task carries it. It becomes a shared place only if the operator presses
+  **Save as place**, and the Task then names that place instead.
+- **Pick a place.** The Task names the place; it carries no copy of its
+  shape. The Asset gets the place's current shape through Core, and hears of
+  each later edit or deletion ([Core API](../../core/docs/api.md#geo-features)).
+  The draft and the Task show the place's name and link to its page.
+
+A point place can also fill a position input, such as Move To a named helipad.
+The Task names the point place in the same way.
+
+Any operator may edit or delete a place that unfinished Tasks name. The change
+always goes through, and the confirmation lists those Tasks. What happens to
+the work is up to each Asset, as [Asset behavior](../../asset/docs/README.md#carry-out-work-and-report-its-result)
+allows: one may keep its original plan, another may follow the new shape. A
+changed or deleted place cancels nothing by itself. The Asset's own reports show
+what it did, so the interface never claims a Task follows the change.
+
+A failsafe rule's boundary is never a place. The Asset stores its failsafe
+policy itself, so the operator draws each boundary in the failsafe rule, apart
+from the places on the map.
+
+Drawing an area never sends anything, tasks an Asset, or creates an enforced
+geofence by itself.
+
+## Draw places
+
+The drawing tools add a point, a line, or an area. A rectangle and a circle are
+shortcuts that save as an ordinary area outline, so a circle becomes a
+many-sided shape. An area has no holes. A finished drawing asks for an optional
+name and is saved as a place at once, shared with everyone. An area holds 3
+to 32 corners, as [Protocol's area](../../protocol/definitions/components/area.json)
+does, and the tools say so while drawing.
+
+**Add imagery** takes a GeoTIFF file. The interface stores it as an Object,
+then adds an imagery place that shows it on the map where the file says it
+belongs. Only a GeoTIFF can become imagery; other files stay ordinary Objects.
+Imagery can be renamed or deleted, never moved or reshaped. To correct one, the
+operator adds a new imagery place from a corrected file. Deleting imagery leaves
+its file. Plugins add imagery the same way.
+
+Any operator or admin edits or deletes any place, including one a Plugin made.
+Deleting asks for confirmation, and when Objects are attached it says they
+will stay as unattached Objects.
 
 ## Read Tasks, conditions, and history
 
@@ -152,8 +258,8 @@ telemetry, battery, settings, and failsafe reports separately, each with its
 age. Receipt time proves neither fresh measurements nor two-way contact, and
 connection does not mean equipment is ready; do not invent an overall verdict.
 When Core [refused an Asset, gateway, or radio](../../core/docs/api.md#basics) for
-different Protocol definitions, or refused a [removed radio](../../gateway/README.md#how-a-radio-asset-joins-and-leaves),
-show that refusal, so a missing Asset has a visible reason.
+different Protocol definitions, show that refusal, so a missing Asset has a
+visible reason.
 Show which gateway carries each radio Asset, and the gateway's own contact, so
 the operator can tell a gateway that is down from radios that went quiet.
 When an Asset is in [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation),
@@ -214,14 +320,11 @@ the SDK docs.
 
 ## Open
 
-- Exact detail routes, history controls, package integration, and basemap provider.
-- Whether admin work, such as accounts and Asset and gateway provisioning, lives
+- Exact page addresses, history controls, package integration, and basemap provider.
+- Whether admin work, such as accounts and Asset, gateway, and Plugin keys, lives
   in this interface.
 - The model rocket's launch command, equipment layout, recording limits, and how
   review knows the record is complete.
-- Geometry and Geofeature Task inputs, Track and Observation pages, and Object
-  pages. Operators upload, attach, move, detach, and delete Objects, and call Plugins
-  ([Plugins](../../atlas/plugins.md)); how the interface shows them is open.
 - Reordering drafts, and keeping drafts across a reload.
 
 Natural-language interaction is out of scope. If revisited, it belongs on a
