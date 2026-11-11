@@ -45,8 +45,8 @@ same for all of them.
 - **Joining the field link is the Fieldlink's own step**, such as receiving a
   private channel's key. A radio that has joined can appear as a new Asset, but
   it can never speak as an Asset that is already some other radio.
-- **The definitions hash is checked when a radio first speaks.** The Fieldlink
-  compares the radio's hash with the gateway's, as each link
+- **The definitions hash is checked each time a radio's link opens.** The
+  Fieldlink compares the radio's hash with the gateway's, as each link
   [checks its hash when it opens](../atlas/api-proposal.md#fieldlinks).
 
 Each Fieldlink's own docs say how it meets these rules, once written.

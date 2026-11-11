@@ -24,7 +24,7 @@ Names are proposed keys, not an implemented format.
 
 | Option | Purpose | Notes |
 | --- | --- | --- |
-| `asset_id`, `asset_key` | Identity and credential | For an Asset on IP, an admin [provisions it in Core](../core/docs/api.md#accounts-and-provisioning) and copies both here. There is no enrollment key. An Asset behind a gateway has no `asset_key` |
+| `asset_id`, `asset_key` | Identity and credential | For an Asset on IP, an admin [provisions it in Core](../core/docs/api.md#accounts-and-provisioning) and copies both here. There is no enrollment key. An Asset behind a gateway has no `asset_key`; it learns its `asset_id` from its gateway |
 | `link` | How the Asset reaches Core: a Core URL for the SDK client on IP, or a Fieldlink and its radio | See [communications](docs/communications.md) |
 | `modules`, `equipment` | Behavior modules, movement profiles, equipment drivers, and their connections | Built-in modules are never silently overridden |
 | `commands` | The supported commands, listed outright | Sent in the Asset's description |

@@ -261,8 +261,9 @@ order, because the Asset orders them by `task_id`.
 [Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves) owns the
 results; these are the calls behind them.
 
-- When a radio first speaks to it, the gateway sends `POST /entities/assets/radios`
-  with the radio identity and the radio's definitions hash. Core answers
+- Each time a radio's link to it opens, including after a gateway restart, the
+  gateway sends `POST /entities/assets/radios` with the radio identity and the
+  radio's definitions hash. Core answers
   `200 {asset_id}`:
   - a radio Core knows keeps its `asset_id`;
   - a radio an admin set up in advance gets the `asset_id` the admin chose;
@@ -272,13 +273,14 @@ results; these are the calls behind them.
   If another gateway, or none, carried the Asset, Core records the calling
   gateway as its carrier and adds `asset.carried`.
 - Core refuses a radio whose Asset an admin removed with `409 radio_removed` and
-  adds `radio.refused`. It refuses a different definitions hash with
+  adds `radio.refused`. Otherwise it refuses a different definitions hash with
   `409 definitions_mismatch` and adds `definitions.refused`. Neither refusal adds
   an Asset.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset
   get `403`.
-- An admin who provisions a radio identity that another Asset holds gets `409`.
-  Removing that Asset first frees the radio.
+- An admin who provisions a radio identity that a provisioned Asset holds gets
+  `409`. An admin may provision a removed radio again, under any `asset_id`;
+  that ends its refusal.
 - Removing a gateway leaves its radio Assets in place, offline, and carried by
   no gateway. Replacing its key changes nothing for them.
 
@@ -293,8 +295,9 @@ results; these are the calls behind them.
   Asset with nothing to report posts an empty report batch often enough to stay
   online. Core adds an `asset.contact` event when its view changes.
 - **A gateway's contact.** A gateway is online while Core has heard from it
-  within `offline_after_s`. Every call it makes with its key counts; with
-  nothing else to send, it calls `GET /about` with its key. Core adds a
+  within `offline_after_s`. Every request it makes with its key counts, but an
+  open event stream does not; with nothing else to send, it calls `GET /about`
+  with its key. Core adds a
   `gateway.contact` event when its view changes.
 - **The Asset's view.** On IP, the Asset is in contact while its stream is open
   and data or keepalives arrive. It loses contact after its `link_loss_after_s`

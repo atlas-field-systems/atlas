@@ -18,7 +18,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `accounts` | Administration | Admin and operator accounts and their password hashes |
 | `gateways` | Administration | Provisioned gateways, their key hashes, and contact |
 | `asset_keys` | Administration | Each Asset on IP's key hash |
-| `assets` | Entities | Provisioned Assets: ID, latest description, and contact; for a radio Asset, its radio identity and carrying gateway. A removed radio keeps its row, marked removed, so Core refuses it |
+| `assets` | Entities | Provisioned Assets: ID, latest description, and contact; for a radio Asset, its radio identity and carrying gateway. A removed radio keeps its row, marked removed and not listed as an Asset, so Core refuses it. Provisioning it again, under any `asset_id`, replaces that row |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
 | `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
 

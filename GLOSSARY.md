@@ -20,7 +20,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
 | Pause | A setting that holds an Asset in place. The active Task stays active and continues when the Asset is set running again. |
 | Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
-| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a radio Asset it hears for the first time. |
+| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a radio Core has never seen. |
 | Task | One instance of requested work with a reported execution outcome. |
 | Failsafe condition | A test of an Asset's equipment, contact, or work state. |
 | Failsafe rule | Conditions, a priority, and a configured response. |
