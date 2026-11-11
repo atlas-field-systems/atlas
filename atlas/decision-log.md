@@ -17,6 +17,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-11 | An Asset that restarts while not out on a Task, for example on the ground, drops its queued Tasks. Operators see them marked not done and send again whatever still matters. Nothing resumes on its own. | An app restart during a run, not mid-flight. | [Runs and identity](runs-and-identity.md#keys-and-registration) |
 | 2026-11-11 | An Asset that restarts mid-flight, while out on a Task, enters failsafe state instead of resuming its work. It still rejoins Core as the same Asset with the same `asset_id`, through its key or through its gateway, so operators see it as itself, in failsafe. | An app restart during a run, on IP or radio. A gateway swap is not a restart. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-mid-flight-is-a-failsafe) |
 | 2026-11-11 | "Registration" means an Asset joining a run: the event is `asset.registered` and the record is `registration`. "Provisioning" means only admin setup work, such as handing out keys and adding gateways and Plugins. | Docs and records. | [Protocol records](https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md#records) |
 | 2026-11-11 | Every run starts the picture fresh. Across runs, every Asset registers again and comes back as a new Asset with a new ID that Core assigns; the acknowledgement tells it the ID. Nothing picks its own `asset_id`. `observation_id` stays Asset-chosen. Assets on IP work the same way: the admin hands out only the access key. | Across runs. Within a run, IDs stay. | [Runs and identity](runs-and-identity.md#ids) |
@@ -34,6 +35,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-11 | There are no multi-step Plans, only individual Tasks. | All work. | [Protocol working choices](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks) |
+| 2026-11-11 | Assets have no custom per-Asset settings yet. | Asset settings. | [Protocol working choices](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#settings) |
 | 2026-11-11 | A Task holds a live reference to a place (`geofeature_id`). The Asset obtains the current shape; Core never copies or snapshots it. Assets get read access to the named place only. Edits reach the Asset as `geofeature.replaced` or `geofeature.deleted`. | A named place. A shape drawn into one Task is carried by that Task. | [Core API, geo features](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features) |
 | 2026-11-11 | Place edits and deletes go through while Tasks use the place. Core blocks nothing and cancels nothing; each Asset may keep its original plan or follow the new shape. | Places named by unfinished Tasks. | [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#carry-out-work-and-report-its-result) |
 | 2026-11-11 | Core refuses a place that is not a point for `move_to` and `land`. | Those two commands. | [Core API, geo features](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features) |
@@ -45,6 +48,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-11 | A restarted Asset with no failsafe rule for the restart falls back to a built-in safe action its maker chose, such as landing or returning home. Operators may configure a rule to choose something specific. | A restart mid-flight. Otherwise no rule runs unless configured. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-mid-flight-is-a-failsafe) |
+| 2026-11-11 | A failsafe response is always protective. There is no "keep going" or continue response: a condition whose response would be to keep going is not a failsafe. | Failsafe responses. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default) |
 | 2026-11-11 | During a failsafe the operator may override with Land, Return to home, or Hold sent with `now`, or with pause. | Failsafe state. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation) |
 | 2026-11-11 | A failsafe that has fired can't be cancelled or left; the Asset stays in failsafe state until it shuts down. | Failsafe state. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation) |
 | 2026-11-11 | Failsafe boundaries are drawn separately from saved places; a failsafe response can't name a saved place. | Failsafe rules. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#configure-conditions-as-well-as-responses) |

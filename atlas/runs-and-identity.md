@@ -73,7 +73,10 @@ new one.
 - **Work does not resume after a restart.** An Asset that restarts mid-flight,
   while out on a Task, enters failsafe state instead of resuming its work
   ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-mid-flight-is-a-failsafe)).
-  Operators see it as itself, in failsafe.
+  Operators see it as itself, in failsafe. An Asset that restarts while not out
+  on a Task, for example on the ground, drops its queued Tasks: operators see
+  them marked not done and send again whatever still matters. Nothing resumes
+  on its own.
 - **A removed Asset's ID ends.** If it registers again, it is a new Asset.
 
 ## Radio Assets
@@ -108,5 +111,4 @@ a new Asset.
 
 ## Open
 
-- What happens to the Tasks of an Asset whose app restarts while it is not out
-  on a Task, for example queued work on the ground.
+- Which reports mark a restarted Asset's dropped Tasks not done.

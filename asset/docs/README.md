@@ -51,7 +51,8 @@ whose app stops shows offline, and the other Assets keep working. If the app
 starts again in the same run, it registers with its key and
 [rejoins as the same Asset](../../atlas/runs-and-identity.md#keys-and-registration),
 but its work does not resume. A restart mid-flight
-[is a failsafe](failsafes.md#a-restart-mid-flight-is-a-failsafe).
+[is a failsafe](failsafes.md#a-restart-mid-flight-is-a-failsafe); a restart on
+the ground drops its queued Tasks, and operators send again what still matters.
 An Asset keeps nothing from an earlier run. A dropped link does not restart the
 app or clear its state.
 
