@@ -12,7 +12,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 
 | Table | Owner | Holds |
 | --- | --- | --- |
-| `runs` | Shared | Each run's `run_id`, start, and end |
+| `runs` | Shared | Each run's `run_id`, start, end, and how it ended. Rows stay after the run is cleared, so `run_id` is never reused |
 | `events` | Shared | The [event log](api.md#the-event-log-and-live-stream): `event_id`, `time`, `kind`, `asset_id`, and the record |
 | `idempotency_keys` | Shared | Each caller's keys for the run, with a hash of the body and the non-secret response or credential acknowledgment ([retry rules](api.md#callers-and-credentials)) |
 | `accounts` | Administration | Admin and operator accounts and their password hashes |
@@ -43,18 +43,27 @@ kept twice.
 
 ## Runs
 
-A run is the span between two Resets. Every row in `assets`, `tasks`, `queues`, `tracks`,
+A run is the span from one start of Core to the next stop
+([Reset](reset.md)). Each start adds a row to `runs` with the next `run_id`, a
+rising integer never reused. Every row in `assets`, `tasks`, `queues`, `tracks`,
 `geofeatures`, `objects`, `idempotency_keys`, and `events` carries its `run_id`,
 and each Object's file is kept with its run. Rules scoped to a run, such as
 unique `asset_id`s, `task_id`s, `track_id`s, `geofeature_id`s, and idempotency keys, hold
-within one `run_id`. Rows from earlier runs stay readable as history until
-retention removes them. The Reset request, its archive, and what it clears are
-[not defined yet](api.md#not-defined-yet).
+within one `run_id`. `event_id` keeps rising across runs and is never reused.
 
-## Memory and retention
+When a run ends, Core writes its Reset ZIP, checks it, and then deletes the
+run's rows and files. Accounts and the keys of Assets, gateways, and Plugins
+belong to no run and stay. Assets do not: each one registers anew every run.
+Normally the database holds only the current run. An earlier run stays only
+while its ZIP has not been written; Core retries it at each start and never
+serves it through the Core API.
+[Reset](reset.md) owns the procedure.
+
+## Memory and full disks
 
 - Core holds no backlog in memory. Event streams and history pages read from disk.
-- Core removes a run's rows once the run is older than `run_retention_days`
-  ([Scale](../../atlas/scale.md#runs-and-storage)). The current run is never removed.
-- Core builds archives and removes old runs only at Reset, so neither slows a
-  run in progress.
+- Core builds archives and clears runs only when a run ends, so neither slows a
+  run in progress. Core never deletes a Reset ZIP.
+- If a change cannot be written, because the disk is full or the database
+  fails, Core refuses the request with `507 storage_full` and stores nothing.
+  Nothing is accepted without its event.

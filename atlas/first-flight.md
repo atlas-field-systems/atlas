@@ -99,7 +99,9 @@ The Asset owns
 ## Keep the whole run for debugging
 
 When the operator spins down the system, Core and each Asset write their own
-Reset ZIP. Gateways will do the same when added. Core's ZIP holds:
+Reset ZIP, and so does each gateway. The operator shuts the Assets
+down first, and then the admin stops Core on its own computer. Stopping Core
+ends the run, and everyone signs in again for the next one. Core's ZIP holds:
 
 - Its run's data, including the event log: every accepted request and every
   stored report, in order.
@@ -107,9 +109,18 @@ Reset ZIP. Gateways will do the same when added. Core's ZIP holds:
 - Its configuration, without secrets.
 - A plain readable summary: start and end, Assets, Tasks, and outcomes.
 
+Core checks its ZIP and then clears the run, so the next start of Core begins
+with an empty map. The ZIP is then the only copy of the run, and nothing deletes
+it automatically. If Core crashes, its next start writes the ZIP of the
+interrupted run, marked as possibly incomplete. Each ZIP lands in a folder on
+its own computer, and a person copies the ZIPs off by hand.
+
 After using the system, give the Reset ZIPs to an AI agent for full context on
 the run and any errors. Each system's documentation defines its own ZIP contents
-and Reset procedure. Merging several ZIPs into one is a separate process.
+and Reset procedure: [Core](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md),
+[Asset](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip),
+and [gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip).
+Merging several ZIPs into one is a separate process.
 
 Core, gateways, and Assets keep detailed local diagnostic logs alongside their
 normal state. The SDK supplies events to the program using it, so those events

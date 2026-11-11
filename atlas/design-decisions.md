@@ -105,6 +105,25 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 `event_id`; Core never buffers its backlog. See
 [Core storage](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/storage.md).
 
+## Stopping Core ends the run
+
+A run lasts from one start of Core to the next stop. There is no Reset request:
+the admin stops Core on its own computer, and the operator is trusted to shut
+the Assets down first. Core, each Asset, and each gateway write their own Reset
+ZIP, check it, and only then clear what it holds. Core starts every run with an
+empty picture and keeps only accounts and keys. Every Asset registers anew
+and comes back as a new Asset with a new ID. Everyone signs in
+again, and nothing from the earlier run lingers: an operator application drops
+what it held, and an old link never opens a different item. The ZIP is then the
+only copy of the run, and nothing deletes a ZIP automatically. A crash ends the run
+too; the next start writes its ZIP, marked as possibly incomplete. A failed ZIP
+clears nothing and never holds up the next run. Logging never blocks equipment
+control or request handling, and every gap is listed in the ZIP. Core refuses a
+change it cannot store. Each part's docs own its ZIP:
+[Core](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md),
+[Asset](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip),
+and [gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip).
+
 ## Identity and security
 
 - Operators log in to accounts, with admin and operator types. Admins provision

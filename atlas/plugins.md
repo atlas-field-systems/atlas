@@ -153,3 +153,6 @@ a barometer or the altitude of its launch point.
 [Plugins and Objects in the interface](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/plugins-and-objects.md)
 shows how operators run Plugins and see their results and Objects. A new Plugin
 needs no change to the Command Interface.
+
+Whether a Plugin writes its own Reset ZIP is not decided; for now, Core's ZIP records every call
+and answer.

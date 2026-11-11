@@ -17,7 +17,7 @@ explains why the API is the only way in.
 - **Compatibility.** Every request carries `Atlas-Definitions: <hash>`, the hash
   of the Protocol definitions the caller uses. Core refuses a missing or different
   hash with `409 definitions_mismatch`. `GET /about` needs no credential and
-  returns `core_version`, `protocol_version`, and `definitions_hash`. The event
+  returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
   stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
   that hash differs, Core adds a `definitions.refused` event, so operators see
@@ -28,6 +28,21 @@ explains why the API is the only way in.
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
+- **Runs.** A run lasts from one start of Core to the next stop, and
+  [Reset](reset.md) clears it. Every read, history page, and event stream covers
+  only the current run. After a Reset, Core holds no history of the earlier run;
+  it lives only in that run's Reset ZIP. `event_id` keeps rising across runs, so
+  an old cursor never matches a new event. Other IDs, such as `task_id`,
+  `track_id`, `geofeature_id`, and `object_id`, start again each run, so the
+  same ID can name a different item in the next run.
+- **A new run discards the old one.** A caller that finds a new `run_id` on
+  `GET /about` throws away everything it held from the earlier run: its copy of
+  the picture and history, its cursors, its links, and the operator's choices
+  in their own view, such as hidden Tracks. It then starts again from a fresh
+  read. A link or saved reference to an item names its run. When that run has
+  ended, the caller never looks the item up in Core, because the same ID may now
+  name something else. It says the item belonged to an ended run, whose record
+  is in its Reset ZIP. Sessions end with the run, so everyone signs in again.
 - **Errors** are a status and `{"error": "<code>", "explanation": "<text>"}`.
 
 | Status | Meaning |
@@ -38,6 +53,7 @@ explains why the API is the only way in.
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
 | `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
+| `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
 ## Root paths
 
@@ -543,15 +559,16 @@ Assets or gateways.
   relies on a `geofeature_id` never being reused in a run, which the
   [Entities](#entities) design must keep.
 - **Delete removes the file.** The `object.stored` and `object.deleted` events
-  stay in history, so the record of the upload and of who deleted it remains.
+  stay in history for the rest of the run, and then in its Reset ZIP, so the
+  record of the upload and of who deleted it remains.
   Only an operator deletes an Object. Core refuses to delete an Object that an
   imagery geo feature still shows with `409`; the operator deletes the imagery
   first.
 - **Who stored it** is `requested_by` in the Object record: the account that
   uploaded it or the Plugin that stored it. Core stamps it, as for Tasks.
-- **Objects belong to their run.** They are kept until the run is removed under
-  [retention](storage.md#memory-and-retention). What Reset does with them is
-  [not defined yet](#not-defined-yet).
+- **Objects belong to their run.** When the run ends, their files go into
+  Core's [Reset ZIP](reset.md#cores-reset-zip) and are cleared from Core. The
+  next run starts with none.
 
 ## Plugins
 
@@ -654,8 +671,6 @@ marked not finished, and an operator who still wants it calls again.
 
 ## Not defined yet
 
-- Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
-  defines what a run is.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.

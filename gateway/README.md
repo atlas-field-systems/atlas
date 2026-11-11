@@ -5,8 +5,8 @@ to the [Core API](../core/docs/api.md) over broadband IP, and runs the Fieldlink
 its radios need. A gateway is not an Asset.
 
 **Planning.** Nothing is built. This page records how radio Assets join Atlas
-through a gateway and what every Fieldlink must provide. The rest of the gateway
-design is deferred.
+through a gateway, what every Fieldlink must provide, and the gateway's Reset
+ZIP. The rest of the gateway design is deferred.
 
 ## The gateway app and its Fieldlinks
 
@@ -92,6 +92,40 @@ gateway and all its radios offline) from radios that went quiet (the gateway
 online, some radios offline). [Contact](../core/docs/api.md#contact) has the
 rule.
 
+## The gateway's Reset ZIP
+
+The gateway app stays running across Core's runs, and keeps its own record for
+each one. Like every part, it records detailed diagnostics for its app and its
+Fieldlinks, never records a credential, and never sends logs over a field link.
+
+- **When Core's run ends**, the gateway writes a ZIP for that run. It knows the
+  run ended when it reaches Core again and `GET /about` shows a new `run_id`
+  ([Core API basics](../core/docs/api.md#basics)). Its time cut off from Core
+  belongs to the run that ended.
+- **When the gateway shuts down**, it writes a ZIP for everything since its last
+  one. After a crash or power loss, its next start writes that ZIP first,
+  marked "the gateway stopped unexpectedly; this record may be incomplete".
+
+Each ZIP goes into the gateway's archive folder, named
+`gateway-<gateway_id>-<start>.zip`, where `<start>` is the start of the time it
+covers in UTC as `YYYYMMDDTHHMMSSZ`. A person copies it off the gateway's
+computer by hand.
+
+| File | Holds |
+| --- | --- |
+| `README.md` | What each file is |
+| `summary.md` | The time covered, the Core `run_id`, contact with Core, each radio heard and when, and every gap |
+| `manifest.json` | Every file with its size and SHA-256, whether the gateway stopped normally, and every known gap |
+| `diagnostics/` | The gateway app's and each Fieldlink's diagnostics, as written |
+| `config.json` | The configuration, with secrets removed |
+| `versions.json` | The gateway app, each Fieldlink, and the Protocol package versions, and the definitions hash |
+
+The gateway checks each ZIP against its manifest before it deletes the records
+in it, and keeps them if the ZIP fails. It never deletes a ZIP. When logging
+cannot keep up or the disk fills, it carries frames before it writes logs: it
+drops records rather than holding up a radio, counts them, and lists the gap in
+the ZIP, as the [Asset does](../asset/docs/logging.md#when-logging-cannot-keep-up).
+
 ## Scenarios
 
 Behavior tests come from these, once the gateway exists.
@@ -114,6 +148,9 @@ Behavior tests come from these, once the gateway exists.
   and its unfinished Tasks and moves to the new gateway when it is heard.
 - Remove the gateway and add none. Its radios stay in the picture, offline,
   with their IDs.
+- Stop Core and start it again while the gateway runs. The gateway writes one
+  ZIP for the run that ended, and each radio it hears in the new run registers
+  as a new Asset.
 
 ## Where the selected rules live
 
@@ -131,7 +168,7 @@ Behavior tests come from these, once the gateway exists.
 
 ## Not designed yet
 
-- The gateway app: its parts, its configuration, its logging, and its Reset ZIP.
+- The gateway app: its parts, its configuration, and what its diagnostics record.
 - How a Fieldlink is installed, started, and tested with the gateway app.
 - Each Fieldlink's docs, including how it meets the rules above.
 - What each field link can carry. [About 20 Assets](../atlas/scale.md#fleet) is a
