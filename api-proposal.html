@@ -57,8 +57,8 @@ refresh are reads of that log. Current state is never rebuilt from it.</p>
 <li>Both live on disk in SQLite. Core keeps no backlog of the log in memory.</li>
 <li>A reader follows the log from a cursor. A slow or disconnected reader is
 dropped and resumes from its last <code>event_id</code>; Core never buffers its backlog.</li>
-<li>Retention follows <a href="scale.html#runs-and-storage">Scale</a>: a run&#39;s events are
-archived, then removed after the retention period.</li>
+<li>When a run ends, its events go into Core&#39;s Reset ZIP and are cleared from
+Core (<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Reset</a>).</li>
 </ul>
 <h2 id="the-core-api-sketch">The Core API (sketch)</h2>
 <p>Names are illustrative. Core owns the exact API doc.</p>
