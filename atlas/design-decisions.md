@@ -129,7 +129,8 @@ an outcome. Core numbers each Asset's Tasks in order and sends every Task as
 soon as it accepts it, so an Asset that loses contact already holds its work. The
 Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
 before it. Cancel names its Task. Pause is a setting that holds the active Task
-without ending it; the Task continues on resume. Retries are safe by design:
+without ending it; the Task continues on resume. A command that takes a place carries the place itself, as it stood when sent,
+so editing or deleting the place never changes the Task. Retries are safe by design:
 creates carry an idempotency key, settings are end states, and each `task_id`
 runs once.
 
@@ -173,6 +174,10 @@ The Asset runs failsafes locally, and the records follow that
 - A Plugin call is accepted, not done, like a Task. It ends with the Plugin's
   result or failure, or is dropped when the Plugin goes offline or is removed. Plugins create
   only geo features and Objects, and never direct Assets.
+- The Command Interface builds each Plugin action's form, menus, and result
+  view from its description, with display choices that ship with the Plugin.
+  A new Plugin needs no interface change. Plugins bring no screens or code into
+  the interface; custom Plugin screens are a possible later step.
 - An Object is a file Core holds. Plugins and operators add Objects; files from
   Assets are not designed yet. A file never changes, and Core records who
   stored it.

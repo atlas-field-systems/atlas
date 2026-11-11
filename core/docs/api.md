@@ -389,7 +389,7 @@ differently.
 | `/entities/assets` | The actor surface, already specified above: description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Provisioning is under `/administration`. Tasks are under `/tasks`. |
 | `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. Tasks may name a `geofeature_id`. |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task that takes a place carries the geo feature itself, as it stood when sent. |
 
 Objects are not Entities.
 
@@ -460,7 +460,8 @@ and a removal adds `track.removed`.
 - The event names who asked with `requested_by`, because the geo feature record
   names no author. A geo feature a Plugin creates names the Plugin.
 - Editing or deleting a geo feature never changes a Task already sent. Geo
-  features are not sent to Assets.
+  features are not sent to Assets on their own. A Task that takes a place
+  carries its own copy.
 
 ## Objects
 
@@ -608,5 +609,7 @@ marked not finished, and an operator who still wants it calls again.
   action's request and list output, and `plugin_id` in `provisioning`,
   `contact`, and `requested_by`. The [parked](../../protocol/parked/README.md)
   definitions are the starting point.
+- A read of a deleted Object: who deleted it and when, so a link to it can say
+  what happened ([Command Interface](../../command-interface/docs/plugins-and-objects.md#objects)).
 - Which Plugin actions Protocol defines first. [Plugins](../../atlas/plugins.md)
   lists the intended ones.

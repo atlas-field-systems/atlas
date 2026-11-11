@@ -19,6 +19,8 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Plugin interface | The Core API calls a Plugin's key may use. |
 | Plugin action | One thing a Plugin offers to do, such as find the buildings in an area. Its inputs and output are defined in Protocol. |
 | Plugin call | One run of a Plugin action with its inputs. It ends with a result or a failure, or is dropped if the Plugin goes offline or is removed first. |
+| View filter | An operator's choice to hide items in their own view, such as old sightings or a Track they disagree with. It belongs to one browser, never changes the shared picture, and other operators never see it. |
+| Result overlay | A Plugin's listed results drawn on one operator's map. It never enters the shared picture; the operator saves an item as a place to share it. |
 | Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
 | Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
 | Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |

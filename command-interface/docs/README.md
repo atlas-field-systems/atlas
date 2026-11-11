@@ -4,7 +4,8 @@ This page records selected behavior. No interface code exists yet. The interface
 reaches Core only through the [Core API](../../core/docs/api.md), using the
 [SDK](../../sdk/README.md)'s browser client. Records named here, such as Task,
 settings change, cancel, description, and the Asset's reports, are
-[Protocol's](../../protocol/README.md).
+[Protocol's](../../protocol/README.md). How operators use Plugins and Objects is
+in [Plugins and Objects](plugins-and-objects.md).
 
 ## Operators and connectivity
 
@@ -55,9 +56,35 @@ Tracks, and places (geo features).
   places a Plugin made. A place is a point, line, or area with an optional
   name. Changing or deleting a place never changes a Task already sent.
 
-Each Asset also has its own addressable detail page. Operators can share or
-bookmark it, refresh it, or open it in another tab. Track, Observation,
-Geofeature, and Object pages are not designed yet.
+### Hide items in your own view
+
+Hiding a Track and hiding old Tracks and sightings are view filters. A view
+filter belongs to one browser: it survives a refresh and carries into new tabs,
+but it does not follow the operator to another computer, and other operators
+never see it. The map and list always show how many items are hidden, with a
+**Show all** button, so a hidden item is never silently lost.
+
+### Every item has its own page
+
+Every Asset, Track, sighting, place, Object, and [Plugin call](plugins-and-objects.md#run-a-plugin)
+has its own address. Operators can share or bookmark it, refresh it, or open it
+in another tab. The address opens `/map` with that item selected, its details in
+the panel, and the map around it.
+
+| Page | Shows |
+| --- | --- |
+| Asset | Its Tasks, conditions, and history, as [below](#read-tasks-conditions-and-history). |
+| Track | What Fusion concluded, its position or direction, its age, the sightings it rests on with the Asset and age of each, and its past path. A **Hide** button adds it to the view filter. Nothing on the page changes the Track. |
+| Sighting | The Asset that reported it, what it reports, its age, the Track that uses it, and its earlier reports from history. |
+| Place | Its shape and name, who made it, and the Plugin call that made it if a Plugin did. Its attached Objects, edit and delete, and the Plugin actions that take a place. |
+| Object | See [Objects](plugins-and-objects.md#objects). |
+| Plugin call | See [Run a Plugin](plugins-and-objects.md#run-a-plugin). |
+
+A page for something that is gone says what happened. It shows when the item
+went and who removed it, shows the item as it last stood, and offers to open it
+in history. A Track Fusion removed and a deleted place come from
+[Track and geo feature history](../../core/docs/api.md#reads). A page never just
+says "not found".
 
 [Draft Tasks](#draft-tasks-on-the-map-then-send-them) stay in memory while the
 operator visits other pages. For example, opening another Asset's page to check
@@ -73,6 +100,17 @@ Document proposed RidgeLine changes here whenever Atlas needs them or they would
 simplify either project or provide another benefit. Explain the need, the
 package change, and the benefit compared with handling it in Atlas. The owner
 approves changes before work starts in the RidgeLine repository.
+
+[Drawing places](#draw-places) uses RidgeLine's drawing tools, limited to
+lines and areas without holes, rectangles, and circles. Atlas turns a rectangle
+or circle into area corners when it saves. These changes are proposed, none
+approved yet:
+
+| Need | Proposed RidgeLine change | Benefit over doing it in Atlas |
+| --- | --- | --- |
+| Drawing a point place | A point tool in the drawing rail | Points draw like every other shape. Without it, Atlas adds points through its right-click menu. |
+| Areas of at most 32 corners | An optional corner limit for areas and circles | The limit shows while drawing, instead of a refusal when the operator presses Finish. |
+| Imagery places, being designed with the Protocol records | A layer that draws a georeferenced image from its corners | Any RidgeLine user can lay an image on the map. Atlas reads the GeoTIFF and passes its image and corners. |
 
 ## Draft Tasks on the map, then send them
 
@@ -133,9 +171,37 @@ shows as unconfirmed, because it may have reached the Asset. The Asset's later
 reports show what it did. The operator sends it again only if those reports
 show it did not run.
 
-Polygon and Geofeature Task inputs, and RidgeLine's drawing tools for authoring
-places, are not designed yet. Drawing an area will never task an
-Asset or create an enforced geofence by itself.
+### Area and place inputs
+
+None of today's commands takes an area or a place. When one does, such as a
+search of an area, the operator fills it in either of two ways:
+
+- **Draw it on the spot.** The drawn area belongs to that draft only. It
+  becomes a shared place only if the operator presses **Save as place**.
+- **Pick a place.** The Task carries the place itself, its shape and name as
+  they stood when it was sent, and shows which place it came from. Editing or
+  deleting the place later never changes the Task.
+
+A point place can also fill a position input, such as Move To a named helipad.
+The draft shows the place's name beside the position. A failsafe rule's
+boundary is filled the same way, and the policy keeps its own copy of the
+outline.
+
+Drawing an area never sends anything, tasks an Asset, or creates an enforced
+geofence by itself.
+
+## Draw places
+
+The drawing tools add a point, a line, or an area. A rectangle and a circle are
+shortcuts that save as an ordinary area outline, so a circle becomes a
+many-sided shape. An area has no holes. A finished drawing asks for an optional
+name and is saved as a place at once, shared with everyone. An area holds 3
+to 32 corners, as [Protocol's area](../../protocol/definitions/components/area.json)
+does, and the tools say so while drawing.
+
+Any operator or admin edits or deletes any place, including one a Plugin made.
+Deleting asks for confirmation, and when Objects are attached it says they
+will stay as unattached Objects.
 
 ## Read Tasks, conditions, and history
 
@@ -214,14 +280,11 @@ the SDK docs.
 
 ## Open
 
-- Exact detail routes, history controls, package integration, and basemap provider.
+- Exact page addresses, history controls, package integration, and basemap provider.
 - Whether admin work, such as accounts and Asset and gateway provisioning, lives
   in this interface.
 - The model rocket's launch command, equipment layout, recording limits, and how
   review knows the record is complete.
-- Geometry and Geofeature Task inputs, Track and Observation pages, and Object
-  pages. Operators upload, attach, move, detach, and delete Objects, and call Plugins
-  ([Plugins](../../atlas/plugins.md)); how the interface shows them is open.
 - Reordering drafts, and keeping drafts across a reload.
 
 Natural-language interaction is out of scope. If revisited, it belongs on a
