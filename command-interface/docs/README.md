@@ -193,7 +193,7 @@ the SDK docs.
 - The model rocket's launch command, equipment layout, recording limits, and how
   review knows the record is complete.
 - Geometry and Geofeature Task inputs, Track and Observation pages, and Object
-  pages. Operators upload, move, detach, and delete Objects, and call Plugins
+  pages. Operators upload, attach, move, detach, and delete Objects, and call Plugins
   ([Plugins](../../atlas/plugins.md)); how the interface shows them is open.
 - Reordering drafts, and keeping drafts across a reload.
 

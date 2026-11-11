@@ -68,4 +68,5 @@ are, they follow these choices:
   for its list output, as Task kinds do. The Plugin description lists actions by
   name only.
 - `provisioning`, `contact`, and `requested_by` can name a Plugin with
-  `plugin_id`.
+  `plugin_id`. The parked `plugin_id` describes a Plugin inside Core; it becomes
+  a Plugin beside Core.

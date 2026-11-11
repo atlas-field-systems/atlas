@@ -1,6 +1,6 @@
 # Core API
 
-The Command Interface, Assets on IP, and gateways use this API to talk to Core
+The Command Interface, Assets on IP, gateways, and Plugins use this API to talk to Core
 from outside its inner wall. This design is selected but not implemented.
 Record shapes belong to [Protocol](../../protocol/README.md); this page names them and never redefines
 their fields. The [walled city](../../atlas/design-decisions.md#a-walled-city)
@@ -107,7 +107,7 @@ milliseconds, one of the kinds below, and its record.
 | `plugin.contact` | Core's view of a Plugin's contact changes | `contact` |
 | `plugin.called` | An operator calls a Plugin action | The Plugin call record |
 | `plugin.result`, `plugin.failed` | A Plugin answers a call | The Plugin result or failure record |
-| `plugin.dropped` | Core ends a call the Plugin did not answer before it went offline | `plugin_id`, `request_id` |
+| `plugin.dropped` | Core ends a call the Plugin did not answer before it went offline or was removed | `plugin_id`, `request_id` |
 | `object.stored` | An operator or a Plugin stores a file | The Object record |
 | `object.changed` | An operator attaches an Object to a geo feature, moves it, or detaches it | The Object record |
 | `object.deleted` | An operator deletes an Object | `object_id`, `requested_by` |
@@ -336,7 +336,7 @@ differently.
 | `/entities/assets` | The actor surface, already specified above: description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Provisioning is under `/administration`. Tasks are under `/tasks`. |
 | `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators and Plugins create, edit, and delete. Tasks may name a `geofeature_id`. |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. Tasks may name a `geofeature_id`. |
 
 The request and record shapes for `GET /entities`, `/entities/observations`,
 `/entities/tracks`, and `/entities/geofeatures` are not designed yet. Objects
@@ -346,8 +346,8 @@ are not Entities.
 
 An Object is a file Core holds, with an Object record that says what it is:
 `object_id`, `name`, `content_type`, `size_bytes`, and an optional
-`geofeature_id`. Operators and Plugins store Objects. Objects are not Entities,
-and Core never sends them to Assets or gateways.
+`geofeature_id`. Operators and Plugins store Objects. Core never sends them to
+Assets or gateways.
 
 | Request | Who | Result |
 | --- | --- | --- |
@@ -375,7 +375,9 @@ and Core never sends them to Assets or gateways.
   names the end state, so applying it twice changes nothing.
 - **One geo feature at most.** An Object names at most one geo feature, and the
   link is kept only on the Object. A geo feature's Objects are those that name it.
-  Deleting a geo feature leaves its Objects, which keep its ID as a record.
+  Deleting a geo feature leaves its Objects, which keep its ID as a record. This
+  relies on a `geofeature_id` never being reused in a run, which the
+  [Entities](#entities) design must keep.
 - **Delete removes the file.** The `object.stored` and `object.deleted` events
   stay in history, so the record of the upload and of who deleted it remains.
   Only an operator deletes an Object.
@@ -417,8 +419,9 @@ not call Plugins yet.
    `plugin.called` events addressed to it.
 
 A Plugin is online while Core has heard from it within `offline_after_s`
-([configuration](../config.md)). Every call it makes with its key counts. A
-Plugin with nothing else to send calls `GET /about` often enough to stay online.
+([configuration](../config.md)). Every call it makes with its key counts; an
+open event stream does not. A Plugin calls `GET /about` often enough to stay
+online, including while it works on a long call.
 Core adds `plugin.contact` when its view changes, so operators see which Plugins
 they can use.
 
@@ -426,10 +429,10 @@ they can use.
 
 | Request | Body | Result |
 | --- | --- | --- |
-| `POST /plugins/{plugin_id}/{action}` | The action's inputs, as Protocol defines for that action | `202 {event_id}` |
+| `POST /plugins/{plugin_id}/actions/{action}` | The action's inputs, as Protocol defines for that action | `202 {event_id}` |
 | `GET /plugins` | | Every Plugin: description, contact, and its unanswered calls, with `as_of` |
-| `GET /plugins/calls?plugin_id&cursor&limit` | | Calls with their answers, newest first; at most 1000 per page, with `next_cursor` |
-| `GET /plugins/calls/{event_id}` | | One call and its answer, if any |
+| `GET /plugins/{plugin_id}/calls?cursor&limit` | | Its calls with their answers, newest first; at most 1000 per page, with `next_cursor` |
+| `GET /plugins/{plugin_id}/calls/{event_id}` | | One call and its answer, if any |
 
 - Core validates the inputs, checks that the Plugin is online and that its
   description lists the action, and accepts or refuses the call. A Plugin that

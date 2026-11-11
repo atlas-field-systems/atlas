@@ -108,7 +108,7 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 ## Identity and security
 
 - Operators log in to accounts, with admin and operator types. Admins provision
-  accounts, Assets, and gateways. Sessions use HttpOnly cookies, so every browser
+  accounts, Assets, gateways, and Plugins. Sessions use HttpOnly cookies, so every browser
   tab shares one session.
 - An admin adds each gateway, each Asset on IP, and each Plugin in Core and
   receives its ID and key for its configuration. Keys are bearer tokens over TLS. There is no
@@ -137,7 +137,7 @@ runs once.
   calls and answers with Protocol's one validator. A new action is a Protocol
   change.
 - A Plugin call is accepted, not done, like a Task. It ends with the Plugin's
-  result or failure, or is dropped when the Plugin goes offline. Plugins create
+  result or failure, or is dropped when the Plugin goes offline or is removed. Plugins create
   only geo features and Objects, and never direct Assets.
 - An Object is a file Core holds. Plugins and operators add Objects; files from
   Assets are not designed yet. A file never changes, and Core records who

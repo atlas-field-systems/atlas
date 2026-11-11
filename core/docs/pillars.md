@@ -12,7 +12,7 @@ selected but not implemented.
 | Tasks | Tasks, each Asset's queue, and cancels |
 | Objects | Files Core holds, what each one is, and the geo feature it is attached to |
 | Fusion | Turning Observations into Tracks ([Fusion](fusion.md)) |
-| Administration | Accounts and their password hashes, sessions, Asset, gateway, and Plugin keys, provisioning, and each Plugin's description and contact. Administrative work Core adds later goes here too |
+| Administration | Accounts and their password hashes, sessions, Asset, gateway, and Plugin keys, and provisioning. Administrative work Core adds later goes here too |
 
 All five are part of the product and are built together.
 
@@ -40,5 +40,7 @@ the Core API.
 
 Plugins are not a pillar. They run in the second ring, each in its own container
 if it needs one, connect out to Core with their own keys, and reach the pillars
-only through the Plugin interface ([Plugins](../../atlas/plugins.md)). Plugin calls
-and answers are stored only as events, like Asset reports.
+only through the Plugin interface ([Plugins](../../atlas/plugins.md)). Administration
+keeps each Plugin's key, description, and contact in its `plugins` table, and the
+Plugin interface serves them under `/plugins`. Plugin calls and answers are
+stored only as events, like Asset reports.

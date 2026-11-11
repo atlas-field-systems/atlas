@@ -13,7 +13,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Plugin | A program beside Core, in the second ring, that offers actions. It connects out to Core with its own key and reaches Core only through its Plugin interface. Plugins do not direct Assets. See [Plugins](atlas/plugins.md). |
 | Plugin interface | The Core API calls a Plugin's key may use. |
 | Plugin action | One thing a Plugin offers to do, such as find the buildings in an area. Its inputs and output are defined in Protocol. |
-| Plugin call | One run of a Plugin action with its inputs. It ends with a result or a failure, or is dropped if the Plugin goes offline first. |
+| Plugin call | One run of a Plugin action with its inputs. It ends with a result or a failure, or is dropped if the Plugin goes offline or is removed first. |
 | Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
 | Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
 | Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |
