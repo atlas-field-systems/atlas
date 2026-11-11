@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/report/observation/bearing.json",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/observation/bearing.json",
   "title": "bearing",
   "description": "The sensor knows which way the target is from where the sensor was when it saw it: the origin it recorded at that moment (not taken from telemetry), the bearing, and optionally the elevation and range, each with its own uncertainty. Fusion turns these into a place.",
   "type": "object",

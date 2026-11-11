@@ -21,6 +21,7 @@ page disagree, fix one of them.
 ## Requests
 
 - Request bodies live in `requests/`, apart from records. `requests.tasks` holds 1 to 64 Tasks, each a Task kind and its fields; with `now` it holds exactly one. `requests.settings` holds `settings`. A cancel has no body.
+- `requests.geofeature` creates or replaces a geo feature: a geo feature kind and its fields, and an optional `name`. Core stamps `time` and assigns `geofeature_id`.
 - A Task request item takes the Task record's kinds and adds nothing. Core stamps `time`, `asset_id`, `task_id`, `clear_count`, `send_last`, `now`, and `requested_by` to make each Task record.
 
 ## Settings
@@ -37,7 +38,17 @@ page disagree, fix one of them.
 - In `report.failsafe`, `kind` is the trigger, `link_loss` or `low_battery`. `response` is what the Asset does, from the same list as the response settings. A trigger and a response are different things, so they are never the same field.
 - An older report never replaces a newer value. History keeps each report at its own time, even when it arrives late.
 - A position with no altitude means the altitude was not measured. Displays draw it at ground level.
-- One `entity_type` list names what Assets are, and will name observations and tracks.
+- One `entity_type` list names what Assets, Observations, and Tracks are.
+
+## The shared picture
+
+- **An Observation is the latest `report.observation`** for one `asset_id` and `observation_id`, ordered by report time and then `event_id`, as settings are. A report Core marks `clock_ahead` never becomes the latest. Earlier reports are history.
+- **Observation reports are whole.** Each carries everything the Asset knows about the target, so a field left out is not known. Protocol never merges partial reports and has no `null` to clear a fact. Fieldlinks may avoid resending unchanged fields in their own encoding.
+- **The Asset chooses `observation_id`**, unique for that Asset within a run, and keeps it while it keeps seeing the same target. Core assigns `track_id` and `geofeature_id`.
+- **A `coordinates` Observation** says where the target is, with an optional uncertainty. **A `bearing` Observation** says which way it is from where the sensor was, with optional elevation and range.
+- **A `track` is Fusion's conclusion.** Its `time` is the last sighting, the newest Observation report it uses. `sources` names the Observations it rests on. It has a position only when Fusion can place the target; a Track from bearings alone has none. Only Fusion writes Tracks.
+- **A `geofeature` is a point, line, or area with an optional name**, and nothing else. A change replaces it whole. It names no author; the event that stores it carries `requested_by`.
+- No record carries a stale flag. Every record keeps its `time`, and readers show its age.
 
 ## Administration and contact
 

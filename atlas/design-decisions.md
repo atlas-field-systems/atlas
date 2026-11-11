@@ -127,6 +127,18 @@ without ending it; the Task continues on resume. Retries are safe by design:
 creates carry an idempotency key, settings are end states, and each `task_id`
 runs once.
 
+## Evidence and conclusions stay apart
+
+The shared picture holds Assets, Observations, Tracks, and geo features.
+Observations are evidence: what an Asset reports seeing, and they change only
+when it reports. Tracks are conclusions, and only Fusion makes, changes, or
+removes them; an operator who disagrees with a Track hides it in their own view.
+Geo features are places any operator, admin, or Plugin may create, replace whole,
+or delete. Nothing in the picture expires during a run, and Core adds no stale
+status: every record keeps its time, and the Command Interface shows its age.
+[Core API, Entities](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities)
+owns the exact rules.
+
 ## Stack
 
 - Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface

@@ -85,7 +85,7 @@ Names are illustrative. Core owns the exact API doc.
 | `GET /events` (Server-Sent Events) | Live log events; reconnect resumes after `Last-Event-ID` |
 | `POST /entities/assets/{id}/reports` | Asset or gateway reports, in batches, keeping original times |
 | `GET /entities/observations`, `GET /entities/tracks` | Evidence and conclusions in the picture, separately |
-| `GET`, `POST`, `PATCH`, `DELETE /entities/geofeatures` | Places operators and Plugins author |
+| `GET`, `POST`, `PUT`, `DELETE /entities/geofeatures` | Places operators and Plugins author; a change replaces one whole |
 
 Each pillar has a root path (`/entities`, `/tasks`, `/objects`,
 `/administration`). Plugins have `/plugins`. Kinds live under their pillar's

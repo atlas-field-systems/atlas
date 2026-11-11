@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/geofeature/set/area.json",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/geofeature/area.json",
   "title": "area",
   "description": "A geo feature that is an area, such as a field or a building's outline.",
   "type": "object",
@@ -10,11 +10,11 @@
   ],
   "properties": {
     "kind": {
-      "$ref": "../../../variables/kind.json",
+      "$ref": "../../variables/kind.json",
       "const": "area"
     },
     "area": {
-      "$ref": "../../../components/area.json"
+      "$ref": "../../components/area.json"
     }
   },
   "examples": [

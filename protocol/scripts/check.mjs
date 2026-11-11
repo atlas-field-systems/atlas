@@ -94,7 +94,7 @@ for (const [file, s] of Object.entries(schemas)) {
   }
   // Requests are bodies, not records: Core stamps the record fields, so a request carries none of them.
   if (file.startsWith('requests/')) {
-    for (const f of ['type', 'time', 'asset_id', 'task_id', 'clear_count', 'send_last', 'requested_by']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
+    for (const f of ['type', 'time', 'asset_id', 'task_id', 'clear_count', 'send_last', 'requested_by', 'geofeature_id', 'track_id']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
     if (s.additionalProperties !== false && s.unevaluatedProperties !== false) errors.push(`${file}: law 1: a request sets additionalProperties or unevaluatedProperties to false`);
   }
   if (isKind(file)) {
@@ -128,9 +128,12 @@ for (const [file, law, what, named] of mirrors) {
 }
 const settingNames = Object.keys(schemas['components/settings.json']?.properties ?? {});
 if (schemas['variables/setting.json'] && !sameNames(schemas['variables/setting.json'].enum ?? [], settingNames)) errors.push(`variables/setting.json: law 12: its values must be the settings in components/settings.json: ${settingNames.join(', ')}`);
-// A Task request takes exactly the Task record's kinds.
+// A request with kinds, such as a Task or a geo feature, takes exactly its record's kinds.
 const kindTargets = (file) => (schemas[file]?.oneOf ?? []).map((b) => b.$ref && resolve(file, b.$ref));
-if (schemas['requests/task.json'] && !sameNames(kindTargets('requests/task.json'), kindTargets('records/task.json'))) errors.push('requests/task.json: law 12: its kinds must be exactly the kinds of records/task.json');
+for (const name of ['task', 'geofeature']) {
+  const request = `requests/${name}.json`, record = `records/${name}.json`;
+  if (schemas[request] && !sameNames(kindTargets(request), kindTargets(record))) errors.push(`${request}: ${name === 'task' ? 'law 12' : 'law 1'}: its kinds must be exactly the kinds of ${record}`);
+}
 for (const k of kindTargets('requests/task.json')) for (const f of ['task_id', 'clear_count', 'send_last', 'now', 'requested_by']) if (schemas[k]?.properties?.[f]) errors.push(`${k}: law 1: "${f}" is stamped by Core, not sent in a request`);
 
 if (errors.length) {
