@@ -137,14 +137,14 @@ definitions; a client refuses a mismatch with an explanation.</li>
 <h2 id="identity-and-security">Identity and security</h2>
 <ul>
 <li><strong>Accounts.</strong> Admin and operator accounts with hashed passwords and HttpOnly
-session cookies. Admins provision accounts, Assets and gateways. Each browser
+session cookies. Admins provision accounts and keys. Each browser
 tab uses the same session.</li>
-<li><strong>Provisioned Assets and gateways.</strong> An admin adds a gateway or an Asset on IP
-in Core and receives its ID and key for its configuration. The key is a bearer
+<li><strong>Keys for Assets and gateways.</strong> An admin creates a key for a gateway or an
+Asset on IP in Core for its configuration. The key is a bearer
 token over TLS. There is no enrollment key. An Asset behind a gateway
 authenticates to the gateway, not to Core.</li>
-<li><strong>IDs.</strong> Admins choose <code>asset_id</code>, which people read, when they provision an
-Asset on IP; Core assigns it for a radio Asset a gateway adds. Assets choose
+<li><strong>IDs.</strong> Core assigns <code>asset_id</code>, which people read, when an Asset registers
+each run, whether it registers itself or a gateway registers it. Assets choose
 <code>observation_id</code>. Core assigns Task, Track, geo feature, and Object IDs.
 Event IDs are integers.</li>
 <li><strong>Transport security.</strong> TLS on IP. Each Fieldlink uses its radio&#39;s own

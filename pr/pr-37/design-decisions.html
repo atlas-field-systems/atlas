@@ -88,7 +88,8 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 the admin stops Core on its own computer, and the operator is trusted to shut
 the Assets down first. Core, each Asset, and each gateway write their own Reset
 ZIP, check it, and only then clear what it holds. Core starts every run with an
-empty picture and keeps only accounts and provisioning. Everyone signs in
+empty picture and keeps only accounts and keys. Every Asset registers anew
+and comes back as a new Asset with a new ID. Everyone signs in
 again, and nothing from the earlier run lingers: an operator application drops
 what it held, and an old link never opens a different item. The ZIP is then the
 only copy of the run, and nothing deletes a ZIP automatically. A crash ends the run
@@ -102,15 +103,20 @@ and <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/READ
 <h2 id="identity-and-security">Identity and security</h2>
 <ul>
 <li>Operators log in to accounts, with admin and operator types. Admins provision
-accounts, Assets, gateways, and Plugins. Sessions use HttpOnly cookies, so every browser
-tab shares one session.</li>
-<li>An admin adds each gateway, each Asset on IP, and each Plugin in Core and
-receives its ID and key for its configuration. Keys are bearer tokens over TLS.
+accounts and the keys of Assets on IP, gateways, and Plugins. Sessions use
+HttpOnly cookies, so every browser tab shares one session.</li>
+<li>An admin creates a key for each gateway, each Asset on IP, and each Plugin in
+Core and copies it into that program&#39;s configuration. Gateways and Plugins
+get their ID with it. Keys are bearer tokens over TLS and carry across runs.
 There is no enrollment key. Only gateways, Assets on IP, and Plugins hold Core
 keys.</li>
+<li>Every Asset registers anew each run. Core assigns its <code>asset_id</code> then, and
+the acknowledgement tells the registrant. An Asset on IP registers with its
+key; a gateway registers each radio Asset the first time it hears it in a
+run. A removed Asset may register again and comes back as a new Asset.</li>
 <li>Core authenticates a gateway and trusts it for which radio Asset sent what. A
-radio Asset authenticates to the gateway with its own radio identity, not to
-Core, and appears as an Asset when the gateway first hears it.
+radio Asset authenticates to the gateway through its Fieldlink, never to
+Core.
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md">Gateway</a>
 owns these rules.</li>
 <li>TLS secures IP links. Each Fieldlink uses its radio&#39;s own encryption and
