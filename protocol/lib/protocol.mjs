@@ -66,10 +66,11 @@ function node(protocol, s, file, name, required) {
     const target = join(file, s.$ref);
     const n = { ...fieldTree(protocol, target, name, required), source: target };
     // The definition that points at another one may describe it, give its own examples,
-    // or rule out one value (not: { const }).
+    // rule out one value (not: { const }), or keep only some values (enum).
     if (s.description) n.description = s.description;
     if (s.examples) n.schema = { ...n.schema, examples: s.examples };
     if (s.not?.const !== undefined && n.options) n.options = n.options.filter((o) => o !== s.not.const);
+    if (Array.isArray(s.enum) && n.options) n.options = n.options.filter((o) => s.enum.includes(o));
     if (s.const !== undefined) Object.assign(n, { kind: 'enum', options: [s.const], schema: { ...n.schema, examples: [s.const] } });
     return n;
   }

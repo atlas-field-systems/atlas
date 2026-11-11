@@ -17,16 +17,16 @@ Definitions and records carry none.
 
 | Record | What it is | Who makes it |
 | --- | --- | --- |
-| `description` | What an Asset is: its reports, command kinds, supported settings, and cameras | Asset |
+| `description` | What an Asset is: its reports, command kinds, supported settings, subsystems, and cameras | Asset |
 | `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
 | `provisioning` | An Asset or gateway was added or removed | Core, for an admin or a gateway |
 | `contact` | Whether an Asset or gateway is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
-| `report.status` | How the Asset, one Task, or its task list stands | Asset |
+| `report.status` | One subsystem's condition, one Task's state, or its task list | Asset |
 | `report.telemetry`, `report.battery` | Where it is and how it moves; its battery | Asset |
 | `report.settings` | Its settings' values | Asset |
-| `report.failsafe` | A failsafe triggered and what the Asset does | Asset |
+| `report.failsafe` | A failsafe Task's state, an operator override, or a flight-controller takeover | Asset |
 | `report.observation` | Something the Asset sees: where it is, or which way | Asset |
 | `track` | Fusion's conclusion about one target, and the Observations it rests on | Core's Fusion |
 | `geofeature` | A place on the map: a point, line, or area, with an optional name | Core, for an account or a Plugin |

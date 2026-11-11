@@ -122,7 +122,7 @@ root. `/about`, `/events`, `/history`, and `/debug` belong to no pillar.
 ## Assets and failsafes
 
 The Asset holds its complete queue, runs its Tasks, reports observed outcomes,
-and owns its failsafes. During a failsafe, operators can still command hold,
+and owns its failsafes. During a failsafe, operators can still pause,
 land now or return home; the Asset records these as overrides. Longer-running
 failsafe behavior stays deferred until field testing.
 

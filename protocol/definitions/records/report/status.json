@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/status.json",
   "title": "Status",
-  "description": "The Asset reports its state, the state of one of its Tasks, or its task list. kind says which.",
+  "description": "The Asset reports one subsystem's condition, the state of one of its Tasks, or its task list. kind says which.",
   "type": "object",
   "required": [
     "type",
@@ -12,7 +12,7 @@
   ],
   "oneOf": [
     {
-      "$ref": "status/asset.json"
+      "$ref": "status/subsystem.json"
     },
     {
       "$ref": "status/task.json"
@@ -42,9 +42,18 @@
       "type": "report.status",
       "time": 1793667600000,
       "asset_id": "A1",
-      "kind": "asset",
+      "kind": "subsystem",
+      "subsystem_id": "GPS",
       "condition": "degraded",
-      "explanation": "Navigation receiver unavailable"
+      "explanation": "4 satellites, position error over 10 m"
+    },
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "subsystem",
+      "subsystem_id": "C1",
+      "condition": "healthy"
     },
     {
       "type": "report.status",

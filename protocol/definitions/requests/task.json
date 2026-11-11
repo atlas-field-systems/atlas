@@ -21,6 +21,9 @@
       "$ref": "../records/task/return_to_home.json"
     },
     {
+      "$ref": "../records/task/hold.json"
+    },
+    {
       "$ref": "../records/task/settings.json"
     }
   ],
@@ -54,6 +57,9 @@
     },
     {
       "kind": "return_to_home"
+    },
+    {
+      "kind": "hold"
     },
     {
       "kind": "settings",

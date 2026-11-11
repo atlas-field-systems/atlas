@@ -67,7 +67,8 @@ picture.onChange(cb);
 - **Per-setting latest values.** A `report.settings` changes only the settings it
   contains. Each setting keeps its own latest value and the report it came from,
   ordered by report time and then `event_id`, so a retained report received
-  after a gap never replaces a newer value.
+  after a gap never replaces a newer value. A subsystem report works the same
+  way: each declared subsystem keeps its own latest condition.
 - **Observations, Tracks, and geo features.** Each item is the record the event
   stream carries ([Entities](../../core/docs/api.md#entities)). A
   `report.observation` replaces its Observation only when it is newer by report

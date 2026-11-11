@@ -23,9 +23,9 @@ handover procedure still to be defined and verified.
 - **Takeoff** has one input, a target altitude. The drone climbs straight up
   to it and holds there.
 - **Move To** flies to a location.
-- **Land** has a landing position and an optional transit altitude. The drone
-  goes to that altitude, or stays at its current one, flies over the position,
-  and lands.
+- **Land** has an optional landing position and an optional transit altitude.
+  The drone goes to that altitude, or stays at its current one, flies over the
+  position, and lands. Without a position, it lands where it is.
 
 These are the copter commands. Fixed-wing aircraft need a separate command
 family with its own behavior. The copter commands are simpler than MAVLink and

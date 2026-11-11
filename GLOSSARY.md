@@ -25,8 +25,12 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
 | Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a radio Asset it carries. |
 | Task | One instance of requested work with a reported execution outcome. |
-| Failsafe condition | A test of an Asset's equipment, contact, or work state. |
-| Failsafe rule | Conditions, a priority, and a configured response. |
-| Failsafe response | A reusable action and its parameters. |
-| Failsafe task | One locally started execution of a configured response, using ordinary Task execution. |
+| Hold | A command that stops an Asset where it is and keeps it there. Unlike pause, it keeps no earlier work to resume. |
+| Subsystem | A part of an Asset, hardware or equipment software, that the Asset declares and reports a condition for, such as a GPS receiver or camera. |
+| Subsystem condition | A subsystem's health: unknown, healthy, degraded, or faulted. Not a failsafe condition. There is no overall Asset condition. |
+| Failsafe policy | An Asset's complete list of failsafe rules. It is one setting, always replaced whole. |
+| Failsafe condition | A test of an Asset's equipment, contact, or work state, used in a failsafe rule. |
+| Failsafe rule | Conditions, a priority, and a configured response, named by its rule ID. |
+| Failsafe response | A command the Asset supports and its parameters, with an optional fallback. A response always stops ordinary work; an Asset that should keep working has no rule for that situation. |
+| Failsafe task | One locally started execution of a configured response, using ordinary Task execution. It has no Core task number; its rule and attempt, primary or fallback, name it. |
 | Failsafe state | The Asset's [operation-long lock on ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation). |

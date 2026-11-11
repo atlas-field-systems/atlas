@@ -139,6 +139,25 @@ status: every record keeps its time, and the Command Interface shows its age.
 [Core API, Entities](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities)
 owns the exact rules.
 
+## Failsafes are configured rules, reported apart from Tasks
+
+The Asset runs failsafes locally, and the records follow that
+[behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
+
+- An Asset's failsafe rules are one setting, its failsafe policy, always
+  replaced whole. Any operator may replace it outside failsafe state, as with
+  other settings.
+- A rule's response is always a command the Asset supports. There is no
+  "continue": activation always stops ordinary work, so an Asset that should
+  keep working has no rule for that situation. A battery rule uses a set
+  percentage, not an estimate of the charge needed to get home.
+- A failsafe Task gets no Core `task_id`. Its rule and attempt name it, and its
+  state travels in the failsafe report, apart from Core's numbered Tasks.
+- Once a failsafe latches, it stays latched: ordinary work stays locked for the
+  rest of the operation, and an equal- or lower-priority rule never runs again.
+- Subsystems are declared in the description and reported one at a time. There
+  is no overall Asset condition, and a condition never gates work by itself.
+
 ## Stack
 
 - Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface

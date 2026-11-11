@@ -34,9 +34,9 @@ A change updates its tables and appends its event in the same transaction. The
 event stream therefore never shows a change that was not stored, and every stored
 change appears in it. Core never rebuilds tables from events.
 
-Asset reports are stored only as events. History, the latest report of each kind,
-and each setting's latest value are indexed queries on `events`, so no report is
-kept twice.
+Asset reports are stored only as events. History, the latest report of each
+kind, each setting's latest value, and each subsystem's latest condition are
+indexed queries on `events`, so no report is kept twice.
 
 ## Runs
 
