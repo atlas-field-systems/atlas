@@ -105,8 +105,6 @@ a barometer or the altitude of its launch point.
 - **What is this place.** Takes a position and returns its place name or address.
 - **Line of sight.** Takes a position and a height, and creates a geo feature
   showing what can be seen from there.
-- **Road route.** Takes two positions and returns the road route between them
-  as a line for the operator to look at.
 
 ## Not Plugins
 
