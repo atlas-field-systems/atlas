@@ -63,11 +63,13 @@ operation. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log.
 
-An Asset whose app stops leaves the operation. Core shows it offline, and the
-other Assets keep working. An Asset that crashed is taken apart and evaluated
-before it runs again. An Asset keeps nothing from an earlier run when it starts.
-This is about the app stopping. A dropped link is not a stop: the app keeps its
-state and reconnects as the same Asset.
+An Asset whose app stops shows offline in Core, and the other Assets keep
+working. If its app starts again in the same run, it rejoins as the same Asset,
+with the same ID and its unfinished work, because its key proves which Asset it
+is ([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset
+that crashed is inspected before it runs again. An Asset keeps nothing from an
+earlier run. A dropped link is not a stop: the app keeps its state and
+reconnects as the same Asset.
 
 An Asset's [settings](settings.md) are its current configuration, kept in its entry.
 

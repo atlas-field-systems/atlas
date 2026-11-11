@@ -47,11 +47,11 @@ its first valid position. An explicitly configured or operator-set home takes
 precedence. A reconnect does not reset home; operators change it as a setting.
 
 The app and its link stay running for the operation, as Core does. An Asset
-that stops [leaves the operation](../../atlas/using-atlas.md#an-operation-runs-without-restarts),
-and the other Assets keep working. There is no mission recovery: an Asset keeps
-nothing from an earlier run when it starts. Atlas does not support an Asset
-rejoining the run it left. A dropped link does not restart the app or clear its
-state.
+whose app stops shows offline, and the other Assets keep working. If the app
+starts again in the same run, it registers with its key and
+[rejoins as the same Asset](../../atlas/runs-and-identity.md#keys-and-registration).
+An Asset keeps nothing from an earlier run. A dropped link does not restart the
+app or clear its state.
 
 ## Carry out work and report its result
 

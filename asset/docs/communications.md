@@ -65,10 +65,10 @@ range, and report in less detail as link capacity decreases. The best path
 depends on current conditions, not a fixed ranking of radio types. A nearby
 radio peer does not show that Core is reachable.
 
-The owner intends every Asset to join known Wi-Fi networks by itself. An Asset
-uses Wi-Fi during setup before a flight, for administrative work such as setting
-its clock, and later for large transfers of retained reports. Wi-Fi is then one
-of the Asset's links. This is a direction, not a design.
+Some Assets may join known Wi-Fi networks, for example for setup work such as
+setting the clock, or for large transfers of retained reports. Wi-Fi is then
+one of that Asset's links. It is a possibility, not a requirement: no part of
+Atlas assumes an Asset connects to Wi-Fi during startup or setup.
 
 ## Open
 

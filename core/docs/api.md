@@ -259,8 +259,8 @@ starts in this order, and on reconnect within the run repeats it from step 2:
    the next `asset_id`, adds `asset.provisioned`, and answers `201 {asset_id}`.
    The Asset uses that ID for the rest of the run. Registering again with the
    same key in the run returns the same `asset_id`, unless an admin removed that
-   Asset; then it becomes a new Asset with a new ID. A key registers at most one
-   Asset at a time. On reconnect, `PUT /entities/assets/{asset_id}/description`
+   Asset; then it becomes a new Asset with a new ID. This includes an app that
+   restarted and forgot its ID. A key registers at most one Asset at a time. On reconnect, `PUT /entities/assets/{asset_id}/description`
    instead.
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not

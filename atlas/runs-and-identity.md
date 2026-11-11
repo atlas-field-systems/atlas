@@ -54,7 +54,8 @@ event.
   item in the next run.
 
 Scope: an ID holds for one run. Within the run an Asset keeps its `asset_id`
-through reconnects and gateway swaps; in the next run it gets a new one.
+through reconnects, app restarts, and gateway swaps; in the next run it gets a
+new one.
 
 ## Keys and registration
 
@@ -65,6 +66,11 @@ through reconnects and gateway swaps; in the next run it gets a new one.
   registers at most one Asset at a time. Registering again with the same key in
   the same run returns the same `asset_id`, unless an admin removed that Asset;
   then it registers as a new Asset with a new ID.
+- **A restarted app rejoins as itself.** If an Asset's app stops and starts
+  again during a run, it registers with its key and comes back as the same
+  Asset, with the same `asset_id` and its unfinished work. This holds even if it
+  forgot its ID: the key proves which Asset it is. It still never picks or
+  configures its own ID.
 - **A removed Asset's ID ends.** If it registers again, it is a new Asset.
 
 ## Radio Assets
@@ -94,6 +100,6 @@ a new Asset.
 
 ## Open
 
-- An Asset app that stops and starts again during a run. [Using Atlas](using-atlas.md#an-operation-runs-without-restarts)
-  says it does not rejoin the run, but the key rule above would give an Asset
-  on IP its old ID back.
+- How a restarted Asset app gets its unfinished work back from Core.
+- Whether a radio Asset whose app restarts mid-run gets its old ID back. Its
+  gateway would hear the same Fieldlink identity, but no key proves it to Core.

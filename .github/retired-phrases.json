@@ -123,5 +123,21 @@
     "phrase": "\\bapi-proposal\\.md|\\bexperiments/final-report\\.md",
     "why": "Superseded plans live in atlas/archive/ and are never a source for current rules.",
     "example": "See [Fieldlinks](atlas/api-proposal.md#fieldlinks)."
+  },
+  {
+    "phrase": "\\b(does not|doesn't|never|cannot|can't) (support (an asset |the asset )?)?rejoin(ing)?\\b|\\bapp (that )?stops leaves the (operation|run)\\b|\\brejoins? as a new asset\\b",
+    "why": "An Asset app that restarts mid-run rejoins as itself through its key, with the same asset_id and its unfinished work.",
+    "example": "Atlas does not support an Asset rejoining the run it left."
+  },
+  {
+    "phrase": "\\bevery asset (to )?(joins?|uses?|connects? to) (known )?wi-?fi\\b|\\b(uses?|joins?|connects? to) wi-?fi during (startup|setup)\\b",
+    "unless": "\\b(not|no|never|may)\\b",
+    "why": "No part of Atlas assumes an Asset joins Wi-Fi during startup or setup; some Assets may.",
+    "example": "The owner intends every Asset to join known Wi-Fi networks by itself."
+  },
+  {
+    "phrase": "\\b(hold now|hold) (is not|isn't|is never) (an )?(allowed )?override\\b|\\bpause is not an override\\b",
+    "why": "During a failsafe, Hold now and pause are both allowed overrides.",
+    "example": "During a failsafe, Hold is not an override."
   }
 ]
