@@ -65,7 +65,8 @@ one.</li>
 item in the next run.</li>
 </ul>
 <p>Scope: an ID holds for one run. Within the run an Asset keeps its <code>asset_id</code>
-through reconnects and gateway swaps; in the next run it gets a new one.</p>
+through reconnects, app restarts, and gateway swaps; in the next run it gets a
+new one.</p>
 <h2 id="keys-and-registration">Keys and registration</h2>
 <ul>
 <li><strong>Admins hand out keys, not IDs.</strong> An admin creates a key for each Asset on
@@ -75,6 +76,11 @@ An Asset key names no Asset. There is no enrollment key.</li>
 registers at most one Asset at a time. Registering again with the same key in
 the same run returns the same <code>asset_id</code>, unless an admin removed that Asset;
 then it registers as a new Asset with a new ID.</li>
+<li><strong>A restarted app rejoins as itself.</strong> If an Asset&#39;s app stops and starts
+again during a run, it registers with its key and comes back as the same
+Asset, with the same <code>asset_id</code> and its unfinished work. This holds even if it
+forgot its ID: the key proves which Asset it is. It still never picks or
+configures its own ID.</li>
 <li><strong>A removed Asset&#39;s ID ends.</strong> If it registers again, it is a new Asset.</li>
 </ul>
 <h2 id="radio-assets">Radio Assets</h2>
@@ -103,9 +109,9 @@ as the same Assets, carried by no gateway until another one hears them.</li>
 a new Asset.</p>
 <h2 id="open">Open</h2>
 <ul>
-<li>An Asset app that stops and starts again during a run. <a href="using-atlas.html#an-operation-runs-without-restarts">Using Atlas</a>
-says it does not rejoin the run, but the key rule above would give an Asset
-on IP its old ID back.</li>
+<li>How a restarted Asset app gets its unfinished work back from Core.</li>
+<li>Whether a radio Asset whose app restarts mid-run gets its old ID back. Its
+gateway would hear the same Fieldlink identity, but no key proves it to Core.</li>
 </ul>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

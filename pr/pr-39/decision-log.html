@@ -35,6 +35,12 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
+<td>An Asset app that restarts mid-run rejoins as itself through its key: the same <code>asset_id</code> and its unfinished work, unless an admin removed it. This holds even if it forgot its ID, because the key proves which Asset it is. IDs stay Core-assigned and new each run; Assets do not pick fixed IDs.</td>
+<td>Assets on IP, within one run.</td>
+<td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>No advance radio setup. A radio registers when the gateway first hears it in a run. A removed radio can register again as a new Asset.</td>
 <td>Radio Assets, within a run.</td>
 <td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
@@ -129,6 +135,18 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
+<td>During a failsafe the operator may override with Land, Return to home, or Hold sent with <code>now</code>, or with pause.</td>
+<td>Failsafe state.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A failsafe that has fired can&#39;t be cancelled or left; the Asset stays in failsafe state until it shuts down.</td>
+<td>Failsafe state.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>Failsafe boundaries are drawn separately from saved places; a failsafe response can&#39;t name a saved place.</td>
 <td>Failsafe rules.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#configure-conditions-as-well-as-responses">Failsafes</a></td>
@@ -170,6 +188,18 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
+<td>Files are capped at 100 MB for now. The cap may be raised later.</td>
+<td>Object files.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects">Core API, Objects</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>Lists returned are capped at 1000 items.</td>
+<td>Pages of history and Plugin calls, and lists in a Plugin answer.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#plugins-answer">Core API, Plugins answer</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>Plugins choose how they appear: <code>help_text</code>, <code>in_menu</code>, and <code>show_on_map</code>, with menu and map off unless set. They should be really easy to configure and describe their own actions.</td>
 <td>Plugin descriptions.</td>
 <td><a href="plugins.html#actions">Plugins</a></td>
@@ -191,6 +221,41 @@ back.</p>
 <td>Tracks come only from Fusion. Old Observations and Tracks stay in the picture for the whole run; Core adds no stale flag.</td>
 <td>Within a run.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities">Core API, Entities</a></td>
+</tr>
+</tbody></table>
+<h2 id="operations-and-setup">Operations and setup</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Decision</th>
+<th>Scope</th>
+<th>Home</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2026-11-11</td>
+<td>One site per Core.</td>
+<td>A Core, at a time.</td>
+<td><a href="scale.html#setup">Scale</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>There is no remote shutdown or restart.</td>
+<td>Assets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#shut-down-and-retain-evidence">Asset behavior</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A crashed Asset is inspected before it runs again.</td>
+<td>An Asset after a crash.</td>
+<td><a href="using-atlas.html#an-operation-runs-without-restarts">Using Atlas</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>No part of Atlas assumes an Asset joins Wi-Fi during startup or setup. Some Assets may join known Wi-Fi networks; it is a possibility, not a requirement.</td>
+<td>Every Asset.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#several-links">Asset communications</a></td>
 </tr>
 </tbody></table>
 <h2 id="how-work-lands">How work lands</h2>
