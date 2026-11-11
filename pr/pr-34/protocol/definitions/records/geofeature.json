@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/geofeature.json",
+  "title": "Geo feature",
+  "description": "A place on the map as Core holds it: a point, line, or area, with an optional name. kind is its shape. time is when Core stored this version. Core assigns geofeature_id when the geo feature is created. A change replaces the geo feature whole, so a name left out is cleared. The record names no author: the event that stores it carries requested_by. Editing or deleting a geo feature never changes a Task already sent. Geo features are not sent to Assets.",
+  "type": "object",
+  "required": [
+    "time",
+    "kind",
+    "geofeature_id"
+  ],
+  "oneOf": [
+    {
+      "$ref": "geofeature/point.json"
+    },
+    {
+      "$ref": "geofeature/line.json"
+    },
+    {
+      "$ref": "geofeature/area.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "kind": {
+      "$ref": "../variables/kind.json"
+    },
+    "geofeature_id": {
+      "$ref": "../variables/geofeature_id.json"
+    },
+    "name": {
+      "$ref": "../variables/name.json"
+    }
+  },
+  "examples": [
+    {
+      "time": 1793667800040,
+      "kind": "area",
+      "geofeature_id": "G1",
+      "name": "North field",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ]
+    },
+    {
+      "time": 1793667810000,
+      "kind": "point",
+      "geofeature_id": "G2",
+      "name": "Helipad",
+      "position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      }
+    },
+    {
+      "time": 1793667820000,
+      "kind": "line",
+      "geofeature_id": "G3",
+      "line": [
+        {
+          "latitude": 42.2746,
+          "longitude": -71.8063
+        },
+        {
+          "latitude": 42.2751,
+          "longitude": -71.8049
+        },
+        {
+          "latitude": 42.276,
+          "longitude": -71.8044
+        }
+      ]
+    }
+  ]
+}
