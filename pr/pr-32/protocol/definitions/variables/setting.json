@@ -7,9 +7,8 @@
     "run_state",
     "lights",
     "landing_gear",
-    "link_loss_response",
     "link_loss_after_s",
-    "low_battery_response",
+    "failsafe_policy",
     "home_position",
     "telemetry_every_s"
   ],

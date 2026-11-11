@@ -2,11 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task/land.json",
   "title": "land",
-  "description": "Land at a position. The Asset climbs or descends to the transit altitude, or keeps its current altitude if none is given. It flies over the position and lands.",
+  "description": "Land at a position. Without a landing position, the Asset lands where it is when the Task starts. The Asset climbs or descends to the transit altitude, or keeps its current altitude if none is given. It flies over the position and lands.",
   "type": "object",
   "required": [
-    "kind",
-    "landing_position"
+    "kind"
   ],
   "properties": {
     "kind": {
@@ -31,6 +30,9 @@
         "altitude_m": 20,
         "altitude_reference": "launch"
       }
+    },
+    {
+      "kind": "land"
     }
   ]
 }

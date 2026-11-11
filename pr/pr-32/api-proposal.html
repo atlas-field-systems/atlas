@@ -114,8 +114,8 @@ archived, then removed after the retention period.</li>
 <td>Evidence and conclusions in the picture, separately</td>
 </tr>
 <tr>
-<td><code>GET</code>, <code>POST</code>, <code>PATCH</code>, <code>DELETE /entities/geofeatures</code></td>
-<td>Places operators and Plugins author</td>
+<td><code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE /entities/geofeatures</code></td>
+<td>Places operators author and Plugins create; a change replaces one whole</td>
 </tr>
 </tbody></table>
 <p>Each pillar has a root path (<code>/entities</code>, <code>/tasks</code>, <code>/objects</code>,
@@ -143,15 +143,16 @@ tab uses the same session.</li>
 in Core and receives its ID and key for its configuration. The key is a bearer
 token over TLS. There is no enrollment key. An Asset behind a gateway
 authenticates to the gateway, not to Core.</li>
-<li><strong>IDs.</strong> Admins choose <code>asset_id</code> for an Asset on IP, which people read; Core
-assigns a radio Asset&#39;s when a gateway adds it. Core assigns Task,
-Observation, Track, geo feature, and Object IDs. Event IDs are integers.</li>
+<li><strong>IDs.</strong> Admins choose <code>asset_id</code>, which people read, when they provision an
+Asset on IP; Core assigns it for a radio Asset a gateway adds. Assets choose
+<code>observation_id</code>. Core assigns Task, Track, geo feature, and Object IDs.
+Event IDs are integers.</li>
 <li><strong>Transport security.</strong> TLS on IP. Each Fieldlink uses its radio&#39;s own
 encryption and authentication. Records never carry credentials.</li>
 </ul>
 <h2 id="assets-and-failsafes">Assets and failsafes</h2>
 <p>The Asset holds its complete queue, runs its Tasks, reports observed outcomes,
-and owns its failsafes. During a failsafe, operators can still command hold,
+and owns its failsafes. During a failsafe, operators can still pause,
 land now or return home; the Asset records these as overrides. Longer-running
 failsafe behavior stays deferred until field testing.</p>
 <h2 id="fieldlinks">Fieldlinks</h2>
@@ -160,8 +161,9 @@ private app port, and its encryption, routing and per-hop acknowledgements.
 The Fieldlink adds end-to-end acknowledgement of Tasks and final reports,
 idempotency by <code>task_id</code>, and per-Asset contact reports to Core. Protocol defines
 no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
-also decides how an Asset authenticates to its gateway, and the Fieldlinks may
-share nothing; that design is deferred. The gateway&#39;s link to Core is broadband
+decides how an Asset authenticates to its gateway, within the rules
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides">every Fieldlink provides</a>:
+a per-radio identity from the link&#39;s own cryptography and replay rejection. The gateway&#39;s link to Core is broadband
 IP, so the gateway keeps its Assets&#39; full state and sends over the radio only
 what each Asset does not already have. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway
 design is otherwise deferred.</p>

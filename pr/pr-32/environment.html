@@ -26,12 +26,15 @@ Most physical Assets use the available field radios beyond the gateway.
 Direct-IP Assets are possible, especially purely digital Assets.</p>
 <p>Field links can disappear and return. Atlas cannot assume continuous IP
 connectivity to every Asset.</p>
-<h2 id="gateway-implementations-can-coexist">Gateway implementations can coexist</h2>
+<h2 id="gateway-designs-change-over-time">Gateway designs change over time</h2>
 <p>Different radio systems can have different gateways. For example, the initial
-LoRa link could have a dedicated LoRa gateway. A later FLRC mesh could have a new
-gateway while the older gateway is still maintained. Gateways can coexist
-because each reaches Core only through the Core API. Atlas does not assume one
-permanent gateway design, and gateway design is otherwise deferred.</p>
+LoRa link could have a dedicated LoRa gateway, and a later FLRC mesh a new one,
+while the older design is still maintained for sites that use it. Several gateway
+designs can be maintained at once because each reaches Core only through the
+Core API. A site still runs one gateway at a time (<a href="scale.html#setup">Scale</a>).
+Atlas does not assume one permanent gateway design.
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md">Gateway</a>
+owns how radio Assets join through it.</p>
 <h2 id="core-is-a-deliberate-dependency">Core is a deliberate dependency</h2>
 <p>Atlas communications depend on Core to keep the system simpler.
 Offline authorization of new work is not a current requirement.

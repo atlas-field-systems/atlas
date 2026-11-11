@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe/response.json",
+  "title": "response",
+  "description": "The state of a failsafe Task: one run of a failsafe rule's response, named by rule_id and attempt, with no task_id from Core. The Asset sends it active when the rule activates, with the response as it runs, parameters fixed; then one final state, completed, failed or cancelled. It is never queued. A cancelled response was interrupted by a higher-priority rule or replaced by an operator override. Activation has already cancelled ordinary work and raised clear_count.",
+  "type": "object",
+  "required": [
+    "kind",
+    "rule_id",
+    "attempt",
+    "task_state"
+  ],
+  "if": {
+    "properties": {
+      "task_state": {
+        "const": "active"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "response"
+    ]
+  },
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "response"
+    },
+    "rule_id": {
+      "$ref": "../../../variables/rule_id.json"
+    },
+    "attempt": {
+      "$ref": "../../../variables/attempt.json"
+    },
+    "task_state": {
+      "$ref": "../../../variables/task_state.json"
+    },
+    "response": {
+      "$ref": "../../../components/failsafe_response.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "response",
+      "rule_id": "LB2",
+      "attempt": "primary",
+      "task_state": "active",
+      "response": {
+        "kind": "return_to_home"
+      }
+    }
+  ]
+}
