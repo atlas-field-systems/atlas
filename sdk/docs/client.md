@@ -123,5 +123,5 @@ A gateway uses one client with its own key and makes the
 [Asset calls](../../core/docs/api.md#asset-and-gateway-calls) on behalf of each
 Asset it carries. Its event stream shows the requests for those Assets, which its
 Fieldlink carries to them. The [queue helper](asset.md#the-queue-helper) runs on
-the radio Asset, not on the gateway. How a gateway is bound to its Assets and
-reports their contact is [not defined yet](../../core/docs/api.md#not-defined-yet).
+the radio Asset, not on the gateway. The gateway names each radio it hears and
+reports its contact as the [Core API](../../core/docs/api.md#radio-assets) sets.

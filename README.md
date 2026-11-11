@@ -9,7 +9,7 @@ This repository holds every part of it, one folder each:
 - [core/](core/): Atlas Core, the server, and the [Core API](core/docs/api.md). Planning.
 - [asset/](asset/): how an Asset behaves. Planning.
 - [command-interface/](command-interface/): the operator interface. Planning.
-- [gateway/](gateway/): the gateway app and its Fieldlinks. Planning, design deferred.
+- [gateway/](gateway/): the gateway app and its Fieldlinks. Planning; how radio Assets join is designed, the rest deferred.
 
 The Charter and the Protocol viewer are published at
 https://atlas-field-systems.github.io/atlas/ (the viewer is under `protocol/`).
