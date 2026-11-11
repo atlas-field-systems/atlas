@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe/link_loss.json",
+  "title": "link_loss",
+  "description": "The Asset has had no contact for link_loss_after_s. Contact loss is evaluated by the configured failsafe rules. Once a failsafe latches, ordinary work stays locked for the rest of the operation, even after contact returns and is lost again. Equal- or lower-priority matches never start another response; higher-priority matches follow the Asset failsafe rules. Contact loss counts on the ground too.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "link_loss"
+    }
+  },
+  "examples": [
+    {
+      "kind": "link_loss"
+    }
+  ]
+}

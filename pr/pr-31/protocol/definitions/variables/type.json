@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/type.json",
+  "title": "type",
+  "description": "Which report this is, such as report.status, so reports can travel in mixed batches. Each report fixes its own value.",
+  "type": "string",
+  "pattern": "^[a-z_]+\\.[a-z_]+$",
+  "maxLength": 32,
+  "examples": [
+    "report.status"
+  ]
+}
