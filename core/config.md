@@ -36,7 +36,7 @@ Names in this table are proposed configuration keys.
 
 Accounts and the keys of Assets on IP, gateways, and Plugins are provisioned
 through the [Core API](docs/api.md#accounts-and-provisioning), not
-configuration. Assets register each run. A Plugin's own settings, such as which
+configuration. A Plugin's own settings, such as which
 services it uses, belong to the Plugin, not to Core.
 
 ## Logging and Reset

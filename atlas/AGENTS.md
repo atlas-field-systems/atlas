@@ -19,13 +19,16 @@ uses of Atlas and the responsibilities of its parts.
 
 The other folders must point their agent instructions and overview here.
 A pending proposal is not an approved contract. If subsystem docs conflict with the
-operating context, identify the mismatch and resolve it explicitly with the owner.
+operating context or the decision log, identify the mismatch and resolve it explicitly with the owner.
 Do not silently adopt old behavior or claim intended behavior is implemented.
 
 ## Changes
 
-Keep selected direction, proposals, and open questions distinct. Preserve the
-owner's testing simplifications. Do not turn a review suggestion into a scheduler,
+Keep selected direction, proposals, and open questions distinct. The
+[decision log](decision-log.md) holds only what the owner decided, dated and
+scoped; never add a recommendation the owner did not decide. Superseded plans
+go to [archive/](https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/README.md) with a banner. Preserve the owner's testing
+simplifications. Do not turn a review suggestion into a scheduler,
 Plugin platform, or other unrequested scope. Obtain the owner's agreement for
 product changes and do not merge without approval.
 

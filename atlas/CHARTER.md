@@ -12,6 +12,8 @@ are welcome. Nothing is locked. When something has a problem, consider reworking
 from the ground up before patching it.
 
 Draft does not mean quiet change. Propose the change and its reason; the owner decides.
+The owner's current decisions are in the [decision log](decision-log.md). A
+reversal updates every page that still teaches the old rule.
 
 ## Keep Atlas understandable
 
@@ -57,10 +59,8 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
 - IDs that people read or that cross a field link are 1 to 4 letters or digits.
-  Assets choose `observation_id`, unique for that Asset within a run. Core
-  assigns the others. It assigns `asset_id` when an Asset registers, every
-  run, and the acknowledgement tells the registrant its ID; nothing picks its
-  own `asset_id`. Event IDs are integers.
+  Event IDs are integers. Assets choose `observation_id`; Core assigns the
+  others, `asset_id` included ([Runs and identity](runs-and-identity.md#ids)).
 
 ## Document ownership
 
@@ -109,8 +109,8 @@ keeps the business rules. The SDK is the client for that API, and gateways run
 Fieldlinks. No program builds a second validator.
 See [design-decisions.md](design-decisions.md).
 
-How-it-works docs, laws, and the Core API doc beat an implementation plan when
-they conflict. Change them on purpose with the owner; do not quietly diverge in
+The [decision log](decision-log.md) beats every other page. How-it-works docs,
+laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose with the owner; do not quietly diverge in
 code.
 
 Accepted acknowledgment and observed Asset outcomes are different facts. Asset

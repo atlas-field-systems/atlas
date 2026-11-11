@@ -19,5 +19,4 @@ Design so Atlas works well at these sizes and does not break just past them.
 
 ## Runs and storage
 - Each run lasts up to about 2 hours, limited by battery. Core should run all day across many runs.
-- Each Reset ZIP can be up to about 1 GB. Size is not a concern.
-- Nothing deletes a Reset ZIP automatically. The owner deletes old ones by hand.
+- Each Reset ZIP can be up to about 1 GB. Size is not a concern. The owner deletes old ZIPs by hand.

@@ -19,7 +19,8 @@ It does not wait in the queue or go through a Task's steps.
   fly there. It applies when that Task runs, regardless of when it was sent or
   received.
 - Pause is a setting, not a Task. An Asset is set to "paused" or "running",
-  always as an explicit end state.
+  always as an explicit end state. Hold is different: it is a command, like
+  Land, and keeps no earlier Task to resume.
 - Pause affects movement already underway. The Asset owns the
   [platform-specific response](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause).
   The Task underway stays active while held and continues on resume.
@@ -28,9 +29,8 @@ It does not wait in the queue or go through a Task's steps.
 - The failsafe rules are one setting, the failsafe policy, always replaced
   whole. Any operator can replace it outside a failsafe.
 - An applicable failsafe overrides ordinary settings, including paused, and the
-  Asset carries out its configured safe response. The operator can still pause
-  as an [override](first-flight.md#when-something-goes-wrong). The Asset owns
-  [the trigger conditions](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
+  Asset carries out its configured safe response. The Asset owns
+  [the trigger conditions and the operator's overrides](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
 - Settings support is independent of current values. The Asset's description
   lists the settings it supports, and Core refuses a change to any other. An
   Asset may support no live settings.

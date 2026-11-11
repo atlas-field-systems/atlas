@@ -8,15 +8,19 @@ This folder explains what Atlas is for and the environment its parts work in.
 ## Read the operating picture
 
 1. [The charter](CHARTER.md) defines purpose, scope, and document ownership.
-2. [Operating environment](environment.md) explains field links and current assumptions.
-3. [Using Atlas](using-atlas.md) shows the parts and their responsibilities in the walled city.
-4. [First flight](first-flight.md) follows the quadcopter flight workflow.
-5. [Settings](settings.md) explains quick changes to an Asset's configuration.
-6. [Plugins](plugins.md) explains Plugin actions with examples.
-7. [Scale](scale.md) gives design targets, such as about 20 Assets.
-8. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
-9. [Experimental ideas](experimental.md) lists ideas being explored, not committed.
-10. [API proposal](api-proposal.md) describes the selected move to a Core API with gateways. The Charter follows it.
+2. [Decision log](decision-log.md) lists the owner's decisions, dated, each with its scope. It is authoritative.
+3. [Operating environment](environment.md) explains field links and current assumptions.
+4. [Using Atlas](using-atlas.md) shows the parts and their responsibilities in the walled city.
+5. [Runs and identity](runs-and-identity.md) explains runs, Reset, what carries over, and how Assets get their IDs.
+6. [First flight](first-flight.md) follows the quadcopter flight workflow.
+7. [Settings](settings.md) explains quick changes to an Asset's configuration.
+8. [Plugins](plugins.md) explains Plugin actions with examples.
+9. [Scale](scale.md) gives design targets, such as about 20 Assets.
+10. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
+11. [Experimental ideas](experimental.md) lists ideas being explored, not committed.
+
+Superseded plans and historical findings are in the [archive](https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/README.md).
+They are never a source for current rules.
 
 ## Keep subsystem documentation with its owner
 

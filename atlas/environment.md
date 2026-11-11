@@ -19,7 +19,8 @@ detailed design as the hardware evolves.
 Field links carry Atlas through Fieldlinks. The same Fieldlink package runs on
 the gateway and on the radio Asset, and it sends compact frames in a proven
 existing encoding, not a custom one. The LoRa phase builds on Meshtastic, and
-FLRC gets its own Fieldlink. The [API proposal](api-proposal.md#fieldlinks)
+FLRC gets its own Fieldlink.
+[Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-lora-fieldlink-sketch)
 sketches the LoRa Fieldlink. Each Fieldlink's docs own its mechanisms, once
 written.
 
@@ -41,8 +42,6 @@ while the older design is still maintained for sites that use it. Several gatewa
 designs can be maintained at once because each reaches Core only through the
 Core API. A site still runs one gateway at a time ([Scale](scale.md#setup)).
 Atlas does not assume one permanent gateway design.
-[Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md)
-owns how radio Assets join through it.
 
 ## Core is a deliberate dependency
 

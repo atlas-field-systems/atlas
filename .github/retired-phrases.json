@@ -1,0 +1,127 @@
+[
+  {
+    "phrase": "\\bCore (holds|keeps|stores|records|binds|knows) (the |each |a |its )?radio('s)? identit",
+    "why": "Radio identity is dropped from Core; it stays on the gateway side.",
+    "example": "Core holds each radio identity."
+  },
+  {
+    "phrase": "\\bradio_identity\\b|\\bregisters? (a |the |each )?radio identit",
+    "why": "Radio identity is dropped from Core; no record or registration carries it.",
+    "example": "The admin registers a radio identity."
+  },
+  {
+    "phrase": "\\b(keeps?|keeping|kept|reuses?|same) (its |their |the )?(asset_id|asset ids?|ids?) (across|between) runs\\b",
+    "why": "Across runs every Asset comes back as a new Asset with a new ID.",
+    "example": "An Asset keeps its asset_id across runs."
+  },
+  {
+    "phrase": "\\basset_ids? (carry|carries|carried) (over|across)|\\bkeeps? (its|their) (asset_id|id) (in|for|into) the next run",
+    "why": "Asset IDs do not carry over to the next run.",
+    "example": "The asset_id carries over to the next run."
+  },
+  {
+    "phrase": "\\b(admins?|operators?) (picks?|chooses?|sets?|assigns?|gives?) (the |its |an |each |a )?(asset_id|asset id)",
+    "why": "Core assigns every asset_id; the admin hands out only the access key.",
+    "example": "The admin picks the asset_id for each Asset."
+  },
+  {
+    "phrase": "\\b(assets?|gateways?|radios?) (picks?|chooses?) (its|their) own (asset_id|asset id|id)\\b",
+    "why": "Nothing picks its own asset_id; Core assigns it at registration.",
+    "example": "An Asset picks its own asset_id."
+  },
+  {
+    "phrase": "\\bconfigured asset_id|\\basset_id (from|in) (its|the) configuration",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "No configuration holds an asset_id; Core assigns it each run.",
+    "example": "The Asset reads its configured asset_id."
+  },
+  {
+    "phrase": "\\badmins? (sets? up|provisions?|adds?|registers?|approves?|allows?) (each |a |the |every )?radios?\\b|\\bradios?\\b[^.]*\\bin advance\\b|\\bpre-?(register|provision|approv)\\w* (radios?|radio assets?)|\\bradio (allow ?list|enrollment|enrolment)\\b",
+    "unless": "\\b(no|not|never|without)\\b",
+    "why": "There is no advance radio setup; the gateway registers a radio when it first hears it.",
+    "example": "An admin sets up each radio before the run."
+  },
+  {
+    "phrase": "\\b(snapshots?|copy|copies) (of )?(the |its |a )?(place|geo ?feature)('s)? shape|\\b(snapshots?|copy|copies) (of )?(the |its )?shape (into|in) the task|\\b(place|geo ?feature|shape) snapshots?\\b|\\bsnapshots? (the |a |its )?(place|geo ?feature)\\b",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "A Task holds a live reference to a place; Core never copies or snapshots its shape.",
+    "example": "Core copies the shape into the Task."
+  },
+  {
+    "phrase": "\\b(retains?|keeps?) (the |a |each |every )?(ended|earlier|previous|old|past) runs?\\b|\\bretention (period|window|policy|time)\\b|\\bkeeps? (the )?history (of|from) (the )?(earlier|previous|ended|past) runs?",
+    "unless": "\\b(not|never|no)\\b",
+    "why": "No retention: once the Reset ZIP checks out, the run's data is deleted from Core.",
+    "example": "Core keeps earlier runs for a week."
+  },
+  {
+    "phrase": "\\b(serves?|reads?|opens?) (the |an )?(ended|earlier|previous|old|past|held) runs?\\b[^.]*\\bcore api",
+    "unless": "\\b(never|not|no)\\b",
+    "why": "A run whose ZIP failed, or any ended run, is never served through the Core API.",
+    "example": "Core serves earlier runs through the Core API."
+  },
+  {
+    "phrase": "\\bstays? out of the operation\\b",
+    "why": "A removed Asset can register again as a new Asset.",
+    "example": "A stopped Asset stays out of the operation."
+  },
+  {
+    "phrase": "\\bpause to hold\\b|\\bpause holds\\b|\\bhold now is not an override\\b|\\bsame platform hold as pause\\b|\\bhold (is|means|as) (a |the )?pause\\b",
+    "why": "Hold is an ordinary command like Land, not pause.",
+    "example": "Hold now is not an override; pause holds instead."
+  },
+  {
+    "phrase": "\\bphoto detection\\b",
+    "why": "Photo detection is removed.",
+    "example": "Plugins add photo detection."
+  },
+  {
+    "phrase": "\\bonly accounts and keys\\b",
+    "why": "Installed Plugin setup carries over too, beside accounts and keys.",
+    "example": "Only accounts and keys carry over."
+  },
+  {
+    "phrase": "\\breset (button|request|endpoint)\\b",
+    "unless": "\\b(no|not|never|without)\\b",
+    "why": "Stopping Core is Reset; there is no separate Reset button or request.",
+    "example": "Press the Reset button."
+  },
+  {
+    "phrase": "\\b(change|changes|changed) (it|them|this|these) only with the owner\\b|\\bis settled (there|in|here)\\b",
+    "why": "The decision log is authoritative; no page is frozen against edits.",
+    "example": "These rules are settled in README. Change them only with the owner."
+  },
+  {
+    "phrase": "\\bplugins? (may |can )?(suggests?|returns?|proposes?) (a |flight )?(routes?|flight paths?)\\b|\\b(repeats?|reruns?) (the |a )?(plugin )?calls? (every|on a schedule|automatically)",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "Plugin-suggested routes and repeating Plugin calls are out of scope.",
+    "example": "A Plugin may suggest a route."
+  },
+  {
+    "phrase": "\\bonly (an )?admins? (may|can) (change|replace|edit) (the )?failsafe",
+    "why": "Any operator may change failsafe rules.",
+    "example": "Only an admin may change the failsafe policy."
+  },
+  {
+    "phrase": "\\bcore (marks|flags) (\\w+ ){0,3}stale\\b",
+    "unless": "\\b(never|not|no)\\b",
+    "why": "Old Observations and Tracks stay for the whole run; Core adds no stale flag.",
+    "example": "Core marks old Tracks stale."
+  },
+  {
+    "phrase": "\\b(editing|deleting|deletes?|edits?|changes?) (a |the )?place\\b[^.]*\\bcancels? (the |its |every )?tasks?\\b|\\bcore (refuses|blocks) (an? |the )?(edit|change|delet)\\w* (of )?(a |the )?place",
+    "unless": "\\b(nothing|never|not|no)\\b",
+    "why": "Place edits and deletes go through; Core blocks nothing and cancels nothing.",
+    "example": "Deleting a place cancels the Tasks that name it."
+  },
+  {
+    "phrase": "\\b(new|another) gateway\\b[^.]*\\bnew (asset_id|asset id|id)\\b",
+    "unless": "\\b(not|no|never|next run)\\b",
+    "why": "In a mid-run gateway swap, radios keep their IDs.",
+    "example": "A radio that reaches a new gateway registers with a new ID."
+  },
+  {
+    "phrase": "\\bapi-proposal\\.md|\\bexperiments/final-report\\.md",
+    "why": "Superseded plans live in atlas/archive/ and are never a source for current rules.",
+    "example": "See [Fieldlinks](atlas/api-proposal.md#fieldlinks)."
+  }
+]

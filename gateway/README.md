@@ -4,8 +4,8 @@ A gateway carries Atlas across field links. It runs on its own computer, uplinks
 to the [Core API](../core/docs/api.md) over broadband IP, and runs the Fieldlinks
 its radios need. A gateway is not an Asset.
 
-**Planning.** Nothing is built. This page records how radio Assets join Atlas
-through a gateway, what every Fieldlink must provide, and the gateway's Reset
+**Planning.** Nothing is built. This page records what every Fieldlink must
+provide, the LoRa Fieldlink sketch, gateway contact, and the gateway's Reset
 ZIP. The rest of the gateway design is deferred.
 
 ## The gateway app and its Fieldlinks
@@ -20,16 +20,15 @@ ZIP. The rest of the gateway design is deferred.
 
 ## One gateway per site
 
-A site runs one gateway at a time ([Scale](../atlas/scale.md#setup)). Each radio
-Asset is carried by that gateway: the gateway hears it, makes its Core API calls,
-and reports its contact. Core shows which gateway carries each Asset.
+A site runs one gateway at a time. Each radio Asset is carried by that gateway:
+the gateway hears it, makes its Core API calls, and reports its contact. Core
+shows which gateway carries each Asset. Core authenticates the gateway with its
+key and trusts it for which radio Asset sent what. A gateway can register radio
+Assets, but it cannot register an Asset on IP or issue a Core key.
 
-Core authenticates the gateway with its key and trusts it for which radio Asset
-sent what. A radio Asset holds no Core key and never calls the Core API. The
-gateway is an IP bridge: it matches each radio to its Asset on its own side and
-speaks to Core only by `asset_id`. Core keeps nothing about the radio itself. A
-gateway can register radio Assets, but it cannot register an Asset on IP or
-issue a Core key.
+How radio Assets register, keep their IDs, and survive a gateway swap is in
+[Runs and identity](../atlas/runs-and-identity.md#radio-assets). The calls
+behind it are in the [Core API](../core/docs/api.md#radio-assets).
 
 ## What every Fieldlink provides
 
@@ -48,40 +47,23 @@ same for all of them.
   private channel's key. A radio that has joined can appear as a new Asset, but
   it can never speak as an Asset that is already some other radio.
 - **The definitions hash is checked each time a radio's link opens.** The
-  Fieldlink compares the radio's hash with the gateway's, as each link
-  [checks its hash when it opens](../atlas/api-proposal.md#fieldlinks).
+  Fieldlink compares the radio's hash with the gateway's. A radio with
+  different definitions is refused and not added as an Asset; operators see
+  "a radio on gateway G1 was refused: different definitions", as they would
+  for an Asset on IP.
 
 Each Fieldlink's own docs say how it meets these rules, once written.
 
-## How a radio Asset joins and leaves
+## The LoRa Fieldlink (sketch)
 
-These are the results operators and admins see. The calls behind them are in the
-[Core API](../core/docs/api.md#radio-assets).
-
-- **A new radio appears on its own.** When the gateway hears a radio that has
-  no `asset_id` in this run, it registers it. Core adds it as a new Asset and
-  picks its `asset_id`, and the gateway tells the radio its ID. There is no
-  approval step, and no admin sets up a radio in advance. The event log records
-  that the gateway registered it.
-- **A radio keeps its ID for the run.** It keeps the same `asset_id` until the
-  run ends, also when it moves to another gateway. The next run starts fresh:
-  every radio registers again and comes back as a new Asset with a new ID.
-- **A removed radio can come back.** When an admin removes a radio Asset, its ID
-  ends. If the radio is heard again, the gateway registers it as a new Asset
-  with a new ID.
-- **A radio with different definitions is refused.** Operators see "a radio on
-  gateway G1 was refused: different definitions", as they would for an Asset
-  on IP. It is not added as an Asset.
-
-## When the gateway changes
-
-- **Its key is replaced.** The radios are unaffected. The gateway reconnects with
-  its new key.
-- **It is removed.** Its radios stay in the picture with their IDs and show
-  offline. They are carried by no gateway until they reach another gateway.
-- **A new gateway is added.** Each radio tells the new gateway the ID it has in
-  this run, and moves to it, keeping its ID and its unfinished work, with no
-  admin step for each radio. A gateway swap is not a new run.
+For the LoRa phase, the Fieldlink builds on Meshtastic: a private channel, a
+private app port, and Meshtastic's encryption, routing, and per-hop
+acknowledgements. The Fieldlink adds end-to-end acknowledgement of Tasks and
+final reports, idempotency by `task_id`, and per-Asset contact reports to Core.
+Protocol defines no short keys, so each Fieldlink chooses its own compact
+encoding. The gateway's link to Core is broadband IP, so the gateway keeps its
+Assets' full state and sends over the radio only what each Asset does not
+already have. FLRC follows with its own Fieldlink.
 
 ## Gateway contact
 
@@ -152,19 +134,17 @@ Behavior tests come from these, once the gateway exists.
   ZIP for the run that ended, and each radio it hears in the new run registers
   as a new Asset.
 
-## Where the selected rules live
+## Related pages
 
+- [Runs and identity](../atlas/runs-and-identity.md): how radio Assets
+  register, keep their IDs, and move between gateways.
 - [Asset and gateway calls](../core/docs/api.md#asset-and-gateway-calls) and
   [radio Assets](../core/docs/api.md#radio-assets): what a gateway does at the
   Core API.
-- [Fieldlinks](../atlas/api-proposal.md#fieldlinks): the sketch of the LoRa
-  Fieldlink.
 - [Operating environment](../atlas/environment.md): the field links, and how
   gateway designs change over time.
 - [The Asset link](../sdk/docs/asset.md#the-asset-link): the interface a
-  Fieldlink gives the Asset app. A Fieldlink may deliver Tasks one at a time and
-  in any order. The Asset app orders them by `task_id` and starts a request's
-  Tasks only when it has received them all.
+  Fieldlink gives the Asset app.
 
 ## Not designed yet
 

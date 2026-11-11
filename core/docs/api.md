@@ -28,21 +28,16 @@ explains why the API is the only way in.
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
-- **Runs.** A run lasts from one start of Core to the next stop, and
-  [Reset](reset.md) clears it. Every read, history page, and event stream covers
-  only the current run. After a Reset, Core holds no history of the earlier run;
-  it lives only in that run's Reset ZIP. `event_id` keeps rising across runs, so
-  an old cursor never matches a new event. Other IDs, such as `task_id`,
-  `track_id`, `geofeature_id`, and `object_id`, start again each run, so the
-  same ID can name a different item in the next run.
+- **Runs.** Every read, history page, and event stream covers only the current
+  run. [Runs and identity](../../atlas/runs-and-identity.md) owns what a run is,
+  what carries over, and which IDs start again. `GET /about` names the run with
+  `run_id`.
 - **A new run discards the old one.** A caller that finds a new `run_id` on
-  `GET /about` throws away everything it held from the earlier run: its copy of
-  the picture and history, its cursors, its links, and the operator's choices
-  in their own view, such as hidden Tracks. It then starts again from a fresh
-  read. A link or saved reference to an item names its run. When that run has
-  ended, the caller never looks the item up in Core, because the same ID may now
-  name something else. It says the item belonged to an ended run, whose record
-  is in its Reset ZIP. Sessions end with the run, so everyone signs in again.
+  `GET /about` throws away everything it held from the earlier run, including
+  its cursors and links, and starts again from a fresh read. A link names its
+  run. For an ended run, the caller never looks the item up in Core, because the
+  same ID may now name something else; it says the item's record is in that
+  run's Reset ZIP.
 - **Errors** are a status and `{"error": "<code>", "explanation": "<text>"}`.
 
 | Status | Meaning |
@@ -86,10 +81,8 @@ and `/debug` belong to no pillar and stay at the top level.
   [Objects](#objects), so other sites cannot send them.
 - Asset, gateway, and Plugin keys are 16 random bytes as 22 characters of base64url. Core
   stores only their hashes and shows a key once, when an admin creates or replaces it.
-  Keys belong to no run and carry across runs as configuration. An Asset key
-  names no Asset: an Asset on IP uses it to [register](#asset-and-gateway-calls)
-  each run, and Core assigns its `asset_id` then. A key belongs to at most one
-  Asset at a time.
+  Keys belong to no run. An Asset key names no Asset: an Asset on IP uses it to
+  [register](#asset-and-gateway-calls).
 - A successful issuance retry with the same idempotency key returns an
   acknowledgment identifying the Asset key, gateway, or Plugin and confirming issuance. It
   returns no bearer key and creates or rotates nothing. Core never retains the
@@ -107,10 +100,8 @@ and `/debug` belong to no pillar and stay at the top level.
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
 - The first admin account comes from [Core configuration](../config.md).
-- A radio Asset holds no Core key and never calls this API. It authenticates to
-  its gateway through its Fieldlink, never to Core
-  ([Gateway](../../gateway/README.md#what-every-fieldlink-provides)). Core holds
-  nothing about the radio itself, only its Asset.
+- A radio Asset holds no Core key and never calls this API
+  ([radio Assets](#radio-assets)).
 
 ## The event log and live stream
 
@@ -259,9 +250,9 @@ accounts and Plugins read them. The rest of the picture is under
 
 ## Asset and gateway calls
 
-Every Asset registers anew each run and Core assigns its `asset_id`; nothing
-picks its own. An Asset on IP starts in this order, and on reconnect within the
-run repeats it from step 2:
+Core assigns each Asset's `asset_id` when it registers
+([Runs and identity](../../atlas/runs-and-identity.md#ids)). An Asset on IP
+starts in this order, and on reconnect within the run repeats it from step 2:
 
 1. `GET /about` with its Asset key, and compare the definitions hash.
 2. On start, `POST /entities/assets` with its description record. Core assigns
@@ -316,12 +307,9 @@ order, because the Asset orders them by `task_id`.
 
 ### Radio Assets
 
-[Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves) owns the
-results; these are the calls behind them.
-
-A gateway is an IP bridge. It matches each radio to its Asset on its own side
-and speaks to Core only by `asset_id`; Core keeps nothing about the radio
-itself.
+[Runs and identity](../../atlas/runs-and-identity.md#radio-assets) owns the
+results; these are the calls behind them. The gateway matches each radio to its
+Asset on its own side and speaks to Core only by `asset_id`.
 
 - When the gateway hears a radio that has no `asset_id` in this run, it sends
   `POST /entities/assets/radios` with `requests.radio`: the radio's
@@ -336,8 +324,8 @@ itself.
   that Asset is a radio Asset of this run, not removed, and its carrier is
   offline, removed, or none, the new gateway takes it over by sending
   `PUT /entities/assets/{asset_id}/contact`. Core records the new carrier and
-  adds `asset.carried`. The Asset keeps its ID and its unfinished Tasks. This
-  is not a new run: new IDs come only with the next run.
+  adds `asset.carried`. The Asset keeps its ID and its unfinished Tasks. A swap
+  is within the run; IDs change only with the next run.
 - When an admin removes a radio Asset, its ID ends. If the radio is heard
   again, its gateway registers it as a new Asset with a new ID.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset
@@ -494,9 +482,10 @@ and a removal adds `track.removed`.
 - The event names who asked with `requested_by`, because the geo feature record
   names no author. A geo feature a Plugin creates names the Plugin.
 - **A Task names a place live.** `move_to` and `land` may name a point geo
-  feature by `geofeature_id` instead of a position. Core checks that it exists
-  and is a point when it accepts the Task, refuses a `geofeature_id` that does
-  not exist with `404`, and never copies its shape into the Task. The Asset
+  feature by `geofeature_id` instead of a position. When it accepts the Task,
+  Core refuses a `geofeature_id` that does not exist with `404`, refuses a place
+  that is not a point, and never copies the shape into the Task. This is for a
+  named place; a shape drawn into one Task is carried by that Task. The Asset
   learns of the place this way:
   - An Asset, or the gateway carrying it, may
     `GET /entities/geofeatures/{geofeature_id}` for a geo feature that one of the
@@ -596,12 +585,9 @@ not call Plugins yet.
 
 1. `GET /about` with its key, and compare the definitions hash.
 2. `PUT /plugins/{plugin_id}/description` with its `plugin.description`
-   record: its name and the actions it offers, each with a label, optional
-   help text, its inputs, and its display choices: whether it appears in the
-   right-click menu, and whether its listed places show on the map by
-   default. The Plugin names and describes its own actions from Protocol's
-   common input kinds, so a new action needs no Protocol change. Core checks
-   the description with Protocol's validator and refuses an invalid one with
+   record: its name and the actions it offers, as
+   [Plugins](../../atlas/plugins.md#actions) describes. Core checks the
+   description with Protocol's validator and refuses an invalid one with
    `400 invalid`.
 3. Open `/events?after=<last handled event_id>`. Its stream shows only
    `plugin.called` events addressed to it.

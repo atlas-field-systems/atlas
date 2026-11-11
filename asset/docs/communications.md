@@ -15,7 +15,7 @@ reports back. This behavior is planned, not implemented.
   and learns its `asset_id` for the run from the gateway.
   The Fieldlink owns
   compact encoding, retries, duplicate handling, contact timing, and link
-  security for its medium ([walled city](../../atlas/api-proposal.md#the-shape)).
+  security for its medium ([walled city](../../atlas/design-decisions.md#a-walled-city)).
 
 Inside the Asset, both use one interface to receive requests in event order,
 send reports, and track contact. The rest of the Asset code is the same either

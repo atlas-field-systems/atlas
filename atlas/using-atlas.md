@@ -57,15 +57,17 @@ vehicle even though it is not aboard it.
 ## An operation runs without restarts
 
 Core starts before any other part of an operation and stops after all of them.
-Each start of Core begins a new, empty run, and stopping Core ends it with a
-[Reset ZIP](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md).
-Core never restarts during an operation. Gateways and Assets stay running too.
+Each start of Core begins a new, empty run, and stopping Core ends it
+([Runs and identity](runs-and-identity.md)). Core never restarts during an
+operation. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log.
 
-An Asset that stops leaves the operation. Core shows it offline, and the other
-Assets keep working. An Asset that crashed is taken apart and evaluated before it
-runs again. An Asset keeps nothing from an earlier run when it starts.
+An Asset whose app stops leaves the operation. Core shows it offline, and the
+other Assets keep working. An Asset that crashed is taken apart and evaluated
+before it runs again. An Asset keeps nothing from an earlier run when it starts.
+This is about the app stopping. A dropped link is not a stop: the app keeps its
+state and reconnects as the same Asset.
 
 An Asset's [settings](settings.md) are its current configuration, kept in its entry.
 

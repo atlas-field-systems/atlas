@@ -11,6 +11,6 @@ removed. Git history retains it.
 - [Request admission](docs/requests.md): Core's checks before work reaches an Asset.
 - [Fusion](docs/fusion.md): turning Observations into Tracks.
 - [Logging](docs/logging.md) and [configuration](config.md): diagnostic evidence and options.
-- [Prototyping findings](docs/experiments/final-report.md): lessons from earlier experiments.
+- [Prototyping findings](../atlas/archive/prototype-findings.md): historical lessons from earlier experiments.
 - Charter: https://atlas-field-systems.github.io/atlas/
 - AI agents: read [AGENTS.md](AGENTS.md).

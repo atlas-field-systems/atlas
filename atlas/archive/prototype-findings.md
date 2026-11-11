@@ -1,5 +1,9 @@
 # Final prototyping findings
 
+> **Historical.** Findings from the earlier throwaway prototypes, kept for
+> their lessons. Several open points here have since been decided; current
+> rules live in the [decision log](../decision-log.md) and the pages it links.
+
 ## Outcome
 
 The broad throwaway prototyping phase is complete. Three rounds tested delivery,
@@ -68,8 +72,8 @@ Deferred Asset decisions include hold exit, competing-failure priority, failed-T
 responses, active-response reconfiguration, and recovery. A tested provisional
 policy captured configuration at the trigger and left the Asset paused after
 failures cleared. Dispatching a safe response was distinct from observing its
-physical result. These choices belong in [Asset behavior](../../../asset/docs/README.md)
-and [configuration](../../../asset/config.md).
+physical result. These choices belong in [Asset behavior](../../asset/docs/README.md)
+and [configuration](../../asset/config.md).
 
 ### Logging
 
@@ -87,8 +91,8 @@ conservative default.
 Atlas operates in a trusted setting. These were stress cases, not predictions of
 normal use. Detailed local logging with practical limits and ordinary error
 handling is the starting direction. Exact limits remain open in the component
-configuration docs: [Core](../../config.md), [Asset](../../../asset/config.md),
-and [SDK](../../../sdk/config.md).
+configuration docs: [Core](../../core/config.md), [Asset](../../asset/config.md),
+and [SDK](../../sdk/config.md).
 
 ### Settings and ordering
 

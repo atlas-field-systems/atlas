@@ -1,22 +1,21 @@
 # Core Reset
 
-This design is selected but not implemented. It says how a run ends, what Core
-writes into its Reset ZIP, and what it clears. [Storage](storage.md#runs) says
-where a run's data lives. [Logging](logging.md) says what Core records during
-the run.
+This design is selected but not implemented. It says how Core ends a run, what
+it writes into its Reset ZIP, and what it clears.
+[Runs and identity](../../atlas/runs-and-identity.md) owns the rules this page
+carries out: what a run is, what carries over, and signing in again.
+[Storage](storage.md#runs) says where a run's data lives. [Logging](logging.md)
+says what Core records during the run.
 
 ## Stopping Core ends the run
 
-A run is everything between one start of Core and the next stop. There is no
-Reset request, no Core API call, and no Command Interface button. The admin
-starts and stops Core on Core's own computer.
+The admin starts and stops Core on Core's own computer.
 
 - **Starting Core** begins a new, empty run with the next `run_id`.
 - **Stopping Core** ends the run. Core stops accepting requests, writes its
   Reset ZIP, checks it, clears the run, and exits.
-- **Shut the Assets down first.** The operator is trusted to stop every Asset
-  before stopping Core. Core does not check. An Asset left running into the
-  next run is not supported: Task numbers start again at 1 in each run.
+- **Shut the Assets down first.** Core does not check. An Asset left running
+  into the next run is not supported: Task numbers start again at 1 in each run.
 - **Gateways and Plugins stay running.** Each one notices the new `run_id` when
   Core comes back ([Basics](api.md#basics)).
 
@@ -74,21 +73,12 @@ Core writes the ZIP under a temporary name, reads it back, and checks every file
 against `manifest.json`. Only then does it give the ZIP its final name and clear
 the run. A ZIP with any other name is not a Reset ZIP.
 
-Clearing removes everything that belongs to the run: its events, Tasks, queues,
-Tracks, geo features, Objects and their files, idempotency keys, and diagnostic
-files. Every session ends, so everyone, admins and operators, signs in again
-for the next run. Nothing from the run lingers in Core: no history, no shared
-links that still open, no operator's view choices such as hidden Tracks.
-Operator applications drop what they held when they see the new `run_id`, and
-an old link never opens a different item in the new run
-([Core API basics](api.md#basics)).
-
-Core keeps only accounts and keys, which belong to no run: operator and admin
-accounts, the Asset keys that Assets on IP connect with, and each gateway and
-Plugin with its key. A Plugin's own setup is its configuration, not run data.
-No Asset carries over: not its `asset_id`, its description, or anything in the
-picture. Each Asset registers anew in the next run and comes back as a new
-Asset with the ID Core assigns then. Gateways and Plugins start the next run
+Clearing removes everything that belongs to the run: its events, Assets, Tasks,
+queues, Tracks, geo features, Objects and their files, idempotency keys,
+sessions, and diagnostic files. Accounts and keys stay
+([what carries over](../../atlas/runs-and-identity.md#what-carries-over)).
+Operator applications drop what they held when they see the new `run_id`
+([Core API basics](api.md#basics)). Gateways and Plugins start the next run
 offline until they are heard.
 
 The ZIP is then the only copy of the run. Core never deletes a ZIP. The owner
@@ -104,7 +94,8 @@ never looks like a finished ZIP.
 At every start, before the new run begins, Core tries again to write the ZIP of
 each earlier run it still holds. A run whose ZIP fails again stays held; the new
 run starts anyway and Core prints which runs are still held. The new run never
-waits for an old run's ZIP.
+waits for an old run's ZIP, and a held run is never served through the Core
+API ([storage](storage.md#runs)).
 
 ## When Core stops unexpectedly
 

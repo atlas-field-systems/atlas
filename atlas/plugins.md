@@ -38,8 +38,11 @@ Atlas's one answer shape, so adding or changing a Plugin never changes
 Protocol. Each action also carries its display choices, which ship with the
 Plugin: optional help text, whether it appears in the right-click menu of an
 area, a place, or a point, and whether its listed places show on the map by
-default. The Command Interface builds each action's form, menu entry, and
-result view from the description. A new kind of common piece is a Protocol change the owner decides.
+default. The menu and the map are off unless the Plugin turns them on. A Plugin
+should be really easy to configure: an admin only adds or removes it. The
+Command Interface builds each action's form, menu entry, and result view from
+the description. A new kind of common piece is a Protocol change the owner
+decides.
 
 An answer is made of the same three things for every action, in any mix:
 
@@ -85,9 +88,8 @@ feature, for example.
 - A file may be at most 100 MB unless an admin changes the limit.
 - Files from Assets, such as drone photos, are not designed yet.
 - A GeoTIFF, an image that carries its own map position, can be shown on the
-  map as an imagery geo feature. Operators and Plugins add imagery. It can be
-  renamed or deleted, never moved or reshaped. Deleting it leaves the file, and
-  a file that imagery still shows cannot be deleted until the imagery is.
+  map as an imagery geo feature, added by operators and Plugins
+  ([imagery rules](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features)).
 
 ## Examples
 

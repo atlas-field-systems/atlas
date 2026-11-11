@@ -85,8 +85,9 @@ A requested response is not proof that the vehicle returned or landed.
 
 An applicable failsafe overrides ordinary work, including paused, and locks new
 work for the rest of the operation, even after its response Task succeeds.
-During a failsafe the operator can still override it with an immediate Land or
-Return to home, or with pause. The Asset records each as an override.
+During a failsafe the operator can still
+[override it](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation),
+for example with an immediate Land.
 Once the vehicle is safely stopped, the app shuts itself down and Core shows the
 Asset offline. Local intervention and a manual restart of the app on the ground
 Pi are required before another operation. Atlas does not manage that recovery.
@@ -101,7 +102,8 @@ The Asset owns
 When the operator spins down the system, Core and each Asset write their own
 Reset ZIP, and so does each gateway. The operator shuts the Assets
 down first, and then the admin stops Core on its own computer. Stopping Core
-ends the run, and everyone signs in again for the next one. Core's ZIP holds:
+ends the run ([Runs and identity](runs-and-identity.md#a-run-and-reset)).
+Core's ZIP holds:
 
 - Its run's data, including the event log: every accepted request and every
   stored report, in order.
@@ -110,10 +112,8 @@ ends the run, and everyone signs in again for the next one. Core's ZIP holds:
 - A plain readable summary: start and end, Assets, Tasks, and outcomes.
 
 Core checks its ZIP and then clears the run, so the next start of Core begins
-with an empty map. The ZIP is then the only copy of the run, and nothing deletes
-it automatically. If Core crashes, its next start writes the ZIP of the
-interrupted run, marked as possibly incomplete. Each ZIP lands in a folder on
-its own computer, and a person copies the ZIPs off by hand.
+with an empty map. Each ZIP lands in a folder on its own computer, and a person
+copies the ZIPs off by hand.
 
 After using the system, give the Reset ZIPs to an AI agent for full context on
 the run and any errors. Each system's documentation defines its own ZIP contents
