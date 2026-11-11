@@ -47,6 +47,12 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
+<td>A radio Asset whose app restarts mid-run rejoins as itself by identifying itself to the gateway, the same way as in a gateway swap. It keeps its <code>asset_id</code> and unfinished work, unless an admin removed it.</td>
+<td>Radio Assets, within one run.</td>
+<td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>Mid-run gateway swap: radios stay the same Assets, tell the new gateway who they are, and keep their IDs and unfinished work. A gateway removed and not replaced leaves its radio Assets offline but still the same Assets. Takeover happens only when the old carrier is offline, removed, or none.</td>
 <td>Within a run. A new run still gives new IDs.</td>
 <td><a href="runs-and-identity.html#when-the-gateway-changes">Runs and identity</a></td>
@@ -188,7 +194,7 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
-<td>Files are capped at 100 MB for now. The cap may be raised later.</td>
+<td>Object files are capped at 100 MB by default. An admin may change the limit through the <code>max_object_bytes</code> setting.</td>
 <td>Object files.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects">Core API, Objects</a></td>
 </tr>

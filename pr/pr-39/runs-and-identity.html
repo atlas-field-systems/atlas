@@ -92,6 +92,10 @@ Radio identity stays on the gateway side; Core knows radio Assets only by
 <li><strong>No advance setup.</strong> The gateway registers a radio the first time it hears
 it in the run. Core assigns its <code>asset_id</code>, and the gateway tells the radio.
 There is no approval step.</li>
+<li><strong>A restarted radio rejoins as itself.</strong> If a radio Asset&#39;s app stops and
+starts again during a run, it identifies itself to the gateway through its
+Fieldlink, the same way as in a gateway swap, and keeps its <code>asset_id</code> and its
+unfinished work.</li>
 <li><strong>A removed radio can come back.</strong> If it is heard again, the gateway
 registers it as a new Asset with a new ID.</li>
 <li><strong>One gateway per site</strong> at a time (<a href="scale.html#setup">Scale</a>).</li>
@@ -110,8 +114,6 @@ a new Asset.</p>
 <h2 id="open">Open</h2>
 <ul>
 <li>How a restarted Asset app gets its unfinished work back from Core.</li>
-<li>Whether a radio Asset whose app restarts mid-run gets its old ID back. Its
-gateway would hear the same Fieldlink identity, but no key proves it to Core.</li>
 </ul>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
