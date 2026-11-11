@@ -26,6 +26,9 @@
       "$ref": "task/return_to_home.json"
     },
     {
+      "$ref": "task/hold.json"
+    },
+    {
       "$ref": "task/settings.json"
     }
   ],
@@ -125,6 +128,15 @@
       "settings": {
         "landing_gear": "up"
       }
+    },
+    {
+      "time": 1793667605000,
+      "asset_id": "A1",
+      "task_id": 6,
+      "clear_count": 1,
+      "requested_by": "OP1",
+      "kind": "hold",
+      "now": true
     }
   ]
 }
