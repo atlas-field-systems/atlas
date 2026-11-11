@@ -26,7 +26,7 @@ and reports its contact. Core shows which gateway carries each Asset.
 
 Core authenticates the gateway with its key and trusts it for which radio Asset
 sent what. A radio Asset holds no Core key and never calls the Core API. A
-gateway can add radio Assets, but it cannot add an Asset on IP or issue a Core
+gateway can register radio Assets, but it cannot register an Asset on IP or issue a Core
 key.
 
 ## What every Fieldlink provides
@@ -36,8 +36,7 @@ same for all of them.
 
 - **Each radio has its own identity**, made with the field link's own
   cryptography, such as a Meshtastic node's public key or a Reticulum identity.
-  This **radio identity** names one radio. It is public, not a secret, so Core
-  may store and show it.
+  This **radio identity** names one radio on the link. Core never sees it.
 - **Only that radio can speak as its Asset.** The gateway accepts a frame for
   `asset_id` X only when it comes from X's radio identity, and it rejects
   replayed frames. A shared channel key alone is not enough: another radio, or
@@ -56,31 +55,27 @@ Each Fieldlink's own docs say how it meets these rules, once written.
 These are the results operators and admins see. The calls behind them are in the
 [Core API](../core/docs/api.md#radio-assets).
 
-- **A new radio appears on its own.** When the gateway hears a radio no admin
-  has set up, Core adds it as a new Asset and picks its `asset_id`. There is no
-  approval step. The event log records that the gateway added it.
-- **An admin can set up a radio in advance.** The admin chooses its `asset_id`
-  and names its radio identity. That radio appears with that ID the first time
-  it is heard.
-- **A radio keeps its ID.** The same radio comes back with the same `asset_id`
-  every run until an admin removes it. Its Tasks and settings still start fresh
-  each run, as for every Asset.
-- **A removed radio stays out.** When an admin removes a radio Asset, Core
-  refuses that radio if it is heard again, and does not add it as a new Asset.
-  Operators see the refusal. An admin brings the radio back by setting it up
-  again in advance.
-- **A radio with different definitions is refused.** Operators see "radio X was
-  refused: different definitions", as they would for an Asset on IP. A radio
-  never seen before is not added as an Asset; it shows only in that refusal.
+- **A radio appears on its own.** The first time the gateway hears a radio in a
+  run, it registers the radio and Core adds it as a new Asset with the
+  `asset_id` Core assigns. There is no approval step, and no admin sets up a
+  radio or picks its ID. The event log records that the gateway added it.
+- **Every run starts fresh.** A radio does not keep its `asset_id` across runs.
+  In the next run it registers again and appears as a new Asset.
+- **A removed radio can come back.** When an admin removes a radio Asset and the
+  gateway hears that radio again, the gateway registers it again and it appears
+  as a new Asset.
+- **A radio with different definitions is refused.** Operators see "a radio was
+  refused: different definitions", as they would for an Asset on IP. It is not
+  added as an Asset; it shows only in that refusal.
 
 ## When the gateway changes
 
 - **Its key is replaced.** The radios are unaffected. The gateway reconnects with
   its new key.
-- **It is removed.** Its radios stay in Atlas with their IDs and show offline.
-  They are carried by no gateway until a gateway hears them.
-- **A new gateway is added.** Each radio moves to it as soon as the new gateway
-  hears it, keeping its ID, with no admin step for each radio.
+- **It is removed.** Its radio Assets stay in the picture for the rest of the
+  run and show offline.
+- **A new gateway is added.** It registers each radio it hears as a new Asset,
+  with no admin step for each radio.
 
 ## Gateway contact
 
@@ -129,23 +124,22 @@ the ZIP, as the [Asset does](../asset/docs/logging.md#when-logging-cannot-keep-u
 
 Behavior tests come from these, once the gateway exists.
 
-- Switch on a radio on the private link that no admin set up. It appears as a new
-  Asset with a Core-picked ID, added by the gateway.
-- Set up `D1` in advance for one radio, then switch it on. It appears as `D1`.
-- Restart Core's run and the radio. The radio comes back with the same ID.
+- Switch on a radio on the private link. It appears as a new Asset with a
+  Core-assigned ID, added by the gateway.
 - Send a frame for an Asset from a different radio identity, then replay one of
   its earlier frames. The gateway rejects both, and Core stores neither.
-- Remove a radio Asset and switch the radio on again. Core refuses it, operators
-  see the refusal, and no new Asset appears. Set it up again; it returns.
-- Switch on a never-seen radio with different definitions. Operators see the
-  refusal, and no Asset is added.
+- Remove a radio Asset and leave the radio on. When the gateway hears it again,
+  it appears as a new Asset with a new ID.
+- Switch on a radio with different definitions. Operators see the refusal, and
+  no Asset is added.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
 - Stop the gateway. The gateway and every radio it carries show offline after
   `offline_after_s`.
-- Remove the gateway and add a new one. Each radio keeps its ID and moves to the
-  new gateway when it is heard.
+- Remove the gateway and add a new one. The old gateway's radio Assets show
+  offline, and the new gateway registers each radio it hears as a new Asset.
 - Stop Core and start it again while the gateway runs. The gateway writes one
-  ZIP for the run that ended, and its radios keep their IDs in the new run.
+  ZIP for the run that ended, and each radio it hears in the new run registers
+  as a new Asset.
 
 ## Where the selected rules live
 

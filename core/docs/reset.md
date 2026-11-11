@@ -83,10 +83,13 @@ Operator applications drop what they held when they see the new `run_id`, and
 an old link never opens a different item in the new run
 ([Core API basics](api.md#basics)).
 
-Core keeps the site's setup, which belongs to no run: accounts, the Assets,
-gateways, and Plugins an admin set up with their key hashes, and each radio
-Asset's `asset_id`. Each Asset, gateway, and Plugin starts the next run offline
-until it is heard. An Asset sends its description again when it connects.
+Core keeps only accounts and keys, which belong to no run: operator and admin
+accounts, the Asset keys that Assets on IP connect with, and each gateway and
+Plugin with its key. A Plugin's own setup is its configuration, not run data.
+No Asset carries over: not its `asset_id`, its description, or anything in the
+picture. Each Asset registers anew in the next run and comes back as a new
+Asset with the ID Core assigns then. Gateways and Plugins start the next run
+offline until they are heard.
 
 The ZIP is then the only copy of the run. Core never deletes a ZIP. The owner
 deletes old ZIPs by hand.
@@ -117,8 +120,9 @@ Behavior tests come from these, once Core exists.
 
 - Run a short flight, stop the Asset, then stop Core. `archive_directory` holds
   one ZIP whose summary lists the Asset, its Tasks and their outcomes. Start
-  Core: the map is empty, the Asset is offline, every account must sign in
-  again, and accounts still work.
+  Core: the map is empty and lists no Assets, every account must sign in
+  again, and accounts still work. Start the Asset: it registers as a new Asset
+  with the ID Core assigns.
 - Open a link to a Task from the earlier run after Reset. The operator
   application says it belongs to an ended run and does not show the new run's
   Task with the same ID.

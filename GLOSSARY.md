@@ -8,7 +8,8 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time, and each radio Asset is carried by that gateway. Core authenticates the gateway; the Assets it carries authenticate to it. A gateway is not an Asset. |
 | Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
 | Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It is public, not a secret. Only the radio that holds it can speak as its Asset. |
-| Run | Everything between one start of Core and the next stop. Each run starts with an empty picture; accounts and provisioning carry over. See [Reset](core/docs/reset.md). |
+| Run | Everything between one start of Core and the next stop. Each run starts with an empty picture and no Assets; only accounts and keys carry over. See [Reset](core/docs/reset.md). |
+| Registration | An Asset joining the current run. An Asset on IP registers itself with its key, and a gateway registers each radio Asset it hears. Core assigns the `asset_id` and its acknowledgement tells the registrant. Every Asset registers anew each run. |
 | Reset | Ending a run by stopping Core. Core writes the run's Reset ZIP, checks it, and clears the run. There is no Reset request. |
 | Reset ZIP | One part's own archive of a run or operation, for people and AI agents to investigate it. Core, each Asset, and each gateway write their own; merging them is a separate process. Nothing deletes one automatically. |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
@@ -32,7 +33,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
 | Pause | A setting that holds an Asset in place. The active Task stays active and continues when the Asset is set running again. |
 | Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
-| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a radio Core has never seen. |
+| Provisioning | An admin adding or removing an account, or the key of an Asset on IP, a gateway, or a Plugin. Provisioning carries across runs; Assets themselves join by registration. |
 | Task | One instance of requested work with a reported execution outcome. |
 | Hold | A command that stops an Asset where it is and keeps it there. Unlike pause, it keeps no earlier work to resume. |
 | Subsystem | A part of an Asset, hardware or equipment software, that the Asset declares and reports a condition for, such as a GPS receiver or camera. |

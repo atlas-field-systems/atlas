@@ -106,14 +106,14 @@ root. `/about`, `/events`, `/history`, and `/debug` belong to no pillar.
 ## Identity and security
 
 - **Accounts.** Admin and operator accounts with hashed passwords and HttpOnly
-  session cookies. Admins provision accounts, Assets and gateways. Each browser
+  session cookies. Admins provision accounts and keys. Each browser
   tab uses the same session.
-- **Provisioned Assets and gateways.** An admin adds a gateway or an Asset on IP
-  in Core and receives its ID and key for its configuration. The key is a bearer
+- **Keys for Assets and gateways.** An admin creates a key for a gateway or an
+  Asset on IP in Core for its configuration. The key is a bearer
   token over TLS. There is no enrollment key. An Asset behind a gateway
   authenticates to the gateway, not to Core.
-- **IDs.** Admins choose `asset_id`, which people read, when they provision an
-  Asset on IP; Core assigns it for a radio Asset a gateway adds. Assets choose
+- **IDs.** Core assigns `asset_id`, which people read, when an Asset registers
+  each run, whether it registers itself or a gateway registers it. Assets choose
   `observation_id`. Core assigns Task, Track, geo feature, and Object IDs.
   Event IDs are integers.
 - **Transport security.** TLS on IP. Each Fieldlink uses its radio's own
