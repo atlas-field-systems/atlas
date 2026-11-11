@@ -8,6 +8,5 @@ not checked, and not shown by the tools. It still uses the earlier message shape
 (`seq`, `from`, replies, and hello references), and its references point at
 variables that may have moved or been removed. To bring it back, rework it into a
 record under `definitions/` that passes `npm run check`. Update the existing
-records as needed: `geofeature_id` on `move_to` and `land`, and the `gimbal`
-report in the description. Git history keeps the decisions and storage notes
+records as needed, such as the `gimbal` report in the description. Git history keeps the decisions and storage notes
 that went with them.

@@ -153,8 +153,8 @@ telemetry, battery, settings, and failsafe reports separately, each with its
 age. Receipt time proves neither fresh measurements nor two-way contact, and
 connection does not mean equipment is ready; do not invent an overall verdict.
 When Core [refused an Asset, gateway, or radio](../../core/docs/api.md#basics) for
-different Protocol definitions, or refused a [removed radio](../../gateway/README.md#how-a-radio-asset-joins-and-leaves),
-show that refusal, so a missing Asset has a visible reason.
+different Protocol definitions, show that refusal, so a missing Asset has a
+visible reason.
 Show which gateway carries each radio Asset, and the gateway's own contact, so
 the operator can tell a gateway that is down from radios that went quiet.
 When an Asset is in [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation),
@@ -216,7 +216,7 @@ the SDK docs.
 ## Open
 
 - Exact detail routes, history controls, package integration, and basemap provider.
-- Whether admin work, such as accounts and Asset and gateway provisioning, lives
+- Whether admin work, such as accounts and Asset, gateway, and Plugin keys, lives
   in this interface.
 - The model rocket's launch command, equipment layout, recording limits, and how
   review knows the record is complete.

@@ -10,11 +10,15 @@ failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
 ## Start and connect
 
-An admin provisions an Asset on IP in Core and copies its `asset_id` and key into
-its [configuration](../config.md). There is no enrollment key. An Asset behind a
-gateway holds no Core key. It authenticates to its gateway with its own radio
-identity and appears in Core when the gateway first hears it
-([Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves)). Once its identity,
+An admin creates an Asset key in Core and copies it into the Asset's
+[configuration](../config.md). There is no enrollment key. Every Asset starts
+each run as a new Asset: an Asset on IP registers itself with its key and
+learns its `asset_id` from Core's acknowledgement. An Asset behind a gateway
+holds no Core key; a gateway registers it the first time it is heard in the
+run and tells it its ID. It keeps that ID and its work for the rest of the run,
+even if it moves to another gateway
+([Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves)).
+Nothing picks its own `asset_id`. Once its identity,
 clock, and communications are ready, the Asset connects in the order the
 [Core API](../../core/docs/api.md#asset-and-gateway-calls) sets: check the
 definitions hash, send its description, report its known settings, its queue,

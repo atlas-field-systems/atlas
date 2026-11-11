@@ -36,7 +36,8 @@
         "requests/task.json",
         "requests/settings.json",
         "requests/geofeature.json",
-        "requests/plugin_call.json"
+        "requests/plugin_call.json",
+        "requests/radio.json"
       ]
     },
     {
@@ -183,7 +184,8 @@
         "variables/target_time.json",
         "variables/help_text.json",
         "variables/in_menu.json",
-        "variables/show_on_map.json"
+        "variables/show_on_map.json",
+        "variables/radio.json"
       ]
     }
   ]

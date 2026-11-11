@@ -30,7 +30,8 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
 | Pause | A setting that holds an Asset in place. The active Task stays active and continues when the Asset is set running again. |
 | Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
-| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a new radio Asset it carries. |
+| Provisioning | An admin adding or removing an account, or the key of an Asset on IP, a gateway, or a Plugin. Provisioning carries across runs; Assets themselves join by registration. |
+| Registration | An Asset joining the current run. An Asset on IP registers itself with its key, and a gateway registers each radio Asset it hears. Core assigns the `asset_id` and its acknowledgement tells the registrant. Every Asset registers anew each run and keeps its ID for the rest of that run. |
 | Task | One instance of requested work with a reported execution outcome. |
 | Hold | A command that stops an Asset where it is and keeps it there. Unlike pause, it keeps no earlier work to resume. |
 | Subsystem | A part of an Asset, hardware or equipment software, that the Asset declares and reports a condition for, such as a GPS receiver or camera. |

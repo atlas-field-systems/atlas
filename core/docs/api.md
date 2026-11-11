@@ -60,8 +60,8 @@ and `/debug` belong to no pillar and stay at the top level.
 | Caller | Credential | Event stream shows |
 | --- | --- | --- |
 | Account (admin or operator) | Session cookie from `POST /administration/login` | Everything |
-| Asset on IP | Bearer key | Requests for that Asset |
-| Gateway | Bearer key | Requests for the Assets it carries |
+| Asset on IP | Bearer Asset key | Requests for the Asset it registered, and the places its unfinished Tasks name |
+| Gateway | Bearer key | Requests for the Assets it carries, and the places their unfinished Tasks name |
 | Plugin | Bearer key | Calls addressed to it |
 
 - Accounts log in with `operator_id` and a password. Core stores password hashes
@@ -70,12 +70,16 @@ and `/debug` belong to no pillar and stay at the top level.
   [Objects](#objects), so other sites cannot send them.
 - Asset, gateway, and Plugin keys are 16 random bytes as 22 characters of base64url. Core
   stores only their hashes and shows a key once, when an admin creates or replaces it.
+  Keys belong to no run and carry across runs as configuration. An Asset key
+  names no Asset: an Asset on IP uses it to [register](#asset-and-gateway-calls)
+  each run, and Core assigns its `asset_id` then. A key belongs to at most one
+  Asset at a time.
 - A successful issuance retry with the same idempotency key returns an
-  acknowledgment identifying the Asset, gateway, or Plugin and confirming issuance. It
+  acknowledgment identifying the Asset key, gateway, or Plugin and confirming issuance. It
   returns no bearer key and creates or rotates nothing. Core never retains the
   secret response body in its retry cache, event log, or diagnostic logs.
 - If the first issuance response is lost, the key cannot be recovered. The admin
-  uses the returned ID to replace the Asset, gateway, or Plugin key with a new
+  uses the returned ID to replace the Asset key, gateway key, or Plugin key with a new
   idempotency key. Replacement invalidates the previous key and shows the new
   key once. Retrying that replacement only acknowledges it; if its first
   response is lost too, replace again with a new idempotency key.
@@ -87,10 +91,10 @@ and `/debug` belong to no pillar and stay at the top level.
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
 - The first admin account comes from [Core configuration](../config.md).
-- A radio Asset holds no Core key and never calls this API. Its gateway speaks
-  for it. Core holds no radio identity: how a radio proves itself to its
-  gateway stays with the gateway and its Fieldlink, as
-  [every Fieldlink provides](../../gateway/README.md#what-every-fieldlink-provides).
+- A radio Asset holds no Core key and never calls this API. It authenticates to
+  its gateway through its Fieldlink, never to Core
+  ([Gateway](../../gateway/README.md#what-every-fieldlink-provides)). Core holds
+  nothing about the radio itself, only its Asset.
 
 ## The event log and live stream
 
@@ -105,9 +109,9 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 
 | Kind | Added when | Record |
 | --- | --- | --- |
-| `asset.provisioned`, `asset.removed` | An admin adds or removes an Asset, or a gateway adds a radio Asset | `provisioning` |
+| `asset.provisioned`, `asset.removed` | An Asset [registers](#asset-and-gateway-calls), a gateway registers a radio Asset, or an admin removes an Asset | `provisioning` |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
-| `asset.carried` | A radio Asset moves to the gateway that heard it, or its gateway is removed | `carrier`: `asset_id`, and `gateway_id` unless no gateway carries it |
+| `asset.carried` | A radio Asset moves to another gateway during the run, or its gateway is removed | `carrier`: `asset_id`, and `gateway_id` unless no gateway carries it |
 | `plugin.provisioned`, `plugin.removed` | An admin adds or removes a Plugin | `provisioning` |
 | `plugin.described` | A Plugin sends its description | `plugin.description` |
 | `plugin.contact` | Core's view of a Plugin's contact changes | `contact` |
@@ -120,7 +124,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `asset.described` | The Asset sends its description | Its description record |
 | `asset.contact` | Core's view of the Asset's contact changes | `contact` |
 | `gateway.contact` | Core's view of the gateway's contact changes | `contact` |
-| `definitions.refused` | An Asset on IP, gateway, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash` |
+| `definitions.refused` | An Asset on IP, gateway, radio, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash`. For a radio: the `gateway_id`, `radio: true`, and the radio's hash |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `task.dropped` | Core discards a Task the Asset never confirmed it holds | `drop`: `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `drop`: `asset_id`, `request_id` |
@@ -239,10 +243,18 @@ accounts and Plugins read them. The rest of the picture is under
 
 ## Asset and gateway calls
 
-An Asset on IP starts or reconnects in this order:
+Every Asset registers anew each run and Core assigns its `asset_id`; nothing
+picks its own. An Asset on IP starts in this order, and on reconnect within the
+run repeats it from step 2:
 
-1. `GET /about` and compare the definitions hash.
-2. `PUT /entities/assets/{asset_id}/description` with its description record.
+1. `GET /about` with its Asset key, and compare the definitions hash.
+2. On start, `POST /entities/assets` with its description record. Core assigns
+   the next `asset_id`, adds `asset.provisioned`, and answers `201 {asset_id}`.
+   The Asset uses that ID for the rest of the run. Registering again with the
+   same key in the run returns the same `asset_id`, unless an admin removed that
+   Asset; then it becomes a new Asset with a new ID. A key registers at most one
+   Asset at a time. On reconnect, `PUT /entities/assets/{asset_id}/description`
+   instead.
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
@@ -272,10 +284,11 @@ An Asset on IP starts or reconnects in this order:
   caught up with it.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key, once it has [named the radio](#radio-assets). It also sends
+key, once it has [registered the radio](#radio-assets). It also sends
 `PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
 Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
-it carries and named by the path; any other caller gets `403`. Core
+it carries, or one it [takes over](#radio-assets), named by the path; any other
+caller gets `403`. Core
 authenticates the gateway and trusts it for which Asset sent what. Each Asset
 authenticates to the gateway, not to Core.
 
@@ -290,21 +303,32 @@ order, because the Asset orders them by `task_id`.
 [Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves) owns the
 results; these are the calls behind them.
 
-- Core holds no radio identity. A gateway is an IP bridge: it matches each
-  radio to its Asset on its own side and speaks to Core only by `asset_id`.
-  Its Fieldlink checks the radio's definitions hash when the link opens.
-- When a radio's link opens, the gateway names the radio's Asset to Core with
-  `POST /entities/assets/radios`. A radio new to the gateway becomes a new
-  Asset with an `asset_id` Core assigns, and Core adds `asset.provisioned` with
-  the gateway as `requested_by`. What this call carries, whether a radio keeps
-  its `asset_id` across runs, setting up a radio in advance, and what happens
-  when a removed radio is heard again are [not defined yet](#not-defined-yet).
-- If another gateway, or none, carried the Asset, Core records the calling
-  gateway as its carrier and adds `asset.carried`.
+A gateway is an IP bridge. It matches each radio to its Asset on its own side
+and speaks to Core only by `asset_id`; Core keeps nothing about the radio
+itself.
+
+- When the gateway hears a radio that has no `asset_id` in this run, it sends
+  `POST /entities/assets/radios` with `requests.radio`: the radio's
+  definitions hash. Core assigns the next `asset_id`, adds `asset.provisioned`
+  with the gateway as `requested_by`, and answers `201 {asset_id}`. The gateway
+  carries that Asset, keeps which radio has which ID, and tells the radio its
+  ID through the Fieldlink.
+- Core refuses a different definitions hash with `409 definitions_mismatch` and
+  adds `definitions.refused`. The refusal adds no Asset.
+- **A gateway swap keeps the Assets.** A radio that already has an `asset_id`
+  in this run tells it to the gateway it now reaches, through the Fieldlink. If
+  that Asset is a radio Asset of this run, not removed, and its carrier is
+  offline, removed, or none, the new gateway takes it over by sending
+  `PUT /entities/assets/{asset_id}/contact`. Core records the new carrier and
+  adds `asset.carried`. The Asset keeps its ID and its unfinished Tasks. This
+  is not a new run: new IDs come only with the next run.
+- When an admin removes a radio Asset, its ID ends. If the radio is heard
+  again, its gateway registers it as a new Asset with a new ID.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset
   get `403`.
-- Removing a gateway leaves its radio Assets in place, offline, and carried by
-  no gateway. Replacing its key changes nothing for them.
+- Removing a gateway leaves its radio Assets in the picture, offline, and
+  carried by no gateway, until they reach another gateway. Replacing its key
+  changes nothing for them.
 
 ## Contact
 
@@ -334,9 +358,9 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | --- | --- |
 | `POST /administration/login`, `POST /administration/logout`, `GET /administration/me` | Start, end, and read a session |
 | `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
-| `POST /administration/assets` | Provision an Asset with the `asset_id` the admin chooses. An Asset on IP gets its key once. A radio Asset gets no key |
-| `POST /administration/assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
-| `DELETE /administration/assets/{asset_id}` | Remove an Asset |
+| `POST /administration/asset-keys`, `DELETE /administration/asset-keys/{key_id}` | Create or remove an Asset key for an Asset on IP; creating returns its `key_id` and key once |
+| `POST /administration/asset-keys/{key_id}/key` | Replace an Asset key; returns the new key once |
+| `DELETE /administration/assets/{asset_id}` | Remove an Asset from the run. It may come back by registering again, as a new Asset |
 | `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
 | `POST /administration/gateways/{gateway_id}/key` | Replace a gateway key; returns the new key once |
 | `POST /administration/plugins`, `DELETE /administration/plugins/{plugin_id}` | Provision or remove a Plugin; provisioning returns its `plugin_id` and key once |
@@ -346,7 +370,7 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 
 These are requirements to test when Core is built; no credential runtime exists yet.
 
-- Provision an Asset, gateway, or Plugin and lose the first response. Retry with the same
+- Create an Asset key, or provision a gateway or Plugin, and lose the first response. Retry with the same
   idempotency key and body. Expect the same provisioned ID and an issuance
   acknowledgment, no key, and no second provisioning. Replace its key with a
   new idempotency key; expect one new key and rejection of the old key.
@@ -379,10 +403,10 @@ differently.
 
 | Path | Role |
 | --- | --- |
-| `/entities/assets` | The actor surface, already specified above: description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Provisioning is under `/administration`. Tasks are under `/tasks`. |
+| `/entities/assets` | The actor surface, already specified above: registration, description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Keys are under `/administration`. Tasks are under `/tasks`. |
 | `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. Tasks may name a `geofeature_id`. |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task may name a place by `geofeature_id`, as a live reference. |
 
 Objects are not Entities.
 
@@ -452,10 +476,18 @@ and a removal adds `track.removed`.
   key ([Plugins](#plugins)). Assets and gateways get `403`.
 - The event names who asked with `requested_by`, because the geo feature record
   names no author. A geo feature a Plugin creates names the Plugin.
-- A Task that names a geo feature refers to it as it stands: Core does not
-  copy its shape into the Task, and the Asset obtains the current shape, so
-  editing the place changes that work. Failsafe boundaries are never taken
-  from geo features.
+- **A Task names a place live.** `move_to` and `land` may name a point geo
+  feature by `geofeature_id` instead of a position. Core checks that it exists
+  and is a point when it accepts the Task, and does not copy its shape into
+  the Task. The Asset's event stream carries that geo feature's current record,
+  and each later replacement or deletion, while an unfinished Task names it,
+  so the Asset (or its gateway) always holds the current shape. Failsafe
+  boundaries and failsafe responses never name a geo feature.
+- **Edits are never blocked.** An operator may replace or delete a place while
+  unfinished Tasks name it. Core does not refuse the change and does not
+  cancel any Task. The Asset decides how to carry on: it may keep its original
+  plan or follow the new shape, and a Task whose place was deleted runs or
+  fails as the Asset decides, reporting what it did.
 - **Imagery shows a GeoTIFF on the map.** An imagery geo feature names one
   stored Object, and the map draws that file where the file says it belongs.
   Core refuses an Object that is not a GeoTIFF with `409`, and an `object_id`
@@ -617,9 +649,3 @@ marked not finished, and an operator who still wants it calls again.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
-- Radio Assets without radio identity in Core
-  ([issue #35](https://github.com/atlas-field-systems/atlas/issues/35)): what
-  `POST /entities/assets/radios` carries, whether a radio keeps its `asset_id`
-  across runs, whether an admin can set up a radio in advance, and what
-  operators see when a removed radio is heard again. Radio identity stays with
-  the gateway and its Fieldlink.

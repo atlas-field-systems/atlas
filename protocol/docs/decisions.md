@@ -62,14 +62,15 @@ page disagree, fix one of them.
 
 ## Administration and contact
 
-- One `provisioning` record covers an Asset, gateway, or Plugin being added or removed. The event kind says which, so the record does not. It names its ID and `requested_by`: the admin, or the gateway that added a radio Asset on first contact. What an Asset is comes from its description, not from provisioning.
+- One `provisioning` record covers an Asset registering or being removed, and a gateway or Plugin being provisioned or removed. The event kind says which, so the record does not. It names its ID and `requested_by`: the admin, or the gateway that registered a radio Asset. An Asset on IP that registered itself has no `requested_by`. What an Asset is comes from its description, not from provisioning.
+- **Core assigns every `asset_id` at registration**, each run, and its answer tells the registrant. Nothing picks its own `asset_id`; Assets still choose `observation_id`. `requests.radio` carries only the radio's definitions hash.
 - Key replacements, logins, and account changes have no shared record. They stay in Core's diagnostic log.
 - One `contact` record says whether an Asset or gateway is `online` or `offline`. Its `time` is when it was last heard, so an offline record keeps that time and the record still has one time. Core uses it for `asset.contact`, and a gateway sends it for each Asset it carries, with its Fieldlink deciding online or offline.
 - `provisioning` and `contact` name exactly one of `asset_id`, `gateway_id`, or `plugin_id`.
 - `requested_by` names an account, a gateway, or a Plugin. Core keeps operator, gateway, and Plugin IDs distinct.
 - **No record carries a radio identity.** It stays with the gateway and its Fieldlink; Core knows radio Assets only by `asset_id`.
-- `carrier` records which gateway carries a radio Asset, or none, for `asset.carried`.
-- One `drop` record covers `task.dropped`, `request.dropped`, and `plugin.dropped`; `refusal` records `definitions.refused`. The event kind says which drop, as for `provisioning`.
+- `carrier` records which gateway carries a radio Asset, or none, for `asset.carried`: when a radio Asset moves to another gateway during the run, keeping its ID, or its gateway is removed.
+- One `drop` record covers `task.dropped`, `request.dropped`, and `plugin.dropped`; `refusal` records `definitions.refused`; a radio's refusal names its gateway with `radio` set. The event kind says which drop, as for `provisioning`.
 
 ## Limits
 
