@@ -19,9 +19,9 @@ explains why the API is the only way in.
   hash with `409 definitions_mismatch`. `GET /about` needs no credential and
   returns `core_version`, `protocol_version`, and `definitions_hash`. The event
   stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
-  An Asset or gateway sends its key and hash on `GET /about` too. When that hash
-  differs, Core adds a `definitions.refused` event, so operators see why the
-  Asset or gateway is missing.
+  An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
+  that hash differs, Core adds a `definitions.refused` event, so operators see
+  why it is missing.
 - **Retries are safe.** Every request that changes state carries an
   `Idempotency-Key` of up to 64 characters. Core keeps each key's non-secret
   response for the run. A repeat returns that response and changes nothing; the
@@ -35,8 +35,9 @@ explains why the API is the only way in.
 | `400 invalid` | The body fails Protocol's validator; `explanation` lists the paths |
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
-| `404` | No such Asset, Task, or account |
-| `409` | Refused: Asset offline, queue full, command or setting not supported, unknown Task, or definitions mismatch |
+| `404` | No such Asset, Task, account, Plugin, Plugin call, geo feature, or Object |
+| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, or definitions mismatch |
+| `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 
 ## Root paths
 
@@ -50,8 +51,8 @@ and `/debug` belong to no pillar and stay at the top level.
 | --- | --- |
 | `/entities` | The shared picture. `GET /entities` returns it. Assets, Observations, Tracks, and geo features live under this root |
 | `/tasks` | Tasks, queues, and cancels |
-| `/objects` | Files Core holds. Not designed yet |
-| `/plugins` | The Plugin interface. Not designed yet |
+| `/objects` | Files Core holds ([Objects](#objects)) |
+| `/plugins` | Plugin descriptions, contact, calls, and answers ([Plugins](#plugins)) |
 | `/administration` | Accounts, sessions, keys, and provisioning |
 
 ## Callers and credentials
@@ -61,18 +62,20 @@ and `/debug` belong to no pillar and stay at the top level.
 | Account (admin or operator) | Session cookie from `POST /administration/login` | Everything |
 | Asset on IP | Bearer key | Requests for that Asset |
 | Gateway | Bearer key | Requests for the Assets it carries |
+| Plugin | Bearer key | Calls addressed to it |
 
 - Accounts log in with `operator_id` and a password. Core stores password hashes
   (scrypt). The session cookie is `HttpOnly`, `Secure`, and `SameSite=Strict`, and
-  Core accepts state changes only as JSON, so other sites cannot send them.
-- Asset and gateway keys are 16 random bytes as 22 characters of base64url. Core
+  Core accepts state changes only as JSON, except a file upload to
+  [Objects](#objects), so other sites cannot send them.
+- Asset, gateway, and Plugin keys are 16 random bytes as 22 characters of base64url. Core
   stores only their hashes and shows a key once, when an admin creates or replaces it.
 - A successful issuance retry with the same idempotency key returns an
-  acknowledgment identifying the Asset or gateway and confirming issuance. It
+  acknowledgment identifying the Asset, gateway, or Plugin and confirming issuance. It
   returns no bearer key and creates or rotates nothing. Core never retains the
   secret response body in its retry cache, event log, or diagnostic logs.
 - If the first issuance response is lost, the key cannot be recovered. The admin
-  uses the returned ID to replace the Asset or gateway key with a new
+  uses the returned ID to replace the Asset, gateway, or Plugin key with a new
   idempotency key. Replacement invalidates the previous key and shows the new
   key once. Retrying that replacement only acknowledges it; if its first
   response is lost too, replace again with a new idempotency key.
@@ -99,9 +102,18 @@ milliseconds, one of the kinds below, and its record.
 | --- | --- | --- |
 | `asset.provisioned`, `asset.removed` | An admin adds or removes an Asset, or a gateway adds a radio Asset | `provisioning` |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
+| `plugin.provisioned`, `plugin.removed` | An admin adds or removes a Plugin | `provisioning` |
+| `plugin.described` | A Plugin sends its description | Its Plugin description record |
+| `plugin.contact` | Core's view of a Plugin's contact changes | `contact` |
+| `plugin.called` | An operator calls a Plugin action | The Plugin call record |
+| `plugin.result`, `plugin.failed` | A Plugin answers a call | The Plugin result or failure record |
+| `plugin.dropped` | Core ends a call the Plugin did not answer before it went offline | `plugin_id`, `request_id` |
+| `object.stored` | An operator or a Plugin stores a file | The Object record |
+| `object.changed` | An operator attaches an Object to a geo feature, moves it, or detaches it | The Object record |
+| `object.deleted` | An operator deletes an Object | `object_id`, `requested_by` |
 | `asset.described` | The Asset sends its description | Its description record |
 | `asset.contact` | Core's view of the Asset's contact changes | `contact` |
-| `definitions.refused` | An Asset or gateway connects with a different definitions hash | Its `asset_id` or `gateway_id`, and its hash |
+| `definitions.refused` | An Asset, gateway, or Plugin connects with a different definitions hash | Its `asset_id`, `gateway_id`, or `plugin_id`, and its hash |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `task.dropped` | Core discards a Task the Asset never confirmed it holds | `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `asset_id`, `request_id` |
@@ -281,12 +293,14 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | `DELETE /administration/assets/{asset_id}` | Remove an Asset |
 | `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
 | `POST /administration/gateways/{gateway_id}/key` | Replace a gateway key; returns the new key once |
+| `POST /administration/plugins`, `DELETE /administration/plugins/{plugin_id}` | Provision or remove a Plugin; provisioning returns its `plugin_id` and key once |
+| `POST /administration/plugins/{plugin_id}/key` | Replace a Plugin key; returns the new key once |
 
 ### Credential retry scenarios
 
 These are requirements to test when Core is built; no credential runtime exists yet.
 
-- Provision an Asset or gateway and lose the first response. Retry with the same
+- Provision an Asset, gateway, or Plugin and lose the first response. Retry with the same
   idempotency key and body. Expect the same provisioned ID and an issuance
   acknowledgment, no key, and no second provisioning. Replace its key with a
   new idempotency key; expect one new key and rejection of the old key.
@@ -328,6 +342,133 @@ The request and record shapes for `GET /entities`, `/entities/observations`,
 `/entities/tracks`, and `/entities/geofeatures` are not designed yet. Objects
 are not Entities.
 
+## Objects
+
+An Object is a file Core holds, with an Object record that says what it is:
+`object_id`, `name`, `content_type`, `size_bytes`, and an optional
+`geofeature_id`. Operators and Plugins store Objects. Objects are not Entities,
+and Core never sends them to Assets or gateways.
+
+| Request | Who | Result |
+| --- | --- | --- |
+| `POST /objects?name=<name>&geofeature_id=<id>` | Account or Plugin | Stores the file; `201 {object_id, event_id}` |
+| `GET /objects?geofeature_id=<id>` | Account or Plugin | Every Object record, or those attached to one geo feature, with `as_of` |
+| `GET /objects/{object_id}` | Account or Plugin | One Object record |
+| `GET /objects/{object_id}/file` | Account or Plugin | The file, with its `content_type` |
+| `PATCH /objects/{object_id}` | Account | `{"geofeature_id": <id or null>}` attaches, moves, or detaches it; `200 {event_id}` |
+| `DELETE /objects/{object_id}` | Account | Deletes the Object and its file; `200 {event_id}` |
+
+- **An upload is the file itself.** The body is the file's bytes and its
+  `Content-Type` header is the file's type. `name` is required and
+  `geofeature_id` is optional. It is the one state change whose body is not
+  JSON. The required `Atlas-Definitions` header still keeps other sites from
+  sending it. Like every change, it carries an `Idempotency-Key`; a repeat
+  stores nothing new.
+- **Core assigns `object_id`** and never reuses it in a run, even after a delete.
+- **Stored whole or not at all.** Core writes the file, then adds the Object's
+  row and its `object.stored` event in one transaction. There is no half-stored
+  Object. A file larger than `max_object_bytes` ([configuration](../config.md))
+  is refused with `413 too_large`, and a `geofeature_id` that does not exist with
+  `404`.
+- **The file never changes.** A different file is a new Object. Only which geo
+  feature it belongs to can change, and only an operator changes it. The change
+  names the end state, so applying it twice changes nothing.
+- **One geo feature at most.** An Object names at most one geo feature, and the
+  link is kept only on the Object. A geo feature's Objects are those that name it.
+  Deleting a geo feature leaves its Objects, which keep its ID as a record.
+- **Delete removes the file.** The `object.stored` and `object.deleted` events
+  stay in history, so the record of the upload and of who deleted it remains.
+  Only an operator deletes an Object.
+- **Who stored it** is `requested_by` in the Object record: the account that
+  uploaded it or the Plugin that stored it. Core stamps it, as for Tasks.
+- **Objects belong to their run.** They are kept until the run is removed under
+  [retention](storage.md#memory-and-retention). What Reset does with them is
+  [not defined yet](#not-defined-yet).
+
+## Plugins
+
+A [Plugin](../../atlas/plugins.md) is a program in the second ring that offers
+actions. It runs on its own, in its own container if it needs one, and connects
+out to Core like a gateway: it holds a key, follows its own event stream for
+calls addressed to it, and posts its answers. Core never needs to know where a
+Plugin runs.
+
+The Plugin interface is the set of Core API calls a Plugin's key may use. There
+is no second protocol and nothing is repeated under `/plugins`.
+
+| A Plugin may | With |
+| --- | --- |
+| Describe itself, stay in contact, follow its calls, and answer them | `/about`, `/events`, and `/plugins/{plugin_id}/...` below |
+| Read the shared picture | `GET` under `/entities` |
+| Create geo features | `POST /entities/geofeatures` |
+| Store and read Objects | `POST /objects` and `GET` under `/objects` |
+
+A Plugin may not send Tasks, change settings, call another Plugin, change or
+delete what anyone has stored, or use `/administration`. Assets and gateways may
+not call Plugins yet.
+
+### A Plugin starts
+
+1. `GET /about` with its key, and compare the definitions hash.
+2. `PUT /plugins/{plugin_id}/description` with its Plugin description record:
+   its name and the actions it offers. Core refuses an action Protocol does not
+   define with `400 invalid`.
+3. Open `/events?after=<last handled event_id>`. Its stream shows only
+   `plugin.called` events addressed to it.
+
+A Plugin is online while Core has heard from it within `offline_after_s`
+([configuration](../config.md)). Every call it makes with its key counts. A
+Plugin with nothing else to send calls `GET /about` often enough to stay online.
+Core adds `plugin.contact` when its view changes, so operators see which Plugins
+they can use.
+
+### Operators call actions
+
+| Request | Body | Result |
+| --- | --- | --- |
+| `POST /plugins/{plugin_id}/{action}` | The action's inputs, as Protocol defines for that action | `202 {event_id}` |
+| `GET /plugins` | | Every Plugin: description, contact, and its unanswered calls, with `as_of` |
+| `GET /plugins/calls?plugin_id&cursor&limit` | | Calls with their answers, newest first; at most 1000 per page, with `next_cursor` |
+| `GET /plugins/calls/{event_id}` | | One call and its answer, if any |
+
+- Core validates the inputs, checks that the Plugin is online and that its
+  description lists the action, and accepts or refuses the call. A Plugin that
+  is not online is refused at once with `409`. Nothing waits for it to return.
+- An accepted call is one `plugin.called` event. Its `event_id` names the call
+  from then on, as a request's `event_id` does for an Asset. There is no other
+  call ID.
+- Every account sees every call and its answer, because Atlas keeps one shared
+  picture and one history.
+- There is no stop for a call. An operator who no longer wants the answer
+  ignores it. A call is never repeated by itself; an operator who wants fresh
+  data calls again.
+
+### Plugins answer
+
+`POST /plugins/{plugin_id}/answers` takes one answer, which names its call with
+`request_id`, the call's `event_id`:
+
+- **A result**: the action's list output as Protocol defines it, or the IDs of
+  the geo features and Objects it created, or both. Core stores it as
+  `plugin.result`.
+- **A failure**: an `explanation`, and the IDs of anything it had already
+  created. Core stores it as `plugin.failed`.
+
+- Core checks the answer with Protocol's validator. An invalid answer is
+  refused with `400 invalid`, and the call stays unanswered.
+- A call has one answer. A second answer, or an answer to a call that was
+  dropped, is refused with `409`. A retry with the same `Idempotency-Key`
+  returns the first response.
+- A Plugin may run several calls at once and answer them in any order.
+
+### A Plugin goes offline or is removed
+
+When a Plugin goes offline or an admin removes it, Core ends every call it has
+not answered and adds `plugin.dropped` for each. Its stream skips dropped calls
+when it returns, so no old call runs late. Geo features and Objects it stored
+before it stopped stay, and still name the Plugin in `requested_by`. The call is
+marked not finished, and an operator who still wants it calls again.
+
 ## Not defined yet
 
 - Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
@@ -351,5 +492,11 @@ are not Entities.
   `task.dropped`, and `request.dropped`.
 - Gateway contact events. The `contact` record already names a gateway;
   [Gateway](../../gateway/README.md) owns when Core records it.
-- The `/objects` and `/plugins` roots. They are part of the product, built with
-  the rest ([pillars](pillars.md)), and their API is designed next.
+- Protocol definitions for Objects and Plugins: the Object record, the Plugin
+  description record, the Plugin call, result, and failure records, the
+  `object.deleted` and `plugin.dropped` event records, each
+  action's request and list output, and `plugin_id` in `provisioning`,
+  `contact`, and `requested_by`. The [parked](../../protocol/parked/README.md)
+  definitions are the starting point.
+- Which Plugin actions Protocol defines first. [Plugins](../../atlas/plugins.md)
+  lists the intended ones.

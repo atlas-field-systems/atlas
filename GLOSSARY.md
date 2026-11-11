@@ -9,6 +9,11 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
 | Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
+| Object | A file Core holds, with a description of what it is. An Object never changes; a different file is a new Object. Plugins and operators add Objects. It may be attached to one geo feature. Objects are not Entities. |
+| Plugin | A program beside Core, in the second ring, that offers actions. It connects out to Core with its own key and reaches Core only through its Plugin interface. Plugins do not direct Assets. See [Plugins](atlas/plugins.md). |
+| Plugin interface | The Core API calls a Plugin's key may use. |
+| Plugin action | One thing a Plugin offers to do, such as find the buildings in an area. Its inputs and output are defined in Protocol. |
+| Plugin call | One run of a Plugin action with its inputs. It ends with a result or a failure, or is dropped if the Plugin goes offline first. |
 | Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
 | Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
 | Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |

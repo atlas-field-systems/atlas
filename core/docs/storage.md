@@ -18,12 +18,14 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `accounts` | Administration | Admin and operator accounts and their password hashes |
 | `gateways` | Administration | Provisioned gateways and their key hashes |
 | `asset_keys` | Administration | Each Asset on IP's key hash |
+| `plugins` | Administration | Provisioned Plugins: ID, key hash, latest description, and contact |
+| `objects` | Objects | Each Object record that is not deleted. The files sit in the `data_directory` beside the database |
 | `assets` | Entities | Provisioned Assets: ID, latest description, and contact |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
 | `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
 
 Tables for Observations, Tracks, and geo features are designed with the rest of
-the [Entities API](api.md#entities). The Objects table is designed with its API.
+the [Entities API](api.md#entities).
 
 ## Every change writes one event
 
@@ -31,14 +33,15 @@ A change updates its tables and appends its event in the same transaction. The
 event stream therefore never shows a change that was not stored, and every stored
 change appears in it. Core never rebuilds tables from events.
 
-Asset reports are stored only as events. History, the latest report of each kind,
+Asset reports, Plugin calls, and Plugin answers are stored only as events. History, the latest report of each kind,
 and each setting's latest value are indexed queries on `events`, so no report is
 kept twice.
 
 ## Runs
 
 A run is the span between two Resets. Every row in `tasks`, `queues`,
-`idempotency_keys`, and `events` carries its `run_id`. Rules scoped to a run, such
+`objects`, `idempotency_keys`, and `events` carries its `run_id`, and each
+Object's file is kept with its run. Rules scoped to a run, such
 as unique `task_id`s and idempotency keys, hold within one `run_id`. Rows from
 earlier runs stay readable as history until retention removes them. The Reset
 request, its archive, and what it clears are

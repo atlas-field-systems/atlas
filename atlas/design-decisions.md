@@ -69,7 +69,10 @@ Atlas is laid out in rings, so each can change without breaking the others.
   among them Entities, Tasks, and Objects, over shared storage and the event
   log. Fusion works on Core's state directly, never through the public API.
 - **The second ring.** Plugins run beside Core and reach it only through
-  Core's Plugin interface, never its storage.
+  Core's Plugin interface, never its storage. A Plugin is its own program that
+  connects out to Core with its own key, like a gateway. Core never calls a
+  Plugin and never runs one in its own process. The Plugin interface is the
+  Core API calls a Plugin's key may use, not a second protocol.
 - **Outside the city.** Gateways, Assets, and operator applications reach Core
   only through the public Core API.
 
@@ -83,7 +86,7 @@ The parts:
   Protocol request definitions, not records: Core stamps the record fields,
   such as time, Task ID, and who asked.
 - **The SDK is the client** for the Core API, used by operator applications,
-  Assets on IP, and gateways.
+  Assets on IP, gateways, and Plugins.
 - **Gateways** run on their own computers, uplink to the Core API over
   broadband IP, and run the Fieldlinks their hardware supports. A gateway is not
   an Asset.
@@ -107,8 +110,8 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 - Operators log in to accounts, with admin and operator types. Admins provision
   accounts, Assets, and gateways. Sessions use HttpOnly cookies, so every browser
   tab shares one session.
-- An admin adds each gateway and each Asset on IP in Core and receives its ID
-  and key for its configuration. Keys are bearer tokens over TLS. There is no
+- An admin adds each gateway, each Asset on IP, and each Plugin in Core and
+  receives its ID and key for its configuration. Keys are bearer tokens over TLS. There is no
   enrollment key.
 - Core authenticates a gateway. An Asset behind a gateway authenticates to the
   gateway, not to Core, in whatever way its Fieldlink uses. That is not designed
@@ -126,6 +129,22 @@ before it. Cancel names its Task. Pause is a setting that holds the active Task
 without ending it; the Task continues on resume. Retries are safe by design:
 creates carry an idempotency key, settings are end states, and each `task_id`
 runs once.
+
+## Plugin actions and Objects
+
+- Protocol defines every Plugin action's inputs and list output, as it defines
+  command kinds. A Plugin only lists the actions it offers, and Core checks
+  calls and answers with Protocol's one validator. A new action is a Protocol
+  change.
+- A Plugin call is accepted, not done, like a Task. It ends with the Plugin's
+  result or failure, or is dropped when the Plugin goes offline. Plugins create
+  only geo features and Objects, and never direct Assets.
+- An Object is a file Core holds. Plugins and operators add Objects; files from
+  Assets are not designed yet. A file never changes, and Core records who
+  stored it.
+
+The [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects)
+owns the calls and [Plugins](plugins.md) the intended use.
 
 ## Stack
 

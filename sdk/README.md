@@ -6,6 +6,7 @@ outside Core's [inner wall](../atlas/design-decisions.md#a-walled-city) use it t
 - The Command Interface, in the browser, logged in to an operator or admin account.
 - Assets on IP, with their own key.
 - Gateways, with their own key, calling on behalf of the radio Assets they carry.
+- Plugins, with their own key, following their calls and answering them.
 
 The SDK handles credentials, the definitions check, idempotency keys and retries.
 It follows the event stream and manages the Asset's reports and queue. Core's

@@ -89,7 +89,14 @@ aircraft to observe it through Atlas.
 ### Research a place
 
 An operator selects a building or area and runs a Plugin action on it. The Plugin
-returns a list, or publishes its findings through Entities and any files through
-Objects. [Plugins](plugins.md) has the examples.
+returns a list, or creates geo features and stores files as Objects. Every
+operator sees the call and its result. [Plugins](plugins.md) has the examples.
+
+### Attach a photo to a place
+
+An operator uploads a photo and attaches it to a building's geo feature. Every
+operator can open it from that place. If it was the wrong building, the operator
+moves it; if it was the wrong photo, the operator deletes it, and history keeps
+the record of both.
 
 [First flight](first-flight.md) follows one complete use of these parts.

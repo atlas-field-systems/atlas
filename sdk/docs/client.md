@@ -12,7 +12,7 @@ The caller's kind decides its credential, as in
 - **Browser accounts.** `login(operator_id, password)` calls `POST /administration/login`. Core
   sets an `HttpOnly` session cookie, so the SDK never sees or stores it; the
   browser sends it on every request, and every tab shares one session.
-- **Assets and gateways.** The program passes its key when it creates the client.
+- **Assets, gateways, and Plugins.** The program passes its key when it creates the client.
   The SDK sends it as `Authorization: Bearer <key>` on every request and the event
   stream.
 
@@ -97,7 +97,7 @@ Names are a planning sketch. Each call maps to one endpoint in
 [Accounts and provisioning](../../core/docs/api.md#accounts-and-provisioning).
 
 ```ts
-const atlas = createClient({ baseUrl, key, observer });  // key: Assets and gateways only
+const atlas = createClient({ baseUrl, key, observer });  // key: Assets, gateways, and Plugins only
 const ready = await atlas.connect();                     // GET /about, hash check
 if (!ready.ok) return show(ready.explanation);
 
@@ -113,7 +113,8 @@ atlas.follow({ after, asset_id }, onEvent);              // see live.md
 atlas.close();
 ```
 
-Admin calls (accounts, Assets, gateways, keys) follow the same pattern. The SDK
+Admin calls (accounts, Assets, gateways, Plugins, keys), Object uploads, and
+Plugin calls follow the same pattern. The SDK
 hands a key that Core returns once to the caller and never logs it. `history`
 follows `next_cursor` page by page and stops when the caller stops iterating.
 
@@ -125,3 +126,10 @@ Asset it carries. Its event stream shows the requests for those Assets, which it
 Fieldlink carries to them. The [queue helper](asset.md#the-queue-helper) runs on
 the radio Asset, not on the gateway. How a gateway is bound to its Assets and
 reports their contact is [not defined yet](../../core/docs/api.md#not-defined-yet).
+
+## Plugins
+
+A Plugin uses one client with its own key and makes the
+[Plugin calls](../../core/docs/api.md#plugins): it describes itself, follows its
+event stream for the calls addressed to it, stores what it creates, and posts one
+answer per call. The SDK keeps the Plugin in contact while it is idle.

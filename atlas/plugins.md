@@ -10,11 +10,14 @@ uses its tools, often open-source services, to gather and return information.
 ## Where Plugins sit
 
 - Plugins sit in the second ring of the
-  [walled city](design-decisions.md#a-walled-city). They reach Core only through
-  its Plugin interface, never its storage. Reading Entities or storing Objects
-  goes through that interface.
-- The Core API will carry Plugin calls. That is how the
-  Command Interface uses a Plugin from outside the city.
+  [walled city](design-decisions.md#a-walled-city). Each one runs on its own, in
+  its own container if it needs one, and connects out to Core with a key an
+  admin gave it. It reaches Core only through its Plugin interface, never its
+  storage. Reading Entities, creating geo features, and storing Objects go
+  through that interface.
+- The Core API carries Plugin calls. That is how the Command Interface uses a
+  Plugin from outside the city. The [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#plugins)
+  has the calls.
 - Operators call Plugins first. Assets will be able to call them later.
 - Plugins do not direct Assets or issue Tasks.
 - Fusion is not a Plugin. It runs inside the inner wall on every Observation.
@@ -24,13 +27,44 @@ uses its tools, often open-source services, to gather and return information.
 
 ## Actions
 
-Each Plugin lists its actions, and each action takes its own inputs. An action
-returns one of two kinds of output:
+Each Plugin lists its actions, and each action takes its own inputs. Protocol
+defines every action's inputs and its list output, so Core checks a call and its
+answer the same way it checks a Task. An action returns one of two kinds of
+output, or both:
 
 - **A list.** The output is the list itself, returned to the caller.
-- **A reference.** The Plugin creates something in Core, such as an Object, a
-  geo feature or another Entity, and the output names it. The result stays in
-  Core, where the operator can find it later. Only fusion creates Tracks.
+- **A reference.** The Plugin creates geo features or Objects in Core, and the
+  output names them. The result stays in Core, where the operator can find it
+  later. Plugins create nothing else: Observations come only from Assets, and
+  only Fusion creates Tracks.
+
+## What the operator sees
+
+- **Only Plugins that are running can be used.** If a Plugin is not connected,
+  Atlas says so at once. Nothing waits and runs later.
+- **A call ends with a result or a failure.** If a Plugin fails or disconnects
+  partway, whatever it already stored stays, and the call is marked not
+  finished. Nothing reruns by itself; the operator calls again if they still
+  want it.
+- **There is no stop.** An operator who no longer wants an answer ignores it.
+- **Everyone sees every call.** Every logged-in operator sees every Plugin call
+  and its result, because Atlas keeps one shared picture and one history.
+- **Calls are not repeated.** The operator runs a call again when they want new
+  data.
+
+## Objects
+
+An Object is a file Core holds, such as a photo or a satellite image. Plugins
+and operators add them. An operator can attach a photo to a building's geo
+feature, for example.
+
+- A file never changes. An operator can move an Object to another geo feature
+  or detach it, and can delete it. History keeps the record that it was stored
+  and who deleted it.
+- An Object belongs to at most one geo feature. Deleting the geo feature leaves
+  its Objects.
+- A file may be at most 100 MB unless an admin changes the limit.
+- Files from Assets, such as drone photos, are not designed yet.
 
 ## Examples
 
@@ -71,8 +105,8 @@ a barometer or the altitude of its launch point.
 - **What is this place.** Takes a position and returns its place name or address.
 - **Line of sight.** Takes a position and a height, and creates a geo feature
   showing what can be seen from there.
-- **Road route.** Takes two positions and returns the route between them as a
-  line.
+- **Road route.** Takes two positions and returns the road route between them
+  as a line for the operator to look at.
 
 ## Not Plugins
 
@@ -80,6 +114,10 @@ a barometer or the altitude of its launch point.
 - **Fusion.** Core runs it on every Observation.
 - **A geofence alarm.** Nobody calls it; it reacts when a Track enters an area.
 - **An auto-patrol that sends Tasks to drones.** It directs Assets.
+- **A suggested flight path.** A Plugin does not return a route or positions
+  meant to be turned into Tasks.
+- **Repeating a call,** such as weather every 10 minutes. The operator calls
+  again when they want new data.
 - **Turning on Asset lights at dusk.** It changes Asset settings.
 - **A radio bridge.** That is a gateway and its Fieldlink.
 - **The Reset archive.** That is Core's own job.
@@ -87,15 +125,10 @@ a barometer or the altitude of its launch point.
 
 ## Not decided
 
-How the Command Interface shows Plugins and their results is not decided.
-The Plugin interface, the Core API's Plugin calls, and how a Plugin is installed
-and started are not designed yet. Each Plugin may run in its own container.
+How the Command Interface shows Plugins, their results, and Objects is not
+decided. Which actions Protocol defines first is not decided.
 
-These cases are borderline and need a decision before such a Plugin is built:
+This case is borderline and needs a decision before such a Plugin is built:
 
 - **Detecting objects in an uploaded photo.** The call fits, but the results
   would be Observations, which today come only from Assets.
-- **A suggested flight path.** Returning positions fits. Sending the Tasks
-  would direct Assets.
-- **Repeating a call,** such as weather every 10 minutes. This starts to look
-  like a Plugin running in the background.

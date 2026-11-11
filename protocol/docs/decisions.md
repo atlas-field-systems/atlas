@@ -56,6 +56,16 @@ page disagree, fix one of them.
 The CLI and web viewer only display records. They show the readable JSON beside
 the compact and compressed bytes in hex dump and base64, so you can inspect the size.
 
-## Plugins
+## Objects and Plugins
 
-Plugin records are [parked](../parked/README.md) until they are reworked.
+The records are [parked](../parked/README.md) until they are reworked. When they
+are, they follow these choices:
+
+- The Object record is `object_id`, `name`, `content_type`, `size_bytes`, an
+  optional `geofeature_id`, and `requested_by`, the account or Plugin that stored
+  it. The parked `plugin_id` field is dropped: Core stamps who stored it.
+- Each Plugin action has a request definition for its inputs and a definition
+  for its list output, as Task kinds do. The Plugin description lists actions by
+  name only.
+- `provisioning`, `contact`, and `requested_by` can name a Plugin with
+  `plugin_id`.

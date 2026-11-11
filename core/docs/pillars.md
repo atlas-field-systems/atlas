@@ -10,9 +10,9 @@ selected but not implemented.
 | --- | --- |
 | Entities | The shared picture: Assets with their descriptions, contact, reports, and settings; Observations; Tracks; and geo features |
 | Tasks | Tasks, each Asset's queue, and cancels |
-| Objects | Files Core holds and what each one is |
+| Objects | Files Core holds, what each one is, and the geo feature it is attached to |
 | Fusion | Turning Observations into Tracks ([Fusion](fusion.md)) |
-| Administration | Accounts and their password hashes, sessions, Asset and gateway keys, and provisioning. Administrative work Core adds later goes here too |
+| Administration | Accounts and their password hashes, sessions, Asset, gateway, and Plugin keys, provisioning, and each Plugin's description and contact. Administrative work Core adds later goes here too |
 
 All five are part of the product and are built together.
 
@@ -22,7 +22,8 @@ no public root; it works on Core's state through the pillars' functions. Plugins
 are not a pillar and still have a root path, `/plugins`. Kinds a pillar owns live
 under its root, so Assets are at `/entities/assets`. See [Root paths](api.md#root-paths).
 
-Objects and the Plugin interface are [not designed yet](api.md#not-defined-yet).
+[Objects](api.md#objects) and the [Plugin interface](api.md#plugins) are in
+the Core API.
 
 ## Rules
 
@@ -38,5 +39,6 @@ Objects and the Plugin interface are [not designed yet](api.md#not-defined-yet).
   and keep no state of their own.
 
 Plugins are not a pillar. They run in the second ring, each in its own container
-if it needs one, and reach the pillars only through the Plugin interface
-([Plugins](../../atlas/plugins.md)).
+if it needs one, connect out to Core with their own keys, and reach the pillars
+only through the Plugin interface ([Plugins](../../atlas/plugins.md)). Plugin calls
+and answers are stored only as events, like Asset reports.
