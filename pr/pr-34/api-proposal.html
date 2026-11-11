@@ -40,7 +40,8 @@ Core only through the public Core API.</li>
 data laws, the validator, and the examples that test record shapes.
 It no longer defines how programs talk.</li>
 <li><strong>Core</strong> owns the API: HTTP for requests, Server-Sent Events for live changes.
-Request and event bodies are Protocol records.</li>
+Event bodies are Protocol records; request bodies are Protocol request
+definitions.</li>
 <li><strong>The SDK</strong> is a client for the Core API.</li>
 <li><strong>Gateways</strong> uplink to the Core API and run the Fieldlinks their hardware
 supports. A gateway is not an Asset.</li>
@@ -142,8 +143,10 @@ tab uses the same session.</li>
 in Core and receives its ID and key for its configuration. The key is a bearer
 token over TLS. There is no enrollment key. An Asset behind a gateway
 authenticates to the gateway, not to Core.</li>
-<li><strong>IDs.</strong> Admins choose <code>asset_id</code>, which people read. Core assigns Task,
-Track, geo feature, and Object IDs; Assets choose <code>observation_id</code>. Event IDs are integers.</li>
+<li><strong>IDs.</strong> Admins choose <code>asset_id</code> for an Asset on IP, which people read; Core
+assigns a radio Asset&#39;s when a gateway adds it. Assets choose
+<code>observation_id</code>. Core assigns Task, Track, geo feature, and Object IDs.
+Event IDs are integers.</li>
 <li><strong>Transport security.</strong> TLS on IP. Each Fieldlink uses its radio&#39;s own
 encryption and authentication. Records never carry credentials.</li>
 </ul>
