@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/outside_area.json",
+  "title": "outside_area",
+  "description": "The Asset is outside an area by more than margin_m, for for_s, even without an observed crossing, including at startup or after the policy is replaced. Both are 0 if left out. An unknown position is neither inside nor outside; a measurement_stale condition covers that. Altitude limits are not defined.",
+  "type": "object",
+  "required": [
+    "kind",
+    "area"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "outside_area"
+    },
+    "area": {
+      "$ref": "../area.json"
+    },
+    "margin_m": {
+      "$ref": "../../variables/margin_m.json"
+    },
+    "for_s": {
+      "$ref": "../../variables/for_s.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "outside_area",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ],
+      "margin_m": 20,
+      "for_s": 5
+    }
+  ]
+}

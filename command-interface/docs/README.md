@@ -140,8 +140,14 @@ different Protocol definitions, show that refusal, so a missing Asset has a
 visible reason.
 When an Asset is in [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation),
 say so and offer only the overrides it accepts: Land now, Return to home now,
-and pause. [Subsystem conditions](../../asset/docs/status.md) join these views
-once their report exists.
+and pause. Name the rule that fired and why, its response and its outcome, and
+whether a fallback ran. If the flight controller's own protection took over,
+say so rather than naming an Atlas rule. Show the Asset's failsafe rules where
+an operator can read and replace them outside a failsafe.
+
+Show each declared [subsystem](../../asset/docs/status.md) with its last reported
+condition, explanation, and age. A subsystem that has not reported is shown as
+unreported, not healthy. Do not combine them into an overall condition.
 
 History is [paged](../../core/docs/api.md#reads) and fetched on demand. Movement
 history supports selectable time windows, playback, and scrubbing, starting with

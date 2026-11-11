@@ -11,4 +11,5 @@ record under `definitions/` that passes `npm run check`. Update the existing
 records as needed: `geofeature_id` on `move_to` and `land`, the
 `gimbal` and `observation` reports in the description, and `null` in
 `entity_type` for clearing an observation's value. Git history keeps the
-decisions and storage notes that went with them.
+decisions and storage notes that went with them. The `area` and `point`
+components moved back to `definitions/components/` for failsafe areas.

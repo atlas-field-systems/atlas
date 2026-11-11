@@ -11,6 +11,15 @@ An Asset starts with no Atlas failsafe rules, battery rules included. Rules and
 their responses are configured explicitly for the Asset and the operation, using
 only actions the Asset supports. A reporting-only beacon has no failsafe.
 
+The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
+up to 16 rules. Its starting value comes from the Asset's
+[configuration](../config.md), and any operator can replace it as they change
+other settings. Each response is a command the Asset supports, such as Land,
+Return to home, or Hold. Atlas has no "continue" response: activation always
+stops ordinary work, so an Asset that should keep working through a situation has
+no rule for it. [Protocol](../../protocol/docs/decisions.md#failsafes) defines the
+records.
+
 An empty rule list leaves the flight controller's own protections unchanged;
 those belong to the [platform setup](#independent-flight-controller-protections).
 [Subsystem conditions](status.md) describe equipment. Reporting a condition does
@@ -43,7 +52,8 @@ return or landing.
 
 When the app detects an independent autopilot failsafe taking over, it cancels
 ordinary work and the remaining queue and enters
-[failsafe state](#lock-ordinary-work-for-the-rest-of-the-operation). It never
+[failsafe state](#lock-ordinary-work-for-the-rest-of-the-operation). Its failsafe
+report says the flight controller took over, not an Atlas rule. It never
 overrides that protection with ordinary work. A cancelled Task does not become
 completed because the autopilot performed a similar maneuver. The app records
 the equipment behavior and affected Task outcomes without claiming that Atlas
@@ -72,7 +82,12 @@ none has an implicit priority.
 
 Conditions can include:
 
-- Equipment faults, battery thresholds, and contact loss, alone or combined.
+- A declared [subsystem](status.md) reporting degraded or faulted, as the rule
+  chooses. A rule set off by degraded also counts faulted.
+- The battery below a set percentage. Atlas does not estimate the charge needed
+  to get home: by the time that estimate fires, heading home is already late.
+- Contact loss, after the `link_loss_after_s` setting without contact.
+- Any of these, alone or combined.
 - No Tasks for a configured duration, including zero: neither an active Task nor
   a queued Task that can start. A paused mission with queued Tasks is not idle.
   A queued Task that waits for a Task the Asset has not received is not work, so
@@ -98,7 +113,13 @@ Activation overrides ordinary work and pause, stops current work, and clears the
 remaining Tasks. The Asset starts the configured response locally, through the
 same module used for ordinary work. Each execution is its own Task with a
 reported outcome. Parameters are fixed when it starts: a response that uses home
-resolves home at activation and keeps that destination.
+resolves home at activation and keeps that destination, and a Land with no
+position lands where the Asset is at activation.
+
+A failsafe Task has no Core `task_id`, because Core owns that numbering. Its rule
+and attempt, primary or fallback, name it, since each rule runs at most once in
+an operation. The Asset reports its state in a failsafe report, starting with the
+response it runs and what set it off.
 
 A higher-priority matching rule interrupts the response. The Asset reports the
 interrupted Task `cancelled` and starts a new Task for the new rule. Priority
@@ -122,13 +143,14 @@ Cancelled Tasks never resume. Reports and logging continue.
 In failsafe state the operator can still override the response:
 
 - **Land or Return to home now.** A Land or Return to home Task sent with `now`
-  replaces the response Task, which is reported `cancelled`.
+  replaces the response Task, which is reported `cancelled`. Hold now is not an
+  override; pause holds instead.
 - **Pause to hold.** Pause holds the vehicle, and setting it running again ends
   the hold, as [outside a failsafe](README.md#pause).
 
-The Asset carries out an override through the same execution as ordinary work
-and records it as an override in its failsafe report and log. It refuses
-everything else that affects execution: other Tasks, cancel,
+The Asset carries out an override through the same execution as ordinary work.
+It records the override in its failsafe report, naming the request, and in its
+log. It refuses everything else that affects execution: other Tasks, cancel,
 other settings changes, and policy replacement. A refused Task is reported
 `failed`, with the failsafe as its explanation. A refused cancel or settings
 change is answered with the current Task state or settings, naming the request.
@@ -159,6 +181,3 @@ restarting idle or contact timers.
 - Boundary details and measurement freshness limits.
 - What counts as safely stopped on each platform, and how long the app waits for
   Core to acknowledge its final reports before it shuts down.
-- Shared records for the failsafe policy, the identity of locally started Tasks
-  (Core assigns every other `task_id`), and override reporting
-  ([open questions](../../protocol/docs/open-questions.md)).

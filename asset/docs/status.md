@@ -1,13 +1,14 @@
 # Subsystem conditions
 
 Selected behavior, not implemented. The Asset chooses which subsystems it
-reports and when. Protocol has no subsystem-condition report yet.
+reports and when. Protocol defines the
+[subsystem report](../../protocol/docs/decisions.md#reports).
 
 ## Stable identities and shared meanings
 
-An Asset defines a stable set of subsystems for its operation, with IDs following
+An Asset defines a stable set of up to 16 subsystems for its operation, with IDs following
 [Atlas ID rules](../../atlas/CHARTER.md#keep-shared-data-simple) and readable
-labels. The set can include configured equipment that has not responded yet.
+labels, and declares them in its description. The set can include configured equipment that has not responded yet.
 Atlas has no global subsystem catalog. A subsystem can be hardware or equipment
 software, such as a GPS receiver, flight controller, gimbal, camera, or detector.
 
@@ -26,20 +27,21 @@ subsystems. Reports carry these defined conditions, not vendor status codes.
 
 ## Report relevant changes
 
-The Asset sends a condition when it is relevant. A report can update only some
-subsystems. There is no mandatory snapshot on connect and no periodic health
+The Asset sends a condition when it is relevant. Each report updates one
+subsystem, and one batch can carry several. There is no mandatory snapshot on connect and no periodic health
 broadcast. When a fault or degradation clears, the Asset reports the new
 condition so the earlier problem clears too.
 
 Core keeps each subsystem's last reported condition. An omitted subsystem is
-unchanged, and a subsystem never reported is unreported, not healthy. A kept
+unchanged, and a declared subsystem never reported is unreported, not healthy. A kept
 condition is last known evidence; silence proves neither continued health nor a
 fresh measurement.
 
 ## Reports describe equipment
 
 A condition does not block commands, cancel Tasks, or cause a maneuver.
-Configured [failsafe conditions](failsafes.md) own responses to faults. An
+Only a configured [failsafe condition](failsafes.md#configure-conditions-as-well-as-responses)
+that names a subsystem responds to its condition. An
 unrelated camera fault does not stop the vehicle from moving or landing.
 Execution still depends on current equipment: an action fails when required
 equipment is unavailable or does not perform it, and the
@@ -56,6 +58,4 @@ needs no remote command.
 
 ## Open
 
-- The subsystem-condition report, its declarations and bounds, and how Core
-  serves it ([open questions](../../protocol/docs/open-questions.md)).
 - The local inspection interface.

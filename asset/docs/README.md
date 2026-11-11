@@ -5,7 +5,7 @@ supported work through configurable [modules and equipment drivers](assets.md).
 This is the selected plan. No runtime exists yet.
 
 Protocol owns the records named here: the description, Task, settings change,
-and cancel, and the task, queue, telemetry, battery, settings, and
+and cancel, and the subsystem, task, queue, telemetry, battery, settings, and
 failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
 ## Start and connect
@@ -94,7 +94,8 @@ responds to an empty queue.
 
 ### Tasks that run now
 
-Every command is a Task, including immediate ones. A Task sent with `now` runs
+Every command is a Task, including immediate ones. Hold now, for example, stops
+the Asset where it is and drops the work before it. A Task sent with `now` runs
 at once, even while the Asset is paused, and cancels every Task with a lower
 `task_id`, including Tasks that have not arrived yet. Core admits `now` even
 when 64 Tasks are already outstanding. The Asset reports the Task
