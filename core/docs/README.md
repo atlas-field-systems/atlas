@@ -10,6 +10,7 @@ Selected behavior for the Core runtime. None of it is implemented yet.
 - [Request admission](requests.md): what Core checks before work reaches an Asset.
 - [Fusion](fusion.md): the module inside Core that turns Observations into Tracks.
 - [Logging](logging.md): the diagnostic evidence Core keeps and puts in its Reset archive.
+- [Reset](reset.md): how stopping Core ends a run, its Reset ZIP, and what it clears.
 - [Configuration](../config.md): proposed options.
 
 ## Inside Core

@@ -17,7 +17,7 @@ explains why the API is the only way in.
 - **Compatibility.** Every request carries `Atlas-Definitions: <hash>`, the hash
   of the Protocol definitions the caller uses. Core refuses a missing or different
   hash with `409 definitions_mismatch`. `GET /about` needs no credential and
-  returns `core_version`, `protocol_version`, and `definitions_hash`. The event
+  returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
   stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
   that hash differs, Core adds a `definitions.refused` event, so operators see
@@ -28,6 +28,10 @@ explains why the API is the only way in.
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
+- **Runs.** A run lasts from one start of Core to the next stop, and
+  [Reset](reset.md) clears it. A caller that finds a new `run_id` on `GET /about`
+  drops what it held from the earlier run and starts again from a fresh read.
+  `event_id` keeps rising across runs, so an old cursor never matches a new event.
 - **Errors** are a status and `{"error": "<code>", "explanation": "<text>"}`.
 
 | Status | Meaning |
@@ -38,6 +42,7 @@ explains why the API is the only way in.
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
 | `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, removed radio, call already answered or ended, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
+| `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
 ## Root paths
 
@@ -503,9 +508,9 @@ Assets or gateways.
   Only an operator deletes an Object.
 - **Who stored it** is `requested_by` in the Object record: the account that
   uploaded it or the Plugin that stored it. Core stamps it, as for Tasks.
-- **Objects belong to their run.** They are kept until the run is removed under
-  [retention](storage.md#memory-and-retention). What Reset does with them is
-  [not defined yet](#not-defined-yet).
+- **Objects belong to their run.** When the run ends, their files go into
+  Core's [Reset ZIP](reset.md#cores-reset-zip) and are cleared from Core. The
+  next run starts with none.
 
 ## Plugins
 
@@ -594,8 +599,6 @@ marked not finished, and an operator who still wants it calls again.
 
 ## Not defined yet
 
-- Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
-  defines what a run is.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.

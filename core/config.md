@@ -30,10 +30,9 @@ Names in this table are proposed configuration keys.
 | `log_level` | Detail of diagnostics | Detailed per-request logging is required; proposed prototype default is `trace` |
 | `log_directory` | Local diagnostic files | Keep apart from the event log; path is open |
 | `log_message_content` | Include request and report content in trace records | Proposed on, with credentials removed |
-| `log_file_limit_bytes`, `log_total_limit_bytes` | Rotation and disk usage | Limits are open; do not silently discard a run's evidence |
+| `log_file_limit_bytes`, `log_total_limit_bytes` | Rotation and the most one run's diagnostics may use | Defaults are open. Past the total, records are counted as a [gap](docs/logging.md#when-logging-cannot-keep-up), never silently lost |
 | `debug_endpoint` | Serve the diagnostic log over HTTP with no credential ([logging](docs/logging.md#read-the-log-while-core-runs)) | Off by default. While it is on, anyone who has the URL that Core prints at startup can read the log |
-| `archive_directory` | Completed Reset ZIPs | Path and export trigger are open |
-| `run_retention_days` | Retention of completed runs | The [scale direction](../atlas/scale.md#runs-and-storage) is at least 30 days |
+| `archive_directory` | Where Core writes each run's [Reset ZIP](docs/reset.md) when it stops | Path is open. Core never deletes from it |
 
 Accounts, Assets, gateways, and Plugins are provisioned through the
 [Core API](docs/api.md#accounts-and-provisioning), not configuration. A Plugin's
@@ -42,12 +41,11 @@ own settings, such as which services it uses, belong to the Plugin, not to Core.
 ## Logging and Reset
 
 [Core logging](docs/logging.md) owns what Core records and how that evidence
-contributes to its Reset ZIP. Configuration sets the destination and level;
+contributes to its Reset ZIP, and [Reset](docs/reset.md) owns the ZIP. Configuration sets the destination and level;
 it does not redefine the logging contract or Protocol's records.
 
 ## Decisions still needed
 
 - Required options, defaults, secret loading, and configuration-file format.
 - Whether any configuration can change during an operation.
-- Rotation limits and behavior when logging cannot keep up or storage fills.
-- Reset invocation, archive verification, and what Reset clears after export.
+- Default rotation and total limits for diagnostics.

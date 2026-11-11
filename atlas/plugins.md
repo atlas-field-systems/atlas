@@ -126,7 +126,9 @@ a barometer or the altitude of its launch point.
 ## Not decided
 
 How the Command Interface shows Plugins, their results, and Objects is not
-decided. Which actions Protocol defines first is not decided.
+decided. Which actions Protocol defines first is not decided. Whether a Plugin
+writes its own Reset ZIP is not decided; for now, Core's ZIP records every call
+and answer.
 
 This case is borderline and needs a decision before such a Plugin is built:
 

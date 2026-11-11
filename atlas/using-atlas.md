@@ -57,6 +57,8 @@ vehicle even though it is not aboard it.
 ## An operation runs without restarts
 
 Core starts before any other part of an operation and stops after all of them.
+Each start of Core begins a new, empty run, and stopping Core ends it with a
+[Reset ZIP](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md).
 Core never restarts during an operation. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log.

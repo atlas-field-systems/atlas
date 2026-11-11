@@ -41,14 +41,48 @@ samples or drops records silently and then claims to be complete.
 
 ## Export the Asset's Reset ZIP
 
-The Asset's archive holds its app, equipment, and link diagnostics, its
-configuration with secrets removed, its settings and Task outcomes, its versions,
-and a readable run summary. It complements Core's archive with what the Asset saw
-while disconnected. The proposed procedure verifies the archive before
-discarding its source evidence.
+The Asset writes its ZIP when the app shuts down, whether the operator stops it
+or it [shuts itself down](README.md#shut-down-and-retain-evidence) after a
+failsafe. An operation lasts from one start of the app to its shutdown, and
+each ZIP covers one operation. There is no remote trigger, and nothing is sent
+over the field link.
+
+The ZIP goes into `archive_directory` ([configuration](../config.md)), named
+`asset-<asset_id>-<start>.zip`, where `<start>` is the operation's start in UTC
+as `YYYYMMDDTHHMMSSZ`. A person copies it off the Asset's computer by hand, for
+first flight from the ground Raspberry Pi.
+
+| File | Holds |
+| --- | --- |
+| `README.md` | What each file is |
+| `summary.md` | Start and end, how the operation ended, each Task and its outcome, failsafes and overrides, contact losses, and every gap |
+| `manifest.json` | Every file with its size and SHA-256, whether the operation ended normally, and every known gap |
+| `diagnostics/` | The app, equipment, and link diagnostics, as written |
+| `reports/` | Reports the Asset recorded, including those it never sent live |
+| `config.json` | The configuration, with secrets removed |
+| `versions.json` | App, SDK or Fieldlink, and Protocol package versions, and the definitions hash |
+
+The Asset writes the ZIP under a temporary name, reads it back, and checks every
+file against `manifest.json`. Only then does it give the ZIP its final name and
+delete the operation's local records. If the ZIP fails, it deletes nothing and
+removes the incomplete file. The app never deletes a ZIP; the owner deletes old
+ones by hand.
+
+If the app crashes or loses power, its next start first writes the ZIP of the
+interrupted operation, marked "the app stopped unexpectedly; this record may be
+incomplete", and retries any earlier operation whose ZIP failed. Then it starts
+a new operation with nothing kept from the earlier one.
+
+## When logging cannot keep up
+
+Equipment control never waits for logging, and logging never grows memory
+without limit. The app hands each record to a writer through a fixed-size
+queue and drops a record the queue cannot take. Past `log_total_limit_bytes`,
+or with the disk full, it stops writing. It counts everything it drops and
+writes one gap record when writing works again and at shutdown: how many
+records, between which times, and why. The ZIP lists every gap. Flight goes on
+regardless.
 
 ## Open
 
-- Export trigger, retrieval, file layout, retention, and cleanup.
-- What happens when storage fills or logging cannot keep up, without unbounded
-  memory use or blocking equipment control.
+- Default rotation and total limits.

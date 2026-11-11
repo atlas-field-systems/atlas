@@ -180,12 +180,14 @@ and Reset ZIPs.
 
 The app records equipment, module, and link evidence locally for the whole
 operation, including while disconnected. [Logging](logging.md) owns that record
-and the Asset's own Reset ZIP. There is no remote shutdown command.
+and the Asset's own Reset ZIP, written when the app shuts down. There is no
+remote shutdown command. The operator shuts the Assets down before the admin
+stops Core, which ends Core's run ([Reset](../../core/docs/reset.md)). An Asset
+left running into Core's next run is not supported.
 
 ## Open
 
 - Equipment-specific completion evidence, tolerances, and timeouts.
 - Recording limits, catch-up pacing, and how a reader knows history is complete.
-- Shutdown and archive retrieval.
 - Records this page names that Protocol does not define yet
   ([open questions](../../protocol/docs/open-questions.md)).

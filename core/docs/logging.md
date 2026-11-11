@@ -36,15 +36,11 @@ correlation fields to Protocol. Detail and destination controls are proposed in
 
 ## Include the evidence in Reset
 
-Core's archive contains the run's database rows, including its events, its
-diagnostic files, configuration with secrets removed, and the summary required by
-[First flight](../../atlas/first-flight.md#keep-the-whole-run-for-debugging).
-It contains only what Core observed; Asset and gateway archives remain separate
-evidence.
-
-The proposed procedure is to finish and verify the archive before discarding
-any run evidence. The Reset request, file layout, summary format, and subsequent
-cleanup remain open. A failed export must not be described as a complete archive.
+Each run has its own diagnostic files. When the run ends, they go into Core's
+[Reset ZIP](reset.md#cores-reset-zip) with the run's events and state, the
+configuration with secrets removed, and the readable summary. Core clears them
+only after the ZIP is checked. Asset and gateway ZIPs remain separate evidence.
+[Reset](reset.md) owns the procedure, the file layout, and the summary.
 
 ## Read the log while Core runs
 
@@ -70,7 +66,20 @@ holds each accepted request and stored report; the diagnostic log adds the
 decisions around them rather than a second copy. Configuration selects output
 paths and limits, not changes to request handling.
 
-Logging must not block request handling indefinitely or exhaust memory. Rotation,
-backpressure, and full-disk behavior remain undecided. Any lost,
-truncated, or filtered evidence must be visible in the archive; do not silently
-claim a complete record.
+## When logging cannot keep up
+
+Logging never blocks request handling and never grows memory without limit.
+
+- Core hands each diagnostic record to a writer through a fixed-size queue.
+  When the queue is full, Core drops the new record and counts it.
+- Core rotates diagnostic files at `log_file_limit_bytes` and keeps every file
+  of the run. When the run's files reach `log_total_limit_bytes`, or the disk is
+  full, Core stops writing and counts what it drops.
+- When writing works again, and at the end of the run, Core writes one gap
+  record: how many records were lost, between which local numbers, when, and
+  why. The ZIP's `manifest.json` and `summary.md` list every gap.
+
+The event log is never treated this way. A change Core cannot store is refused
+with `507 storage_full` ([storage](storage.md#memory-and-full-disks)). Lost,
+truncated, or filtered evidence is always visible in the archive; Core never
+claims a complete record it does not have.

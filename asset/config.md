@@ -36,8 +36,8 @@ Names are proposed keys, not an implemented format.
 | `log_level` | Detail of app, SDK client, and Fieldlink diagnostics | Proposed prototype default is `trace` |
 | `log_directory` | Local diagnostic files | Works while Core is unreachable |
 | `log_message_content` | Request and report content in trace records | Proposed on for the prototype, credentials removed |
-| `log_file_limit_bytes`, `log_total_limit_bytes` | Rotation and storage use | |
-| `archive_directory` | The Asset's own Reset ZIPs | |
+| `log_file_limit_bytes`, `log_total_limit_bytes` | Rotation and the most one operation's diagnostics may use | Past the total, records are counted as a [gap](docs/logging.md#when-logging-cannot-keep-up) |
+| `archive_directory` | Where the Asset writes its [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) at shutdown | Copied off by hand. The app never deletes from it |
 
 Equipment-specific options belong with their equipment driver or module.
 [Failsafes](docs/failsafes.md) owns the failsafe policy, and
@@ -48,4 +48,4 @@ Equipment-specific options belong with their equipment driver or module.
 - File format, defaults, secret storage, and editing tools.
 - Whether any configuration can change during an operation.
 - How movement profiles are selected and switched.
-- Log capacity, incomplete-log handling, and the archive export trigger.
+- Default rotation and total limits for diagnostics.
