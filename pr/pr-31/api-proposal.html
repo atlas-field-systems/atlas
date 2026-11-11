@@ -114,8 +114,8 @@ archived, then removed after the retention period.</li>
 <td>Evidence and conclusions in the picture, separately</td>
 </tr>
 <tr>
-<td><code>GET</code>, <code>POST</code>, <code>PATCH</code>, <code>DELETE /entities/geofeatures</code></td>
-<td>Places operators and Plugins author</td>
+<td><code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE /entities/geofeatures</code></td>
+<td>Places operators and Plugins author; a change replaces one whole</td>
 </tr>
 </tbody></table>
 <p>Each pillar has a root path (<code>/entities</code>, <code>/tasks</code>, <code>/objects</code>,
@@ -144,14 +144,15 @@ in Core and receives its ID and key for its configuration. The key is a bearer
 token over TLS. There is no enrollment key. An Asset behind a gateway
 authenticates to the gateway, not to Core.</li>
 <li><strong>IDs.</strong> Admins choose <code>asset_id</code>, which people read, when they provision an
-Asset; Core assigns it for a radio Asset a gateway adds. Core assigns Task,
-Observation, Track, geo feature, and Object IDs. Event IDs are integers.</li>
+Asset on IP; Core assigns it for a radio Asset a gateway adds. Assets choose
+<code>observation_id</code>. Core assigns Task, Track, geo feature, and Object IDs.
+Event IDs are integers.</li>
 <li><strong>Transport security.</strong> TLS on IP. Each Fieldlink uses its radio&#39;s own
 encryption and authentication. Records never carry credentials.</li>
 </ul>
 <h2 id="assets-and-failsafes">Assets and failsafes</h2>
 <p>The Asset holds its complete queue, runs its Tasks, reports observed outcomes,
-and owns its failsafes. During a failsafe, operators can still command hold,
+and owns its failsafes. During a failsafe, operators can still pause,
 land now or return home; the Asset records these as overrides. Longer-running
 failsafe behavior stays deferred until field testing.</p>
 <h2 id="fieldlinks">Fieldlinks</h2>

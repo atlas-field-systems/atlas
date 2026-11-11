@@ -11,7 +11,9 @@ uses its tools, often open-source services, to gather and return information.</p
 <li>Plugins sit in the second ring of the
 <a href="design-decisions.html#a-walled-city">walled city</a>. They reach Core only through
 its Plugin interface, never its storage. Reading Entities or storing Objects
-goes through that interface.</li>
+goes through that interface. The Plugin interface is the Core API with a
+Plugin credential, not a second protocol. Plugins read the
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities">shared picture</a> and author geo features there.</li>
 <li>The Core API will carry Plugin calls. That is how the
 Command Interface uses a Plugin from outside the city.</li>
 <li>Operators call Plugins first. Assets will be able to call them later.</li>
