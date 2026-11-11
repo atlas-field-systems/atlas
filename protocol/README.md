@@ -17,16 +17,16 @@ Definitions and records carry none.
 
 | Record | What it is | Who makes it |
 | --- | --- | --- |
-| `description` | What an Asset is: its reports, command kinds, supported settings, and cameras | Asset |
+| `description` | What an Asset is: its reports, command kinds, supported settings, subsystems, and cameras | Asset |
 | `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
 | `provisioning` | An Asset or gateway was added or removed | Core, for an admin or a gateway |
 | `contact` | Whether an Asset or gateway is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
-| `report.status` | How the Asset, one Task, or its task list stands | Asset |
+| `report.status` | One subsystem's condition, one Task's state, or its task list | Asset |
 | `report.telemetry`, `report.battery` | Where it is and how it moves; its battery | Asset |
 | `report.settings` | Its settings' values | Asset |
-| `report.failsafe` | A failsafe triggered and what the Asset does | Asset |
+| `report.failsafe` | A failsafe Task's state, an operator override, or a flight-controller takeover | Asset |
 
 Each record has its own definition with a description and examples. Geo feature,
 Object, Plugin, Observation and gimbal definitions are [parked](parked/README.md)

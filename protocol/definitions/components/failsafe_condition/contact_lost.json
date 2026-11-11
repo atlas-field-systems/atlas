@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/contact_lost.json",
+  "title": "contact_lost",
+  "description": "The Asset has lost contact: it has had none for its link_loss_after_s setting.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "contact_lost"
+    }
+  },
+  "examples": [
+    {
+      "kind": "contact_lost"
+    }
+  ]
+}

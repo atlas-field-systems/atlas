@@ -29,7 +29,7 @@ Names are proposed keys, not an implemented format.
 | `modules`, `equipment` | Behavior modules, movement profiles, equipment drivers, and their connections | Built-in modules are never silently overridden |
 | `commands` | The supported commands, listed outright | Sent in the Asset's description |
 | `position` | Own position source, or a configured stationary position | Missing values stay unknown |
-| `initial_settings` | Starting values for supported live settings | An explicit home takes precedence over automatic home |
+| `initial_settings` | Starting values for supported live settings | An explicit home takes precedence over automatic home. Includes the starting `failsafe_policy` |
 | `startup_behavior` | Acquisition, reporting, and initial equipment behavior | Example setups report at once and wait for movement Tasks |
 | `completion_tolerances`, `command_timeouts` | Evidence and limits for equipment execution | Per command |
 | `reporting` | Which reports to send from local state, and how often | No mandatory periodic health snapshots |
@@ -48,6 +48,4 @@ Equipment-specific options belong with their equipment driver or module.
 - File format, defaults, secret storage, and editing tools.
 - Whether any configuration can change during an operation.
 - How movement profiles are selected and switched.
-- Which parts of the failsafe policy are startup configuration and which are
-  shared settings; Protocol's settings cannot yet express the policy.
 - Log capacity, incomplete-log handling, and the archive export trigger.
