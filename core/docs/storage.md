@@ -43,11 +43,9 @@ kept twice.
 A run is the span between two Resets. Every row in `tasks`, `queues`, `tracks`,
 `geofeatures`, `idempotency_keys`, and `events` carries its `run_id`. Rules
 scoped to a run, such as unique `task_id`s, `track_id`s, `geofeature_id`s,
-`observation_id`s per Asset, and idempotency keys, hold within one `run_id`.
-Rows from earlier runs stay readable as history until retention removes them.
-The Reset
-request, its archive, and what it clears are
-[not defined yet](api.md#not-defined-yet).
+and idempotency keys, hold within one `run_id`. Rows from earlier runs stay
+readable as history until retention removes them. The Reset request, its
+archive, and what it clears are [not defined yet](api.md#not-defined-yet).
 
 ## Memory and retention
 

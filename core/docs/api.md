@@ -90,11 +90,14 @@ and `/debug` belong to no pillar and stay at the top level.
 
 ## The event log and live stream
 
-Core adds one event for every accepted request and stored report, in the same
+Core adds one event for every accepted request, stored report, and Fusion
+change to a Track, in the same
 transaction as the change it records ([storage](storage.md)). Each event is
 `{event_id, time, kind, record}`: a rising integer, Core's receive time in
 milliseconds, one of the kinds below, and its record. Geo feature events also
-carry `requested_by`, because their record names no author.
+carry `requested_by`, because their record names no author. A report event that
+Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
+`clock_ahead: true`.
 
 | Kind | Added when | Record |
 | --- | --- | --- |
@@ -203,16 +206,19 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 | Request | Returns |
 | --- | --- |
-| `GET /entities/assets` | Every Asset: description, contact, latest reports, and each setting's latest value |
+| `GET /entities/assets` | Every Asset: description, contact, latest reports except `report.observation` (see [Observations](#observations)), and each setting's latest value |
 | `GET /entities/assets/{asset_id}` | One Asset, the same way |
 | `GET /tasks/{asset_id}` | Task bodies, latest states, and the Tasks the Asset reports holding |
 | `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
-| `GET /history/tracks?track_id&since&until&cursor&limit` | Stored `track.updated` and `track.removed` events in `event_id` order, paged the same way |
+| `GET /history/tracks?track_id&since&until&cursor&limit` | Stored `track.updated` and `track.removed` events, ordered by the Track's `time`, then `event_id`, paged the same way |
 | `GET /history/geofeatures?geofeature_id&since&until&cursor&limit` | Stored geo feature events in `event_id` order, paged the same way |
 
 Track and geo feature history is what review replays: a Track's past path, and
 each geo feature as it stood at the time being replayed, including ones deleted
-later. For these two, `since` and `until` compare with the event's `time`. Only
+later. A Track's past path follows its sighting times, as an Asset's trail
+follows report times, so `since` and `until` compare with the Track's `time`;
+a `track.removed` event sorts at the event's own `time`. For geo features they
+compare with the event's `time`. Only
 accounts and Plugins read them. The rest of the picture is under
 [Entities](#entities).
 

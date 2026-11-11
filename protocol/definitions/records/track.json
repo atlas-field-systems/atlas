@@ -78,6 +78,9 @@
       "time": 1793667600000,
       "track_id": "T2",
       "entity_type": "ground_vehicle",
+      "details": {
+        "color": "red"
+      },
       "sources": [
         {
           "asset_id": "A2",

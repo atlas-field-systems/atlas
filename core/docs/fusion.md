@@ -28,10 +28,10 @@ and `observation_id` pair into its own track, listing its source. This tests
 the Core-to-fusion boundary with a simple implementation. It never removes a
 Track.
 
-For a `coordinates` observation, the module copies its position, uncertainty,
-`entity_type`, and details onto the track. For a `bearing` observation, the
-track has no position. The operator interface draws the bearing from the source
-observation.
+The module copies each observation's `entity_type` and details onto the track.
+For a `coordinates` observation, it also copies the position and uncertainty.
+For a `bearing` observation, the track has no position. The operator interface
+draws the bearing from the source observation.
 
 ## Reference-data decisions still needed
 

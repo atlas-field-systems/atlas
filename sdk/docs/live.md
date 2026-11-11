@@ -71,7 +71,7 @@ picture.onChange(cb);
 - **Observations, Tracks, and geo features.** Each item is the record the event
   stream carries ([Entities](../../core/docs/api.md#entities)). A
   `report.observation` replaces its Observation only when it is newer by report
-  time and then `event_id`. `track.updated` and `geofeature.created` or
+  time and then `event_id`, and its event is not marked `clock_ahead`. `track.updated` and `geofeature.created` or
   `geofeature.replaced` replace the item; `track.removed` and
   `geofeature.deleted` remove it. The picture adds no stale flag; each item
   keeps its `time`.

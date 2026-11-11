@@ -29,7 +29,7 @@ Definitions and records carry none.
 | `report.failsafe` | A failsafe triggered and what the Asset does | Asset |
 | `report.observation` | Something the Asset sees: where it is, or which way | Asset |
 | `track` | Fusion's conclusion about one target, and the Observations it rests on | Core's Fusion |
-| `geofeature` | A place on the map: a point, line, or area, with an optional name | Core, for an operator or a Plugin |
+| `geofeature` | A place on the map: a point, line, or area, with an optional name | Core, for an account or a Plugin |
 
 Each record has its own definition with a description and examples. Object,
 Plugin, and gimbal definitions are [parked](parked/README.md) until they are
