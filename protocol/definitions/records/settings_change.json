@@ -39,7 +39,21 @@
       "asset_id": "A1",
       "requested_by": "OP1",
       "settings": {
-        "low_battery_response": "return_to_home",
+        "failsafe_policy": [
+          {
+            "rule_id": "LB1",
+            "priority": 90,
+            "conditions": [
+              {
+                "kind": "battery_below",
+                "battery_percent": 15
+              }
+            ],
+            "response": {
+              "kind": "land"
+            }
+          }
+        ],
         "home_position": {
           "latitude": 42.2751,
           "longitude": -71.8049

@@ -57,7 +57,8 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
 - Times are in milliseconds. Only specialized radio data uses nanosecond timing.
 - Counters are ordinary numbers, not long numbers written as text.
 - IDs that people read or that cross a field link are 1 to 4 letters or digits.
-  Admins choose `asset_id` when they provision an Asset. Core assigns the
+  Admins choose `asset_id` when they provision an Asset on IP. Assets choose
+  `observation_id`, unique for that Asset within a run. Core assigns the
   others, including the `asset_id` of a radio Asset a gateway adds on first
   contact. Event IDs are integers.
 

@@ -35,7 +35,7 @@ explains why the API is the only way in.
 | `400 invalid` | The body fails Protocol's validator; `explanation` lists the paths |
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
-| `404` | No such Asset, Task, or account |
+| `404` | No such Asset, Task, account, Track, or geo feature |
 | `409` | Refused: Asset offline, queue full, command or setting not supported, unknown Task, removed radio, or definitions mismatch |
 
 ## Root paths
@@ -90,10 +90,14 @@ and `/debug` belong to no pillar and stay at the top level.
 
 ## The event log and live stream
 
-Core adds one event for every accepted request and stored report, in the same
+Core adds one event for every accepted request, stored report, and Fusion
+change to a Track, in the same
 transaction as the change it records ([storage](storage.md)). Each event is
 `{event_id, time, kind, record}`: a rising integer, Core's receive time in
-milliseconds, one of the kinds below, and its record.
+milliseconds, one of the kinds below, and its record. Geo feature events also
+carry `requested_by`, because their record names no author. A report event that
+Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
+`clock_ahead: true`.
 
 | Kind | Added when | Record |
 | --- | --- | --- |
@@ -110,7 +114,11 @@ milliseconds, one of the kinds below, and its record.
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `asset_id`, `request_id` |
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
 | `cancel.requested` | An operator cancels a Task | `asset_id`, `task_id`, `requested_by` |
-| `report.<name>` | Core stores an Asset report | The report record |
+| `report.<name>` | Core stores an Asset report, including `report.observation` | The report record |
+| `track.updated` | Fusion creates or changes a Track | `track` |
+| `track.removed` | Fusion removes a Track | The `track` as it last stood |
+| `geofeature.created`, `geofeature.replaced` | A caller creates or replaces a geo feature | `geofeature`, and the event carries `requested_by` |
+| `geofeature.deleted` | A caller deletes a geo feature | The `geofeature` as it last stood, and the event carries `requested_by` |
 
 `GET /events?after=<event_id>&asset_id=<id>` is a Server-Sent Events stream. Each
 message has `id: <event_id>`, `event: <kind>`, and the event as `data`. Both
@@ -201,12 +209,21 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 | Request | Returns |
 | --- | --- |
-| `GET /entities/assets` | Every Asset: description, contact, the gateway carrying it, latest reports, and each setting's latest value; and each gateway's contact |
+| `GET /entities/assets` | Every Asset: description, contact, the gateway carrying it, latest reports except `report.observation` (see [Observations](#observations)), each setting's latest value, and each declared subsystem's latest condition; and each gateway's contact |
 | `GET /entities/assets/{asset_id}` | One Asset, the same way |
 | `GET /tasks/{asset_id}` | Task bodies, latest states, and the Tasks the Asset reports holding |
 | `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
+| `GET /history/tracks?track_id&since&until&cursor&limit` | Stored `track.updated` and `track.removed` events, ordered by the Track's `time`, then `event_id`, paged the same way |
+| `GET /history/geofeatures?geofeature_id&since&until&cursor&limit` | Stored geo feature events in `event_id` order, paged the same way |
 
-The rest of the picture is under [Entities](#entities).
+Track and geo feature history is what review replays: a Track's past path, and
+each geo feature as it stood at the time being replayed, including ones deleted
+later. A Track's past path follows its sighting times, as an Asset's trail
+follows report times, so `since` and `until` compare with the Track's `time`;
+a `track.removed` event sorts at the event's own `time`. For geo features they
+compare with the event's `time`. Only
+accounts and Plugins read them. The rest of the picture is under
+[Entities](#entities).
 
 ## Asset and gateway calls
 
@@ -360,9 +377,77 @@ differently.
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
 | `/entities/geofeatures` | Places operators and Plugins create, edit, and delete. Tasks may name a `geofeature_id`. |
 
-The request and record shapes for `GET /entities`, `/entities/observations`,
-`/entities/tracks`, and `/entities/geofeatures` are not designed yet. Objects
-are not Entities.
+Objects are not Entities.
+
+### Read the picture
+
+| Request | Returns |
+| --- | --- |
+| `GET /entities` | `{as_of, assets, observations, tracks, geofeatures}`: one consistent cut of the whole picture |
+| `GET /entities/observations` | `{as_of, items}`: every Observation |
+| `GET /entities/tracks` | `{as_of, items}`: every Track |
+| `GET /entities/tracks/{track_id}` | `{as_of, item}`: one Track |
+| `GET /entities/geofeatures` | `{as_of, items}`: every geo feature |
+| `GET /entities/geofeatures/{geofeature_id}` | `{as_of, item}`: one geo feature |
+
+- **A read and an event look the same.** Each Observation, Track, and geo feature
+  item is exactly the Protocol record the event stream carries for it:
+  `report.observation`, `track`, or `geofeature`. A reader applies a read and a
+  later event the same way. Asset entries keep the shape of
+  [`GET /entities/assets`](#reads).
+- **No filters or paging.** At Atlas's [scale](../../atlas/scale.md) the whole
+  picture stays small, so every read returns all of it.
+- **Accounts and Plugins read the picture.** A Plugin uses this same API with a
+  Plugin credential, designed with the [Plugin interface](#not-defined-yet).
+  Assets and gateways get `403` on these paths and keep only their own
+  `/entities/assets/{asset_id}` calls.
+- **Nothing expires during a run.** Observations stay in the picture for the
+  whole run, and a Track stays until Fusion removes it. Core adds no stale
+  status. Every record keeps its `time`, and readers show its age. A status
+  that changed only because time passed would have no event, so a reader could
+  not follow it from a snapshot.
+
+### Observations
+
+An Observation is the latest `report.observation` for one `asset_id` and
+`observation_id`, ordered by report time and then `event_id`, as settings are.
+A report marked `clock_ahead` never becomes the latest. The Asset chooses
+`observation_id` and posts its reports through
+[`POST /entities/assets/{asset_id}/reports`](#asset-and-gateway-calls). Each
+report is whole, so the latest report is the whole Observation. Earlier reports
+are [history](#reads). An Observation changes only when its Asset reports.
+
+### Tracks
+
+Only [Fusion](fusion.md) creates, changes, or removes a Track, through the
+Entities pillar's functions. Core assigns its `track_id` and never reuses it in
+the run. No caller writes, moves, renames, or deletes a Track; an operator who
+disagrees with one hides it in their own view. Each change adds `track.updated`,
+and a removal adds `track.removed`.
+
+### Geo features
+
+| Request | Body | Result |
+| --- | --- | --- |
+| `POST /entities/geofeatures` | `requests.geofeature` | `200 {geofeature, event_id}` |
+| `PUT /entities/geofeatures/{geofeature_id}` | `requests.geofeature` | `200 {geofeature, event_id}` |
+| `DELETE /entities/geofeatures/{geofeature_id}` | Nothing | `200 {event_id}` |
+
+- These are local edits. Nothing goes to an Asset, so Core answers `200` with
+  the stored result, not `202`. The [retry rules](#basics) apply as to every
+  change.
+- `POST` creates a geo feature, and Core assigns its `geofeature_id`. `PUT`
+  replaces one whole, so a name left out is cleared and its shape may change
+  kind. `DELETE` removes it from the picture. Core never reuses a
+  `geofeature_id` in the run, and a deleted one returns `404`.
+- Any admin or operator may create, replace, or delete any geo feature,
+  including one a Plugin made. Plugins make the same calls with their
+  credential. Assets and gateways get `403`.
+- The event names who asked with `requested_by`, because the geo feature record
+  names no author. A Plugin's changes carry its identity once the Plugin
+  interface is designed.
+- Editing or deleting a geo feature never changes a Task already sent. Geo
+  features are not sent to Assets.
 
 ## Not defined yet
 
@@ -371,9 +456,6 @@ are not Entities.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
-- The rest of the Entities API: `GET /entities`, `/entities/observations`,
-  `/entities/tracks`, and `/entities/geofeatures`, as [sketched above](#entities).
-  `/entities/assets` is already specified.
 - Protocol records for the events this page lists by field: `definitions.refused`,
   `radio.refused`, `asset.carried`, `task.dropped`, and `request.dropped`; and
   Protocol's form of the radio identity and the bodies that carry it.

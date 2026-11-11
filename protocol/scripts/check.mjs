@@ -32,8 +32,9 @@ for (const f of files) if (!listed.includes(f)) errors.push(`${f}: not listed in
 for (const f of listed) if (!schemas[f]) errors.push(`index.json: ${f} does not exist`);
 
 // records/<name>.json and records/<group>/<name>.json are records; records/<...>/<record>/<kind>.json,
-// beside records/<...>/<record>.json, is a kind of that record.
-const isKind = (f) => f.startsWith('records/') && existsSync(join(root, `${posix.dirname(f)}.json`));
+// beside records/<...>/<record>.json, is a kind of that record. A component can have kinds the same way:
+// components/<component>/<kind>.json beside components/<component>.json.
+const isKind = (f) => /^(records|components)\//.test(f) && existsSync(join(root, `${posix.dirname(f)}.json`));
 const isRecord = (f) => f.startsWith('records/') && !isKind(f);
 const base = (f) => f.split('/').pop().replace('.json', '');
 const nameOf = (f) => f.replace(/^records\//, '').replace('.json', '').replaceAll('/', '.');
@@ -92,9 +93,25 @@ for (const [file, s] of Object.entries(schemas)) {
       if (props.kind) errors.push(`${file}: law 5: "kind" only appears on records that have kinds (oneOf)`);
     }
   }
+  // A component with kinds follows the record rules for kinds. A component that takes the Task kinds
+  // (failsafe_response) is checked against the command list below instead.
+  if (file.startsWith('components/') && s.oneOf) {
+    if (s.unevaluatedProperties !== false || s.additionalProperties !== undefined) errors.push(`${file}: law 5: a component with kinds sets unevaluatedProperties to false (and no additionalProperties)`);
+    if (!s.required?.includes('kind') || !refTo(file, props.kind, 'variables/kind.json') || props.kind.const !== undefined) errors.push(`${file}: law 5: a component with kinds requires "kind" from variables/kind.json, left open`);
+    const targets = s.oneOf.map((b) => b.$ref && resolve(file, b.$ref));
+    if (new Set(targets).size !== targets.length) errors.push(`${file}: law 5: kinds must be unique`);
+    for (const b of s.oneOf) {
+      const target = b.$ref && resolve(file, b.$ref);
+      if (Object.keys(b).join() !== '$ref' || !isKind(target)) { errors.push(`${file}: law 5: each oneOf branch is only a $ref to a kind`); continue; }
+      if (posix.dirname(target) === file.replace('.json', '')) {
+        usedKinds.add(target);
+        if (!s.examples?.some((e) => e.kind === base(target))) errors.push(`${file}: needs an example of kind "${base(target)}"`);
+      }
+    }
+  }
   // Requests are bodies, not records: Core stamps the record fields, so a request carries none of them.
   if (file.startsWith('requests/')) {
-    for (const f of ['type', 'time', 'asset_id', 'task_id', 'clear_count', 'send_last', 'requested_by']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
+    for (const f of ['type', 'time', 'asset_id', 'task_id', 'clear_count', 'send_last', 'requested_by', 'geofeature_id', 'track_id']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
     if (s.additionalProperties !== false && s.unevaluatedProperties !== false) errors.push(`${file}: law 1: a request sets additionalProperties or unevaluatedProperties to false`);
   }
   if (isKind(file)) {
@@ -112,7 +129,7 @@ for (const [file, s] of Object.entries(schemas)) {
     if (def.type === 'array' && def.maxItems === undefined) errors.push(`${file}: law 9: list "${prop}" needs a maxItems`);
   }
 }
-for (const f of files) if (isKind(f) && !usedKinds.has(f)) errors.push(`${f}: law 5: no record uses this kind`);
+for (const f of files) if (isKind(f) && !usedKinds.has(f)) errors.push(`${f}: law 5: no record or component uses this kind`);
 
 // A variable that lists kinds or records by name lists exactly the files that exist.
 const sameNames = (a, b) => a.length === b.length && a.every((n) => b.includes(n));
@@ -130,7 +147,14 @@ const settingNames = Object.keys(schemas['components/settings.json']?.properties
 if (schemas['variables/setting.json'] && !sameNames(schemas['variables/setting.json'].enum ?? [], settingNames)) errors.push(`variables/setting.json: law 12: its values must be the settings in components/settings.json: ${settingNames.join(', ')}`);
 // A Task request takes exactly the Task record's kinds.
 const kindTargets = (file) => (schemas[file]?.oneOf ?? []).map((b) => b.$ref && resolve(file, b.$ref));
-if (schemas['requests/task.json'] && !sameNames(kindTargets('requests/task.json'), kindTargets('records/task.json'))) errors.push('requests/task.json: law 12: its kinds must be exactly the kinds of records/task.json');
+// A failsafe response takes exactly the command kinds: the Task kinds except settings.
+const commandKinds = files.filter((f) => isKind(f) && posix.dirname(f) === 'records/task' && base(f) !== 'settings');
+if (schemas['components/failsafe_response.json'] && !sameNames(kindTargets('components/failsafe_response.json'), commandKinds)) errors.push(`components/failsafe_response.json: law 12: its kinds must be the command kinds: ${commandKinds.map(base).join(', ')}`);
+// A request with kinds, such as a Task or a geo feature, takes exactly its record's kinds.
+for (const name of ['task', 'geofeature']) {
+  const request = `requests/${name}.json`, record = `records/${name}.json`;
+  if (schemas[request] && !sameNames(kindTargets(request), kindTargets(record))) errors.push(`${request}: ${name === 'task' ? 'law 12' : 'law 1'}: its kinds must be exactly the kinds of ${record}`);
+}
 for (const k of kindTargets('requests/task.json')) for (const f of ['task_id', 'clear_count', 'send_last', 'now', 'requested_by']) if (schemas[k]?.properties?.[f]) errors.push(`${k}: law 1: "${f}" is stamped by Core, not sent in a request`);
 
 if (errors.length) {

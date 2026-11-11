@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition.json",
+  "title": "failsafe_condition",
+  "description": "One test in a failsafe rule. kind says which. A rule matches only while all its conditions hold.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "failsafe_condition/contact_lost.json"
+    },
+    {
+      "$ref": "failsafe_condition/battery_below.json"
+    },
+    {
+      "$ref": "failsafe_condition/idle.json"
+    },
+    {
+      "$ref": "failsafe_condition/airborne.json"
+    },
+    {
+      "$ref": "failsafe_condition/outside_area.json"
+    },
+    {
+      "$ref": "failsafe_condition/measurement_stale.json"
+    },
+    {
+      "$ref": "failsafe_condition/subsystem.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "kind": {
+      "$ref": "../variables/kind.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "contact_lost"
+    },
+    {
+      "kind": "battery_below",
+      "battery_percent": 25
+    },
+    {
+      "kind": "idle",
+      "for_s": 120
+    },
+    {
+      "kind": "airborne"
+    },
+    {
+      "kind": "outside_area",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ],
+      "margin_m": 20,
+      "for_s": 5
+    },
+    {
+      "kind": "measurement_stale",
+      "measurement": "position",
+      "stale_after_s": 5
+    },
+    {
+      "kind": "subsystem",
+      "subsystem_id": "GPS",
+      "trigger_condition": "degraded"
+    }
+  ]
+}

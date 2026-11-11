@@ -4,7 +4,7 @@ Protocol defines Atlas's shared records, their laws, and the one validator every
 program uses.
 
 A record is a piece of shared data: an Asset's description, a Task, a
-settings change, a cancel, or a report. Core, the SDK, gateways, and Assets all
+settings change, a cancel, a report, a Track, or a geo feature. Core, the SDK, gateways, and Assets all
 build, check, and store the same records from these plain JSON files. Protocol
 does not define how programs talk. The [Core API](../core/docs/api.md) carries
 records over IP, and Fieldlinks carry them across field links. Local configuration
@@ -17,25 +17,29 @@ Definitions and records carry none.
 
 | Record | What it is | Who makes it |
 | --- | --- | --- |
-| `description` | What an Asset is: its reports, command kinds, supported settings, and cameras | Asset |
+| `description` | What an Asset is: its reports, command kinds, supported settings, subsystems, and cameras | Asset |
 | `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
 | `provisioning` | An Asset or gateway was added or removed | Core, for an admin or a gateway |
 | `contact` | Whether an Asset or gateway is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
-| `report.status` | How the Asset, one Task, or its task list stands | Asset |
+| `report.status` | One subsystem's condition, one Task's state, or its task list | Asset |
 | `report.telemetry`, `report.battery` | Where it is and how it moves; its battery | Asset |
 | `report.settings` | Its settings' values | Asset |
-| `report.failsafe` | A failsafe triggered and what the Asset does | Asset |
+| `report.failsafe` | A failsafe Task's state, an operator override, or a flight-controller takeover | Asset |
+| `report.observation` | Something the Asset sees: where it is, or which way | Asset |
+| `track` | Fusion's conclusion about one target, and the Observations it rests on | Core's Fusion |
+| `geofeature` | A place on the map: a point, line, or area, with an optional name | Core, for an account or a Plugin |
 
-Each record has its own definition with a description and examples. Geo feature,
-Object, Plugin, Observation and gimbal definitions are [parked](parked/README.md)
-until they are reworked into records.
+Each record has its own definition with a description and examples. Object,
+Plugin, and gimbal definitions are [parked](parked/README.md) until they are
+reworked into records.
 
 Requests are not records. `requests/` defines the bodies operators send to the
-Core API: `tasks` (one or more Task kinds, or one with `now`) and `settings`.
-Core stamps the record fields, such as `time`, `task_id`, and `requested_by`,
-to make the `task` and `settings_change` records.
+Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`, and
+`geofeature`. Core stamps the record fields, such as `time`, `task_id`,
+`geofeature_id`, and `requested_by`, to make the `task`, `settings_change`, and
+`geofeature` records.
 
 ## Try it
 

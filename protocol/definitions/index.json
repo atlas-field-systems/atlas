@@ -13,6 +13,9 @@
         "records/report/battery.json",
         "records/report/settings.json",
         "records/report/failsafe.json",
+        "records/report/observation.json",
+        "records/track.json",
+        "records/geofeature.json",
         "records/provisioning.json",
         "records/contact.json"
       ]
@@ -22,7 +25,8 @@
       "files": [
         "requests/tasks.json",
         "requests/task.json",
-        "requests/settings.json"
+        "requests/settings.json",
+        "requests/geofeature.json"
       ]
     },
     {
@@ -32,12 +36,26 @@
         "records/task/move_to.json",
         "records/task/land.json",
         "records/task/return_to_home.json",
+        "records/task/hold.json",
         "records/task/settings.json",
-        "records/report/status/asset.json",
+        "records/report/status/subsystem.json",
         "records/report/status/task.json",
         "records/report/status/queue.json",
-        "records/report/failsafe/link_loss.json",
-        "records/report/failsafe/low_battery.json"
+        "records/report/failsafe/response.json",
+        "records/report/failsafe/override.json",
+        "records/report/failsafe/autopilot.json",
+        "records/report/observation/coordinates.json",
+        "records/report/observation/bearing.json",
+        "records/geofeature/point.json",
+        "records/geofeature/line.json",
+        "records/geofeature/area.json",
+        "components/failsafe_condition/contact_lost.json",
+        "components/failsafe_condition/battery_below.json",
+        "components/failsafe_condition/idle.json",
+        "components/failsafe_condition/airborne.json",
+        "components/failsafe_condition/outside_area.json",
+        "components/failsafe_condition/measurement_stale.json",
+        "components/failsafe_condition/subsystem.json"
       ]
     },
     {
@@ -46,7 +64,17 @@
         "components/altitude.json",
         "components/position.json",
         "components/camera.json",
-        "components/settings.json"
+        "components/settings.json",
+        "components/point.json",
+        "components/line.json",
+        "components/area.json",
+        "components/uncertainty.json",
+        "components/details.json",
+        "components/source.json",
+        "components/subsystem.json",
+        "components/failsafe_condition.json",
+        "components/failsafe_response.json",
+        "components/failsafe_rule.json"
       ]
     },
     {
@@ -57,7 +85,6 @@
         "variables/time.json",
         "variables/clear_count.json",
         "variables/send_last.json",
-        "variables/low_battery_response.json",
         "variables/command.json",
         "variables/roll_deg.json",
         "variables/asset_id.json",
@@ -67,8 +94,6 @@
         "variables/run_state.json",
         "variables/lights.json",
         "variables/landing_gear.json",
-        "variables/failsafe_response.json",
-        "variables/link_loss_response.json",
         "variables/link_loss_after_s.json",
         "variables/condition.json",
         "variables/explanation.json",
@@ -92,7 +117,35 @@
         "variables/now.json",
         "variables/setting.json",
         "variables/gateway_id.json",
-        "variables/contact.json"
+        "variables/contact.json",
+        "variables/observation_id.json",
+        "variables/track_id.json",
+        "variables/geofeature_id.json",
+        "variables/name.json",
+        "variables/bearing_deg.json",
+        "variables/bearing_uncertainty_deg.json",
+        "variables/elevation_deg.json",
+        "variables/elevation_uncertainty_deg.json",
+        "variables/range_m.json",
+        "variables/range_uncertainty_m.json",
+        "variables/semi_major_m.json",
+        "variables/semi_minor_m.json",
+        "variables/orientation_deg.json",
+        "variables/altitude_uncertainty_m.json",
+        "variables/icao_address.json",
+        "variables/callsign.json",
+        "variables/squawk.json",
+        "variables/color.json",
+        "variables/rule_id.json",
+        "variables/priority.json",
+        "variables/attempt.json",
+        "variables/for_s.json",
+        "variables/margin_m.json",
+        "variables/measurement.json",
+        "variables/stale_after_s.json",
+        "variables/subsystem_id.json",
+        "variables/label.json",
+        "variables/trigger_condition.json"
       ]
     }
   ]
