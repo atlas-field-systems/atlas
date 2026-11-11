@@ -47,7 +47,8 @@ The parts:
   data laws, the validator, and the examples that test record shapes.
   It no longer defines how programs talk.
 - **Core** owns the API: HTTP for requests, Server-Sent Events for live changes.
-  Request and event bodies are Protocol records.
+  Event bodies are Protocol records; request bodies are Protocol request
+  definitions.
 - **The SDK** is a client for the Core API.
 - **Gateways** uplink to the Core API and run the Fieldlinks their hardware
   supports. A gateway is not an Asset.
@@ -111,7 +112,8 @@ root. `/about`, `/events`, `/history`, and `/debug` belong to no pillar.
   in Core and receives its ID and key for its configuration. The key is a bearer
   token over TLS. There is no enrollment key. An Asset behind a gateway
   authenticates to the gateway, not to Core.
-- **IDs.** Admins choose `asset_id`, which people read. Core assigns Task,
+- **IDs.** Admins choose `asset_id` for an Asset on IP, which people read; Core
+  assigns a radio Asset's when a gateway adds it. Core assigns Task,
   Observation, Track, geo feature, and Object IDs. Event IDs are integers.
 - **Transport security.** TLS on IP. Each Fieldlink uses its radio's own
   encryption and authentication. Records never carry credentials.

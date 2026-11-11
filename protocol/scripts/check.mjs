@@ -131,6 +131,7 @@ if (schemas['variables/setting.json'] && !sameNames(schemas['variables/setting.j
 // A Task request takes exactly the Task record's kinds.
 const kindTargets = (file) => (schemas[file]?.oneOf ?? []).map((b) => b.$ref && resolve(file, b.$ref));
 if (schemas['requests/task.json'] && !sameNames(kindTargets('requests/task.json'), kindTargets('records/task.json'))) errors.push('requests/task.json: law 12: its kinds must be exactly the kinds of records/task.json');
+for (const k of kindTargets('requests/task.json')) for (const f of ['task_id', 'clear_count', 'send_last', 'now', 'requested_by']) if (schemas[k]?.properties?.[f]) errors.push(`${k}: law 1: "${f}" is stamped by Core, not sent in a request`);
 
 if (errors.length) {
   console.error(errors.join('\n'));

@@ -241,7 +241,9 @@ An Asset on IP starts or reconnects in this order:
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
 key. It also sends `PUT /entities/assets/{asset_id}/contact` with a `contact`
-record whenever its Fieldlink's view of that Asset changes. Core
+record whenever its Fieldlink's view of that Asset changes. Only a gateway
+may send it, for an Asset it carries and named by the path; any other caller
+gets `403`. Core
 authenticates the gateway and trusts it for which Asset sent what. Each Asset
 authenticates to the gateway, not to Core.
 
@@ -335,8 +337,8 @@ are not Entities.
   Asset could be admitted to a channel that every Asset's messages share. Until
   this is designed, anything that can send on that channel can claim to be any
   Asset the gateway carries.
-- Whether an Asset behind a gateway is registered in Core, how a gateway is
-  bound to the Assets it carries, how a gateway reports a radio Asset that its
+- Which call a gateway uses to add a radio Asset on first contact, how a
+  gateway is bound to the Assets it carries, how a gateway reports a radio Asset that its
   Fieldlink refused for different definitions, and the Fieldlink docs.
   [Gateway](../../gateway/README.md) owns that design.
 - Catch-up reports: how retained reports fill history without delaying live
