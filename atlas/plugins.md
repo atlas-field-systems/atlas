@@ -14,7 +14,7 @@ uses its tools, often open-source services, to gather and return information.
   its Plugin interface, never its storage. Reading Entities or storing Objects
   goes through that interface. The Plugin interface is the Core API with a
   Plugin credential, not a second protocol. Plugins read the
-  [shared picture](../core/docs/api.md#entities) and author geo features there.
+  [shared picture](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities) and author geo features there.
 - The Core API will carry Plugin calls. That is how the
   Command Interface uses a Plugin from outside the city.
 - Operators call Plugins first. Assets will be able to call them later.
