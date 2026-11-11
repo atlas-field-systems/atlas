@@ -39,6 +39,22 @@ The main page is `/map`, with a linked map, a searchable list, and a detail
 panel. Selecting an item in the list or on the map shows it in the panel and
 keeps its map context visible.
 
+The map draws the [shared picture](../../core/docs/api.md#entities): Assets,
+Tracks, and places (geo features).
+
+- **Tracks are the main picture.** Selecting a Track shows the sightings
+  (Observations) behind it. The operator can also switch on every sighting.
+- **A target known only by direction** shows as a line from the sensor that saw
+  it, drawn from its sightings.
+- **Every Track and sighting shows its age.** Core never marks them stale, and
+  they stay in the picture for the whole run. The operator can hide old ones as
+  a view filter.
+- **Operators cannot move, rename, or delete a Track.** Only Fusion changes
+  Tracks. An operator who disagrees with one hides it in their own view.
+- **Any operator or admin can create, change, or delete any place**, including
+  places a Plugin made. A place is a point, line, or area with an optional
+  name. Changing or deleting a place never changes a Task already sent.
+
 Each Asset also has its own addressable detail page. Operators can share or
 bookmark it, refresh it, or open it in another tab. Track, Observation,
 Geofeature, and Object pages are not designed yet.
@@ -117,8 +133,8 @@ shows as unconfirmed, because it may have reached the Asset. The Asset's later
 reports show what it did. The operator sends it again only if those reports
 show it did not run.
 
-Polygon and Geofeature inputs, and RidgeLine's drawing tools for authoring them,
-are not designed yet. Drawing an area will never task an
+Polygon and Geofeature Task inputs, and RidgeLine's drawing tools for authoring
+places, are not designed yet. Drawing an area will never task an
 Asset or create an enforced geofence by itself.
 
 ## Read Tasks, conditions, and history
@@ -151,12 +167,15 @@ unreported, not healthy. Do not combine them into an overall condition.
 
 History is [paged](../../core/docs/api.md#reads) and fetched on demand. Movement
 history supports selectable time windows, playback, and scrubbing, starting with
-one selected Asset's trail and a few controls. Its latest position stays
+one selected Asset's or Track's trail and a few controls. A Track's past path
+replays the same way as an Asset's trail. Its latest position stays
 distinct from historical positions. Playback uses recorded sample times and
-shows gaps rather than inventing samples. Historical inspection is clearly
+shows gaps rather than inventing samples. Places show as they stood at the
+playback time, so a place deleted later still shows before its deletion, and a
+deleted place leaves the live map. Historical inspection is clearly
 labelled and has a way back to live. Playback never resends recorded commands.
-Use no separate history framework or synchronized reconstruction of every item
-on the map.
+Use no separate history framework. Playback rebuilds only the selected trails
+and the places, not every item on the map.
 
 ### Review a model-rocket flight
 

@@ -21,9 +21,12 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `assets` | Entities | Provisioned Assets: ID, latest description, and contact |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
 | `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
+| `tracks` | Entities | Each current Track, as Fusion last wrote it ([Tracks](api.md#tracks)) |
+| `geofeatures` | Entities | Each current geo feature ([Geo features](api.md#geo-features)) |
 
-Tables for Observations, Tracks, and geo features are designed with the rest of
-the [Entities API](api.md#entities). The Objects table is designed with its API.
+Observations have no table. They are Asset reports, so each Observation is an
+indexed query for the latest `report.observation` of its `asset_id` and
+`observation_id`, as below. The Objects table is designed with its API.
 
 ## Every change writes one event
 
@@ -37,12 +40,12 @@ indexed queries on `events`, so no report is kept twice.
 
 ## Runs
 
-A run is the span between two Resets. Every row in `tasks`, `queues`,
-`idempotency_keys`, and `events` carries its `run_id`. Rules scoped to a run, such
-as unique `task_id`s and idempotency keys, hold within one `run_id`. Rows from
-earlier runs stay readable as history until retention removes them. The Reset
-request, its archive, and what it clears are
-[not defined yet](api.md#not-defined-yet).
+A run is the span between two Resets. Every row in `tasks`, `queues`, `tracks`,
+`geofeatures`, `idempotency_keys`, and `events` carries its `run_id`. Rules
+scoped to a run, such as unique `task_id`s, `track_id`s, `geofeature_id`s,
+and idempotency keys, hold within one `run_id`. Rows from earlier runs stay
+readable as history until retention removes them. The Reset request, its
+archive, and what it clears are [not defined yet](api.md#not-defined-yet).
 
 ## Memory and retention
 

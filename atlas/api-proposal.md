@@ -85,7 +85,7 @@ Names are illustrative. Core owns the exact API doc.
 | `GET /events` (Server-Sent Events) | Live log events; reconnect resumes after `Last-Event-ID` |
 | `POST /entities/assets/{id}/reports` | Asset or gateway reports, in batches, keeping original times |
 | `GET /entities/observations`, `GET /entities/tracks` | Evidence and conclusions in the picture, separately |
-| `GET`, `POST`, `PATCH`, `DELETE /entities/geofeatures` | Places operators and Plugins author |
+| `GET`, `POST`, `PUT`, `DELETE /entities/geofeatures` | Places operators and Plugins author; a change replaces one whole |
 
 Each pillar has a root path (`/entities`, `/tasks`, `/objects`,
 `/administration`). Plugins have `/plugins`. Kinds live under their pillar's
@@ -113,8 +113,9 @@ root. `/about`, `/events`, `/history`, and `/debug` belong to no pillar.
   token over TLS. There is no enrollment key. An Asset behind a gateway
   authenticates to the gateway, not to Core.
 - **IDs.** Admins choose `asset_id` for an Asset on IP, which people read; Core
-  assigns a radio Asset's when a gateway adds it. Core assigns Task,
-  Observation, Track, geo feature, and Object IDs. Event IDs are integers.
+  assigns a radio Asset's when a gateway adds it. Assets choose
+  `observation_id`. Core assigns Task, Track, geo feature, and Object IDs.
+  Event IDs are integers.
 - **Transport security.** TLS on IP. Each Fieldlink uses its radio's own
   encryption and authentication. Records never carry credentials.
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://atlas-field-systems.github.io/protocol/definitions/messages/geofeature/set/point.json",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/geofeature/point.json",
   "title": "point",
   "description": "A geo feature that is one place, such as a helipad.",
   "type": "object",
@@ -10,11 +10,11 @@
   ],
   "properties": {
     "kind": {
-      "$ref": "../../../variables/kind.json",
+      "$ref": "../../variables/kind.json",
       "const": "point"
     },
     "position": {
-      "$ref": "../../../components/position.json"
+      "$ref": "../../components/position.json"
     }
   },
   "examples": [

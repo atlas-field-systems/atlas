@@ -9,6 +9,10 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
 | Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
+| Shared picture | Everything the Entities pillar holds about the field: Assets, Observations, Tracks, and geo features. The Command Interface draws its map from it. Nothing in it expires during a run. |
+| Observation | What one Asset currently reports seeing of one target, named by the Asset and its own `observation_id`. Evidence, not a conclusion. Operators may call it a sighting. |
+| Track | Fusion's conclusion about one target, resting on one or more Observations. Only Fusion creates, changes, or removes one. |
+| Geo feature | A place on the map: a point, line, or area, with an optional name. Operators, admins, and Plugins create, change, and delete them. Operators may call it a place. |
 | Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
 | Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
 | Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |

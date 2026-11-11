@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/details.json",
   "title": "details",
-  "description": "Defined facts about a target beyond where it is, such as an aircraft's ADS-B identity or the colour a camera sees. Only the details listed here exist; a new kind of detail is added to this list. Each detail stays true for its observation_id until a new value for it arrives, so a detail left out is unchanged. A detail set to null is no longer known.",
+  "description": "Defined facts about a target beyond where it is, such as an aircraft's ADS-B identity or the colour a camera sees. Only the details listed here exist; a new kind of detail is added to this list. Every Observation report carries all the details it knows, so a detail left out is not known.",
   "type": "object",
   "minProperties": 1,
   "additionalProperties": false,
@@ -28,9 +28,6 @@
     },
     {
       "color": "red"
-    },
-    {
-      "callsign": null
     }
   ]
 }
