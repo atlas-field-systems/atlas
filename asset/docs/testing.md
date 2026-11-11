@@ -11,9 +11,9 @@ uses simulated equipment drivers that implement the same interfaces as the real
 drivers. Scenarios drive the configured app through its normal interfaces and
 observe its state, reports, and diagnostics.
 
-The first tests connect the app to Core directly over IP, as in the
-[order of work](../../atlas/api-proposal.md#order-of-work); the gateway path joins
-when the gateway exists. Tracker scenarios cover the minimal reporting-only case.
+The first tests connect the app to Core directly over IP, as in
+[first flight](../../atlas/first-flight.md); the gateway path joins when the
+gateway exists. Tracker scenarios cover the minimal reporting-only case.
 Hardware testing is still needed for the real equipment, radios, and flight.
 
 ## Repeatable scenarios

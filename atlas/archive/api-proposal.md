@@ -1,7 +1,10 @@
 # Proposal: a Core API with gateways
 
-**Direction selected by the owner.** The Charter, design decisions and every
-part's docs follow it; this page records why.
+> **Historical. Superseded.** This plan is kept for its reasoning only. It is
+> not a source for current rules, and some of it has been reversed. Current
+> rules live in the [decision log](../decision-log.md) and the pages it links.
+
+The owner selected this direction, and the docs were rewritten to follow it.
 
 ## The problem
 
@@ -153,7 +156,7 @@ design is otherwise deferred.
 ## Scope
 
 This proposal first froze scope to first flight. The owner then chose to
-[design the whole product and build it together](design-decisions.md#design-the-whole-product-then-build-it),
+[design the whole product and build it together](../design-decisions.md#design-the-whole-product-then-build-it),
 with geo features, Objects, Observations, Tracks, and Plugins included. The
 retained Core prototype is deleted; git keeps its history. Asset tests run
 against ArduPilot SITL.

@@ -94,8 +94,9 @@ Conditions can include:
   an Asset that holds only such Tasks is idle. Telemetry does not reset the
   timer. Each new idle interval starts fresh.
 - Being airborne, for example combined with contact loss and no remaining work.
-- Being outside a supplied horizontal polygon, even without an observed
-  crossing, including at startup or after a policy replacement. A distance
+- Being outside a horizontal polygon drawn in the rule itself, never taken
+  from a saved place, even without an observed crossing, including at startup
+  or after a policy replacement. A distance
   beyond the boundary and a duration outside are configured; either may be zero.
   Altitude limits are deferred.
 - Missing or stale measurements, distinct from current values. Unknown position
@@ -142,11 +143,12 @@ Cancelled Tasks never resume. Reports and logging continue.
 
 In failsafe state the operator can still override the response:
 
-- **Land or Return to home now.** A Land or Return to home Task sent with `now`
-  replaces the response Task, which is reported `cancelled`. Hold now is not an
-  override; pause holds instead.
-- **Pause to hold.** Pause holds the vehicle, and setting it running again ends
-  the hold, as [outside a failsafe](README.md#pause).
+- **Land, Return to home, or Hold now.** One of these Tasks sent with `now`
+  replaces the response Task, which is reported `cancelled`. Hold is an ordinary
+  command here, as Land is.
+- **Pause and run.** Pausing stops movement in place and keeps the response
+  Task active; setting the Asset running again continues it, as
+  [outside a failsafe](README.md#pause). Pause is a setting, not Hold.
 
 The Asset carries out an override through the same execution as ordinary work.
 It records the override in its failsafe report, naming the request, and in its

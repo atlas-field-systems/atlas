@@ -5,20 +5,20 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Term | Meaning |
 | --- | --- |
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
-| Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time, and each radio Asset is carried by that gateway. Core authenticates the gateway; the Assets it carries authenticate to it. A gateway is not an Asset. |
+| Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time. A gateway is not an Asset. See [Gateway](gateway/README.md). |
 | Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
-| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It is public, not a secret. Only the radio that holds it can speak as its Asset. It stays with the gateway and its Fieldlink; Core does not hold it. |
-| Run | Everything between one start of Core and the next stop. Each run starts with an empty picture and no Assets; only accounts and keys carry over. See [Reset](core/docs/reset.md). |
-| Registration | An Asset joining the current run. An Asset on IP registers itself with its key, and a gateway registers each radio Asset the first time it is heard in the run. Core assigns the `asset_id` and its acknowledgement tells the registrant. An Asset keeps its ID for the rest of the run, even through another gateway, and registers anew each run. |
-| Reset | Ending a run by stopping Core. Core writes the run's Reset ZIP, checks it, and clears the run. There is no Reset request. |
-| Reset ZIP | One part's own archive of a run or operation, for people and AI agents to investigate it. Core, each Asset, and each gateway write their own; merging them is a separate process. Nothing deletes one automatically. |
+| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It stays with the gateway and its Fieldlink; Core does not hold it. See [what every Fieldlink provides](gateway/README.md#what-every-fieldlink-provides). |
+| Run | Everything between one start of Core and the next stop. See [Runs and identity](atlas/runs-and-identity.md). |
+| Registration | An Asset joining the current run and getting its `asset_id` from Core. See [Runs and identity](atlas/runs-and-identity.md#keys-and-registration). |
+| Reset | Ending a run by stopping Core. There is no Reset request or button. See [Runs and identity](atlas/runs-and-identity.md#a-run-and-reset). |
+| Reset ZIP | One part's own archive of a run or operation, for people and AI agents to investigate it. Core, each Asset, and each gateway write their own. See [Core Reset](core/docs/reset.md). |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
 | Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
 | Shared picture | Everything the Entities pillar holds about the field: Assets, Observations, Tracks, and geo features. The Command Interface draws its map from it. Nothing in it expires during a run. |
 | Observation | What one Asset currently reports seeing of one target, named by the Asset and its own `observation_id`. Evidence, not a conclusion. Operators may call it a sighting. |
 | Track | Fusion's conclusion about one target, resting on one or more Observations. Only Fusion creates, changes, or removes one. |
 | Geo feature | A place on the map: a point, line, area, or imagery, with an optional name. Operators and admins create, change, and delete them; Plugins may create them. Operators may call it a place. |
-| Imagery | A geo feature that shows one GeoTIFF Object on the map, where the file says it belongs. Operators and Plugins add it. It can be renamed or deleted but not moved or reshaped; deleting it leaves the file. |
+| Imagery | A geo feature that shows one GeoTIFF Object on the map, where the file says it belongs. It can only be renamed. See [geo features](core/docs/api.md#geo-features). |
 | Object | A file Core holds, with a description of what it is. An Object never changes; a different file is a new Object. Plugins and operators add Objects. It may be attached to one geo feature. Objects are not Entities. |
 | Plugin | A program beside Core, in the second ring, that offers actions. It connects out to Core with its own key and reaches Core only through its Plugin interface. Plugins do not direct Assets. See [Plugins](atlas/plugins.md). |
 | Plugin interface | The Core API calls a Plugin's key may use. |
@@ -34,11 +34,11 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Command | A request to perform a supported action, such as Takeoff or Land. |
 | Request body | What an operator sends to Core to ask for work or a settings change. It is not a record: Core adds the time, the IDs, and who asked to make the record. |
 | Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
-| Pause | A setting that holds an Asset in place. The active Task stays active and continues when the Asset is set running again. |
+| Pause | A setting that stops an Asset's movement in place. The active Task stays active and continues when the Asset is set running again. Pause is not Hold. See [pause](asset/docs/README.md#pause). |
 | Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
-| Provisioning | An admin adding or removing an account, or the key of an Asset on IP, a gateway, or a Plugin. Provisioning carries across runs; Assets themselves join by registration. |
+| Provisioning | An admin adding or removing an account, or the key of an Asset on IP, a gateway, or a Plugin. Provisioning carries across runs; Assets themselves join by [registration](atlas/runs-and-identity.md#keys-and-registration). |
 | Task | One instance of requested work with a reported execution outcome. |
-| Hold | A command that stops an Asset where it is and keeps it there. Unlike pause, it keeps no earlier work to resume. |
+| Hold | A command, like Land, that stops an Asset where it is and keeps it there. It keeps no earlier work to resume, so it is not pause. |
 | Subsystem | A part of an Asset, hardware or equipment software, that the Asset declares and reports a condition for, such as a GPS receiver or camera. |
 | Subsystem condition | A subsystem's health: unknown, healthy, degraded, or faulted. Not a failsafe condition. There is no overall Asset condition. |
 | Failsafe policy | An Asset's complete list of failsafe rules. It is one setting, always replaced whole. |

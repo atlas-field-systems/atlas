@@ -19,8 +19,11 @@ a Plugin that sets none still works. For each action:
 
 - its label and help text;
 - whether its action appears in the right-click menu of an area, a place, or a
-  point on the map;
-- whether listed results with a position show on the map by default.
+  point on the map. Off unless the Plugin turns it on. It appears only when the
+  action has exactly one input of the clicked kind, which the clicked item
+  fills;
+- whether listed results with a position show on the map by default. Off unless
+  the Plugin turns it on.
 
 A Plugin cannot bring its own screens or code into the interface. Custom
 Plugin screens are a possible later step, not part of the first build.

@@ -10,15 +10,12 @@ failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
 ## Start and connect
 
-An admin creates an Asset key in Core and copies it into the Asset's
-[configuration](../config.md). There is no enrollment key. Every Asset starts
-each run as a new Asset: an Asset on IP registers itself with its key and
-learns its `asset_id` from Core's acknowledgement. An Asset behind a gateway
-holds no Core key; a gateway registers it the first time it is heard in the
-run and tells it its ID. It keeps that ID and its work for the rest of the run,
-even if it moves to another gateway
-([Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves)).
-Nothing picks its own `asset_id`. Once its identity,
+An Asset on IP gets its key from an admin, in its
+[configuration](../config.md). Each run it joins as a new Asset and learns its
+`asset_id` from Core: an Asset on IP registers itself with its key, and a
+gateway registers a radio Asset for it.
+[Runs and identity](../../atlas/runs-and-identity.md) owns registration and
+IDs. Once its identity,
 clock, and communications are ready, the Asset connects in the order the
 [Core API](../../core/docs/api.md#asset-and-gateway-calls) sets: check the
 definitions hash, send its description, report its known settings, its queue,
@@ -50,11 +47,11 @@ its first valid position. An explicitly configured or operator-set home takes
 precedence. A reconnect does not reset home; operators change it as a setting.
 
 The app and its link stay running for the operation, as Core does. An Asset
-that stops [leaves the operation](../../atlas/using-atlas.md#an-operation-runs-without-restarts),
-and the other Assets keep working. There is no mission recovery: an Asset keeps
-nothing from an earlier run when it starts. Atlas does not support an Asset
-rejoining the run it left. A dropped link does not restart the app or clear its
-state.
+whose app stops shows offline, and the other Assets keep working. If the app
+starts again in the same run, it registers with its key and
+[rejoins as the same Asset](../../atlas/runs-and-identity.md#keys-and-registration).
+An Asset keeps nothing from an earlier run. A dropped link does not restart the
+app or clear its state.
 
 ## Carry out work and report its result
 
@@ -98,9 +95,9 @@ The Asset never runs a `task_id` twice. A Task that has started or ended never
 starts again, whether it reappears in a repeated event or after a reconnect.
 Another attempt needs a new Task.
 
-An Asset with no Task to run holds and waits for work, with the same
-[platform hold as pause](#pause). A copter that finishes its last Task in the air
-loiters there until an operator sends more. An empty queue is ordinary, and no
+An Asset with no Task to run waits in place for work, with its platform hold. A
+copter that finishes its last Task in the air loiters there until an operator
+sends more. An empty queue is ordinary, and no
 Task has to follow another. Only a
 [configured failsafe rule](failsafes.md#configure-conditions-as-well-as-responses)
 responds to an empty queue.
@@ -110,8 +107,7 @@ responds to an empty queue.
 Every command is a Task, including immediate ones. Hold now, for example, stops
 the Asset where it is and drops the work before it. A Task sent with `now` runs
 at once, even while the Asset is paused, and cancels every Task with a lower
-`task_id`, including Tasks that have not arrived yet. Core admits `now` even
-when 64 Tasks are already outstanding. The Asset reports the Task
+`task_id`, including Tasks that have not arrived yet. The Asset reports the Task
 it interrupted and every Task it cancelled as `cancelled`, and the new Task
 reports its outcome like any other.
 
@@ -144,16 +140,17 @@ platform-specific hold: copters stop and loiter in place, fixed-wing aircraft
 loiter, and ground vehicles brake and stop. A paused Asset does not advance its
 queue, though a Task sent with `now` still runs.
 
-Pause holds the active Task; it does not end it. The Task stays `active` and
+Pause keeps the active Task; it does not end it. The Task stays `active` and
 continues when the Asset is set running again. The settings report showing
-`run_state` paused is the evidence of the hold. A Task that cannot continue after
+`run_state` paused is the evidence of the pause. A Task that cannot continue after
 the pause fails with an explanation, like any failed Task. Pause never cancels
 work the way `now` does. Configured failsafes override
 pause. Paused work still counts toward Core's
-[64-Task outstanding-work cap](../../core/docs/api.md#operator-requests), including
-accepted Tasks that have not arrived yet. The Asset reports its complete held,
-unstarted queue, without truncation or windows; ordinary requests cannot grow it
-past the capacity Core admits. A `now` Task is still admitted at that cap.
+[64-Task cap](../../core/docs/api.md#operator-requests). The Asset reports its
+complete held, unstarted queue, without truncation or windows.
+
+Pause is not Hold. Hold is a command, like Land: it stops the Asset, completes,
+and keeps no earlier Task to resume. Pause keeps the active Task and resumes it.
 
 ### Settings
 

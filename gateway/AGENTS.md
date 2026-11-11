@@ -10,9 +10,9 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
   how each Fieldlink carries Atlas across its field link.
 - Each Fieldlink owns compact encoding, retries, duplicate handling, contact
   timing, and link security for its medium. Put those rules with that Fieldlink.
-- Shared records live in `protocol/`, and how a gateway talks to Core lives in
-  the [Core API](../core/docs/api.md). Link to those rules; do not copy them.
-- How radio Assets authenticate and join through a gateway, and the gateway's
-  Reset ZIP, are settled in [README](README.md). Change them only with the
-  owner. The rest of the gateway design is deferred.
+- Shared records live in `protocol/`, how a gateway talks to Core lives in
+  the [Core API](../core/docs/api.md), and how radio Assets register and keep
+  their IDs lives in [Runs and identity](../atlas/runs-and-identity.md). Link to
+  those rules; do not copy them.
+- The rest of the gateway design is deferred.
 - Planning only: no code until the owner asks. Do not merge without the developer's approval.

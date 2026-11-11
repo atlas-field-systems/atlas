@@ -10,7 +10,7 @@ Selected behavior for the Core runtime. None of it is implemented yet.
 - [Request admission](requests.md): what Core checks before work reaches an Asset.
 - [Fusion](fusion.md): the module inside Core that turns Observations into Tracks.
 - [Logging](logging.md): the diagnostic evidence Core keeps and puts in its Reset archive.
-- [Reset](reset.md): how stopping Core ends a run, its Reset ZIP, and what it clears.
+- [Reset](reset.md): how Core ends a run, its Reset ZIP, and what it clears. The rules are in [Runs and identity](../../atlas/runs-and-identity.md).
 - [Configuration](../config.md): proposed options.
 
 ## Inside Core
@@ -23,5 +23,6 @@ container if it needs one, connect out to Core with their own keys, and reach
 Core through its Plugin interface. See the
 [walled city](../../atlas/design-decisions.md#a-walled-city).
 
-[Prototyping findings](experiments/final-report.md) records lessons from earlier
-experiments. Their runtimes and the first-flight prototype were removed.
+[Prototyping findings](../../atlas/archive/prototype-findings.md), now in the
+archive, records lessons from earlier experiments. Their runtimes and the
+first-flight prototype were removed.

@@ -54,9 +54,8 @@ Tracks, and places (geo features).
   Tracks. An operator who disagrees with one hides it in their own view.
 - **Any operator or admin can create, change, or delete any place**, including
   places a Plugin made. A place is a point, line, area, or imagery, with an
-  optional name; imagery can only be renamed. A Task names its place, and an
-  edit or deletion always goes through; each Asset decides how its work handles
-  the change ([Area and place inputs](#area-and-place-inputs)).
+  optional name; imagery can only be renamed
+  ([Area and place inputs](#area-and-place-inputs)).
 
 ### Hide items in your own view
 
@@ -91,12 +90,10 @@ just says "not found".
 
 ### Links and choices belong to one run
 
-A [run](../../core/docs/storage.md#runs) lasts from one start of Core to the next
-stop, and Core starts each run with an empty picture. Every Asset registers
-again and comes back as a new Asset with a new ID that Core assigns. Tracks,
-places, Objects, and Plugin calls also get new IDs, and an ID from one run may
-name something else in the next. So every page address names its run, and
-every view filter is kept for one run.
+Each run starts with an empty picture and new IDs, so an ID from one run may
+name something else in the next
+([Runs and identity](../../atlas/runs-and-identity.md)). Every page address
+names its run, and every view filter is kept for one run.
 
 - **Stopping Core ends every session.** Everyone signs in again in the new run.
 - **A new run discards the old run's state.** When the tab finds that Core's run
@@ -263,9 +260,10 @@ visible reason.
 Show which gateway carries each radio Asset, and the gateway's own contact, so
 the operator can tell a gateway that is down from radios that went quiet.
 When an Asset is in [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation),
-say so and offer only the overrides it accepts: Land now, Return to home now,
-and pause. Name the rule that fired and why, its response and its outcome, and
-whether a fallback ran. If the flight controller's own protection took over,
+say so and offer only the
+[overrides it accepts](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation):
+Land now, Return to home now, Hold now, and pause. Name the rule that fired
+and why, its response and its outcome, and whether a fallback ran. If the flight controller's own protection took over,
 say so rather than naming an Atlas rule. Show the Asset's failsafe rules where
 an operator can read and replace them outside a failsafe.
 

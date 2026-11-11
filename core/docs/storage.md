@@ -52,8 +52,8 @@ unique `asset_id`s, `task_id`s, `track_id`s, `geofeature_id`s, and idempotency k
 within one `run_id`. `event_id` keeps rising across runs and is never reused.
 
 When a run ends, Core writes its Reset ZIP, checks it, and then deletes the
-run's rows and files. Accounts and the keys of Assets, gateways, and Plugins
-belong to no run and stay. Assets do not: each one registers anew every run.
+run's rows and files. Accounts and keys belong to no run and stay
+([what carries over](../../atlas/runs-and-identity.md#what-carries-over)).
 Normally the database holds only the current run. An earlier run stays only
 while its ZIP has not been written; Core retries it at each start and never
 serves it through the Core API.
