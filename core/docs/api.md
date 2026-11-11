@@ -35,8 +35,8 @@ explains why the API is the only way in.
 | `400 invalid` | The body fails Protocol's validator; `explanation` lists the paths |
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
-| `404` | No such Asset, Task, account, Plugin, Plugin call, geo feature, or Object |
-| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, or definitions mismatch |
+| `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
+| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, removed radio, call already answered or ended, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 
 ## Root paths
@@ -87,21 +87,26 @@ and `/debug` belong to no pillar and stay at the top level.
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
 - The first admin account comes from [Core configuration](../config.md).
-- An Asset behind a gateway holds no Core key and never calls this API. It
-  authenticates to its gateway in whatever way its Fieldlink uses. That design is
-  [deferred](#not-defined-yet).
+- A radio Asset holds no Core key and never calls this API. It authenticates to
+  its gateway with its own radio identity, as
+  [every Fieldlink provides](../../gateway/README.md#what-every-fieldlink-provides).
 
 ## The event log and live stream
 
-Core adds one event for every accepted request and stored report, in the same
+Core adds one event for every accepted request, stored report, and Fusion
+change to a Track, in the same
 transaction as the change it records ([storage](storage.md)). Each event is
 `{event_id, time, kind, record}`: a rising integer, Core's receive time in
-milliseconds, one of the kinds below, and its record.
+milliseconds, one of the kinds below, and its record. Geo feature events also
+carry `requested_by`, because their record names no author. A report event that
+Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
+`clock_ahead: true`.
 
 | Kind | Added when | Record |
 | --- | --- | --- |
 | `asset.provisioned`, `asset.removed` | An admin adds or removes an Asset, or a gateway adds a radio Asset | `provisioning` |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
+| `asset.carried` | A radio Asset moves to the gateway that heard it, or its gateway is removed | `asset_id`, and `gateway_id` unless no gateway carries it |
 | `plugin.provisioned`, `plugin.removed` | An admin adds or removes a Plugin | `provisioning` |
 | `plugin.described` | A Plugin sends its description | Its Plugin description record |
 | `plugin.contact` | Core's view of a Plugin's contact changes | `contact` |
@@ -113,13 +118,19 @@ milliseconds, one of the kinds below, and its record.
 | `object.deleted` | An operator deletes an Object | `object_id`, `requested_by` |
 | `asset.described` | The Asset sends its description | Its description record |
 | `asset.contact` | Core's view of the Asset's contact changes | `contact` |
-| `definitions.refused` | An Asset, gateway, or Plugin connects with a different definitions hash | Its `asset_id`, `gateway_id`, or `plugin_id`, and its hash |
+| `gateway.contact` | Core's view of the gateway's contact changes | `contact` |
+| `definitions.refused` | An Asset, gateway, radio, or Plugin connects with a different definitions hash | Its `asset_id`, `gateway_id`, or `plugin_id`, and its hash. For a radio: the `gateway_id`, the radio identity, its `asset_id` if it has one, and its hash |
+| `radio.refused` | A gateway hears a radio whose Asset an admin removed | `gateway_id`, the radio identity, and the removed `asset_id` |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `task.dropped` | Core discards a Task the Asset never confirmed it holds | `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `asset_id`, `request_id` |
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
 | `cancel.requested` | An operator cancels a Task | `asset_id`, `task_id`, `requested_by` |
-| `report.<name>` | Core stores an Asset report | The report record |
+| `report.<name>` | Core stores an Asset report, including `report.observation` | The report record |
+| `track.updated` | Fusion creates or changes a Track | `track` |
+| `track.removed` | Fusion removes a Track | The `track` as it last stood |
+| `geofeature.created`, `geofeature.replaced` | A caller creates or replaces a geo feature | `geofeature`, and the event carries `requested_by` |
+| `geofeature.deleted` | A caller deletes a geo feature | The `geofeature` as it last stood, and the event carries `requested_by` |
 
 `GET /events?after=<event_id>&asset_id=<id>` is a Server-Sent Events stream. Each
 message has `id: <event_id>`, `event: <kind>`, and the event as `data`. Both
@@ -210,12 +221,21 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 | Request | Returns |
 | --- | --- |
-| `GET /entities/assets` | Every Asset: description, contact, latest reports, and each setting's latest value |
+| `GET /entities/assets` | Every Asset: description, contact, the gateway carrying it, latest reports except `report.observation` (see [Observations](#observations)), each setting's latest value, and each declared subsystem's latest condition; and each gateway's contact |
 | `GET /entities/assets/{asset_id}` | One Asset, the same way |
 | `GET /tasks/{asset_id}` | Task bodies, latest states, and the Tasks the Asset reports holding |
 | `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
+| `GET /history/tracks?track_id&since&until&cursor&limit` | Stored `track.updated` and `track.removed` events, ordered by the Track's `time`, then `event_id`, paged the same way |
+| `GET /history/geofeatures?geofeature_id&since&until&cursor&limit` | Stored geo feature events in `event_id` order, paged the same way |
 
-The rest of the picture is under [Entities](#entities).
+Track and geo feature history is what review replays: a Track's past path, and
+each geo feature as it stood at the time being replayed, including ones deleted
+later. A Track's past path follows its sighting times, as an Asset's trail
+follows report times, so `since` and `until` compare with the Track's `time`;
+a `track.removed` event sorts at the event's own `time`. For geo features they
+compare with the event's `time`. Only
+accounts and Plugins read them. The rest of the picture is under
+[Entities](#entities).
 
 ## Asset and gateway calls
 
@@ -252,10 +272,10 @@ An Asset on IP starts or reconnects in this order:
   caught up with it.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key. It also sends `PUT /entities/assets/{asset_id}/contact` with a `contact`
-record whenever its Fieldlink's view of that Asset changes. Only a gateway
-may send it, for an Asset it carries and named by the path; any other caller
-gets `403`. Core
+key, once it has [named the radio](#radio-assets). It also sends
+`PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
+Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
+it carries and named by the path; any other caller gets `403`. Core
 authenticates the gateway and trusts it for which Asset sent what. Each Asset
 authenticates to the gateway, not to Core.
 
@@ -264,6 +284,34 @@ broadband speed, so the gateway follows the event stream for every Asset it
 carries, keeps their current state, and sends over the radio only what each
 Asset does not already have. Tasks may cross the radio one at a time and in any
 order, because the Asset orders them by `task_id`.
+
+### Radio Assets
+
+[Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves) owns the
+results; these are the calls behind them.
+
+- Each time a radio's link to it opens, including after a gateway restart, the
+  gateway sends `POST /entities/assets/radios` with the radio identity and the
+  radio's definitions hash. Core answers
+  `200 {asset_id}`:
+  - a radio Core knows keeps its `asset_id`;
+  - a radio an admin set up in advance gets the `asset_id` the admin chose;
+  - a radio Core has never seen becomes a new Asset with an `asset_id` Core
+    assigns, and Core adds `asset.provisioned` with the gateway as `requested_by`.
+
+  If another gateway, or none, carried the Asset, Core records the calling
+  gateway as its carrier and adds `asset.carried`.
+- Core refuses a radio whose Asset an admin removed with `409 radio_removed` and
+  adds `radio.refused`. Otherwise it refuses a different definitions hash with
+  `409 definitions_mismatch` and adds `definitions.refused`. Neither refusal adds
+  an Asset.
+- A gateway acts only for the Assets it carries. Its calls for any other Asset
+  get `403`.
+- An admin who provisions a radio identity that a provisioned Asset holds gets
+  `409`. An admin may provision a removed radio again, under any `asset_id`;
+  that ends its refusal.
+- Removing a gateway leaves its radio Assets in place, offline, and carried by
+  no gateway. Replacing its key changes nothing for them.
 
 ## Contact
 
@@ -275,6 +323,11 @@ order, because the Asset orders them by `task_id`.
   `offline_after_s`. An open event stream is not evidence of contact. An
   Asset with nothing to report posts an empty report batch often enough to stay
   online. Core adds an `asset.contact` event when its view changes.
+- **A gateway's contact.** A gateway is online while Core has heard from it
+  within `offline_after_s`. Every request it makes with its key counts, but an
+  open event stream does not; with nothing else to send, it calls `GET /about`
+  with its key. Core adds a
+  `gateway.contact` event when its view changes.
 - **The Asset's view.** On IP, the Asset is in contact while its stream is open
   and data or keepalives arrive. It loses contact after its `link_loss_after_s`
   with neither. Through a Fieldlink, the Fieldlink supplies contact. Contact loss
@@ -288,9 +341,9 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | --- | --- |
 | `POST /administration/login`, `POST /administration/logout`, `GET /administration/me` | Start, end, and read a session |
 | `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
-| `POST /administration/assets` | Provision an Asset on IP; returns its `asset_id` and key once |
+| `POST /administration/assets` | Provision an Asset with the `asset_id` the admin chooses. An Asset on IP gets its key once. A radio Asset names its radio identity and gets no key |
 | `POST /administration/assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
-| `DELETE /administration/assets/{asset_id}` | Remove an Asset |
+| `DELETE /administration/assets/{asset_id}` | Remove an Asset. A removed radio is refused until an admin provisions it again |
 | `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
 | `POST /administration/gateways/{gateway_id}/key` | Replace a gateway key; returns the new key once |
 | `POST /administration/plugins`, `DELETE /administration/plugins/{plugin_id}` | Provision or remove a Plugin; provisioning returns its `plugin_id` and key once |
@@ -338,9 +391,76 @@ differently.
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
 | `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. Tasks may name a `geofeature_id`. |
 
-The request and record shapes for `GET /entities`, `/entities/observations`,
-`/entities/tracks`, and `/entities/geofeatures` are not designed yet. Objects
-are not Entities.
+Objects are not Entities.
+
+### Read the picture
+
+| Request | Returns |
+| --- | --- |
+| `GET /entities` | `{as_of, assets, observations, tracks, geofeatures}`: one consistent cut of the whole picture |
+| `GET /entities/observations` | `{as_of, items}`: every Observation |
+| `GET /entities/tracks` | `{as_of, items}`: every Track |
+| `GET /entities/tracks/{track_id}` | `{as_of, item}`: one Track |
+| `GET /entities/geofeatures` | `{as_of, items}`: every geo feature |
+| `GET /entities/geofeatures/{geofeature_id}` | `{as_of, item}`: one geo feature |
+
+- **A read and an event look the same.** Each Observation, Track, and geo feature
+  item is exactly the Protocol record the event stream carries for it:
+  `report.observation`, `track`, or `geofeature`. A reader applies a read and a
+  later event the same way. Asset entries keep the shape of
+  [`GET /entities/assets`](#reads).
+- **No filters or paging.** At Atlas's [scale](../../atlas/scale.md) the whole
+  picture stays small, so every read returns all of it.
+- **Accounts and Plugins read the picture.** A Plugin uses this same API with
+  its Plugin key, through the [Plugin interface](#plugins).
+  Assets and gateways get `403` on these paths and keep only their own
+  `/entities/assets/{asset_id}` calls.
+- **Nothing expires during a run.** Observations stay in the picture for the
+  whole run, and a Track stays until Fusion removes it. Core adds no stale
+  status. Every record keeps its `time`, and readers show its age. A status
+  that changed only because time passed would have no event, so a reader could
+  not follow it from a snapshot.
+
+### Observations
+
+An Observation is the latest `report.observation` for one `asset_id` and
+`observation_id`, ordered by report time and then `event_id`, as settings are.
+A report marked `clock_ahead` never becomes the latest. The Asset chooses
+`observation_id` and posts its reports through
+[`POST /entities/assets/{asset_id}/reports`](#asset-and-gateway-calls). Each
+report is whole, so the latest report is the whole Observation. Earlier reports
+are [history](#reads). An Observation changes only when its Asset reports.
+
+### Tracks
+
+Only [Fusion](fusion.md) creates, changes, or removes a Track, through the
+Entities pillar's functions. Core assigns its `track_id` and never reuses it in
+the run. No caller writes, moves, renames, or deletes a Track; an operator who
+disagrees with one hides it in their own view. Each change adds `track.updated`,
+and a removal adds `track.removed`.
+
+### Geo features
+
+| Request | Body | Result |
+| --- | --- | --- |
+| `POST /entities/geofeatures` | `requests.geofeature` | `200 {geofeature, event_id}` |
+| `PUT /entities/geofeatures/{geofeature_id}` | `requests.geofeature` | `200 {geofeature, event_id}` |
+| `DELETE /entities/geofeatures/{geofeature_id}` | Nothing | `200 {event_id}` |
+
+- These are local edits. Nothing goes to an Asset, so Core answers `200` with
+  the stored result, not `202`. The [retry rules](#basics) apply as to every
+  change.
+- `POST` creates a geo feature, and Core assigns its `geofeature_id`. `PUT`
+  replaces one whole, so a name left out is cleared and its shape may change
+  kind. `DELETE` removes it from the picture. Core never reuses a
+  `geofeature_id` in the run, and a deleted one returns `404`.
+- Any admin or operator may create, replace, or delete any geo feature,
+  including one a Plugin made. A Plugin may only create geo features, with its
+  key ([Plugins](#plugins)). Assets and gateways get `403`.
+- The event names who asked with `requested_by`, because the geo feature record
+  names no author. A geo feature a Plugin creates names the Plugin.
+- Editing or deleting a geo feature never changes a Task already sent. Geo
+  features are not sent to Assets.
 
 ## Objects
 
@@ -476,25 +596,12 @@ marked not finished, and an operator who still wants it calls again.
 
 - Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
   defines what a run is.
-- How an Asset authenticates to its gateway. Each Fieldlink decides this for its
-  radio, and the Fieldlinks may share nothing. On Meshtastic, for example, an
-  Asset could be admitted to a channel that every Asset's messages share. Until
-  this is designed, anything that can send on that channel can claim to be any
-  Asset the gateway carries.
-- Which call a gateway uses to add a radio Asset on first contact, how a
-  gateway is bound to the Assets it carries, how a gateway reports a radio Asset that its
-  Fieldlink refused for different definitions, and the Fieldlink docs.
-  [Gateway](../../gateway/README.md) owns that design.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
-- The rest of the Entities API: `GET /entities`, `/entities/observations`,
-  `/entities/tracks`, and `/entities/geofeatures`, as [sketched above](#entities).
-  `/entities/assets` is already specified.
 - Protocol records for the events this page lists by field: `definitions.refused`,
-  `task.dropped`, and `request.dropped`.
-- Gateway contact events. The `contact` record already names a gateway;
-  [Gateway](../../gateway/README.md) owns when Core records it.
+  `radio.refused`, `asset.carried`, `task.dropped`, and `request.dropped`; and
+  Protocol's form of the radio identity and the bodies that carry it.
 - Protocol definitions for Objects and Plugins: the Object record, the Plugin
   description record, the Plugin call, result, and failure records, the
   `object.deleted` and `plugin.dropped` event records, each

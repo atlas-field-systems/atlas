@@ -111,11 +111,14 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
   accounts, Assets, gateways, and Plugins. Sessions use HttpOnly cookies, so every browser
   tab shares one session.
 - An admin adds each gateway, each Asset on IP, and each Plugin in Core and
-  receives its ID and key for its configuration. Keys are bearer tokens over TLS. There is no
-  enrollment key.
-- Core authenticates a gateway. An Asset behind a gateway authenticates to the
-  gateway, not to Core, in whatever way its Fieldlink uses. That is not designed
-  yet.
+  receives its ID and key for its configuration. Keys are bearer tokens over TLS.
+  There is no enrollment key. Only gateways, Assets on IP, and Plugins hold Core
+  keys.
+- Core authenticates a gateway and trusts it for which radio Asset sent what. A
+  radio Asset authenticates to the gateway with its own radio identity, not to
+  Core, and appears as an Asset when the gateway first hears it.
+  [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md)
+  owns these rules.
 - TLS secures IP links. Each Fieldlink uses its radio's own encryption and
   authentication. Records never carry credentials.
 
@@ -129,6 +132,37 @@ before it. Cancel names its Task. Pause is a setting that holds the active Task
 without ending it; the Task continues on resume. Retries are safe by design:
 creates carry an idempotency key, settings are end states, and each `task_id`
 runs once.
+
+## Evidence and conclusions stay apart
+
+The shared picture holds Assets, Observations, Tracks, and geo features.
+Observations are evidence: what an Asset reports seeing, and they change only
+when it reports. Tracks are conclusions, and only Fusion makes, changes, or
+removes them; an operator who disagrees with a Track hides it in their own view.
+Geo features are places any operator or admin may create, replace whole, or
+delete, and Plugins may create. Nothing in the picture expires during a run, and Core adds no stale
+status: every record keeps its time, and the Command Interface shows its age.
+[Core API, Entities](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities)
+owns the exact rules.
+
+## Failsafes are configured rules, reported apart from Tasks
+
+The Asset runs failsafes locally, and the records follow that
+[behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
+
+- An Asset's failsafe rules are one setting, its failsafe policy, always
+  replaced whole. Any operator may replace it outside failsafe state, as with
+  other settings.
+- A rule's response is always a command the Asset supports. There is no
+  "continue": activation always stops ordinary work, so an Asset that should
+  keep working has no rule for that situation. A battery rule uses a set
+  percentage, not an estimate of the charge needed to get home.
+- A failsafe Task gets no Core `task_id`. Its rule and attempt name it, and its
+  state travels in the failsafe report, apart from Core's numbered Tasks.
+- Once a failsafe latches, it stays latched: ordinary work stays locked for the
+  rest of the operation, and an equal- or lower-priority rule never runs again.
+- Subsystems are declared in the description and reported one at a time. There
+  is no overall Asset condition, and a condition never gates work by itself.
 
 ## Plugin actions and Objects
 

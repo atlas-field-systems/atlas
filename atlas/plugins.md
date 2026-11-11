@@ -13,8 +13,10 @@ uses its tools, often open-source services, to gather and return information.
   [walled city](design-decisions.md#a-walled-city). Each one runs on its own, in
   its own container if it needs one, and connects out to Core with a key an
   admin gave it. It reaches Core only through its Plugin interface, never its
-  storage. Reading Entities, creating geo features, and storing Objects go
-  through that interface.
+  storage. The Plugin interface is the Core API with a Plugin key, not a second
+  protocol. Reading the
+  [shared picture](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#entities),
+  creating geo features, and storing Objects go through that interface.
 - The Core API carries Plugin calls. That is how the Command Interface uses a
   Plugin from outside the city. The [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#plugins)
   has the calls.

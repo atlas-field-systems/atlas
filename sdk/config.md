@@ -22,7 +22,5 @@ Tests may also swap the clock and `fetch`. Those are test hooks, not settings.
 - How Protocol computes the definitions hash and exposes it to the SDK.
 - `maxBatch`, and whether Core caps batch size.
 - Whether the queue helper or the cursor survive a process restart.
-- Gateway binding and contact reports, once
-  [gateway design](../core/docs/api.md#not-defined-yet) exists.
 - Which of these options a host shows to its operator.
 - Event filtering before the observer, and the dropped-event policy.

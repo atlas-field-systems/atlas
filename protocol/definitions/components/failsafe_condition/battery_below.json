@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/battery_below.json",
+  "title": "battery_below",
+  "description": "The battery is below a set percentage.",
+  "type": "object",
+  "required": [
+    "kind",
+    "battery_percent"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "battery_below"
+    },
+    "battery_percent": {
+      "$ref": "../../variables/battery_percent.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "battery_below",
+      "battery_percent": 25
+    }
+  ]
+}

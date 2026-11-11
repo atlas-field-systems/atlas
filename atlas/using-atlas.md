@@ -31,8 +31,8 @@ Core only through the [Core API](https://github.com/atlas-field-systems/atlas/bl
 
 Most physical Assets use the gateway path. The gateway and the radio Asset run the
 same Fieldlink package for their field link. A direct-IP Asset, often a digital
-one, calls the Core API itself. Different gateways can coexist as
-[connectivity evolves](environment.md#connectivity-evolves). The diagram shows
+one, calls the Core API itself. A site runs one gateway at a time, and the
+gateway design can change as [connectivity evolves](environment.md#connectivity-evolves). The diagram shows
 responsibilities, not a required network topology.
 
 The [first-flight setup](first-flight.md) runs the Asset app on a ground Raspberry

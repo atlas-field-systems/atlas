@@ -5,15 +5,16 @@ supported work through configurable [modules and equipment drivers](assets.md).
 This is the selected plan. No runtime exists yet.
 
 Protocol owns the records named here: the description, Task, settings change,
-and cancel, and the task, queue, telemetry, battery, settings, and
+and cancel, and the subsystem, task, queue, telemetry, battery, settings, and
 failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
 ## Start and connect
 
 An admin provisions an Asset on IP in Core and copies its `asset_id` and key into
 its [configuration](../config.md). There is no enrollment key. An Asset behind a
-gateway holds no Core key. How it is set up and authenticates to its gateway is
-[not designed yet](../../core/docs/api.md#not-defined-yet). Once its identity,
+gateway holds no Core key. It authenticates to its gateway with its own radio
+identity and appears in Core when the gateway first hears it
+([Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves)). Once its identity,
 clock, and communications are ready, the Asset connects in the order the
 [Core API](../../core/docs/api.md#asset-and-gateway-calls) sets: check the
 definitions hash, send its description, report its known settings, its queue,
@@ -94,7 +95,8 @@ responds to an empty queue.
 
 ### Tasks that run now
 
-Every command is a Task, including immediate ones. A Task sent with `now` runs
+Every command is a Task, including immediate ones. Hold now, for example, stops
+the Asset where it is and drops the work before it. A Task sent with `now` runs
 at once, even while the Asset is paused, and cancels every Task with a lower
 `task_id`, including Tasks that have not arrived yet. Core admits `now` even
 when 64 Tasks are already outstanding. The Asset reports the Task

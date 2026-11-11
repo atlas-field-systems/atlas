@@ -45,12 +45,14 @@ apply its own [contact rule](../../core/docs/api.md#contact).
 ## Live picture
 
 The live picture is an optional in-memory view of Entities and Tasks for operator
-apps. Assets do not use it. The accessors below cover Assets and Tasks; accessors
-for the other Entity kinds are not designed yet.
+apps. Assets do not use it.
 
 ```ts
 const picture = createLivePicture(atlas, { asset_id });   // asset_id optional
 picture.assets();        // { ready, stale, items }
+picture.observations();  // { ready, stale, items }
+picture.tracks();        // { ready, stale, items }
+picture.geofeatures();   // { ready, stale, items }
 picture.tasks(asset_id); // { ready, stale, items }
 picture.onChange(cb);
 ```
@@ -65,7 +67,15 @@ picture.onChange(cb);
 - **Per-setting latest values.** A `report.settings` changes only the settings it
   contains. Each setting keeps its own latest value and the report it came from,
   ordered by report time and then `event_id`, so a retained report received
-  after a gap never replaces a newer value.
+  after a gap never replaces a newer value. A subsystem report works the same
+  way: each declared subsystem keeps its own latest condition.
+- **Observations, Tracks, and geo features.** Each item is the record the event
+  stream carries ([Entities](../../core/docs/api.md#entities)). A
+  `report.observation` replaces its Observation only when it is newer by report
+  time and then `event_id`, and its event is not marked `clock_ahead`. `track.updated` and `geofeature.created` or
+  `geofeature.replaced` replace the item; `track.removed` and
+  `geofeature.deleted` remove it. The picture adds no stale flag; each item
+  keeps its `time`.
 - **Evidence stays separate.** Requests show as requested until reports arrive.
   Contact comes from `asset.contact` events. Neither stream state nor picture
   readiness means the equipment is ready.

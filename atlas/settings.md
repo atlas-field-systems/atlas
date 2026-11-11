@@ -25,6 +25,8 @@ It does not wait in the queue or go through a Task's steps.
   The Task underway stays active while held and continues on resume.
 - A settings Task can pause an Asset inside a queue. It waits there until
   someone resumes it, for example: fly here, pause, wait for the operator, continue.
+- The failsafe rules are one setting, the failsafe policy, always replaced
+  whole. Any operator can replace it outside a failsafe.
 - An applicable failsafe overrides ordinary settings, including paused, and the
   Asset carries out its configured safe response. The operator can still pause
   as an [override](first-flight.md#when-something-goes-wrong). The Asset owns
