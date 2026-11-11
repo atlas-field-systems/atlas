@@ -29,16 +29,33 @@ uses its tools, often open-source services, to gather and return information.
 
 ## Actions
 
-Each Plugin lists its actions, and each action takes its own inputs. Protocol
-defines every action's inputs and its list output, so Core checks a call and its
-answer the same way it checks a Task. An action returns one of two kinds of
-output, or both:
+Each Plugin describes its own actions, like a form: a name, a label, and the
+inputs each one takes. Inputs come from a fixed set of common pieces Atlas
+defines: an area, a position, a time, a place already on the map, a number, a
+short text, or a choice from a list the Plugin gives. An input may be optional.
+Core checks every call against the Plugin's form and every answer against
+Atlas's one answer shape, so adding or changing a Plugin never changes
+Protocol. Each action also carries its display choices, which ship with the
+Plugin: optional help text, whether it appears in the right-click menu of an
+area, a place, or a point, and whether its listed places show on the map by
+default. The Command Interface builds each action's form, menu entry, and
+result view from the description. A new kind of common piece is a Protocol change the owner decides.
 
-- **A list.** The output is the list itself, returned to the caller.
-- **A reference.** The Plugin creates geo features or Objects in Core, and the
-  output names them. The result stays in Core, where the operator can find it
-  later. Plugins create nothing else: Observations come only from Assets, and
-  only Fusion creates Tracks.
+An answer is made of the same three things for every action, in any mix:
+
+- **Places.** Points, lines, areas, or imagery the Plugin lists and returns
+  to the caller, such as "Main St Hospital" at a position. They are not stored as geo
+  features.
+- **Short facts.** A label and a value, such as "Wind: 12 m/s from the west".
+- **References.** The Plugin creates geo features or Objects in Core, and the
+  answer names them. They stay in Core, where the operator can find them later.
+  Plugins create nothing else: Observations come only from Assets, and only
+  Fusion creates Tracks.
+
+An empty answer means the Plugin found nothing. A list never holds more than
+1000 items. A Plugin that would need more fails with a clear message, such as
+"Area too large, pick a smaller area", so a partial list is never mistaken for
+the whole answer.
 
 ## What the operator sees
 
@@ -67,8 +84,15 @@ feature, for example.
   its Objects.
 - A file may be at most 100 MB unless an admin changes the limit.
 - Files from Assets, such as drone photos, are not designed yet.
+- A GeoTIFF, an image that carries its own map position, can be shown on the
+  map as an imagery geo feature. Operators and Plugins add imagery. It can be
+  renamed or deleted, never moved or reshaped. Deleting it leaves the file, and
+  a file that imagery still shows cannot be deleted until the imagery is.
 
 ## Examples
+
+These show how Plugins could be used. No specific Plugin or action is part of
+the first build.
 
 ### Find the buildings in an area
 
@@ -87,8 +111,9 @@ is a reference to that geo feature.
 ### Gather imagery for an intelligence package
 
 The operator passes an area and asks for satellite imagery of it. The Plugin
-collects imagery available through its tools and stores it in Core, for example
-as Objects. The output refers to what it stored.
+collects GeoTIFF imagery through its tools, stores each file as an Object, and
+adds an imagery geo feature for each, so the images show on the map where they
+belong. The output refers to what it stored.
 
 ### Ground elevation for an Asset (later)
 
@@ -127,9 +152,4 @@ a barometer or the altitude of its launch point.
 
 [Plugins and Objects in the interface](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/plugins-and-objects.md)
 shows how operators run Plugins and see their results and Objects. A new Plugin
-needs no change to the Command Interface. Which actions Protocol defines first is not decided.
-
-This case is borderline and needs a decision before such a Plugin is built:
-
-- **Detecting objects in an uploaded photo.** The call fits, but the results
-  would be Observations, which today come only from Assets.
+needs no change to the Command Interface.

@@ -7,7 +7,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
 | Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time, and each radio Asset is carried by that gateway. Core authenticates the gateway; the Assets it carries authenticate to it. A gateway is not an Asset. |
 | Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
-| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It is public, not a secret. Only the radio that holds it can speak as its Asset. |
+| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It is public, not a secret. Only the radio that holds it can speak as its Asset. It stays with the gateway and its Fieldlink; Core does not hold it. |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
 | Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
 | Shared picture | Everything the Entities pillar holds about the field: Assets, Observations, Tracks, and geo features. The Command Interface draws its map from it. Nothing in it expires during a run. |
@@ -18,7 +18,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Object | A file Core holds, with a description of what it is. An Object never changes; a different file is a new Object. Plugins and operators add Objects. It may be attached to one geo feature. Objects are not Entities. |
 | Plugin | A program beside Core, in the second ring, that offers actions. It connects out to Core with its own key and reaches Core only through its Plugin interface. Plugins do not direct Assets. See [Plugins](atlas/plugins.md). |
 | Plugin interface | The Core API calls a Plugin's key may use. |
-| Plugin action | One thing a Plugin offers to do, such as find the buildings in an area. Its inputs and output are defined in Protocol. |
+| Plugin action | One thing a Plugin offers to do, such as find the buildings in an area. The Plugin describes it and its inputs, built from Protocol's common pieces; Protocol does not list actions. |
 | Plugin call | One run of a Plugin action with its inputs. It ends with a result or a failure, or is dropped if the Plugin goes offline or is removed first. |
 | View filter | An operator's choice to hide items in their own view, such as old sightings or a Track they disagree with. It belongs to one browser and one run, never changes the shared picture, and other operators never see it. |
 | Result overlay | A Plugin's listed results drawn on one operator's map. It never enters the shared picture; the operator saves an item as a place to share it. |
@@ -32,7 +32,8 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
 | Pause | A setting that holds an Asset in place. The active Task stays active and continues when the Asset is set running again. |
 | Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
-| Provisioning | Adding an Asset or gateway to Core, or removing it, done by an admin, or by a gateway for a radio Core has never seen. |
+| Provisioning | An admin adding or removing an account, or the key of an Asset on IP, a gateway, or a Plugin. Provisioning carries across runs; Assets themselves join by registration. |
+| Registration | An Asset joining the current run. An Asset on IP registers itself with its key, and a gateway registers each radio Asset it hears. Core assigns the `asset_id` and its acknowledgement tells the registrant. Every Asset registers anew each run and keeps its ID for the rest of that run. |
 | Task | One instance of requested work with a reported execution outcome. |
 | Hold | A command that stops an Asset where it is and keeps it there. Unlike pause, it keeps no earlier work to resume. |
 | Subsystem | A part of an Asset, hardware or equipment software, that the Asset declares and reports a condition for, such as a GPS receiver or camera. |
