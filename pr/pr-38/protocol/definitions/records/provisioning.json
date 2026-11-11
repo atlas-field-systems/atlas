@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/provisioning.json",
   "title": "Provisioning",
-  "description": "An Asset, gateway, or Plugin was added to Core or removed from it. It names exactly one of asset_id, gateway_id, or plugin_id. The event kind says whether it was provisioned or removed, so the record does not. requested_by is the admin who did it, or the gateway that added a radio Asset on first contact. A radio Asset's record also names its radio_identity. What kind of Asset it is comes later, from its description.",
+  "description": "An Asset, gateway, or Plugin was added to Core or removed from it. It names exactly one of asset_id, gateway_id, or plugin_id. The event kind says whether it was provisioned or removed, so the record does not. requested_by is the admin who did it, or the gateway that added a radio Asset on first contact. What kind of Asset it is comes later, from its description.",
   "type": "object",
   "required": [
     "time",
@@ -22,9 +22,6 @@
     "plugin_id": {
       "$ref": "../variables/plugin_id.json"
     },
-    "radio_identity": {
-      "$ref": "../variables/radio_identity.json"
-    },
     "requested_by": {
       "$ref": "../variables/requested_by.json"
     }
@@ -43,8 +40,7 @@
     {
       "time": 1793667605000,
       "asset_id": "R7",
-      "requested_by": "G1",
-      "radio_identity": "meshtastic:q3Vb0n8fW2aJ6kXyR1tLmE4sP9dZcHgU7oNiTvB5wQA="
+      "requested_by": "G1"
     },
     {
       "time": 1793667600000,
@@ -71,18 +67,6 @@
           ]
         }
       ]
-    },
-    {
-      "if": {
-        "required": [
-          "radio_identity"
-        ]
-      },
-      "then": {
-        "required": [
-          "asset_id"
-        ]
-      }
     }
   ]
 }

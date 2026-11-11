@@ -62,14 +62,14 @@ page disagree, fix one of them.
 
 ## Administration and contact
 
-- One `provisioning` record covers an Asset or a gateway being added or removed. The event kind says which, so the record does not. It names `asset_id` or `gateway_id`, and `requested_by`: the admin, or the gateway that added a radio Asset on first contact. What an Asset is comes from its description, not from provisioning.
+- One `provisioning` record covers an Asset, gateway, or Plugin being added or removed. The event kind says which, so the record does not. It names its ID and `requested_by`: the admin, or the gateway that added a radio Asset on first contact. What an Asset is comes from its description, not from provisioning.
 - Key replacements, logins, and account changes have no shared record. They stay in Core's diagnostic log.
 - One `contact` record says whether an Asset or gateway is `online` or `offline`. Its `time` is when it was last heard, so an offline record keeps that time and the record still has one time. Core uses it for `asset.contact`, and a gateway sends it for each Asset it carries, with its Fieldlink deciding online or offline.
-- `provisioning` and `contact` name exactly one of `asset_id`, `gateway_id`, or `plugin_id`. A radio Asset's `provisioning` also names its `radio_identity`.
+- `provisioning` and `contact` name exactly one of `asset_id`, `gateway_id`, or `plugin_id`.
 - `requested_by` names an account, a gateway, or a Plugin. Core keeps operator, gateway, and Plugin IDs distinct.
-- **A `radio_identity` is the Fieldlink's name, a colon, and the identity** in the form that Fieldlink's docs define, such as `meshtastic:` and a node's public key. The name keeps identities from different kinds of link apart.
+- **No record carries a radio identity.** It stays with the gateway and its Fieldlink; Core knows radio Assets only by `asset_id`.
 - `carrier` records which gateway carries a radio Asset, or none, for `asset.carried`.
-- One `drop` record covers `task.dropped`, `request.dropped`, and `plugin.dropped`; one `refusal` record covers `definitions.refused` and `radio.refused`. The event kind says which, as for `provisioning`.
+- One `drop` record covers `task.dropped`, `request.dropped`, and `plugin.dropped`; `refusal` records `definitions.refused`. The event kind says which drop, as for `provisioning`.
 
 ## Limits
 
@@ -87,8 +87,9 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
   optional `geofeature_id`, and `requested_by`, the account or Plugin that
   stored it. `deletion` records an operator deleting one.
 - **Plugins describe their own actions.** `plugin.description` lists each
-  action by name, with a label and its inputs, each a `plugin_input` that names
-  one of the fixed `input_kind` values. A call carries one `input_value` per
+  action by name, with a label, optional `help_text`, and its inputs, each a
+  `plugin_input` that names one of the fixed `input_kind` values. Its display
+  choices are `in_menu` and `show_on_map`, both false when left out. A call carries one `input_value` per
   input given. Protocol does not list actions, so a new Plugin or action needs
   no Protocol change; a new input kind does.
 - **Every action answers the same way.** `plugin.result` holds `places`

@@ -33,12 +33,15 @@ defines: an area, a position, a time, a place already on the map, a number, a
 short text, or a choice from a list the Plugin gives. An input may be optional.
 Core checks every call against the Plugin&#39;s form and every answer against
 Atlas&#39;s one answer shape, so adding or changing a Plugin never changes
-Protocol. The Command Interface can build each Plugin&#39;s form from its
-description. A new kind of common piece is a Protocol change the owner decides.</p>
+Protocol. Each action also carries its display choices, which ship with the
+Plugin: optional help text, whether it appears in the right-click menu of an
+area, a place, or a point, and whether its listed places show on the map by
+default. The Command Interface builds each action&#39;s form, menu entry, and
+result view from the description. A new kind of common piece is a Protocol change the owner decides.</p>
 <p>An answer is made of the same three things for every action, in any mix:</p>
 <ul>
-<li><strong>Places.</strong> Points, lines, or areas the Plugin lists and returns to the
-caller, such as &quot;Main St Hospital&quot; at a position. They are not stored as geo
+<li><strong>Places.</strong> Points, lines, areas, or imagery the Plugin lists and returns
+to the caller, such as &quot;Main St Hospital&quot; at a position. They are not stored as geo
 features.</li>
 <li><strong>Short facts.</strong> A label and a value, such as &quot;Wind: 12 m/s from the west&quot;.</li>
 <li><strong>References.</strong> The Plugin creates geo features or Objects in Core, and the

@@ -36,8 +36,7 @@
         "requests/task.json",
         "requests/settings.json",
         "requests/geofeature.json",
-        "requests/plugin_call.json",
-        "requests/radio.json"
+        "requests/plugin_call.json"
       ]
     },
     {
@@ -173,7 +172,6 @@
         "variables/object_id.json",
         "variables/content_type.json",
         "variables/size_bytes.json",
-        "variables/radio_identity.json",
         "variables/definitions_hash.json",
         "variables/action.json",
         "variables/input.json",
@@ -182,7 +180,10 @@
         "variables/choice.json",
         "variables/number.json",
         "variables/text.json",
-        "variables/target_time.json"
+        "variables/target_time.json",
+        "variables/help_text.json",
+        "variables/in_menu.json",
+        "variables/show_on_map.json"
       ]
     }
   ]
