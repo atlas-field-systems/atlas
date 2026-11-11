@@ -14,8 +14,9 @@ An admin creates an Asset key in Core and copies it into the Asset's
 [configuration](../config.md). There is no enrollment key. Every Asset starts
 each run as a new Asset: an Asset on IP registers itself with its key and
 learns its `asset_id` from Core's acknowledgement. An Asset behind a gateway
-holds no Core key; the gateway registers it the first time it hears it in the
-run and tells it its ID
+holds no Core key; a gateway registers it the first time it is heard in the
+run and tells it its ID. It keeps that ID and its work for the rest of the run,
+even if it moves to another gateway
 ([Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves)).
 Nothing picks its own `asset_id`. Once its identity,
 clock, and communications are ready, the Asset connects in the order the

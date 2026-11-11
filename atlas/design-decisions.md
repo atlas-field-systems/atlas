@@ -136,8 +136,10 @@ and [gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/REA
   keys.
 - Every Asset registers anew each run. Core assigns its `asset_id` then, and
   the acknowledgement tells the registrant. An Asset on IP registers with its
-  key; a gateway registers each radio Asset the first time it hears it in a
-  run. A removed Asset may register again and comes back as a new Asset.
+  key; a gateway registers each radio Asset the first time it is heard in a
+  run. Within the run an Asset stays the same Asset, with its ID and unfinished
+  work, through reconnects and a move to another gateway. A removed Asset may
+  register again and comes back as a new Asset.
 - Core authenticates a gateway and trusts it for which radio Asset sent what. A
   radio Asset authenticates to the gateway through its Fieldlink, never to
   Core.

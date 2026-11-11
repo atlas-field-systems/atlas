@@ -20,7 +20,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `asset_keys` | Administration | Each Asset key's `key_id` and hash |
 | `plugins` | Administration | Provisioned Plugins: ID, key hash, latest description, and contact |
 | `objects` | Objects | Each Object record that is not deleted. The files sit in the `data_directory` beside the database |
-| `assets` | Entities | Each Asset registered in the run: `asset_id`, the Asset key or gateway that registered it, latest description, and contact. A removed Asset keeps its row, marked removed and not listed |
+| `assets` | Entities | Each Asset registered in the run: `asset_id`, the Asset key that registered it or, for a radio, the gateway that carries it, latest description, and contact. A removed Asset keeps its row, marked removed and not listed |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
 | `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
 | `tracks` | Entities | Each current Track, as Fusion last wrote it ([Tracks](api.md#tracks)) |

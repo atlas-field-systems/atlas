@@ -124,6 +124,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | Kind | Added when | Record |
 | --- | --- | --- |
 | `asset.provisioned`, `asset.removed` | An Asset [registers](#asset-and-gateway-calls), a gateway registers a radio Asset, or an admin removes an Asset | `provisioning` |
+| `asset.carried` | A radio Asset moves to the gateway that heard it, or its gateway is removed | `asset_id`, and `gateway_id` unless no gateway carries it |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
 | `plugin.provisioned`, `plugin.removed` | An admin adds or removes a Plugin | `provisioning` |
 | `plugin.described` | A Plugin sends its description | Its Plugin description record |
@@ -315,20 +316,29 @@ order, because the Asset orders them by `task_id`.
 [Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves) owns the
 results; these are the calls behind them.
 
-- When the gateway hears a radio it has no `asset_id` for in this run, it sends
-  `POST /entities/assets/radios` with the radio's definitions hash. Core assigns
-  the next `asset_id`, adds `asset.provisioned` with the gateway as
-  `requested_by`, and answers `201 {asset_id}`. The gateway carries that Asset
-  for the rest of the run, keeps which radio has which ID, and tells the radio
-  its ID through the Fieldlink. Core keeps nothing about the radio itself.
+- Each time a radio's link to it opens, the gateway sends
+  `POST /entities/assets/radios` with the radio's definitions hash and, if the
+  radio already holds an `asset_id` from this run, that ID. The radio states it
+  through its Fieldlink, which keeps another radio from claiming it. Core
+  answers:
+  - for a radio Asset of this run that an admin has not removed, `200 {asset_id}`
+    with the same ID. The radio stays the same Asset with its Tasks and
+    settings. If another gateway, or none, carried it, Core records the calling
+    gateway as its carrier and adds `asset.carried`;
+  - otherwise, `201 {asset_id}` with the next `asset_id`, and Core adds
+    `asset.provisioned` with the gateway as `requested_by`. This covers a radio
+    new to the run and a radio whose Asset an admin removed.
+
+  The gateway tells the radio its ID through the Fieldlink. The radio keeps the
+  ID only for the run it was given in; in the next run it registers as a new
+  Asset. Core keeps nothing about the radio itself.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
   adds `definitions.refused`. The refusal adds no Asset.
-- When an admin removes a radio Asset, the gateway forgets that radio's ID. If
-  it hears the radio again, it registers it as a new Asset.
-- A gateway acts only for the Assets it registered. Its calls for any other
-  Asset get `403`.
-- Removing a gateway leaves its radio Assets in the picture, offline. Replacing
-  its key changes nothing for them.
+- A gateway acts only for the Assets it carries. Its calls for any other Asset
+  get `403`.
+- Removing a gateway leaves its radio Assets in the picture, offline, and
+  carried by no gateway, until another gateway hears them. Replacing its key
+  changes nothing for them.
 
 ## Contact
 
@@ -616,7 +626,8 @@ marked not finished, and an operator who still wants it calls again.
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
 - Protocol records for the events this page lists by field: `definitions.refused`,
-  `task.dropped`, and `request.dropped`; and the body that registers a radio Asset.
+  `asset.carried`, `task.dropped`, and `request.dropped`; and the body that
+  registers a radio Asset.
 - Protocol definitions for Objects and Plugins: the Object record, the Plugin
   description record, the Plugin call, result, and failure records, the
   `object.deleted` and `plugin.dropped` event records, each

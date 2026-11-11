@@ -55,10 +55,13 @@ Each Fieldlink's own docs say how it meets these rules, once written.
 These are the results operators and admins see. The calls behind them are in the
 [Core API](../core/docs/api.md#radio-assets).
 
-- **A radio appears on its own.** The first time the gateway hears a radio in a
+- **A radio appears on its own.** The first time a gateway hears a radio in a
   run, it registers the radio and Core adds it as a new Asset with the
   `asset_id` Core assigns. There is no approval step, and no admin sets up a
   radio or picks its ID. The event log records that the gateway added it.
+- **A radio stays the same Asset for the whole run.** It keeps its `asset_id`,
+  its Tasks, and its settings, including when it reconnects or moves to another
+  gateway.
 - **Every run starts fresh.** A radio does not keep its `asset_id` across runs.
   In the next run it registers again and appears as a new Asset.
 - **A removed radio can come back.** When an admin removes a radio Asset and the
@@ -72,10 +75,11 @@ These are the results operators and admins see. The calls behind them are in the
 
 - **Its key is replaced.** The radios are unaffected. The gateway reconnects with
   its new key.
-- **It is removed.** Its radio Assets stay in the picture for the rest of the
-  run and show offline.
-- **A new gateway is added.** It registers each radio it hears as a new Asset,
-  with no admin step for each radio.
+- **It is removed.** Its radio Assets stay in the picture and show offline,
+  carried by no gateway. They are still the same Assets.
+- **A new gateway is added.** Each radio identifies itself to it through its
+  Fieldlink and moves to it as soon as it is heard, keeping its ID and its
+  unfinished work, with no admin step for each radio.
 
 ## Gateway contact
 
@@ -135,8 +139,10 @@ Behavior tests come from these, once the gateway exists.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
 - Stop the gateway. The gateway and every radio it carries show offline after
   `offline_after_s`.
-- Remove the gateway and add a new one. The old gateway's radio Assets show
-  offline, and the new gateway registers each radio it hears as a new Asset.
+- Remove the gateway and add a new one during a run. Each radio moves to the
+  new gateway when it is heard, keeping its ID and the Tasks it still holds.
+- Remove the gateway and add none. Its radio Assets stay in the picture,
+  offline, until another gateway hears them.
 - Stop Core and start it again while the gateway runs. The gateway writes one
   ZIP for the run that ended, and each radio it hears in the new run registers
   as a new Asset.
