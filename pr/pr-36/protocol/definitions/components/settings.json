@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/settings.json",
+  "title": "settings",
+  "description": "An Asset's settings, each an explicit end state. At least one is present. home_position is where return_to_home goes. The Asset sets it to where it starts up, and an operator can move it. failsafe_policy is the Asset's complete list of failsafe rules, up to 16, always replaced whole; an empty list means no rules. A settings change applies it at once, and a Task of kind settings applies it when the Task runs. The Asset checks a new policy whole and keeps its old one if any part is invalid or if it is in failsafe state.",
+  "type": "object",
+  "additionalProperties": false,
+  "minProperties": 1,
+  "properties": {
+    "run_state": {
+      "$ref": "../variables/run_state.json"
+    },
+    "lights": {
+      "$ref": "../variables/lights.json"
+    },
+    "landing_gear": {
+      "$ref": "../variables/landing_gear.json"
+    },
+    "link_loss_after_s": {
+      "$ref": "../variables/link_loss_after_s.json"
+    },
+    "failsafe_policy": {
+      "type": "array",
+      "items": {
+        "$ref": "failsafe_rule.json"
+      },
+      "minItems": 0,
+      "maxItems": 16
+    },
+    "home_position": {
+      "$ref": "position.json"
+    },
+    "telemetry_every_s": {
+      "$ref": "../variables/telemetry_every_s.json"
+    }
+  },
+  "examples": [
+    {
+      "run_state": "running",
+      "lights": "off",
+      "landing_gear": "down",
+      "link_loss_after_s": 30,
+      "failsafe_policy": [
+        {
+          "rule_id": "LB1",
+          "priority": 90,
+          "conditions": [
+            {
+              "kind": "battery_below",
+              "battery_percent": 15
+            }
+          ],
+          "response": {
+            "kind": "land"
+          }
+        },
+        {
+          "rule_id": "LB2",
+          "priority": 80,
+          "conditions": [
+            {
+              "kind": "battery_below",
+              "battery_percent": 25
+            },
+            {
+              "kind": "airborne"
+            }
+          ],
+          "response": {
+            "kind": "return_to_home"
+          },
+          "fallback": {
+            "kind": "land"
+          }
+        },
+        {
+          "rule_id": "CL1",
+          "priority": 50,
+          "conditions": [
+            {
+              "kind": "contact_lost"
+            },
+            {
+              "kind": "airborne"
+            },
+            {
+              "kind": "idle",
+              "for_s": 0
+            }
+          ],
+          "response": {
+            "kind": "return_to_home"
+          },
+          "fallback": {
+            "kind": "land"
+          }
+        }
+      ],
+      "home_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      },
+      "telemetry_every_s": 1
+    },
+    {
+      "lights": "on"
+    },
+    {
+      "failsafe_policy": []
+    }
+  ]
+}

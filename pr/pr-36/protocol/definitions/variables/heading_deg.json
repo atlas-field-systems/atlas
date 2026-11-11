@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/heading_deg.json",
+  "title": "heading_deg",
+  "description": "Direction the Asset is pointing, in degrees clockwise from true north (0 up to 360).",
+  "type": "number",
+  "minimum": 0,
+  "exclusiveMaximum": 360,
+  "examples": [
+    90
+  ]
+}
