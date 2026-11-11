@@ -74,6 +74,7 @@ const cases = [
   ['a failsafe response that takes a settings change', ({ edit }) => edit('components/failsafe_response.json', (s) => { s.oneOf.push({ $ref: '../records/task/settings.json' }); }), /components\/failsafe_response\.json: law 12/],
   ['a component kind that no component uses', ({ edit }) => edit('components/failsafe_condition.json', (s) => { s.oneOf = s.oneOf.filter((b) => b.$ref !== 'failsafe_condition/airborne.json'); s.examples = s.examples.filter((e) => e.kind !== 'airborne'); }), /components\/failsafe_condition\/airborne\.json: law 5: no record or component uses this kind/],
   ['a component kind without an example', ({ edit }) => edit('components/failsafe_condition.json', (s) => { s.examples = s.examples.filter((e) => e.kind !== 'idle'); }), /components\/failsafe_condition\.json: needs an example of kind "idle"/],
+  ['a component kind listed twice', ({ edit }) => edit('components/failsafe_condition.json', (s) => { s.oneOf.push(s.oneOf[0]); }), /components\/failsafe_condition\.json: law 5: kinds must be unique/],
   ['a component with kinds that allows extra fields', ({ edit }) => edit('components/failsafe_condition.json', (s) => { delete s.unevaluatedProperties; }), /law 5: a component with kinds sets unevaluatedProperties to false/],
   ['a list without a length limit', ({ edit }) => edit('records/report/status/queue.json', (s) => { delete s.properties.task_ids.maxItems; }), /law 9: list "task_ids" needs a maxItems/],
 ];

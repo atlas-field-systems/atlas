@@ -98,6 +98,8 @@ for (const [file, s] of Object.entries(schemas)) {
   if (file.startsWith('components/') && s.oneOf) {
     if (s.unevaluatedProperties !== false || s.additionalProperties !== undefined) errors.push(`${file}: law 5: a component with kinds sets unevaluatedProperties to false (and no additionalProperties)`);
     if (!s.required?.includes('kind') || !refTo(file, props.kind, 'variables/kind.json') || props.kind.const !== undefined) errors.push(`${file}: law 5: a component with kinds requires "kind" from variables/kind.json, left open`);
+    const targets = s.oneOf.map((b) => b.$ref && resolve(file, b.$ref));
+    if (new Set(targets).size !== targets.length) errors.push(`${file}: law 5: kinds must be unique`);
     for (const b of s.oneOf) {
       const target = b.$ref && resolve(file, b.$ref);
       if (Object.keys(b).join() !== '$ref' || !isKind(target)) { errors.push(`${file}: law 5: each oneOf branch is only a $ref to a kind`); continue; }

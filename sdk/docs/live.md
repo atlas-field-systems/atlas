@@ -65,7 +65,8 @@ picture.onChange(cb);
 - **Per-setting latest values.** A `report.settings` changes only the settings it
   contains. Each setting keeps its own latest value and the report it came from,
   ordered by report time and then `event_id`, so a retained report received
-  after a gap never replaces a newer value.
+  after a gap never replaces a newer value. A subsystem report works the same
+  way: each declared subsystem keeps its own latest condition.
 - **Evidence stays separate.** Requests show as requested until reports arrive.
   Contact comes from `asset.contact` events. Neither stream state nor picture
   readiness means the equipment is ready.
