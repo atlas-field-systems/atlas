@@ -40,7 +40,8 @@ Core only through the public Core API.</li>
 data laws, the validator, and the examples that test record shapes.
 It no longer defines how programs talk.</li>
 <li><strong>Core</strong> owns the API: HTTP for requests, Server-Sent Events for live changes.
-Request and event bodies are Protocol records.</li>
+Event bodies are Protocol records; request bodies are Protocol request
+definitions.</li>
 <li><strong>The SDK</strong> is a client for the Core API.</li>
 <li><strong>Gateways</strong> uplink to the Core API and run the Fieldlinks their hardware
 supports. A gateway is not an Asset.</li>
