@@ -22,14 +22,16 @@ It does not wait in the queue or go through a Task's steps.
   always as an explicit end state.
 - Pause affects movement already underway. The Asset owns the
   [platform-specific response](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause).
+  The Task underway stays active while held and continues on resume.
 - A settings Task can pause an Asset inside a queue. It waits there until
   someone resumes it, for example: fly here, pause, wait for the operator, continue.
 - An applicable failsafe overrides ordinary settings, including paused, and the
   Asset carries out its configured safe response. The operator can still pause
   as an [override](first-flight.md#when-something-goes-wrong). The Asset owns
   [the trigger conditions](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
-- Settings support is independent of current values. An Asset may support no
-  live settings.
+- Settings support is independent of current values. The Asset's description
+  lists the settings it supports, and Core refuses a change to any other. An
+  Asset may support no live settings.
 - Home is a setting for Assets whose behavior uses it. The quadcopter establishes
   home under its
   [startup rules](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#position-and-home).

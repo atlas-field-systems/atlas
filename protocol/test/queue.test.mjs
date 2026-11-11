@@ -24,3 +24,17 @@ test('a queue of 65 Tasks exceeds the complete report capacity', () => {
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((error) => error.includes('64 items')));
 });
+
+const tasks = (count, now) => ({ tasks: Array.from({ length: count }, () => ({ kind: 'return_to_home' })), ...(now === undefined ? {} : { now }) });
+
+test('a Tasks request holds 1 to 64 Tasks', () => {
+  assert.equal(validate(protocol, 'requests/tasks.json', tasks(64)).ok, true);
+  assert.equal(validate(protocol, 'requests/tasks.json', tasks(65)).ok, false);
+  assert.equal(validate(protocol, 'requests/tasks.json', tasks(0)).ok, false);
+});
+
+test('a now request holds exactly one Task', () => {
+  assert.equal(validate(protocol, 'requests/tasks.json', tasks(1, true)).ok, true);
+  assert.equal(validate(protocol, 'requests/tasks.json', tasks(2, true)).ok, false);
+  assert.equal(validate(protocol, 'requests/tasks.json', tasks(2, false)).ok, true);
+});

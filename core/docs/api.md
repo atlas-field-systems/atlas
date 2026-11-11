@@ -8,8 +8,9 @@ explains why the API is the only way in.
 
 ## Basics
 
-- HTTPS and JSON. Request and event bodies are Protocol records, or small request
-  objects built from Protocol variables.
+- HTTPS and JSON. Event bodies are Protocol records. Operator request bodies
+  are Protocol's [request definitions](../../protocol/README.md#records); Core
+  stamps the record fields, such as `time`, `task_id`, and `requested_by`.
 - **Accepted is not done.** A request that Core passes to an Asset returns `202`
   with the request's `event_id`. Task states and setting values change only from
   the Asset's reports.
@@ -35,7 +36,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, or account |
-| `409` | Refused: Asset offline, queue full, command not supported, unknown Task, or definitions mismatch |
+| `409` | Refused: Asset offline, queue full, command or setting not supported, unknown Task, or definitions mismatch |
 
 ## Root paths
 
@@ -96,9 +97,10 @@ milliseconds, one of the kinds below, and its record.
 
 | Kind | Added when | Record |
 | --- | --- | --- |
-| `asset.provisioned`, `asset.removed` | An admin adds or removes an Asset | The Asset's ID and type |
+| `asset.provisioned`, `asset.removed` | An admin adds or removes an Asset, or a gateway adds a radio Asset | `provisioning` |
+| `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
 | `asset.described` | The Asset sends its description | Its description record |
-| `asset.contact` | Core's view of the Asset's contact changes | `asset_id`, online or offline, last heard |
+| `asset.contact` | Core's view of the Asset's contact changes | `contact` |
 | `definitions.refused` | An Asset or gateway connects with a different definitions hash | Its `asset_id` or `gateway_id`, and its hash |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `task.dropped` | Core discards a Task the Asset never confirmed it holds | `asset_id`, `task_id` |
@@ -124,12 +126,13 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 | Request | Body | Result |
 | --- | --- | --- |
-| `POST /tasks/{asset_id}` | `tasks`: one or more Tasks in order, each one command kind and its fields, or a `settings` change; optional `now`, with one Task | `202 {task_ids, event_id}` |
-| `PATCH /entities/assets/{asset_id}/settings` | `settings`, as end states | `202 {event_id}` |
+| `POST /tasks/{asset_id}` | `requests.tasks`: one or more Tasks in order, each one command kind and its fields, or a `settings` change; optional `now`, with one Task | `202 {task_ids, event_id}` |
+| `PATCH /entities/assets/{asset_id}/settings` | `requests.settings`: `settings`, as end states | `202 {event_id}` |
 | `POST /tasks/{asset_id}/{task_id}/cancel` | Nothing | `202 {event_id}` |
 
-- Core validates the body, checks that the Asset is online and supports every
-  command and setting in it, and accepts or refuses the request whole. Core
+- Core validates the body, checks that the Asset is online and that its
+  description lists every command and setting in it, and accepts or refuses the
+  request whole. An unlisted command or setting is refused with `409`. Core
   refuses commands to an offline Asset and holds nothing.
 - **At most 64 Tasks may be outstanding per Asset.** Outstanding work includes
   every accepted Task still crossing the link, held unstarted, or active,
@@ -237,7 +240,10 @@ An Asset on IP starts or reconnects in this order:
   caught up with it.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key, and reports each Asset's contact as its Fieldlink observes it. Core
+key. It also sends `PUT /entities/assets/{asset_id}/contact` with a `contact`
+record whenever its Fieldlink's view of that Asset changes. Only a gateway
+may send it, for an Asset it carries and named by the path; any other caller
+gets `403`. Core
 authenticates the gateway and trusts it for which Asset sent what. Each Asset
 authenticates to the gateway, not to Core.
 
@@ -251,8 +257,10 @@ order, because the Asset orders them by `task_id`.
 
 - **Core's view.** An Asset is online while Core has heard from it within
   `offline_after_s` ([configuration](../config.md)). Core hears from an Asset on
-  IP each time the Asset calls the API. Through a gateway, Core uses the
-  gateway's contact reports. An open event stream is not evidence of contact. An
+  IP each time the Asset calls the API. Through a gateway, Core takes the
+  gateway's latest `contact` record for the Asset as its view, and marks every
+  Asset the gateway carries offline once the gateway itself has been quiet for
+  `offline_after_s`. An open event stream is not evidence of contact. An
   Asset with nothing to report posts an empty report batch often enough to stay
   online. Core adds an `asset.contact` event when its view changes.
 - **The Asset's view.** On IP, the Asset is in contact while its stream is open
@@ -329,17 +337,19 @@ are not Entities.
   Asset could be admitted to a channel that every Asset's messages share. Until
   this is designed, anything that can send on that channel can claim to be any
   Asset the gateway carries.
-- Whether an Asset behind a gateway is registered in Core, how a gateway is
-  bound to the Assets it carries, how a gateway reports a radio Asset that its
+- Which call a gateway uses to add a radio Asset on first contact, how a
+  gateway is bound to the Assets it carries, how a gateway reports a radio Asset that its
   Fieldlink refused for different definitions, and the Fieldlink docs.
   [Gateway](../../gateway/README.md) owns that design.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
-- Records this page names that Protocol does not define yet
-  ([Protocol open questions](../../protocol/docs/open-questions.md)).
 - The rest of the Entities API: `GET /entities`, `/entities/observations`,
   `/entities/tracks`, and `/entities/geofeatures`, as [sketched above](#entities).
   `/entities/assets` is already specified.
+- Protocol records for the events this page lists by field: `definitions.refused`,
+  `task.dropped`, and `request.dropped`.
+- Gateway contact events. The `contact` record already names a gateway;
+  [Gateway](../../gateway/README.md) owns when Core records it.
 - The `/objects` and `/plugins` roots. They are part of the product, built with
   the rest ([pillars](pillars.md)), and their API is designed next.

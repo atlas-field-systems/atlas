@@ -12,7 +12,17 @@
         "records/report/telemetry.json",
         "records/report/battery.json",
         "records/report/settings.json",
-        "records/report/failsafe.json"
+        "records/report/failsafe.json",
+        "records/provisioning.json",
+        "records/contact.json"
+      ]
+    },
+    {
+      "name": "Requests",
+      "files": [
+        "requests/tasks.json",
+        "requests/task.json",
+        "requests/settings.json"
       ]
     },
     {
@@ -79,7 +89,10 @@
         "variables/entity_type.json",
         "variables/requested_by.json",
         "variables/request_id.json",
-        "variables/now.json"
+        "variables/now.json",
+        "variables/setting.json",
+        "variables/gateway_id.json",
+        "variables/contact.json"
       ]
     }
   ]

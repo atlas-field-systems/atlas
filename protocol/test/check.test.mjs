@@ -65,6 +65,11 @@ const cases = [
   ['a Task kind missing from the command list', ({ edit }) => edit('variables/command.json', (s) => { s.enum = s.enum.filter((c) => c !== 'land'); }), /variables\/command\.json: law 12: its values must be the kinds in records\/task\/ except settings: land, move_to, return_to_home, takeoff/],
   ['a command in the list with no Task kind', ({ edit }) => edit('variables/command.json', (s) => { s.enum.push('hover'); }), /variables\/command\.json: law 12/],
   ['a report missing from the report list', ({ edit }) => edit('variables/report.json', (s) => { s.enum = s.enum.filter((r) => r !== 'battery'); s.examples = ['status']; }), /variables\/report\.json: law 11: its values must be the records in records\/report\/: battery, failsafe, settings, status, telemetry/],
+  ['a setting missing from the setting list', ({ edit }) => edit('variables/setting.json', (s) => { s.enum = s.enum.filter((v) => v !== 'lights'); }), /variables\/setting\.json: law 12: its values must be the settings in components\/settings\.json/],
+  ['a Task request kind the Task record lacks', ({ edit }) => edit('requests/task.json', (s) => { s.oneOf = s.oneOf.filter((b) => b.$ref !== '../records/task/land.json'); s.examples = s.examples.filter((e) => e.kind !== 'land'); }), /requests\/task\.json: law 12: its kinds must be exactly the kinds of records\/task\.json/],
+  ['a request carrying a field Core stamps', ({ edit }) => edit('requests/settings.json', (s) => { s.properties.requested_by = { $ref: '../variables/requested_by.json' }; }), /requests\/settings\.json: law 1: "requested_by" is stamped by Core/],
+  ['a Task kind carrying a field Core stamps', ({ edit }) => edit(kind, (s) => { s.properties.task_id = { $ref: '../../variables/task_id.json' }; }), /records\/task\/takeoff\.json: law 1: "task_id" is stamped by Core/],
+  ['a request that allows extra fields', ({ edit }) => edit('requests/settings.json', (s) => { delete s.additionalProperties; }), /requests\/settings\.json: law 1: a request sets additionalProperties/],
   ['a list without a length limit', ({ edit }) => edit('records/report/status/queue.json', (s) => { delete s.properties.task_ids.maxItems; }), /law 9: list "task_ids" needs a maxItems/],
 ];
 
