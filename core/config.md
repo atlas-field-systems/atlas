@@ -24,7 +24,7 @@ Names in this table are proposed configuration keys.
 | `tls_certificate`, `tls_key` | HTTPS for the Core API | Source and renewal are open |
 | `data_directory` | The SQLite database ([storage](docs/storage.md)) and Object files | Directory layout is open |
 | `first_admin` | The first admin account's `operator_id` and password | Used only when no account exists; secret source is open |
-| `offline_after_s` | How long without contact before Core counts an Asset offline | See [contact](docs/api.md#contact); default is open |
+| `offline_after_s` | How long without contact before Core counts an Asset or gateway offline | See [contact](docs/api.md#contact); default is open |
 | `clock_ahead_s` | How far ahead of Core's clock a report's time may be before Core [marks it](docs/api.md#asset-and-gateway-calls) | Default is open |
 | `log_level` | Detail of diagnostics | Detailed per-request logging is required; proposed prototype default is `trace` |
 | `log_directory` | Local diagnostic files | Keep apart from the event log; path is open |

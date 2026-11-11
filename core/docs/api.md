@@ -36,7 +36,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, or account |
-| `409` | Refused: Asset offline, queue full, command or setting not supported, unknown Task, or definitions mismatch |
+| `409` | Refused: Asset offline, queue full, command or setting not supported, unknown Task, removed radio, or definitions mismatch |
 
 ## Root paths
 
@@ -84,9 +84,9 @@ and `/debug` belong to no pillar and stay at the top level.
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
 - The first admin account comes from [Core configuration](../config.md).
-- An Asset behind a gateway holds no Core key and never calls this API. It
-  authenticates to its gateway in whatever way its Fieldlink uses. That design is
-  [deferred](#not-defined-yet).
+- A radio Asset holds no Core key and never calls this API. It authenticates to
+  its gateway with its own radio identity, as
+  [every Fieldlink provides](../../gateway/README.md#what-every-fieldlink-provides).
 
 ## The event log and live stream
 
@@ -99,9 +99,12 @@ milliseconds, one of the kinds below, and its record.
 | --- | --- | --- |
 | `asset.provisioned`, `asset.removed` | An admin adds or removes an Asset, or a gateway adds a radio Asset | `provisioning` |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
+| `asset.carried` | A radio Asset moves to the gateway that heard it, or its gateway is removed | `asset_id`, and `gateway_id` unless no gateway carries it |
 | `asset.described` | The Asset sends its description | Its description record |
 | `asset.contact` | Core's view of the Asset's contact changes | `contact` |
-| `definitions.refused` | An Asset or gateway connects with a different definitions hash | Its `asset_id` or `gateway_id`, and its hash |
+| `gateway.contact` | Core's view of the gateway's contact changes | `contact` |
+| `definitions.refused` | An Asset, gateway, or radio connects with a different definitions hash | Its `asset_id` or `gateway_id`, and its hash. For a radio: the `gateway_id`, the radio identity, its `asset_id` if it has one, and its hash |
+| `radio.refused` | A gateway hears a radio whose Asset an admin removed | `gateway_id`, the radio identity, and the removed `asset_id` |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `task.dropped` | Core discards a Task the Asset never confirmed it holds | `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `asset_id`, `request_id` |
@@ -198,7 +201,7 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 
 | Request | Returns |
 | --- | --- |
-| `GET /entities/assets` | Every Asset: description, contact, latest reports, and each setting's latest value |
+| `GET /entities/assets` | Every Asset: description, contact, the gateway carrying it, latest reports, and each setting's latest value; and each gateway's contact |
 | `GET /entities/assets/{asset_id}` | One Asset, the same way |
 | `GET /tasks/{asset_id}` | Task bodies, latest states, and the Tasks the Asset reports holding |
 | `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
@@ -240,10 +243,10 @@ An Asset on IP starts or reconnects in this order:
   caught up with it.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key. It also sends `PUT /entities/assets/{asset_id}/contact` with a `contact`
-record whenever its Fieldlink's view of that Asset changes. Only a gateway
-may send it, for an Asset it carries and named by the path; any other caller
-gets `403`. Core
+key, once it has [named the radio](#radio-assets). It also sends
+`PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
+Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
+it carries and named by the path; any other caller gets `403`. Core
 authenticates the gateway and trusts it for which Asset sent what. Each Asset
 authenticates to the gateway, not to Core.
 
@@ -252,6 +255,32 @@ broadband speed, so the gateway follows the event stream for every Asset it
 carries, keeps their current state, and sends over the radio only what each
 Asset does not already have. Tasks may cross the radio one at a time and in any
 order, because the Asset orders them by `task_id`.
+
+### Radio Assets
+
+[Gateway](../../gateway/README.md#how-a-radio-asset-joins-and-leaves) owns the
+results; these are the calls behind them.
+
+- When a radio first speaks to it, the gateway sends `POST /entities/assets/radios`
+  with the radio identity and the radio's definitions hash. Core answers
+  `200 {asset_id}`:
+  - a radio Core knows keeps its `asset_id`;
+  - a radio an admin set up in advance gets the `asset_id` the admin chose;
+  - a radio Core has never seen becomes a new Asset with an `asset_id` Core
+    assigns, and Core adds `asset.provisioned` with the gateway as `requested_by`.
+
+  If another gateway, or none, carried the Asset, Core records the calling
+  gateway as its carrier and adds `asset.carried`.
+- Core refuses a radio whose Asset an admin removed with `409 radio_removed` and
+  adds `radio.refused`. It refuses a different definitions hash with
+  `409 definitions_mismatch` and adds `definitions.refused`. Neither refusal adds
+  an Asset.
+- A gateway acts only for the Assets it carries. Its calls for any other Asset
+  get `403`.
+- An admin who provisions a radio identity that another Asset holds gets `409`.
+  Removing that Asset first frees the radio.
+- Removing a gateway leaves its radio Assets in place, offline, and carried by
+  no gateway. Replacing its key changes nothing for them.
 
 ## Contact
 
@@ -263,6 +292,10 @@ order, because the Asset orders them by `task_id`.
   `offline_after_s`. An open event stream is not evidence of contact. An
   Asset with nothing to report posts an empty report batch often enough to stay
   online. Core adds an `asset.contact` event when its view changes.
+- **A gateway's contact.** A gateway is online while Core has heard from it
+  within `offline_after_s`. Every call it makes with its key counts; with
+  nothing else to send, it calls `GET /about` with its key. Core adds a
+  `gateway.contact` event when its view changes.
 - **The Asset's view.** On IP, the Asset is in contact while its stream is open
   and data or keepalives arrive. It loses contact after its `link_loss_after_s`
   with neither. Through a Fieldlink, the Fieldlink supplies contact. Contact loss
@@ -276,9 +309,9 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | --- | --- |
 | `POST /administration/login`, `POST /administration/logout`, `GET /administration/me` | Start, end, and read a session |
 | `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
-| `POST /administration/assets` | Provision an Asset on IP; returns its `asset_id` and key once |
+| `POST /administration/assets` | Provision an Asset with the `asset_id` the admin chooses. An Asset on IP gets its key once. A radio Asset names its radio identity and gets no key |
 | `POST /administration/assets/{asset_id}/key` | Replace an Asset on IP's key; returns the new key once |
-| `DELETE /administration/assets/{asset_id}` | Remove an Asset |
+| `DELETE /administration/assets/{asset_id}` | Remove an Asset. A removed radio is refused until an admin provisions it again |
 | `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
 | `POST /administration/gateways/{gateway_id}/key` | Replace a gateway key; returns the new key once |
 
@@ -332,15 +365,6 @@ are not Entities.
 
 - Reset: the request, the archive, and what it clears. [Storage](storage.md#runs)
   defines what a run is.
-- How an Asset authenticates to its gateway. Each Fieldlink decides this for its
-  radio, and the Fieldlinks may share nothing. On Meshtastic, for example, an
-  Asset could be admitted to a channel that every Asset's messages share. Until
-  this is designed, anything that can send on that channel can claim to be any
-  Asset the gateway carries.
-- Which call a gateway uses to add a radio Asset on first contact, how a
-  gateway is bound to the Assets it carries, how a gateway reports a radio Asset that its
-  Fieldlink refused for different definitions, and the Fieldlink docs.
-  [Gateway](../../gateway/README.md) owns that design.
 - Catch-up reports: how retained reports fill history without delaying live
   events. This is low priority. How an Asset treats low-priority data depends on
   the Asset.
@@ -348,8 +372,7 @@ are not Entities.
   `/entities/tracks`, and `/entities/geofeatures`, as [sketched above](#entities).
   `/entities/assets` is already specified.
 - Protocol records for the events this page lists by field: `definitions.refused`,
-  `task.dropped`, and `request.dropped`.
-- Gateway contact events. The `contact` record already names a gateway;
-  [Gateway](../../gateway/README.md) owns when Core records it.
+  `radio.refused`, `asset.carried`, `task.dropped`, and `request.dropped`; and
+  Protocol's form of the radio identity and the bodies that carry it.
 - The `/objects` and `/plugins` roots. They are part of the product, built with
   the rest ([pillars](pillars.md)), and their API is designed next.

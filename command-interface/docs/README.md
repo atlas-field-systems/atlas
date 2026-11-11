@@ -135,9 +135,11 @@ Show the Core connection, the Asset's contact as Core sees it, and its latest
 telemetry, battery, settings, and failsafe reports separately, each with its
 age. Receipt time proves neither fresh measurements nor two-way contact, and
 connection does not mean equipment is ready; do not invent an overall verdict.
-When Core [refused an Asset or gateway](../../core/docs/api.md#basics) for
-different Protocol definitions, show that refusal, so a missing Asset has a
-visible reason.
+When Core [refused an Asset, gateway, or radio](../../core/docs/api.md#basics) for
+different Protocol definitions, or refused a [removed radio](../../gateway/README.md#how-a-radio-asset-joins-and-leaves),
+show that refusal, so a missing Asset has a visible reason.
+Show which gateway carries each radio Asset, and the gateway's own contact, so
+the operator can tell a gateway that is down from radios that went quiet.
 When an Asset is in [failsafe state](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation),
 say so and offer only the overrides it accepts: Land now, Return to home now,
 and pause. [Subsystem conditions](../../asset/docs/status.md) join these views

@@ -109,10 +109,21 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
   tab shares one session.
 - An admin adds each gateway and each Asset on IP in Core and receives its ID
   and key for its configuration. Keys are bearer tokens over TLS. There is no
-  enrollment key.
-- Core authenticates a gateway. An Asset behind a gateway authenticates to the
-  gateway, not to Core, in whatever way its Fieldlink uses. That is not designed
-  yet.
+  enrollment key. Only gateways and Assets on IP hold Core keys.
+- Core authenticates a gateway and trusts it for which radio Asset sent what. A
+  radio Asset authenticates to the gateway, not to Core.
+- Every Fieldlink gives each radio its own identity, made with the link's own
+  cryptography, and rejects replayed frames. A gateway accepts a frame for an
+  Asset only from that Asset's radio. A shared channel key alone is not enough.
+- A radio that joins the field link appears as a new Asset on first contact,
+  with no approval step; Core assigns its `asset_id` unless an admin set the
+  radio up in advance. It keeps that ID from run to run. A removed radio is
+  refused until an admin sets it up again. A gateway never adds an Asset on IP
+  or issues a key.
+- A site runs one gateway at a time. A radio Asset is carried by the gateway that
+  hears it and moves to a new gateway without an admin step.
+  [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md)
+  owns these rules.
 - TLS secures IP links. Each Fieldlink uses its radio's own encryption and
   authentication. Records never carry credentials.
 

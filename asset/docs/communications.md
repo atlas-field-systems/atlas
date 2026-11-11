@@ -10,8 +10,8 @@ reports back. This behavior is planned, not implemented.
   HTTPS and follow its event stream.
 - **On radio**, it uses a Fieldlink. The same Fieldlink package runs on the
   gateway, which makes the Core API calls for the Asset. The Asset holds no Core
-  key and never calls the Core API. It authenticates to its gateway as its
-  Fieldlink requires, which is [not designed yet](../../core/docs/api.md#not-defined-yet).
+  key and never calls the Core API. It authenticates to its gateway with its own
+  radio identity, as [every Fieldlink provides](../../gateway/README.md#what-every-fieldlink-provides).
   The Fieldlink owns
   compact encoding, retries, duplicate handling, contact timing, and link
   security for its medium ([walled city](../../atlas/api-proposal.md#the-shape)).
@@ -19,7 +19,7 @@ reports back. This behavior is planned, not implemented.
 Inside the Asset, both use one interface to receive requests in event order,
 send reports, and track contact. The rest of the Asset code is the same either
 way.
-Gateway and Fieldlink design is deferred. The
+The rest of the gateway and Fieldlink design is deferred. The
 [first setup](assets.md#ardupilot-quadcopter) is on IP and needs neither. Its SiK
 radio is an equipment-driver connection to the flight controller, not an Atlas
 link.
@@ -73,4 +73,4 @@ of the Asset's links. This is a direction, not a design.
 
 - Reporting thresholds, rates, and priorities under congestion.
 - How several links, and relaying for peers, fit behind the one interface.
-- Gateway and Fieldlink design.
+- The rest of the gateway and Fieldlink design.
