@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/measurement.json",
+  "title": "measurement",
+  "description": "One kind of measurement an Asset keeps for itself: its position or its battery.",
+  "enum": [
+    "position",
+    "battery"
+  ],
+  "examples": [
+    "position"
+  ]
+}
