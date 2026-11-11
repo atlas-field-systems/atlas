@@ -85,7 +85,8 @@ feature, for example.
   and who deleted it.
 - An Object belongs to at most one geo feature. Deleting the geo feature leaves
   its Objects.
-- A file may be at most 100 MB unless an admin changes the limit.
+- A file may be at most 100 MB by default; an admin may change the limit with
+  the `max_object_bytes` setting.
 - Files from Assets, such as drone photos, are not designed yet.
 - A GeoTIFF, an image that carries its own map position, can be shown on the
   map as an imagery geo feature, added by operators and Plugins

@@ -82,6 +82,10 @@ new one.
 - **No advance setup.** The gateway registers a radio the first time it hears
   it in the run. Core assigns its `asset_id`, and the gateway tells the radio.
   There is no approval step.
+- **A restarted radio rejoins as itself.** If a radio Asset's app stops and
+  starts again during a run, it identifies itself to the gateway through its
+  Fieldlink, the same way as in a gateway swap, and keeps its `asset_id` and its
+  unfinished work.
 - **A removed radio can come back.** If it is heard again, the gateway
   registers it as a new Asset with a new ID.
 - **One gateway per site** at a time ([Scale](scale.md#setup)).
@@ -101,5 +105,3 @@ a new Asset.
 ## Open
 
 - How a restarted Asset app gets its unfinished work back from Core.
-- Whether a radio Asset whose app restarts mid-run gets its old ID back. Its
-  gateway would hear the same Fieldlink identity, but no key proves it to Core.

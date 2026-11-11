@@ -139,5 +139,11 @@
     "phrase": "\\b(hold now|hold) (is not|isn't|is never) (an )?(allowed )?override\\b|\\bpause is not an override\\b",
     "why": "During a failsafe, Hold now and pause are both allowed overrides.",
     "example": "During a failsafe, Hold is not an override."
+  },
+  {
+    "phrase": "\\b(radio|asset)('s)? (whose )?app restarts?\\b[^.]*\\bnew (asset_id|asset id|id)\\b|\\brestarted (radio|asset)\\b[^.]*\\bnew (asset_id|asset id|id)\\b",
+    "unless": "\\b(removed|next run)\\b",
+    "why": "An Asset whose app restarts mid-run, on IP or radio, rejoins as itself and keeps its asset_id.",
+    "example": "A restarted radio is registered again with a new ID."
   }
 ]

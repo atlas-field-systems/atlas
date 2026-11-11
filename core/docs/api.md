@@ -325,7 +325,8 @@ Asset on its own side and speaks to Core only by `asset_id`.
   offline, removed, or none, the new gateway takes it over by sending
   `PUT /entities/assets/{asset_id}/contact`. Core records the new carrier and
   adds `asset.carried`. The Asset keeps its ID and its unfinished Tasks. A swap
-  is within the run; IDs change only with the next run.
+  is within the run; IDs change only with the next run. A radio whose app
+  restarted mid-run rejoins the same way.
 - When an admin removes a radio Asset, its ID ends. If the radio is heard
   again, its gateway registers it as a new Asset with a new ID.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset
