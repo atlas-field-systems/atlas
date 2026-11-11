@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/contact.json",
+  "title": "contact",
+  "description": "Whether Core is in contact with an Asset or gateway (online) or has not heard from it recently enough (offline). Receiving a report does not prove two-way contact.",
+  "enum": [
+    "online",
+    "offline"
+  ],
+  "examples": [
+    "online"
+  ]
+}
