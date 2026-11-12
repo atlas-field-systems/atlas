@@ -106,7 +106,9 @@ computer by hand.
 | `versions.json` | The gateway app, each Fieldlink, and the Protocol package versions, and the definitions hash |
 
 The gateway checks each ZIP against its manifest before it deletes the records
-in it, and keeps them if the ZIP fails. It never deletes a ZIP. When logging
+in it. If the ZIP fails, it keeps them, removes the incomplete file, and records
+and prints the failure so the admin sees it; it does not try again at a later
+start. It never deletes a ZIP. When logging
 cannot keep up or the disk fills, it carries frames before it writes logs: it
 drops records rather than holding up a radio, counts them, and lists the gap in
 the ZIP, as the [Asset does](../asset/docs/logging.md#when-logging-cannot-keep-up).

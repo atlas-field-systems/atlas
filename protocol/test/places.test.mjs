@@ -5,7 +5,7 @@ import { validate } from '../lib/protocol.mjs';
 
 const protocol = await load();
 const point = { latitude: 42.2751, longitude: -71.8049 };
-const stamped = { time: 1793667600000, asset_id: 'A1', task_id: 1, clear_count: 0, requested_by: 'OP1' };
+const stamped = { time: 1793667600000, asset_id: 'A1', task_id: 1, requested_by: 'OP1' };
 
 test('a Task that names a place carries the copy Core made', () => {
   assert.equal(validate(protocol, 'records/task.json', { ...stamped, kind: 'move_to', geofeature_id: 'G2', destination: point }).ok, true);

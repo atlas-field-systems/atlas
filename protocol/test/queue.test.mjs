@@ -9,7 +9,6 @@ const report = (count) => ({
   time: 1793667600000,
   asset_id: 'A1',
   kind: 'queue',
-  clear_count: 0,
   request_id: 122,
   task_ids: Array.from({ length: count }, (_, i) => i + 1),
 });
@@ -44,4 +43,11 @@ test('a failsafe Task is sent alone with now', () => {
   assert.equal(failsafe({ tasks: [{ kind: 'failsafe' }], now: true }), true);
   assert.equal(failsafe({ tasks: [{ kind: 'failsafe' }] }), false);
   assert.equal(failsafe({ tasks: [{ kind: 'hold' }, { kind: 'failsafe' }] }), false);
+});
+
+test('neither a queue report nor a Task carries a clear count', () => {
+  assert.equal(validate(protocol, 'records/report/status.json', { ...report(1), clear_count: 0 }).ok, false);
+  const task = { time: 1793667600000, asset_id: 'A1', task_id: 1, requested_by: 'OP1', kind: 'hold' };
+  assert.equal(validate(protocol, 'records/task.json', task).ok, true);
+  assert.equal(validate(protocol, 'records/task.json', { ...task, clear_count: 0 }).ok, false);
 });

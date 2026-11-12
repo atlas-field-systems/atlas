@@ -152,7 +152,8 @@ continues when the Asset is set running again. The settings report showing
 the pause fails with an explanation, like any failed Task. Pause never cancels
 work the way `now` does. Configured failsafes override
 pause. Paused work still counts toward Core's
-[64-Task cap](../../core/docs/api.md#operator-requests). The Asset reports its
+[64-Task cap](../../core/docs/api.md#operator-requests), which Core reads from
+the queue report. The Asset reports its
 complete held, unstarted queue, without truncation or windows.
 
 Pause is not Hold. Hold is a command, like Land: it stops the Asset, completes,

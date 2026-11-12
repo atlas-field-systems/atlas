@@ -191,9 +191,9 @@ idempotency key, so it [never takes effect twice](../../core/docs/api.md#basics)
 Commands to an offline Asset are refused, and the interface shows Core's
 explanation. A request that Core
 [dropped when the Asset went offline](../../core/docs/api.md#operator-requests)
-shows as unconfirmed, because it may have reached the Asset. The Asset's later
-reports show what it did. The operator sends it again only if those reports
-show it did not run.
+shows as not done, and the operator sends again whatever still matters. The
+Asset never runs a dropped Task; its later reports show anything else it did
+before contact ended.
 
 ### Area and place inputs
 
@@ -269,7 +269,7 @@ When an Asset is in [failsafe state](../../asset/docs/failsafes.md#lock-ordinary
 say so and offer only the
 [overrides it accepts](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation):
 Land now, Return to home now, Hold now, and pause. Name the rule that fired
-and why, its response and its outcome, and whether a fallback ran. If the flight controller's own protection took over,
+and why, its response and its outcome, and whether a critical rule fell back to Return to home. If the flight controller's own protection took over,
 say so rather than naming an Atlas rule. Show the Asset's failsafe rules where
 an operator can read and replace them outside a failsafe. A flying Asset with
 no critical battery rule says so, because Core refuses its Tasks until it has

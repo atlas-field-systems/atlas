@@ -73,8 +73,8 @@ and `/debug` belong to no pillar and stay at the top level.
 | Caller | Credential | Event stream shows |
 | --- | --- | --- |
 | Account (admin or operator) | Session cookie from `POST /administration/login` | Everything |
-| Asset on IP | Bearer Asset key | Requests for the Asset it registered |
-| Gateway | Bearer key | Requests for the Assets it carries |
+| Asset on IP | Bearer Asset key | Requests for the Asset it registered, and drops of its Tasks |
+| Gateway | Bearer key | Requests for the Assets it carries, and drops of their Tasks |
 | Plugin | Bearer key | Calls addressed to it |
 
 - Accounts log in with `operator_id` and a password. Core stores password hashes
@@ -179,27 +179,14 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 - **Fail-safe runs now.** A `failsafe` Task is sent alone with `now`; Core
   refuses it otherwise with `400 invalid`. The Asset treats it as if its
   failsafe had fired ([Failsafes](../../asset/docs/failsafes.md#an-operator-can-fire-the-failsafe)).
-- **At most 64 Tasks may be outstanding per Asset.** Outstanding work includes
-  every accepted Task still crossing the link, held unstarted, or active,
-  including work held while paused. Core counts a Task until its final Asset
-  report is stored. Dropping an unanswered request alone does not free capacity,
-  because it may have reached the Asset. A queue report alone does not prove
-  that a missing Task has ended. When the Asset returns, Core cancels each
-  dropped Task that the Asset reports neither holding, nor running, nor ended.
-  Those places free when those final reports are stored.
-  The 64 cap applies to ordinary requests: work that can sit in the unstarted
-  queue. Core checks the total and reserves capacity for the whole request
-  atomically with acceptance, so concurrent ordinary requests cannot exceed 64.
-  If acceptance would exceed 64, Core refuses the whole request with
-  `409 queue_full`, without assigning Task IDs or adding accepted work.
-  A `now` request is one Task that runs immediately and cancels every lower
-  `task_id`, so it is never a 65th held unstarted Task. Core admits `now` even
-  when 64 Tasks are already outstanding. Outstanding work may briefly exceed 64
-  until the cancelled Tasks' final reports are stored. That overage does not
-  refuse another `now`. Ordinary requests are still refused until the total
-  falls back to 64. A retry consumes no extra capacity. After capacity is
-  freed, a refused caller uses a new idempotency key for a new admission
-  attempt.
+- **At most 64 ordinary Tasks per Asset.** Core counts the Tasks that the
+  Asset's latest queue report lists. It refuses an ordinary request that would
+  take that count over 64 with `409 queue_full`, whole, without assigning Task
+  IDs. A `now` request is one Task that runs at once and cancels every lower
+  `task_id`, so Core admits it even at 64. Core does not count Tasks still
+  crossing the link, so two requests close together can overfill the queue: an
+  Asset that already holds 64 unstarted Tasks reports each further ordinary
+  Task `cancelled`, with a full queue as its explanation.
 - **Tasks are numbered.** Core gives each Task the next `task_id` for its Asset:
   1 for the Asset's first Task of the run, then 2, then 3. A `task_id` never
   changes and is never reused. The Asset runs its Tasks in `task_id` order, so
@@ -212,34 +199,32 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   them until it has received all of them. A Task that was cancelled counts as
   received. An operator who wants a whole mission aboard
   before it starts sends the mission in one request.
-- **A failure refuses the Tasks sent before Core knew of it.** A failed Task
-  [clears the Asset's queue](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks),
-  and the Asset counts its clears in `clear_count`. Each Task carries the
-  `clear_count` the Asset last reported. The Asset refuses a Task that carries
-  another count, because the operator sent it to follow work that no longer
-  exists.
+- **A failure clears the queue.** A failed Task
+  [clears the Asset's queue](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks).
+  Tasks that arrive after the clear run normally; an operator cancels any that
+  no longer make sense.
 - With `now`, a request carries one Task. The Task runs at once, even while the
-  Asset is paused, and cancels every Task with a lower `task_id`. The Asset
-  accepts it whatever its `clear_count`. Core admits `now` even at the 64 cap,
-  as the capacity rule above.
+  Asset is paused, and cancels every Task with a lower `task_id`. Core admits
+  it even at the 64 cap.
 - The Asset answers a Task request with a queue report that names the request
   and lists the Tasks the Asset holds.
 - **Unanswered requests end when the Asset goes offline.** Core stops delivering
   every request the Asset has not answered: Tasks, settings changes, and cancels.
   Core adds `request.dropped` for each, and `task.dropped` for each Task the
-  Asset never reported holding. The Asset's stream skips dropped requests when it
-  returns, so no old request runs late. Core then cancels each dropped Task that
-  the returning Asset reports neither holding, nor running, nor ended, so a
-  dropped `task_id` never blocks the Tasks after it. Those cancelled Tasks
-  still hold their capacity places until those final reports are stored.
-  An operator who still wants the work sends it again.
+  Asset never reported holding. Operators see them as not done and send again
+  whatever still matters. When the Asset returns, its stream skips the dropped
+  requests but carries the `task.dropped` events. The Asset counts each dropped
+  `task_id` as ended and never runs it, so no old request runs late and no
+  dropped `task_id` blocks the Tasks after it.
 - **A restarted app holds nothing.** An Asset that signs up again while
   already registered has started again and
   [dropped its queued Tasks](../../atlas/runs-and-identity.md#keys-and-registration).
-  Core adds `task.dropped` for each of its Tasks with no final report, and
-  those no longer count toward the 64. A drop claims no outcome: operators see
-  the Task as not done and send again what still matters. Results the app had
-  not reported before the restart are lost.
+  Core adds `task.dropped` for each of its Tasks with no final report. A drop
+  claims no outcome: operators see the Task as not done and send again what
+  still matters. Results the app had not reported before the restart are lost.
+  The registration answer's `last_task_id` is the highest `task_id` Core has
+  given the Asset in the run, or 0. The app counts every `task_id` up to it as
+  ended, so no forgotten Task blocks new work.
 - A dropped request may have reached the Asset before contact ended. The Asset's
   later reports say what it did. `request.dropped` does not prove the request
   never arrived.
@@ -276,7 +261,8 @@ starts in this order, and on reconnect within the run repeats it from step 3:
 2. On start, `POST /entities/assets` with `requests.asset`: its description
    without `time` and `asset_id`. Core assigns the next `asset_id`, never one
    used before, stamps `time` and the ID to make the description record, adds
-   `asset.registered` and `asset.described`, and answers `201 {asset_id}`.
+   `asset.registered` and `asset.described`, and answers
+   `201 {asset_id, last_task_id}` ([restarts](#operator-requests)).
    The Asset uses that ID for the rest of the run. Registering again with the
    same key in the run returns the same `asset_id`, even for an app that
    restarted and forgot its ID, unless an admin removed that Asset; then it
@@ -300,11 +286,12 @@ starts in this order, and on reconnect within the run repeats it from step 3:
 - The Asset keeps the Tasks of each `tasks.requested` and runs its Tasks in
   `task_id` order. It starts a Task only when every lower `task_id` has ended and
   every Task through the Task's `send_last` is held or has ended. A `task_id` the Asset has
-  not received blocks the Tasks after it until it arrives or is cancelled.
-- The Asset reports a Task `cancelled` without running it in three cases: the
-  Task's `clear_count` is not the Asset's own and `now` is not set, a cancel for
-  the Task arrived before the Task, or a `now` Task with a higher `task_id` has
-  run.
+  not received blocks the Tasks after it until it arrives, is cancelled, or is
+  dropped.
+- The Asset reports a Task `cancelled` without running it in three cases: a
+  cancel for the Task arrived before the Task, a `now` Task with a higher
+  `task_id` has run, or the Asset already holds 64 unstarted Tasks and `now` is
+  not set.
 - Settings requests apply in event order. [Asset behavior](../../asset/docs/README.md)
   owns execution, failsafes, and the overrides allowed during a failsafe.
 - Core compares each report's `time` with its own clock. Core stores a report

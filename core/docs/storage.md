@@ -24,7 +24,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `objects` | Objects | Each Object record, a deleted one marked deleted. The files sit in the `data_directory` beside the database, deleted ones included |
 | `assets` | Entities | Each Asset registered in the run: `asset_id`, the Asset key or gateway that registered it, the gateway carrying a radio Asset, latest description, and contact. A removed Asset keeps its row, marked removed and not listed |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
-| `queues` | Tasks | Each Asset's latest reported queue and `clear_count` ([operator requests](api.md#operator-requests)) |
+| `queues` | Tasks | Each Asset's latest reported queue, which the 64-Task cap counts ([operator requests](api.md#operator-requests)) |
 | `tracks` | Entities | Each current Track, as Fusion last wrote it ([Tracks](api.md#tracks)) |
 | `geofeatures` | Entities | Each current geo feature ([Geo features](api.md#geo-features)) |
 
@@ -59,8 +59,7 @@ When a run ends, Core writes its Reset ZIP, checks it, and then deletes the
 run's rows and files. Accounts and keys belong to no run and stay
 ([what carries over](../../atlas/runs-and-identity.md#what-carries-over)).
 Normally the database holds only the current run. An earlier run stays only
-while its ZIP has not been written; Core retries it at each start and never
-serves it through the Core API.
+if its ZIP failed, until the admin removes it.
 [Reset](reset.md) owns the procedure.
 
 ## Memory and full disks

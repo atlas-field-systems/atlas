@@ -15,8 +15,8 @@ and the diagnostics of its SDK client or Fieldlink. Logging is not implemented y
   command or equipment errors.
 - Each applied settings change, whether requested, local, queued, or forced by a
   failsafe, with the resulting value and reason.
-- Failsafe conditions, the selected rule and priority, interrupted Tasks, primary
-  and fallback outcomes, and each operator override.
+- Failsafe conditions, the selected rule and priority, interrupted Tasks, each
+  response's outcome, and each operator override.
 - Subsystem condition changes, and which ones the Asset chose to report.
 - Contact changes, link loss and reconnects, report batches sent, and their
   acknowledgements.
@@ -64,14 +64,15 @@ first flight from the ground Raspberry Pi.
 
 The Asset writes the ZIP under a temporary name, reads it back, and checks every
 file against `manifest.json`. Only then does it give the ZIP its final name and
-delete the operation's local records. If the ZIP fails, it deletes nothing and
-removes the incomplete file. The app never deletes a ZIP; the owner deletes old
-ones by hand.
+delete the operation's local records. If the ZIP fails, it deletes nothing,
+removes the incomplete file, and records and prints the failure so the operator
+sees it. It does not try again; the records stay until a person deals with
+them. The app never deletes a ZIP; the owner deletes old ones by hand.
 
 If the app crashes or loses power, its next start writes the ZIP of the
 interrupted operation, marked "the app stopped unexpectedly; this record may be
-incomplete", and retries any earlier operation whose ZIP failed. Writing it
-never delays rejoining Core. Then it starts
+incomplete". It never retries an earlier ZIP that failed. Writing it never
+delays rejoining Core. Then it starts
 a new operation with nothing kept from the earlier one.
 
 ## When logging cannot keep up

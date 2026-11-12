@@ -92,11 +92,9 @@ it clears nothing. It keeps the run's data as it was, records the failure in
 its diagnostics, prints it, and removes the incomplete file, so a failed export
 never looks like a finished ZIP.
 
-At every start, before the new run begins, Core tries again to write the ZIP of
-each earlier run it still holds. A run whose ZIP fails again stays held; the new
-run starts anyway and Core prints which runs are still held. The new run never
-waits for an old run's ZIP, and a held run is never served through the Core
-API ([storage](storage.md#runs)).
+Core does not try again. The next start begins a new run as usual, and the old
+run's data stays in the database until the admin removes it
+([storage](storage.md#runs)).
 
 ## When Core stops unexpectedly
 
@@ -116,9 +114,9 @@ sessions, and idempotency keys. It writes no ZIP and clears nothing.
 - Core records the stop and the resume in its diagnostics, and the run's ZIP
   lists them as a gap.
 
-If Core crashes while it is already stopping, the deliberate stop stands: its
-next start finishes writing and checking that run's ZIP, clears the run, and
-then starts a new one.
+A crash while Core is already stopping is treated the same way: the next start
+removes any incomplete ZIP file and resumes the run. The admin stops Core again
+to end it.
 
 ## Scenarios
 
@@ -134,13 +132,13 @@ Behavior tests come from these, once Core exists.
   Task with the same ID.
 - Store an Object in a run, then stop Core. The ZIP holds the file under
   `objects/`; the next run has no Objects.
-- Fill the disk, then stop Core. No ZIP appears under its final name, and Core
-  prints the failure. Free space and start Core: the earlier run's ZIP is
-  written before the new run starts.
+- Fill the disk, then stop Core. No ZIP appears under its final name, Core
+  prints the failure, and the run's data stays. Free space and start Core: a
+  new run starts.
 - Kill Core during a run, then start it. No ZIP appears. `GET /about` shows the
   same `run_id`, the Assets keep their IDs, and the next Task an operator sends
   gets the next `task_id`. Stop Core: the ZIP lists the unexpected stop as a gap.
-- Kill Core while it writes its ZIP, then start it. The ZIP is finished and
-  checked, and a new run starts.
+- Kill Core while it writes its ZIP, then start it. No ZIP appears, and
+  `GET /about` shows the same `run_id`.
 - Search every file of a ZIP for a password, a key, and a session token used in
   the run. None appears.

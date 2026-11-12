@@ -63,13 +63,17 @@ The app hands reports to the outbox, which sends them in batches with
 The queue helper is optional. A reporting-only Asset with no queue does not use
 it. The helper holds the Asset's Tasks and hands them to the app.
 
-- **Holds the Tasks.** It keeps every Task it has received and not started, its
-  `clear_count`, and every `task_id` that has started or ended this run.
+- **Holds the Tasks.** It keeps every Task it has received and not started, and
+  every `task_id` that has started, ended, or been dropped this run. After a
+  restart it counts every `task_id` up to the registration's `last_task_id` as
+  ended.
 - **Orders by `task_id`.** Tasks may arrive in any order and more than once. The
   helper hands out the lowest held Task, and only when every lower `task_id` has
   ended and every Task through that Task's `send_last` is held or has ended.
-- **Refuses stale Tasks.** It reports a Task `cancelled` when the Task's
-  `clear_count` is not the helper's own, unless `now` is set.
+- **Refuses a full queue.** Holding 64 unstarted Tasks, it reports each
+  further Task `cancelled`, unless `now` is set.
+- **Skips dropped Tasks.** A `task.dropped` event counts its `task_id` as ended;
+  a held Task it names is removed without running.
 - **Answers each request.** It sends a queue report with the `request_id` of each
   `tasks.requested`, listing the Tasks it holds.
 - **Never runs a `task_id` twice.** A repeated Task changes nothing.
@@ -88,8 +92,7 @@ it. The helper holds the Asset's Tasks and hands them to the app.
   running. Each report carries the cancel's `request_id`.
 - **Finishing.** The app calls `finish(task_id, state, fields)`. The helper builds
   the final `report.status` Task report and hands it to the outbox.
-- **Clearing.** `clear()` reports every held Task `cancelled` and raises
-  `clear_count`. The app calls it when a command fails or a failsafe starts, as
+- **Clearing.** `clear()` reports every held Task `cancelled`. The app calls it when a command fails or a failsafe starts, as
   in [failsafes](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
 Settings requests are not Tasks unless they arrive as one. The helper passes

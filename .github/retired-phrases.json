@@ -50,7 +50,7 @@
   {
     "phrase": "\\b(serves?|reads?|opens?) (the |an )?(ended|earlier|previous|old|past|held) runs?\\b[^.]*\\bcore api",
     "unless": "\\b(never|not|no)\\b",
-    "why": "A run whose ZIP failed, or any ended run, is never served through the Core API.",
+    "why": "Reads cover only the current run; an ended run is never served through the Core API.",
     "example": "Core serves earlier runs through the Core API."
   },
   {
@@ -261,5 +261,51 @@
     "unless": "\\b(never|not|no|nothing)\\b",
     "why": "Results an app had not reported before a restart on the ground are lost.",
     "example": "The app keeps its unacknowledged final reports through the restart."
+  },
+  {
+    "phrase": "\\bclear_count\\b|\\bclear count\\b",
+    "unless": "\\bno\\b",
+    "why": "There is no clear count: a failure clears the queue, later Tasks run normally, and operators cancel what they don't want.",
+    "example": "Each Task carries the clear_count the Asset last reported."
+  },
+  {
+    "phrase": "\\bmeasurement_stale\\b|\\b(missing|stale)[- ]data conditions?\\b",
+    "unless": "\\bno\\b",
+    "why": "Failsafe rules have no separate missing- or stale-data conditions.",
+    "example": "A measurement_stale condition covers an unknown position."
+  },
+  {
+    "phrase": "\\bpriority (only rises|never falls)\\b|\\bprimary (attempt|response) and (one )?(an )?optional fallback\\b|\\boptional fallback\\b",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "Each firing runs its response once; there is no configurable fallback, and priority does not only rise.",
+    "example": "Each rule gets a primary attempt and one optional fallback."
+  },
+  {
+    "phrase": "\\b(tries|try|retries) (again )?(to write )?(the |its )?zip\\b[^.]*\\b(every|each|next) start\\b|\\bat every start\\b[^.]*\\bzip\\b",
+    "unless": "\\b(not|never|no)\\b",
+    "why": "If Core's Reset ZIP fails, Core keeps the data and tells the admin; it does not try again at later starts.",
+    "example": "At every start, Core tries again to write the ZIP of each earlier run."
+  },
+  {
+    "phrase": "\\bfinish(es)? (writing )?(that|the) (stop|run's zip)\\b|\\bthe deliberate stop stands\\b",
+    "why": "A crash while Core is stopping on purpose just resumes the run.",
+    "example": "If Core crashes while stopping, the deliberate stop stands."
+  },
+  {
+    "phrase": "\\b(reserves?|reserving) (capacity|places?)\\b|\\bstill crossing the link\\b[^.]*\\b(counts?|outstanding)\\b|\\bplaces? free when\\b",
+    "unless": "\\b(not|never|no)\\b",
+    "why": "Core decides the 64-Task cap from the Asset's latest queue report; it keeps no capacity bookkeeping.",
+    "example": "Core reserves capacity for the whole request; the places free when the final reports are stored."
+  },
+  {
+    "phrase": "\\bcancels each dropped task\\b|\\breports neither holding\\b",
+    "why": "Dropped requests just show as not done; Core does not reconcile them when the Asset returns.",
+    "example": "When the Asset returns, Core cancels each dropped Task it reports neither holding, nor running, nor ended."
+  },
+  {
+    "phrase": "\\bretries any earlier (operation|run)('s)? (whose )?zip\\b|\\b(retries|tries again)\\b[^.]*\\b(earlier|failed) (zip|operation)\\b",
+    "unless": "\\b(never|not|no)\\b",
+    "why": "A failed Reset ZIP is kept and reported, never retried at a later start, for Core, Assets, and gateways.",
+    "example": "Its next start retries any earlier operation whose ZIP failed."
   }
 ]
