@@ -301,5 +301,11 @@
     "phrase": "\\bcancels each dropped task\\b|\\breports neither holding\\b",
     "why": "Dropped requests just show as not done; Core does not reconcile them when the Asset returns.",
     "example": "When the Asset returns, Core cancels each dropped Task it reports neither holding, nor running, nor ended."
+  },
+  {
+    "phrase": "\\bretries any earlier (operation|run)('s)? (whose )?zip\\b|\\b(retries|tries again)\\b[^.]*\\b(earlier|failed) (zip|operation)\\b",
+    "unless": "\\b(never|not|no)\\b",
+    "why": "A failed Reset ZIP is kept and reported, never retried at a later start, for Core, Assets, and gateways.",
+    "example": "Its next start retries any earlier operation whose ZIP failed."
   }
 ]
