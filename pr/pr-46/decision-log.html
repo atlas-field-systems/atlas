@@ -154,6 +154,12 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
+<td>A turret is aimed with Point At: a latitude and longitude, optionally an altitude, to look at. The Asset works out how to aim there; how it does that is defined later.</td>
+<td>Pointing equipment, such as camera turrets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#fixed-camera-turret">Assets and their equipment</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
 <td>Core decides the 64-Task cap from the Asset&#39;s latest queue report of how many Tasks it holds. It does not count Tasks still crossing the link or keep capacity until final reports arrive. <code>now</code> Tasks are still admitted at the cap.</td>
 <td>Per Asset, ordinary work.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests">Core API, operator requests</a></td>
@@ -402,6 +408,12 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-12</td>
+<td>Every value that shapes how an Asset behaves, such as how close counts as arrived, how long a command may take, or how long it waits before shutting down, is set in that Asset&#39;s own configuration. Defaults are only starting points, because Assets set up differently respond differently.</td>
+<td>Every Asset.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/config.md">Asset configuration</a></td>
+</tr>
+<tr>
 <td>2026-11-12</td>
 <td>Fixed-wing aircraft are not part of the current design. They come later as a new kind of Asset with its own commands.</td>
 <td>Asset kinds.</td>
