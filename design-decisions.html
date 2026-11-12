@@ -84,8 +84,9 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 <code>event_id</code>; Core never buffers its backlog. See
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/storage.md">Core storage</a>.</p>
 <h2 id="stopping-core-ends-the-run">Stopping Core ends the run</h2>
-<p>A run lasts from one start of Core to the next stop, and stopping Core is
-Reset. Core, each Asset, and each gateway write their own Reset ZIP, and the ZIP
+<p>A run lasts from one start of Core to the next deliberate stop, and stopping
+Core on purpose is Reset. A crash or power loss resumes the same run. Core,
+each Asset, and each gateway write their own Reset ZIP, and the ZIP
 is the only copy of the run. <a href="runs-and-identity.html">Runs and identity</a> owns the
 rules: what carries over, signing in again, and how Assets get their IDs. Each
 part&#39;s docs own its ZIP:
