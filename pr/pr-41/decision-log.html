@@ -29,21 +29,27 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>The Asset app restarts itself automatically after a crash. On startup it checks whether the vehicle is flying; if it is, it fires its failsafe. This replaces &quot;a restart while out on a Task&quot; as the trigger.</td>
+<td>The Asset app restarts itself automatically after a crash. On startup it checks whether the vehicle is airborne; if it is, it fires its failsafe. Armed on the ground does not count. This replaces &quot;a restart while out on a Task&quot; as the trigger.</td>
 <td>An app restart during a run, on IP or radio.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-in-flight-is-a-failsafe">Failsafes</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>An Asset that restarts on the ground, not flying, drops its queued Tasks. Operators see them marked not done and send again whatever still matters. Nothing resumes on its own.</td>
+<td>An Asset that restarts on the ground, armed or not, drops its queued Tasks. Operators see them marked not done and send again whatever still matters. Nothing resumes on its own.</td>
 <td>An app restart during a run, on the ground.</td>
 <td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>For now each Asset talks to only one gateway. Assets that talk to several gateways, and moving a radio Asset to another gateway while keeping its ID, are out of scope.</td>
-<td>Radio Assets.</td>
+<td>One gateway is deployed per area, for the whole radio network. The network is a mesh: Assets talk to each other and to that one gateway, and many Assets ride on it. No Asset uses two gateways; several gateways in one network are out of scope.</td>
+<td>Radio Assets and gateways.</td>
 <td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A gateway replaced mid-run registers the radios it hears as new Assets with new IDs. The old Assets stay offline, and their unfinished Tasks are not carried over.</td>
+<td>Within a run.</td>
+<td><a href="runs-and-identity.html#when-the-gateway-changes">Runs and identity</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
@@ -177,14 +183,20 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
-<td>Operators can send a Fail-safe command to an Asset, as they send Land, Return to home, or Hold. The Asset treats it exactly as if its failsafe had fired. This is the answer to emergency commands for an offline Asset; Land, Return to home, and Hold get no offline exemption.</td>
+<td>Operators can send a Fail-safe command to an Asset, as they send Land, Return to home, or Hold. The Asset treats it exactly as if its failsafe had fired: it runs the operator&#39;s failsafe rule for the command, and only if no rule applies falls back to the maker&#39;s built-in safe action. This is the answer to emergency commands for an offline Asset; Land, Return to home, and Hold get no offline exemption.</td>
 <td>Commands.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-operator-can-fire-the-failsafe">Failsafes</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>When an operator overrides a fired failsafe with Hold or pause, lost-contact and low-battery protection are re-armed and can fire again. A fired failsafe still can&#39;t be cancelled.</td>
+<td>When an operator overrides a fired failsafe with Hold or pause, lost-contact and low-battery protection are re-armed and can fire again once their condition recurs. A fired failsafe still can&#39;t be cancelled. The overrides stay.</td>
 <td>Failsafe state, after a Hold now or pause override.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A lower critical battery level always fires, even after a Hold or pause override, so a held Asset can&#39;t hover until its battery dies.</td>
+<td>Battery rules, in and out of failsafe state.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
 </tr>
 <tr>

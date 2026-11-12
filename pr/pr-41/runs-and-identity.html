@@ -86,7 +86,7 @@ crash. If an Asset&#39;s app stops and starts again during a run, it registers
 with its key and comes back as the same Asset, with the same <code>asset_id</code>. This holds even if it forgot its ID: the key
 proves which Asset it is. It still never picks or configures its own ID.</li>
 <li><strong>Work does not resume after a restart.</strong> On startup the app checks whether
-the vehicle is flying. If it is, the Asset fires its failsafe instead of
+the vehicle is airborne. If it is, the Asset fires its failsafe instead of
 resuming its work
 (<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-in-flight-is-a-failsafe">Failsafes</a>),
 and operators see it as itself, in failsafe. An Asset that restarts on the
@@ -109,11 +109,11 @@ Fieldlink and keeps its <code>asset_id</code>. Its work does not resume, as for 
 restarted app.</li>
 <li><strong>A removed radio can come back.</strong> If it is heard again, the gateway
 registers it as a new Asset with a new ID.</li>
-<li><strong>One gateway per site</strong> at a time (<a href="scale.html#setup">Scale</a>).</li>
-<li><strong>One gateway per Asset.</strong> For now each radio Asset talks to only one
-gateway: the one that registered it. Assets that talk to several gateways,
-and moving a radio Asset to another gateway while it keeps its ID, are out of
-scope.</li>
+<li><strong>One gateway for the whole network.</strong> One gateway is deployed per area
+(<a href="scale.html#setup">Scale</a>). The radio network is a mesh: Assets talk to each
+other and to that one gateway, and every radio Asset in the area rides on it.
+No Asset uses two gateways. Several gateways in one network, and moving a
+radio Asset to another gateway while it keeps its ID, are out of scope.</li>
 </ul>
 <h2 id="when-the-gateway-changes">When the gateway changes</h2>
 <ul>
