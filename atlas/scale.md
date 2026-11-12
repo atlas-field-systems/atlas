@@ -8,7 +8,7 @@ Design so Atlas works well at these sizes and does not break just past them.
 - At this scale, IDs that people read or that cross a field link are 1 to 4 letters or digits, such as `A1` ([the ID rule](CHARTER.md#keep-shared-data-simple)). That gives over a million IDs and keeps field-link frames short.
 
 ## Setup
-- A Core runs one site at a time, and each site has exactly one gateway at a time. Different sites, or later radio systems, may use different gateway designs ([Environment](environment.md)).
+- A Core runs one site at a time, and each site has exactly one gateway at a time: one gateway for the whole radio network in that area, which is a mesh of Assets. Different sites, or later radio systems, may use different gateway designs ([Environment](environment.md)).
 - In practice, one operator runs Atlas at a time.
 
 ## Radio

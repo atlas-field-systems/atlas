@@ -24,9 +24,12 @@ A site runs one gateway at a time. Each radio Asset is carried by that gateway:
 the gateway hears it, makes its Core API calls, and reports its contact. Core
 shows which gateway carries each Asset. Core authenticates the gateway with its
 key and trusts it for which radio Asset sent what. A gateway can register radio
-Assets, but it cannot register an Asset on IP or issue a Core key.
+Assets, but it cannot register an Asset on IP or issue a Core key. The radio
+network is a mesh: Assets talk to each other and to the one gateway, and many
+Assets ride on it. Several gateways in one network are out of scope.
 
-How radio Assets register, keep their IDs, and survive a gateway swap is in
+How radio Assets register, keep their IDs, and what happens when the gateway
+changes is in
 [Runs and identity](../atlas/runs-and-identity.md#radio-assets). The calls
 behind it are in the [Core API](../core/docs/api.md#radio-assets).
 
@@ -126,10 +129,13 @@ Behavior tests come from these, once the gateway exists.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
 - Stop the gateway. The gateway and every radio it carries show offline after
   `offline_after_s`.
-- Remove the gateway and add a new one during the run. Each radio keeps its ID
-  and its unfinished Tasks and moves to the new gateway when it is heard.
+- Remove the gateway and add a new one during the run. Each radio the new
+  gateway hears registers as a new Asset with a new ID; the old Assets stay
+  offline.
 - Remove the gateway and add none. Its radios stay in the picture, offline,
   with their IDs.
+- Kill Core and start it again while the gateway runs. `GET /about` shows the
+  same `run_id`, the gateway writes no ZIP, and every radio keeps its ID.
 - Stop Core and start it again while the gateway runs. The gateway writes one
   ZIP for the run that ended, and each radio it hears in the new run registers
   as a new Asset.
@@ -137,7 +143,7 @@ Behavior tests come from these, once the gateway exists.
 ## Related pages
 
 - [Runs and identity](../atlas/runs-and-identity.md): how radio Assets
-  register, keep their IDs, and move between gateways.
+  register, keep their IDs, and what happens when the gateway changes.
 - [Asset and gateway calls](../core/docs/api.md#asset-and-gateway-calls) and
   [radio Assets](../core/docs/api.md#radio-assets): what a gateway does at the
   Core API.

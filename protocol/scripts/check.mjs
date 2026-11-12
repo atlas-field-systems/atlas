@@ -149,9 +149,9 @@ const settingNames = Object.keys(schemas['components/settings.json']?.properties
 if (schemas['variables/setting.json'] && !sameNames(schemas['variables/setting.json'].enum ?? [], settingNames)) errors.push(`variables/setting.json: law 12: its values must be the settings in components/settings.json: ${settingNames.join(', ')}`);
 // A Task request takes exactly the Task record's kinds.
 const kindTargets = (file) => (schemas[file]?.oneOf ?? []).map((b) => b.$ref && resolve(file, b.$ref));
-// A failsafe response takes exactly the command kinds: the Task kinds except settings.
-const commandKinds = files.filter((f) => isKind(f) && posix.dirname(f) === 'records/task' && base(f) !== 'settings');
-if (schemas['components/failsafe_response.json'] && !sameNames(kindTargets('components/failsafe_response.json'), commandKinds)) errors.push(`components/failsafe_response.json: law 12: its kinds must be the command kinds: ${commandKinds.map(base).join(', ')}`);
+// A failsafe response takes exactly the command kinds, except failsafe itself: the Task kinds except settings and failsafe.
+const responseKinds = files.filter((f) => isKind(f) && posix.dirname(f) === 'records/task' && !['settings', 'failsafe'].includes(base(f)));
+if (schemas['components/failsafe_response.json'] && !sameNames(kindTargets('components/failsafe_response.json'), responseKinds)) errors.push(`components/failsafe_response.json: law 12: its kinds must be the command kinds except failsafe: ${responseKinds.map(base).join(', ')}`);
 // A request with kinds, such as a Task or a geo feature, takes exactly its record's kinds.
 for (const name of ['task', 'geofeature']) {
   const request = `requests/${name}.json`, record = `records/${name}.json`;

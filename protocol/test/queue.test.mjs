@@ -38,3 +38,10 @@ test('a now request holds exactly one Task', () => {
   assert.equal(validate(protocol, 'requests/tasks.json', tasks(2, true)).ok, false);
   assert.equal(validate(protocol, 'requests/tasks.json', tasks(2, false)).ok, true);
 });
+
+test('a failsafe Task is sent alone with now', () => {
+  const failsafe = (body) => validate(protocol, 'requests/tasks.json', body).ok;
+  assert.equal(failsafe({ tasks: [{ kind: 'failsafe' }], now: true }), true);
+  assert.equal(failsafe({ tasks: [{ kind: 'failsafe' }] }), false);
+  assert.equal(failsafe({ tasks: [{ kind: 'hold' }, { kind: 'failsafe' }] }), false);
+});

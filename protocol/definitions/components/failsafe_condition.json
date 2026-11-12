@@ -28,6 +28,9 @@
     },
     {
       "$ref": "failsafe_condition/subsystem.json"
+    },
+    {
+      "$ref": "failsafe_condition/commanded.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -43,6 +46,11 @@
     {
       "kind": "battery_below",
       "battery_percent": 25
+    },
+    {
+      "kind": "battery_below",
+      "battery_percent": 10,
+      "critical": true
     },
     {
       "kind": "idle",
@@ -83,6 +91,9 @@
       "kind": "subsystem",
       "subsystem_id": "GPS",
       "trigger_condition": "degraded"
+    },
+    {
+      "kind": "commanded"
     }
   ]
 }

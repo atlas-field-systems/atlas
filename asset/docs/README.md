@@ -47,12 +47,14 @@ its first valid position. An explicitly configured or operator-set home takes
 precedence. A reconnect does not reset home; operators change it as a setting.
 
 The app and its link stay running for the operation, as Core does. An Asset
-whose app stops shows offline, and the other Assets keep working. If the app
-starts again in the same run, it registers with its key and
+whose app stops shows offline, and the other Assets keep working. Nothing
+restarts the app on its own; an app that fails in flight
+[stays down](failsafes.md#if-the-app-fails-in-flight) while the flight
+controller returns the vehicle home. An app started again on the ground in the
+same run registers with its key and
 [rejoins as the same Asset](../../atlas/runs-and-identity.md#keys-and-registration),
-but its work does not resume. A restart mid-flight
-[is a failsafe](failsafes.md#a-restart-mid-flight-is-a-failsafe); a restart on
-the ground drops its queued Tasks, and operators send again what still matters.
+but its work does not resume: it drops its queued Tasks, and operators send
+again what still matters.
 An Asset keeps nothing from an earlier run. A dropped link does not restart the
 app or clear its state.
 
@@ -70,13 +72,14 @@ Task fails with an explanation rather than waiting. Becoming ready later does
 not revive failed work. A failed Task
 [cancels the remaining Tasks](failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
-A Task may name a place instead of carrying a shape. The Asset reads the
-place's current shape through Core, or through its gateway, and hears of each
-later edit or deletion ([Core API](../../core/docs/api.md#geo-features)). How
-it handles a change is its own behavior: one Asset may keep its original plan,
-another may follow the new shape. A changed or deleted place is not a failure
-by itself, so it never cancels the remaining Tasks. Out of contact, the Asset
-works with the shape it last received.
+A Task that names a place carries a copy of it, made when the Task was sent,
+and the Asset works from that copy. A later edit or deletion of the place does
+not reach the Asset. If the operator who edits the place chooses to update the
+Tasks that use it, Core sends those Tasks again with the new copy
+([Core API](../../core/docs/api.md#geo-features)). The Asset uses the new copy
+for a Task it has not started; an active Task carries on to the updated place;
+an update to a Task that has ended changes nothing. An updated place is not a
+failure by itself, so it never cancels the remaining Tasks.
 
 ### The queue
 

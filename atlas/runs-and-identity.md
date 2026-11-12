@@ -8,7 +8,7 @@ has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/a
 
 ## A run and Reset
 
-- **A run** lasts from one start of Core to the next stop.
+- **A run** lasts from one start of Core to the next deliberate stop.
 - **Stopping Core is Reset.** There is no Reset request, API call, or button.
   The admin stops Core on its own computer. The operator is trusted to shut the
   Assets down first; Core does not check. An Asset left running into the next
@@ -16,9 +16,15 @@ has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/a
 - **No retention.** Core writes its Reset ZIP, checks it, and only then deletes
   the run's data. The ZIP is then the only copy of the run, and nothing deletes
   a ZIP automatically. If the ZIP fails, Core deletes nothing and tries again at
-  its next start, but never serves that run through the Core API. A crash ends
-  the run too; the next start writes its ZIP, marked as possibly incomplete.
-- **Everyone signs in again.** Every session ends with the run.
+  its next start, but never serves that run through the Core API.
+- **A crash resumes the run.** If Core crashes, loses power, or its computer
+  reboots without a deliberate stop, its next start continues the same run:
+  the same `run_id`, the same Asset IDs, and the same Task numbering. Nothing
+  is reset. Assets, gateways, Plugins, and operators reconnect as after a
+  dropped link. A crash while Core was already stopping finishes that stop at
+  the next start ([Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly)).
+- **Everyone signs in again** after Reset. Every session ends with the run; a
+  crash ends none.
 - **Operator state is discarded.** Shared links, hidden Tracks and other view
   filters, drafts, and result overlays belong to one run. A link names its run,
   and a link from an ended run never opens an item of the new run.
@@ -27,9 +33,8 @@ has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/a
   [each gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip). Merging them is
   a separate process.
 
-Scope: only stopping Core ends a run. Within a run nothing in the picture
-expires, a dropped link does not end anything, and a gateway swap is not a new
-run.
+Scope: only a deliberate stop of Core ends a run. Within a run nothing in the
+picture expires, and neither a dropped link nor a crash of Core ends anything.
 
 ## What carries over
 
@@ -54,7 +59,7 @@ event.
   item in the next run.
 
 Scope: an ID holds for one run. Within the run an Asset keeps its `asset_id`
-through reconnects, app restarts, and gateway swaps; in the next run it gets a
+through reconnects, app restarts on the ground, and Core crashes; in the next run it gets a
 new one.
 
 ## Keys and registration
@@ -66,17 +71,15 @@ new one.
   registers at most one Asset at a time. Registering again with the same key in
   the same run returns the same `asset_id`, unless an admin removed that Asset;
   then it registers as a new Asset with a new ID.
-- **A restarted app rejoins as itself.** If an Asset's app stops and starts
-  again during a run, it registers with its key and comes back as the same
-  Asset, with the same `asset_id`. This holds even if it forgot its ID: the key
+- **A restarted app rejoins as itself.** Nothing restarts the app on its own.
+  If an Asset's app is started again on the ground during a run, it registers
+  with its key and comes back as the same Asset, with the same `asset_id`. This holds even if it forgot its ID: the key
   proves which Asset it is. It still never picks or configures its own ID.
-- **Work does not resume after a restart.** An Asset that restarts mid-flight,
-  while out on a Task, enters failsafe state instead of resuming its work
-  ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-mid-flight-is-a-failsafe)).
-  Operators see it as itself, in failsafe. An Asset that restarts while not out
-  on a Task, for example on the ground, drops its queued Tasks: operators see
-  them marked not done and send again whatever still matters. Nothing resumes
-  on its own.
+- **Work does not resume after a restart.** A restarted app drops its queued
+  Tasks: operators see them marked not done and send again whatever still
+  matters. Nothing resumes on its own. An app that fails in flight stays down,
+  shown offline, while the flight controller returns the vehicle home
+  ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight)).
 - **A removed Asset's ID ends.** If it registers again, it is a new Asset.
 
 ## Radio Assets
@@ -89,22 +92,25 @@ new one.
   it in the run. Core assigns its `asset_id`, and the gateway tells the radio.
   There is no approval step.
 - **A restarted radio rejoins as itself.** If a radio Asset's app stops and
-  starts again during a run, it identifies itself to the gateway through its
-  Fieldlink, the same way as in a gateway swap, and keeps its `asset_id`. Its
-  work does not resume, as for any restarted app.
+  starts again during a run, it identifies itself to its gateway through its
+  Fieldlink and keeps its `asset_id`. Its work does not resume, as for any
+  restarted app.
 - **A removed radio can come back.** If it is heard again, the gateway
   registers it as a new Asset with a new ID.
-- **One gateway per site** at a time ([Scale](scale.md#setup)).
+- **One gateway for the whole network.** One gateway is deployed per area
+  ([Scale](scale.md#setup)). The radio network is a mesh: Assets talk to each
+  other and to that one gateway, and every radio Asset in the area rides on it.
+  No Asset uses two gateways. Several gateways in one network, and moving a
+  radio Asset to another gateway while it keeps its ID, are out of scope.
 
 ## When the gateway changes
 
-- **Swapped mid-run.** Radios stay the same Assets. Each tells the new gateway
-  its `asset_id` and keeps it and its unfinished work: its app keeps running, so
-  this is not a restart. The new gateway takes a
-  radio over only when its old carrier is offline, removed, or none.
-- **Removed and not replaced.** Its radio Assets stay in the picture, offline,
-  as the same Assets, carried by no gateway until another one hears them.
-- **Key replaced.** The radios are unaffected.
+- **Removed.** Its radio Assets stay in the picture, offline. No other gateway
+  takes them over.
+- **Replaced by another gateway mid-run.** The new gateway registers each radio
+  it hears as a new Asset with a new ID. The old Assets stay in the picture,
+  offline, and their unfinished Tasks are not carried over.
+- **Key replaced.** The gateway and its radios are unaffected.
 
 Scope: these hold within a run. In the next run every radio registers again as
 a new Asset.

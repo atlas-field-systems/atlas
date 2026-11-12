@@ -140,7 +140,7 @@ soon as it accepts it, so an Asset that loses contact already holds its work. Th
 Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
 before it. Cancel names its Task. Hold is a command like Land; pause is a
 setting, not a Task ([pause](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause)).
-A command may name a saved place, as a live reference
+A command may name a saved place, and keeps a copy of it as it was when sent
 ([geo features](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features)).
 Retries are safe by design: creates carry an idempotency key, settings are end
 states, and each `task_id` runs once.

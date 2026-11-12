@@ -54,21 +54,23 @@ vehicle even though it is not aboard it.
 | Fieldlink | Carrying Atlas across one kind of field link |
 | [Asset app](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md) | Equipment control, local execution, failsafes, and reports of its effects |
 
-## An operation runs without restarts
+## An operation runs without planned restarts
 
 Core starts before any other part of an operation and stops after all of them.
-Each start of Core begins a new, empty run, and stopping Core ends it
-([Runs and identity](runs-and-identity.md)). Core never restarts during an
-operation. Gateways and Assets stay running too.
+Each start of Core begins a new, empty run, and stopping Core on purpose ends it
+([Runs and identity](runs-and-identity.md)). Nobody restarts Core during an
+operation. If it crashes, it resumes the same run when it starts again, and
+everyone reconnects. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log.
 
 An Asset whose app stops shows offline in Core, and the other Assets keep
-working. If its app starts again in the same run, it rejoins as the same Asset
-with the same ID, because its key proves which Asset it is, but its work does
-not resume. An Asset that restarts mid-flight enters failsafe state
-([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset
-that crashed is inspected before it runs again. An Asset keeps nothing from an
+working. Nothing restarts the app on its own. If it fails in flight, the flight
+controller returns the vehicle home without Atlas, and the vehicle is inspected
+before its next flight. An app started again on the ground in the same run
+rejoins as the same Asset with the same ID, because its key proves which Asset
+it is, but its work does not resume
+([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset keeps nothing from an
 earlier run. A dropped link is not a stop: the app keeps its state and
 reconnects as the same Asset.
 

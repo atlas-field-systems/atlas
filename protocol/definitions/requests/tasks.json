@@ -2,29 +2,66 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/tasks.json",
   "title": "Tasks request",
-  "description": "The body of POST /tasks/{asset_id}: one or more Tasks in the order they run, up to Core's 64-Task cap. With now, it holds exactly one Task, which runs at once. Core stamps the record fields and accepts or refuses the request whole.",
+  "description": "The body of POST /tasks/{asset_id}: one or more Tasks in the order they run, up to Core's 64-Task cap. With now, it holds exactly one Task, which runs at once. A failsafe Task is always sent this way. Core stamps the record fields and accepts or refuses the request whole.",
   "type": "object",
   "required": [
     "tasks"
   ],
-  "if": {
-    "required": [
-      "now"
-    ],
-    "properties": {
-      "now": {
-        "const": true
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "now"
+        ],
+        "properties": {
+          "now": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "maxItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "tasks"
+        ],
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "failsafe"
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "now"
+        ],
+        "properties": {
+          "now": {
+            "const": true
+          }
+        }
       }
     }
-  },
-  "then": {
-    "properties": {
-      "tasks": {
-        "type": "array",
-        "maxItems": 1
-      }
-    }
-  },
+  ],
   "additionalProperties": false,
   "properties": {
     "tasks": {
@@ -69,6 +106,14 @@
       "tasks": [
         {
           "kind": "return_to_home"
+        }
+      ],
+      "now": true
+    },
+    {
+      "tasks": [
+        {
+          "kind": "failsafe"
         }
       ],
       "now": true

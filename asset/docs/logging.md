@@ -68,9 +68,10 @@ delete the operation's local records. If the ZIP fails, it deletes nothing and
 removes the incomplete file. The app never deletes a ZIP; the owner deletes old
 ones by hand.
 
-If the app crashes or loses power, its next start first writes the ZIP of the
+If the app crashes or loses power, its next start writes the ZIP of the
 interrupted operation, marked "the app stopped unexpectedly; this record may be
-incomplete", and retries any earlier operation whose ZIP failed. Then it starts
+incomplete", and retries any earlier operation whose ZIP failed. Writing it
+never delays rejoining Core. Then it starts
 a new operation with nothing kept from the earlier one.
 
 ## When logging cannot keep up
