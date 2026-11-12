@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task/failsafe.json",
+  "title": "failsafe",
+  "description": "Fire the Asset's failsafe, as if a failsafe rule had fired. It is always sent with now. The Asset stops current work, clears its queue, enters failsafe state for the rest of the operation, and starts its built-in safe action as a failsafe Task. The Task completes once the Asset is in failsafe state; the response reports its own outcome in report.failsafe. An Asset already in failsafe state refuses it. It is never a failsafe response.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "failsafe"
+    }
+  },
+  "examples": [
+    {
+      "kind": "failsafe"
+    }
+  ]
+}

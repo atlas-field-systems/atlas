@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe/response.json",
+  "title": "response",
+  "description": "The state of a failsafe Task: one run of a response, with no task_id from Core. rule_id names the rule that fired; it is absent when the Asset runs its built-in safe action, after a restart in flight with no rule for it or for the Fail-safe command. attempt says primary or fallback. A rule re-armed by an operator override may run again, so a rule's runs are told apart by time. The Asset sends it active when the response starts, with the response as it runs, parameters fixed; then one final state, completed, failed or cancelled. It is never queued. A cancelled response was interrupted by a higher-priority or re-armed rule, or replaced by an operator override. Activation has already cancelled ordinary work and raised clear_count.",
+  "type": "object",
+  "required": [
+    "kind",
+    "attempt",
+    "task_state"
+  ],
+  "if": {
+    "properties": {
+      "task_state": {
+        "const": "active"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "response"
+    ]
+  },
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "response"
+    },
+    "rule_id": {
+      "$ref": "../../../variables/rule_id.json"
+    },
+    "attempt": {
+      "$ref": "../../../variables/attempt.json"
+    },
+    "task_state": {
+      "$ref": "../../../variables/task_state.json"
+    },
+    "response": {
+      "$ref": "../../../components/failsafe_response.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "response",
+      "rule_id": "LB2",
+      "attempt": "primary",
+      "task_state": "active",
+      "response": {
+        "kind": "return_to_home"
+      }
+    },
+    {
+      "kind": "response",
+      "attempt": "primary",
+      "task_state": "active",
+      "response": {
+        "kind": "land"
+      }
+    }
+  ]
+}

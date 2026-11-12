@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/settings.json",
+  "title": "Settings request",
+  "description": "The body of PATCH /entities/assets/{asset_id}/settings: settings to apply now, each an explicit end state. Core stamps the settings_change record fields.",
+  "type": "object",
+  "required": [
+    "settings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "settings": {
+      "$ref": "../components/settings.json"
+    }
+  },
+  "examples": [
+    {
+      "settings": {
+        "run_state": "paused"
+      }
+    }
+  ]
+}
