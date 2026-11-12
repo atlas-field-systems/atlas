@@ -23,6 +23,18 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
+<td>Results an Asset app had not reported before it was started again on the ground are lost; nothing keeps them. When it signs up again, Core marks its Tasks with no final report not done, claiming no outcome.</td>
+<td>An app restart during a run, on the ground.</td>
+<td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>A radio Asset whose app starts again signs up again through its gateway, like any Asset. There is no separate gateway restart signal.</td>
+<td>Radio Assets, within one run.</td>
+<td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
 <td>If Core ever runs out of Asset IDs, it refuses new registrations and tells the admin. Asset IDs are never reused, not even in a later run.</td>
 <td>Registration, in every run.</td>
 <td><a href="runs-and-identity.html#ids">Runs and identity</a></td>
@@ -189,7 +201,7 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
-<td>When several critical battery rules match, the highest-priority one wins. If a critical rule&#39;s response fails, such as Return to home failing while the battery is still critical, the Asset falls back to Land. Nothing is retried.</td>
+<td>When several critical battery rules match, the highest-priority one wins. If a critical rule&#39;s response fails while the battery is still critical, the Asset falls back to Return to home, so a critical rule names no fallback of its own. Nothing is retried.</td>
 <td>Critical battery rules.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
 </tr>
