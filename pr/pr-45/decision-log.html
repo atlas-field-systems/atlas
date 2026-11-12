@@ -23,6 +23,12 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
+<td>If an Asset&#39;s or gateway&#39;s Reset ZIP fails, it keeps the records and tells whoever runs it, as Core does. It does not try again at its next start.</td>
+<td>Asset and gateway Reset ZIPs.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip">Asset logging</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
 <td>If the Reset ZIP fails, Core keeps the run&#39;s data and tells the admin. It does not try again at later starts. A crash while Core is stopping on purpose just resumes the run.</td>
 <td>Core Reset.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-the-zip-fails">Core Reset</a></td>
