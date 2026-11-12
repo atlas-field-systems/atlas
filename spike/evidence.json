@@ -1,0 +1,19 @@
+{
+  "source_sha": "cd25d25cd5d2aab0b8a4e9a5c193f54aa6ca047a",
+  "runtime": "Node v24.22.2",
+  "tests": 27,
+  "passed": 27,
+  "failed": 0,
+  "skipped": 0,
+  "behavior_tests": 24,
+  "validator_probes": 1,
+  "doc_conflict_probes": 2,
+  "commands": [
+    "npm ci --prefix spike",
+    "npm run check --prefix spike",
+    "npm test --prefix spike",
+    "node .github/scripts/check-links.mjs",
+    "node .github/scripts/check-retired.mjs"
+  ],
+  "limitations": "See lessons.md; passing probes do not prove product design or equipment safety."
+}
