@@ -12,7 +12,7 @@ their responses are configured explicitly for the Asset and the operation, using
 only actions the Asset supports. A reporting-only beacon has no failsafe. The one
 built-in response is the safe action its maker chose, used when the Asset
 [restarts in flight](#a-restart-in-flight-is-a-failsafe) or an operator
-[fires the failsafe](#an-operator-can-fire-the-failsafe).
+[fires the failsafe](#an-operator-can-fire-the-failsafe) and no rule applies.
 
 The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
 up to 16 rules. Its starting value comes from the Asset's
@@ -112,6 +112,10 @@ Conditions can include:
   chooses. A rule set off by degraded also counts faulted.
 - The battery below a set percentage. Atlas does not estimate the charge needed
   to get home: by the time that estimate fires, heading home is already late.
+- The battery below a critical level, set below the other battery rules. A
+  critical battery rule
+  [always fires](#an-override-with-hold-or-pause-re-arms-protection).
+- The operator's [Fail-safe command](#an-operator-can-fire-the-failsafe).
 - Contact loss, after the `link_loss_after_s` setting without contact.
 - Any of these, alone or combined.
 - No Tasks for a configured duration, including zero: neither an active Task nor
@@ -204,12 +208,23 @@ battery still below the rule's percentage, fires again only after it stops
 holding and holds again. The Asset stays in failsafe state throughout; re-arming
 never cancels it. A Land or Return to home override re-arms nothing.
 
+**A critical battery level always fires.** A rule whose battery condition is
+marked critical fires whenever the battery is below that level, whatever its
+priority and whether or not it fired before. A Hold now or pause override never
+keeps it from acting: the rule fires again at once, replacing the Hold or the
+pause, so a held Asset can't hover until its battery dies. Land and Return to
+home overrides still stand. The overrides themselves are unchanged.
+
 ## An operator can fire the failsafe
 
 Fail-safe is a command, like Land, Return to home, or Hold. An operator sends it
 alone with `now`, and the Asset treats it exactly as if its failsafe had fired:
-it stops current work, clears its queue, enters failsafe state, and starts the
-built-in safe action its maker chose. From then on it is like any failsafe: the
+it stops current work, clears its queue, and enters failsafe state. It runs the
+operator's rule for it: the highest-priority rule with the Fail-safe command
+condition whose other conditions also hold. Only if no rule applies does it
+fall back to the built-in safe action its maker chose. The command is what sets
+the rule off; it is never a response itself. From then on it is like any
+failsafe: the
 state can't be cancelled or left, and the
 [overrides above](#lock-ordinary-work-for-the-rest-of-the-operation) apply. The
 Fail-safe Task completes once the Asset is in failsafe state; the response runs
@@ -225,13 +240,15 @@ out of contact relies on its own contact-loss rules and on the
 ## A restart in flight is a failsafe
 
 The app restarts itself after a crash. On startup, before it runs any work, it
-checks whether the vehicle is flying: airborne, or armed. If it is, the Asset
+checks whether the vehicle is airborne. Armed on the ground does not count. If
+it is airborne, the Asset
 fires its failsafe and enters failsafe state instead of resuming its work. It
 rejoins Core as the same Asset, with the same `asset_id`
 ([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
 From there it is like any failsafe: operators see it as itself, in failsafe, the
 [overrides above](#lock-ordinary-work-for-the-rest-of-the-operation) apply, and
-the state has no exit. A restart on the ground drops the queued Tasks instead.
+the state has no exit. A restart on the ground, armed or not, drops the queued
+Tasks instead.
 A dropped link is not a restart. A crashed Asset is inspected before its next
 flight.
 
@@ -261,9 +278,7 @@ restarting idle or contact timers.
   Atlas response.
 - Boundary details and measurement freshness limits.
 - How a rule names a restart: no condition kind covers it yet.
-- Whether a rule may choose the response to the Fail-safe command instead of
-  the built-in safe action.
-- How the app tells airborne from armed on each platform at startup, and what
-  it does when it cannot read the flight controller yet.
+- How the app tells it is airborne on each platform at startup, and what it
+  does when it cannot read the flight controller yet.
 - What counts as safely stopped on each platform, and how long the app waits for
   Core to acknowledge its final reports before it shuts down.

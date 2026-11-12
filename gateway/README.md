@@ -24,9 +24,9 @@ A site runs one gateway at a time. Each radio Asset is carried by that gateway:
 the gateway hears it, makes its Core API calls, and reports its contact. Core
 shows which gateway carries each Asset. Core authenticates the gateway with its
 key and trusts it for which radio Asset sent what. A gateway can register radio
-Assets, but it cannot register an Asset on IP or issue a Core key. For now
-each radio Asset talks to only one gateway; several gateways for one Asset are
-out of scope.
+Assets, but it cannot register an Asset on IP or issue a Core key. The radio
+network is a mesh: Assets talk to each other and to the one gateway, and many
+Assets ride on it. Several gateways in one network are out of scope.
 
 How radio Assets register, keep their IDs, and what happens when the gateway
 changes is in

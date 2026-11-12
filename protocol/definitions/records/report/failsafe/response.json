@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe/response.json",
   "title": "response",
-  "description": "The state of a failsafe Task: one run of a response, with no task_id from Core. rule_id names the rule that fired; it is absent when the Asset runs its built-in safe action, after a restart in flight with no rule for it or for the Fail-safe command. attempt says primary or fallback. A rule re-armed by an operator override may run again, so a rule's runs are told apart by time. The Asset sends it active when the response starts, with the response as it runs, parameters fixed; then one final state, completed, failed or cancelled. It is never queued. A cancelled response was interrupted by a higher-priority or re-armed rule, or replaced by an operator override. Activation has already cancelled ordinary work and raised clear_count.",
+  "description": "The state of a failsafe Task: one run of a response, with no task_id from Core. rule_id names the rule that fired; it is absent when the Asset runs its built-in safe action because no rule applies, after a restart in flight or the Fail-safe command. attempt says primary or fallback. A rule re-armed by an operator override may run again, so a rule's runs are told apart by time. The Asset sends it active when the response starts, with the response as it runs, parameters fixed; then one final state, completed, failed or cancelled. It is never queued. A cancelled response was interrupted by a higher-priority or re-armed rule, or replaced by an operator override. Activation has already cancelled ordinary work and raised clear_count.",
   "type": "object",
   "required": [
     "kind",

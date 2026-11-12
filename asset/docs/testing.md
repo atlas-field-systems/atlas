@@ -44,11 +44,15 @@ coverage:
   ([re-arming](failsafes.md#an-override-with-hold-or-pause-re-arms-protection)).
   Check higher-priority interruption separately under
   the [selected priority rules](failsafes.md#a-failsafe-activates-a-configured-task).
-- The Fail-safe command: the Asset enters failsafe state and runs its built-in
-  safe action, and refuses a second Fail-safe.
-- Kill the app in flight and on the ground. In flight, it restarts, rejoins
-  with the same `asset_id`, and fires its failsafe; on the ground, it drops its
-  queued Tasks. In both, the flight controller's own failsafe fires if the app
+- The Fail-safe command: the Asset enters failsafe state and runs its rule for
+  the command, or its built-in safe action with no rule that applies, and
+  refuses a second Fail-safe.
+- A critical battery rule: override its response, or an earlier one, with Hold
+  now or pause while the battery is below the critical level, and expect the
+  rule to fire again at once.
+- Kill the app in flight and on the ground, armed and disarmed. In flight, it
+  restarts, rejoins with the same `asset_id`, and fires its failsafe; on the
+  ground, armed or not, it drops its queued Tasks. In both, the flight controller's own failsafe fires if the app
   stays down past its timeout.
 - A [Task update](README.md#carry-out-work-and-report-its-result) for a queued
   Task, the active Task, and a Task that has ended.

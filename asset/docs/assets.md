@@ -117,7 +117,7 @@ is ready, so [connection readiness](README.md#start-and-connect) stays separate.
 
 A standard Linux service starts the app on boot, shuts it down in order, and
 restarts it automatically after a crash. On startup the app checks whether the
-vehicle is flying and, if it is,
+vehicle is airborne and, if it is,
 [fires its failsafe](failsafes.md#a-restart-in-flight-is-a-failsafe). A clean
 shutdown is not restarted
 ([an operation runs without planned restarts](../../atlas/using-atlas.md#an-operation-runs-without-planned-restarts)).

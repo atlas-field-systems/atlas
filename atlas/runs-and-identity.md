@@ -76,7 +76,7 @@ new one.
   with its key and comes back as the same Asset, with the same `asset_id`. This holds even if it forgot its ID: the key
   proves which Asset it is. It still never picks or configures its own ID.
 - **Work does not resume after a restart.** On startup the app checks whether
-  the vehicle is flying. If it is, the Asset fires its failsafe instead of
+  the vehicle is airborne. If it is, the Asset fires its failsafe instead of
   resuming its work
   ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-in-flight-is-a-failsafe)),
   and operators see it as itself, in failsafe. An Asset that restarts on the
@@ -99,11 +99,11 @@ new one.
   restarted app.
 - **A removed radio can come back.** If it is heard again, the gateway
   registers it as a new Asset with a new ID.
-- **One gateway per site** at a time ([Scale](scale.md#setup)).
-- **One gateway per Asset.** For now each radio Asset talks to only one
-  gateway: the one that registered it. Assets that talk to several gateways,
-  and moving a radio Asset to another gateway while it keeps its ID, are out of
-  scope.
+- **One gateway for the whole network.** One gateway is deployed per area
+  ([Scale](scale.md#setup)). The radio network is a mesh: Assets talk to each
+  other and to that one gateway, and every radio Asset in the area rides on it.
+  No Asset uses two gateways. Several gateways in one network, and moving a
+  radio Asset to another gateway while it keeps its ID, are out of scope.
 
 ## When the gateway changes
 

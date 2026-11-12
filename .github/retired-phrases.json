@@ -210,5 +210,21 @@
     "phrase": "\\binspected before it runs again\\b",
     "why": "A crashed Asset is inspected before its next flight.",
     "example": "A crashed Asset is inspected before it runs again."
+  },
+  {
+    "phrase": "\\bone gateway per (radio )?asset\\b|\\b(each|every) (radio )?asset talks to only one gateway\\b|\\bseveral gateways for one asset\\b",
+    "why": "One gateway serves the whole radio network in an area; many Assets ride on it, and no Asset uses two.",
+    "example": "One gateway per Asset: each radio Asset talks to only one gateway."
+  },
+  {
+    "phrase": "\\bairborne,? or armed\\b|\\b(flying|in flight)\\b[^.]*\\bor armed\\b|\\barmed counts as (flying|airborne)\\b",
+    "why": "At startup only an airborne vehicle fires its failsafe; armed on the ground does not count.",
+    "example": "On startup it checks whether the vehicle is flying: airborne, or armed."
+  },
+  {
+    "phrase": "\\bstarts? the built-in safe action\\b[^.]*\\bfail-?safe command\\b|\\bfail-?safe command\\b[^.]*\\b(always )?(runs|starts) (the |its )?built-in safe action\\b",
+    "unless": "\\b(no rule|none|only if)\\b",
+    "why": "The Fail-safe command runs the operator's rule for it; the built-in safe action is only the fallback when no rule applies.",
+    "example": "The Fail-safe command runs the built-in safe action."
   }
 ]

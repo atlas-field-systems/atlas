@@ -321,12 +321,12 @@ Asset on its own side and speaks to Core only by `asset_id`.
   ID through the Fieldlink.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
   adds `definitions.refused`. The refusal adds no Asset.
-- **One gateway per radio Asset.** The gateway that registered a radio Asset
-  is the only one that carries it. A radio whose app restarted mid-run
-  identifies itself to that gateway through the Fieldlink and keeps its ID, but
-  its work does not resume
+- **One gateway for the network.** The area's one gateway carries every radio
+  Asset it registered, and no other gateway carries them. A radio whose app
+  restarted mid-run identifies itself to that gateway through the Fieldlink and
+  keeps its ID, but its work does not resume
   ([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
-  Another gateway that hears it registers it as a new Asset.
+  A gateway that replaces it registers its radios as new Assets.
 - When an admin removes a radio Asset, its ID ends. If the radio is heard
   again, its gateway registers it as a new Asset with a new ID.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset

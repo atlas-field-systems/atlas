@@ -67,7 +67,7 @@ refreshed Command Interface recovers from Core's event log.
 An Asset whose app stops shows offline in Core, and the other Assets keep
 working. After a crash the app restarts itself and rejoins as the same Asset
 with the same ID, because its key proves which Asset it is, but its work does
-not resume. An Asset that restarts while flying fires its failsafe
+not resume. An Asset that restarts while airborne fires its failsafe
 ([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset
 that crashed is inspected before its next flight. An Asset keeps nothing from an
 earlier run. A dropped link is not a stop: the app keeps its state and

@@ -50,7 +50,7 @@ The app and its link stay running for the operation, as Core does. An Asset
 whose app stops shows offline, and the other Assets keep working. After a
 crash the app restarts itself, registers with its key, and
 [rejoins as the same Asset](../../atlas/runs-and-identity.md#keys-and-registration),
-but its work does not resume. A restart while the vehicle is flying
+but its work does not resume. A restart while the vehicle is airborne
 [fires its failsafe](failsafes.md#a-restart-in-flight-is-a-failsafe); a restart
 on the ground drops its queued Tasks, and operators send again what still
 matters.

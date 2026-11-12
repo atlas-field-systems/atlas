@@ -175,8 +175,9 @@ it, so the confirmation lists the Tasks it will cancel.
 - **Cancel** names one Task; the rest of the queue stays.
 - **Change the order** of sent Tasks by cancelling them and sending new ones.
   Core has no reorder request.
-- **Fail-safe** fires the Asset's failsafe, as if a rule had fired. It is
-  offered when the Asset lists the `failsafe` command, is sent with `now`, and
+- **Fail-safe** fires the Asset's failsafe, as if a rule had fired: the Asset
+  runs its rule for the command, or its built-in safe action if none applies.
+  It is offered when the Asset lists the `failsafe` command, is sent with `now`, and
   asks for confirmation, because the Asset stays in failsafe state for the rest
   of the operation ([Failsafes](../../asset/docs/failsafes.md#an-operator-can-fire-the-failsafe)).
 - **Pause and Resume** are a setting, sent as an end state.
