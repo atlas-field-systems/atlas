@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe.json",
   "title": "Failsafe",
-  "description": "The Asset reports its failsafe state: a failsafe Task's state, an operator override, or an independent flight-controller protection taking over. kind says which. The first failsafe report of an operation means the Asset is in failsafe state for the rest of it: ordinary work stays locked, and an equal- or lower-priority rule never starts another response, except that an override with Hold now or pause re-arms the contact-loss and low-battery rules, and a critical battery rule always fires. explanation says what set it off or what happened, such as a rule, a restart in flight, or the operator's Fail-safe command.",
+  "description": "The Asset reports its failsafe state: a failsafe Task's state, an operator override, or an independent flight-controller protection taking over. kind says which. The first failsafe report of an operation means the Asset is in failsafe state for the rest of it: ordinary work stays locked, and an equal- or lower-priority rule never starts another response, except that an override with Hold now or pause re-arms the contact-loss and low-battery rules, and a critical battery rule always fires. explanation says what set it off or what happened, such as a rule or the operator's Fail-safe command.",
   "type": "object",
   "required": [
     "type",

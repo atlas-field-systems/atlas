@@ -47,13 +47,14 @@ coverage:
 - The Fail-safe command: the Asset enters failsafe state and runs its rule for
   the command, or its built-in safe action with no rule that applies, and
   refuses a second Fail-safe.
+- A flying Asset with no critical battery rule: Core refuses its Tasks.
 - A critical battery rule: override its response, or an earlier one, with Hold
   now or pause while the battery is below the critical level, and expect the
   rule to fire again at once.
-- Kill the app in flight and on the ground, armed and disarmed. In flight, it
-  restarts, rejoins with the same `asset_id`, and fires its failsafe; on the
-  ground, armed or not, it drops its queued Tasks. In both, the flight controller's own failsafe fires if the app
-  stays down past its timeout.
+- Kill the app in flight: it stays down, Core shows the Asset offline, and the
+  flight controller's own failsafe returns it home after its timeout. Start the
+  app again on the ground: it rejoins with the same `asset_id` and drops its
+  queued Tasks.
 - A [Task update](README.md#carry-out-work-and-report-its-result) for a queued
   Task, the active Task, and a Task that has ended.
 - Link loss and reconnect while local execution continues, with final reports

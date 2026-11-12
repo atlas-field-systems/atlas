@@ -59,7 +59,7 @@ event.
   item in the next run.
 
 Scope: an ID holds for one run. Within the run an Asset keeps its `asset_id`
-through reconnects, app restarts, and Core crashes; in the next run it gets a
+through reconnects, app restarts on the ground, and Core crashes; in the next run it gets a
 new one.
 
 ## Keys and registration
@@ -71,17 +71,15 @@ new one.
   registers at most one Asset at a time. Registering again with the same key in
   the same run returns the same `asset_id`, unless an admin removed that Asset;
   then it registers as a new Asset with a new ID.
-- **A restarted app rejoins as itself.** The app restarts itself after a
-  crash. If an Asset's app stops and starts again during a run, it registers
+- **A restarted app rejoins as itself.** Nothing restarts the app on its own.
+  If an Asset's app is started again on the ground during a run, it registers
   with its key and comes back as the same Asset, with the same `asset_id`. This holds even if it forgot its ID: the key
   proves which Asset it is. It still never picks or configures its own ID.
-- **Work does not resume after a restart.** On startup the app checks whether
-  the vehicle is airborne. If it is, the Asset fires its failsafe instead of
-  resuming its work
-  ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-in-flight-is-a-failsafe)),
-  and operators see it as itself, in failsafe. An Asset that restarts on the
-  ground drops its queued Tasks: operators see them marked not done and send
-  again whatever still matters. Nothing resumes on its own.
+- **Work does not resume after a restart.** A restarted app drops its queued
+  Tasks: operators see them marked not done and send again whatever still
+  matters. Nothing resumes on its own. An app that fails in flight stays down,
+  shown offline, while the flight controller returns the vehicle home
+  ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight)).
 - **A removed Asset's ID ends.** If it registers again, it is a new Asset.
 
 ## Radio Assets

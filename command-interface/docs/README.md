@@ -271,7 +271,9 @@ say so and offer only the
 Land now, Return to home now, Hold now, and pause. Name the rule that fired
 and why, its response and its outcome, and whether a fallback ran. If the flight controller's own protection took over,
 say so rather than naming an Atlas rule. Show the Asset's failsafe rules where
-an operator can read and replace them outside a failsafe.
+an operator can read and replace them outside a failsafe. A flying Asset with
+no critical battery rule says so, because Core refuses its Tasks until it has
+one.
 
 Show each declared [subsystem](../../asset/docs/status.md) with its last reported
 condition, explanation, and age. A subsystem that has not reported is shown as

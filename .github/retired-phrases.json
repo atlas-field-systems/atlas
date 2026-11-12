@@ -181,13 +181,8 @@
     "example": "A crash ends the run too."
   },
   {
-    "phrase": "\\b(does not|doesn't|never) restarts? the app automatically\\b",
-    "why": "The Asset app restarts itself automatically after a crash.",
-    "example": "The service does not restart the app automatically."
-  },
-  {
     "phrase": "\\brestart(s|ed)? mid-flight\\b|\\brestarts?\\b[^.]*\\bwhile (the asset is )?out on a task\\b",
-    "why": "The restart trigger is the startup check: if the vehicle is flying, the Asset fires its failsafe.",
+    "why": "Nothing restarts the Asset app on its own; an app that fails in flight stays down and the flight controller returns home.",
     "example": "If the app restarts during a run while the Asset is out on a Task, it enters failsafe state."
   },
   {
@@ -217,14 +212,25 @@
     "example": "One gateway per Asset: each radio Asset talks to only one gateway."
   },
   {
-    "phrase": "\\bairborne,? or armed\\b|\\b(flying|in flight)\\b[^.]*\\bor armed\\b|\\barmed counts as (flying|airborne)\\b",
-    "why": "At startup only an airborne vehicle fires its failsafe; armed on the ground does not count.",
-    "example": "On startup it checks whether the vehicle is flying: airborne, or armed."
-  },
-  {
     "phrase": "\\bstarts? the built-in safe action\\b[^.]*\\bfail-?safe command\\b|\\bfail-?safe command\\b[^.]*\\b(always )?(runs|starts) (the |its )?built-in safe action\\b",
     "unless": "\\b(no rule|none|only if)\\b",
     "why": "The Fail-safe command runs the operator's rule for it; the built-in safe action is only the fallback when no rule applies.",
     "example": "The Fail-safe command runs the built-in safe action."
+  },
+  {
+    "phrase": "\\b(the app |service |it )?restarts? (itself|the app|it) automatically\\b|\\bthe app restarts itself\\b|\\brestart(s|ed)? in flight\\b|\\bon startup\\b[^.]*\\b(airborne|flying)\\b[^.]*\\bfailsafe\\b",
+    "unless": "\\b(never|not|no|nothing)\\b",
+    "why": "Nothing restarts the Asset app on its own; an app that fails in flight stays down and the flight controller returns home.",
+    "example": "The app restarts itself after a crash."
+  },
+  {
+    "phrase": "\\brecommended (asset )?setup\\b[^.]*\\bflight controller\\b",
+    "why": "The flight controller's own return home on losing the Asset app is required for flying Assets, not just recommended.",
+    "example": "Recommended setup: the flight controller returns home on its own when it loses the Asset app."
+  },
+  {
+    "phrase": "\\bno (atlas )?failsafe rules, battery rules included\\b",
+    "why": "Every flying Asset needs a critical battery rule.",
+    "example": "An Asset starts with no Atlas failsafe rules, battery rules included."
   }
 ]

@@ -115,11 +115,9 @@ The app starts dependencies before their consumers, stops them in reverse order,
 and cleans up after a partial startup. Modules can start before their equipment
 is ready, so [connection readiness](README.md#start-and-connect) stays separate.
 
-A standard Linux service starts the app on boot, shuts it down in order, and
-restarts it automatically after a crash. On startup the app checks whether the
-vehicle is airborne and, if it is,
-[fires its failsafe](failsafes.md#a-restart-in-flight-is-a-failsafe). A clean
-shutdown is not restarted
+A standard Linux service starts the app on boot and shuts it down in order. It
+never restarts the app on its own: an app that fails in flight
+[stays down](failsafes.md#if-the-app-fails-in-flight)
 ([an operation runs without planned restarts](../../atlas/using-atlas.md#an-operation-runs-without-planned-restarts)).
 Link reconnects keep the same running app. An admin may remove an Asset; it can
 then register again as a new Asset

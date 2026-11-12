@@ -71,9 +71,7 @@ ones by hand.
 If the app crashes or loses power, its next start writes the ZIP of the
 interrupted operation, marked "the app stopped unexpectedly; this record may be
 incomplete", and retries any earlier operation whose ZIP failed. Writing it
-never delays the startup
-[check for flight](failsafes.md#a-restart-in-flight-is-a-failsafe) or
-rejoining Core. Then it starts
+never delays rejoining Core. Then it starts
 a new operation with nothing kept from the earlier one.
 
 ## When logging cannot keep up

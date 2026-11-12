@@ -46,7 +46,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
-| `409` | Refused: Asset or Plugin offline, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
+| `409` | Refused: Asset or Plugin offline, flying Asset with no critical battery rule, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
@@ -168,6 +168,12 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   description lists every command and setting in it, and accepts or refuses the
   request whole. An unlisted command or setting is refused with `409`. Core
   refuses commands to an offline Asset and holds nothing, Fail-safe included.
+- **A flying Asset needs a critical battery rule.** An Asset whose description
+  lists `takeoff` is a flying Asset. Core refuses Tasks to it with
+  `409 no_critical_battery_rule` while its latest reported `failsafe_policy`
+  has no rule with a critical battery condition, and refuses a settings change
+  that would replace its policy with one that has none
+  ([Failsafes](../../asset/docs/failsafes.md#no-rules-are-enabled-by-default)).
 - **Fail-safe runs now.** A `failsafe` Task is sent alone with `now`; Core
   refuses it otherwise with `400 invalid`. The Asset treats it as if its
   failsafe had fired ([Failsafes](../../asset/docs/failsafes.md#an-operator-can-fire-the-failsafe)).

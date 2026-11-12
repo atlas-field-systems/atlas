@@ -46,4 +46,4 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Failsafe rule | Conditions, a priority, and a configured response, named by its rule ID. |
 | Failsafe response | A command the Asset supports and its parameters, with an optional fallback. A response always stops ordinary work; an Asset that should keep working has no rule for that situation. |
 | Failsafe task | One locally started execution of a failsafe response, using ordinary Task execution. It has no Core task number; its rule, attempt (primary or fallback), and start time name it. |
-| Failsafe state | The Asset's [operation-long lock on ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation). A rule, a restart in flight, or the operator's Fail-safe command starts it. |
+| Failsafe state | The Asset's [operation-long lock on ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation). A rule or the operator's Fail-safe command starts it. |

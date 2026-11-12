@@ -47,13 +47,14 @@ its first valid position. An explicitly configured or operator-set home takes
 precedence. A reconnect does not reset home; operators change it as a setting.
 
 The app and its link stay running for the operation, as Core does. An Asset
-whose app stops shows offline, and the other Assets keep working. After a
-crash the app restarts itself, registers with its key, and
+whose app stops shows offline, and the other Assets keep working. Nothing
+restarts the app on its own; an app that fails in flight
+[stays down](failsafes.md#if-the-app-fails-in-flight) while the flight
+controller returns the vehicle home. An app started again on the ground in the
+same run registers with its key and
 [rejoins as the same Asset](../../atlas/runs-and-identity.md#keys-and-registration),
-but its work does not resume. A restart while the vehicle is airborne
-[fires its failsafe](failsafes.md#a-restart-in-flight-is-a-failsafe); a restart
-on the ground drops its queued Tasks, and operators send again what still
-matters.
+but its work does not resume: it drops its queued Tasks, and operators send
+again what still matters.
 An Asset keeps nothing from an earlier run. A dropped link does not restart the
 app or clear its state.
 

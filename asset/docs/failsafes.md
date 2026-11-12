@@ -7,12 +7,19 @@ No Asset runtime is built yet. Terms are in the [Atlas glossary](../../GLOSSARY.
 
 ## No rules are enabled by default
 
-An Asset starts with no Atlas failsafe rules, battery rules included. Rules and
-their responses are configured explicitly for the Asset and the operation, using
-only actions the Asset supports. A reporting-only beacon has no failsafe. The one
-built-in response is the safe action its maker chose, used when the Asset
-[restarts in flight](#a-restart-in-flight-is-a-failsafe) or an operator
+Atlas enables no failsafe rules by itself. Rules and their responses are
+configured explicitly for the Asset and the operation, using only actions the
+Asset supports. A reporting-only beacon has no failsafe. The one built-in
+response is the safe action its maker chose, used when an operator
 [fires the failsafe](#an-operator-can-fire-the-failsafe) and no rule applies.
+
+**Every flying Asset needs a critical battery rule.** A flying Asset is one
+that lists `takeoff` among its commands. Its policy must hold at least one rule
+with a [critical battery condition](#an-override-with-hold-or-pause-re-arms-protection),
+usually from its configuration. Core refuses Tasks to a flying Asset whose
+reported policy has none, and refuses a settings change that would replace its
+policy with one that has none
+([operator requests](../../core/docs/api.md#operator-requests)).
 
 The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
 up to 16 rules. Its starting value comes from the Asset's
@@ -52,11 +59,11 @@ or hung. The flight setup selects which conditions Atlas handles and which
 ArduPilot handles on its own. Enabling a protection does not prove a successful
 return or landing.
 
-**Recommended setup: the flight controller returns home on its own when it
-loses the Asset app.** The flight controller runs its own failsafe, such as
-return to home, when it stops hearing from the computer that runs the Asset
-app, without Atlas. This covers an app crash, a hang, a restart that takes too
-long, and a lost companion-to-controller link. On ArduPilot this is the
+**Required for flying Assets: the flight controller returns home on its own
+when it loses the Asset app.** The flight controller runs its own failsafe, such
+as return to home, when it stops hearing from the computer that runs the Asset
+app, without Atlas. This covers an app crash, a hang, a failed companion
+computer, and a lost companion-to-controller link. On ArduPilot this is the
 [ground station (GCS) failsafe](https://ardupilot.org/copter/docs/gcs-failsafe.html),
 which watches MAVLink heartbeats:
 
@@ -237,27 +244,15 @@ Asset ([operator requests](../../core/docs/api.md#operator-requests)). A vehicle
 out of contact relies on its own contact-loss rules and on the
 [flight controller's protections](#independent-flight-controller-protections).
 
-## A restart in flight is a failsafe
+## If the app fails in flight
 
-The app restarts itself after a crash. On startup, before it runs any work, it
-checks whether the vehicle is airborne. Armed on the ground does not count. If
-it is airborne, the Asset
-fires its failsafe and enters failsafe state instead of resuming its work. It
-rejoins Core as the same Asset, with the same `asset_id`
-([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
-From there it is like any failsafe: operators see it as itself, in failsafe, the
-[overrides above](#lock-ordinary-work-for-the-rest-of-the-operation) apply, and
-the state has no exit. A restart on the ground, armed or not, drops the queued
-Tasks instead.
-A dropped link is not a restart. A crashed Asset is inspected before its next
-flight.
-
-The response is the policy's, when a rule covers the restart. With no rule for
-it, the Asset falls back to a built-in safe action its maker chose, such as
-landing or returning home. Operators who want something specific configure a
-rule. The
-[flight controller's own protection](#independent-flight-controller-protections)
-covers the time the app is down.
+Nothing restarts the app. If the Asset app or its companion computer fails in
+the air, it stays down. Core shows the Asset offline, as after lost contact,
+and the other Assets keep working. The flight controller notices that the app
+is gone and returns home on its own, through the
+[required protection](#independent-flight-controller-protections). The vehicle
+is inspected before its next flight. A dropped link is not a failure of the
+app.
 
 ## Replace the policy during ordinary operation
 
@@ -277,8 +272,5 @@ restarting idle or contact timers.
 - Exact detection of an autopilot takeover and its interaction with a running
   Atlas response.
 - Boundary details and measurement freshness limits.
-- How a rule names a restart: no condition kind covers it yet.
-- How the app tells it is airborne on each platform at startup, and what it
-  does when it cannot read the flight controller yet.
 - What counts as safely stopped on each platform, and how long the app waits for
   Core to acknowledge its final reports before it shuts down.

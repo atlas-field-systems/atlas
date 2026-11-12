@@ -65,11 +65,12 @@ Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log.
 
 An Asset whose app stops shows offline in Core, and the other Assets keep
-working. After a crash the app restarts itself and rejoins as the same Asset
-with the same ID, because its key proves which Asset it is, but its work does
-not resume. An Asset that restarts while airborne fires its failsafe
-([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset
-that crashed is inspected before its next flight. An Asset keeps nothing from an
+working. Nothing restarts the app on its own. If it fails in flight, the flight
+controller returns the vehicle home without Atlas, and the vehicle is inspected
+before its next flight. An app started again on the ground in the same run
+rejoins as the same Asset with the same ID, because its key proves which Asset
+it is, but its work does not resume
+([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset keeps nothing from an
 earlier run. A dropped link is not a stop: the app keeps its state and
 reconnects as the same Asset.
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/critical.json",
   "title": "critical",
-  "description": "On a battery_below condition, the percentage is the critical battery level, set below the other battery rules. A rule with a critical level always fires while the battery is below it, whatever its priority, and a Hold now or pause override never keeps it from acting. If left out, it means false.",
+  "description": "On a battery_below condition, the percentage is the critical battery level, set below the other battery rules. A rule with a critical level always fires while the battery is below it, whatever its priority, and a Hold now or pause override never keeps it from acting. If left out, it means false. Every flying Asset, one that lists takeoff among its commands, needs at least one such rule; Core refuses Tasks to a flying Asset without one.",
   "type": "boolean",
   "examples": [
     true
