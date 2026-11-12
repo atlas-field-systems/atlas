@@ -193,7 +193,7 @@
   },
   {
     "phrase": "\\b(each|every) rule (runs|fires) (at most |only )?once\\b|\\bruns at most once in an operation\\b",
-    "why": "A Hold or pause override re-arms contact-loss and low-battery rules, so a rule may fire again.",
+    "why": "A Hold or pause override re-arms every failsafe rule, so a rule may fire again.",
     "example": "Each rule runs at most once in an operation."
   },
   {
@@ -307,5 +307,15 @@
     "unless": "\\b(never|not|no)\\b",
     "why": "A failed Reset ZIP is kept and reported, never retried at a later start, for Core, Assets, and gateways.",
     "example": "Its next start retries any earlier operation whose ZIP failed."
+  },
+  {
+    "phrase": "\\bre-?arms? (only )?(the |every rule whose conditions include )?(contact[- ]loss|lost[- ]contact) (or|and) low[- ]battery\\b",
+    "why": "A Hold or pause override re-arms every failsafe rule, not only contact-loss and low-battery rules.",
+    "example": "Hold now re-arms the contact-loss and low-battery rules."
+  },
+  {
+    "phrase": "\\bfiles from assets\\b[^.]*\\bnot designed\\b",
+    "why": "Assets upload files as Objects, placed through a geo feature they create.",
+    "example": "Files from Assets, such as drone photos, are not designed yet."
   }
 ]

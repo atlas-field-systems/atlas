@@ -140,6 +140,7 @@
         "variables/requested_by.json",
         "variables/request_id.json",
         "variables/now.json",
+        "variables/in_control.json",
         "variables/setting.json",
         "variables/gateway_id.json",
         "variables/contact.json",

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe.json",
   "title": "Failsafe",
-  "description": "The Asset reports its failsafe state: a failsafe Task's state, an operator override, or an independent flight-controller protection taking over. kind says which. The first failsafe report of an operation means the Asset is in failsafe state for the rest of it: ordinary work stays locked. While a response runs, only a higher-priority rule interrupts it; an override with Hold now or pause re-arms the contact-loss and low-battery rules, and a critical battery rule always fires. explanation says what set it off or what happened, such as a rule or the operator's Fail-safe command.",
+  "description": "The Asset reports its failsafe state: a failsafe Task's state, an operator override, or an independent flight-controller protection taking over. kind says which. The first failsafe report of an operation means the Asset is in failsafe state for the rest of it: ordinary work stays locked. While a response runs, only a higher-priority rule interrupts it; an override with Hold now or pause re-arms every rule, and a critical battery rule always fires. explanation says what set it off or what happened, such as a rule or the operator's Fail-safe command.",
   "type": "object",
   "required": [
     "type",
@@ -110,7 +110,16 @@
       "time": 1793667600000,
       "asset_id": "A1",
       "kind": "autopilot",
+      "in_control": true,
       "explanation": "Flight controller switched to RTL on radio failsafe"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667720000,
+      "asset_id": "A1",
+      "kind": "autopilot",
+      "in_control": false,
+      "explanation": "Pilot switched back to Guided"
     }
   ]
 }

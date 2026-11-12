@@ -43,6 +43,10 @@ coverage:
   lower-priority rule not to interrupt a running response. Then override with Hold now, lose contact again, and
   expect the contact-loss rule to fire again
   ([re-arming](failsafes.md#an-override-with-hold-or-pause-re-arms-protection)).
+- The flight controller taking over: switch modes outside the app and expect
+  operator requests refused and no rule firing; switch back to Guided and expect
+  the Asset holding with every rule re-armed
+  ([watch only](failsafes.md#while-the-flight-controller-is-in-control)).
   Check higher-priority interruption separately under
   the [selected priority rules](failsafes.md#a-failsafe-activates-a-configured-task).
 - The Fail-safe command: the Asset enters failsafe state and runs its rule for

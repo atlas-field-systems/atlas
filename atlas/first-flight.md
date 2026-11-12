@@ -15,8 +15,9 @@ observed outcomes. The operator sees the reported vehicle behavior.
 No runtime is built yet. The Pi can reach Core while vehicle equipment is still
 starting or unreachable. Connection alone does not establish takeoff readiness.
 The operator can intervene locally at the Pi. Independent vehicle controls and
-ArduPilot protections remain part of the setup, with their configuration and
-handover procedure still to be defined and verified.
+ArduPilot protections remain part of the setup. While they are in control,
+operators [only watch](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control);
+their values are tuned in SITL before the first flight.
 
 ## The flight commands
 
@@ -27,8 +28,8 @@ handover procedure still to be defined and verified.
   The drone goes to that altitude, or stays at its current one, flies over the
   position, and lands. Without a position, it lands where it is.
 
-These are the copter commands. Fixed-wing aircraft need a separate command
-family with its own behavior. The copter commands are simpler than MAVLink and
+These are the copter commands. Fixed-wing aircraft would need a separate command
+family and are not part of the current design. The copter commands are simpler than MAVLink and
 ArduPilot commands but map onto them.
 The Asset owns [platform-specific preparation and arming](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#prepare-and-take-off).
 

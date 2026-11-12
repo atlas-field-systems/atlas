@@ -139,10 +139,12 @@ controller. [Preparation and arming](README.md#prepare-and-take-off) are part of
 that execution. Configured failsafe responses use the same execution as ordinary
 work.
 
-Copters share one command family. Fixed-wing aircraft need their own, because
-takeoff, travel, and landing mean different things and succeed differently. A
-profile never silently reinterprets copter commands as fixed-wing commands.
-ArduRover ground vehicles, ArduPlane aircraft, and boats are intended extensions.
+Copters share one command family. Fixed-wing aircraft are not part of the
+current design ([decision log](../../atlas/decision-log.md#operations-and-setup)).
+They will need their own family, because takeoff, travel, and landing mean
+different things and succeed differently, and a profile never silently
+reinterprets copter commands. ArduRover ground vehicles, ArduPlane aircraft, and
+boats are intended extensions.
 
 ## Configuration and commitments
 
@@ -158,6 +160,6 @@ meanings. See [configuration](../config.md) and [behavior](README.md).
 - Module and equipment-driver interfaces, the full module catalog, and driver
   connection options.
 - Freshness limits, local storage layout and limits, and overflow behavior.
-- Exact turret-pointing and fixed-wing commands, gimbal control, and camera
-  image transport.
+- The exact turret-pointing command and gimbal control. Camera images reach Core
+  as [uploaded files](README.md#capture-files).
 - Packaging, service configuration, and installation commands.

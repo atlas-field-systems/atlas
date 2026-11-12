@@ -16,8 +16,16 @@ interface AssetLink {
   events(after?: number): AsyncIterable<Event>;  // this Asset's requests, in event_id order
   sendReports(reports: Report[]): Promise<void>; // resolves once the batch is acknowledged
   onContact(cb: (contact: Contact) => void): () => void;
+  storeFile(file: AssetFile): Promise<string>;    // resolves with the object_id
 }
 ```
+
+`storeFile` [uploads a file the Asset captured](../../core/docs/api.md#objects).
+`AssetFile` holds its `name`, `contentType`, bytes, and an optional `place`, a
+`requests.geofeature` body. With a place, the link creates that geo feature
+first and attaches the file to it. A link that cannot carry files, such as a
+narrow radio link, rejects the call, and the file stays in the Asset's
+[Reset ZIP](../../asset/docs/logging.md#export-the-assets-reset-zip).
 
 On IP, the SDK client provides it. On a radio Asset, the Fieldlink provides it.
 The Asset app's code is the same on both.
@@ -99,7 +107,8 @@ Settings requests are not Tasks unless they arrive as one. The helper passes
 `settings.requested` events to the app in event order; the app applies them and
 sends `report.settings` with the request's `request_id`.
 
-State is in memory for the run. Recovery after a process restart is not designed.
+State is in memory for the run. A restarted app holds no Tasks and starts again
+from [registration](../../core/docs/api.md#operator-requests).
 
 ## On a radio Asset
 

@@ -76,8 +76,8 @@ the whole answer.
 
 ## Objects
 
-An Object is a file Core holds, such as a photo or a satellite image. Plugins
-and operators add them. An operator can attach a photo to a building's geo
+An Object is a file Core holds, such as a photo or a satellite image. Plugins,
+operators, and Assets add them. An operator can attach a photo to a building's geo
 feature, for example.
 
 - A file never changes. An operator can move an Object to another geo feature
@@ -89,7 +89,9 @@ feature, for example.
   its Objects.
 - A file may be at most 100 MB by default; an admin may change the limit with
   the `max_object_bytes` setting.
-- Files from Assets, such as drone photos, are not designed yet.
+- An Asset's file, such as a drone photo, shows on the map only through a geo
+  feature the Asset creates alongside it
+  ([Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects)).
 - A GeoTIFF, an image that carries its own map position, can be shown on the
   map as an imagery geo feature, added by operators and Plugins
   ([imagery rules](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features)).

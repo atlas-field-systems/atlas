@@ -270,7 +270,8 @@ say so and offer only the
 [overrides it accepts](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation):
 Land now, Return to home now, Hold now, and pause. Name the rule that fired
 and why, its response and its outcome, and whether a critical rule fell back to Return to home. If the flight controller's own protection took over,
-say so rather than naming an Atlas rule. Show the Asset's failsafe rules where
+say so rather than naming an Atlas rule, and offer no commands until a person
+[hands control back](../../asset/docs/failsafes.md#while-the-flight-controller-is-in-control). Show the Asset's failsafe rules where
 an operator can read and replace them outside a failsafe. A flying Asset with
 no critical battery rule says so, because Core refuses its Tasks until it has
 one.

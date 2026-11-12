@@ -65,7 +65,7 @@ disagree, fix one of them.
 - **Critical rules.** When several rules with a critical battery condition match, only the highest-priority one fires. If its response fails, the Asset returns home, and nothing is retried. *[Owner decision](../../atlas/decision-log.md#failsafes).* The return home is reported as another run of the same rule.
 - **A response is a command.** It names a command kind the Asset lists, with its fields, never a settings change. A response is always protective. There is no `continue`: activation always cancels ordinary work, and a situation an Asset should keep working through is not a failsafe. *[Owner decision](../../atlas/decision-log.md#failsafes).*
 - **Failsafe Tasks have no `task_id`.** Core owns the numbering, so `rule_id` and the report's `time` name a failsafe Task; a rule may fire more than once. The built-in safe action, run for the Fail-safe command when no rule applies, has no `rule_id`. `report.failsafe` kind `response` carries its state, and with `active` the response as it runs, parameters fixed: a land with no position names where it lands. `report.status` kind `task` stays for Core's numbered Tasks.
-- `report.failsafe` kind `override` names the operator request that overrode a response: a Land, Return to home, or Hold Task sent with `now`, or a pause or running change. A Hold or pause override re-arms the contact-loss and low-battery rules, and a `battery_below` condition marked `critical` always fires, even after such an override. *[Owner decision](../../atlas/decision-log.md#failsafes).* Kind `autopilot` records an independent flight-controller protection taking over, without claiming Atlas started it. The first `report.failsafe` of an operation marks failsafe state.
+- `report.failsafe` kind `override` names the operator request that overrode a response: a Land, Return to home, or Hold Task sent with `now`, or a pause or running change. A Hold or pause override re-arms every rule, and a `battery_below` condition marked `critical` always fires, even after such an override. *[Owner decision](../../atlas/decision-log.md#failsafes).* Kind `autopilot` records the flight controller's own protection taking over, without claiming Atlas started it, or a person handing control back; `in_control` says which. Operators can only watch in between. *[Owner decision](../../atlas/decision-log.md#failsafes).* The first `report.failsafe` of an operation marks failsafe state.
 - Refusals in failsafe state use existing reports: a refused Task is `failed` with the failsafe as its explanation, and a refused cancel or settings change is answered with the current Task state or settings, naming the request.
 
 ## Administration and contact
@@ -75,7 +75,7 @@ disagree, fix one of them.
 - Key replacements, logins, and account changes have no shared record. They stay in Core's diagnostic log.
 - One `contact` record says whether an Asset or gateway is `online` or `offline`. Its `time` is when it was last heard, so an offline record keeps that time and the record still has one time. Core uses it for `asset.contact`, and a gateway sends it for each Asset it carries, with its Fieldlink deciding online or offline.
 - `contact` names exactly one of `asset_id`, `gateway_id`, or `plugin_id`; `provisioning` names exactly one of `gateway_id` or `plugin_id`.
-- `requested_by` names an account, a gateway, or a Plugin. Core keeps operator, gateway, and Plugin IDs distinct.
+- `requested_by` names an account, a gateway, a Plugin, or an Asset. Core keeps operator, gateway, Plugin, and Asset IDs distinct: it never assigns an `asset_id` that an account, gateway, or Plugin uses, and refuses a new account, gateway, or Plugin ID that names an Asset.
 - **No record carries a radio identity.** It stays with the gateway and its Fieldlink; Core knows radio Assets only by `asset_id`. *[Owner decision](../../atlas/decision-log.md#runs-and-identity).*
 - **No carrier record.** One gateway serves the whole radio network in an area, and no Asset uses two gateways, so the `registration` record's `requested_by` names it and no record moves an Asset between gateways. *[Owner decision](../../atlas/decision-log.md#runs-and-identity).*
 - One `drop` record covers `task.dropped`, `request.dropped`, and `plugin.dropped`; `refusal` records `definitions.refused`; a radio's refusal names its gateway with `radio` set. The event kind says which drop, as for `registration`.
@@ -99,8 +99,9 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
 ## Objects and Plugins
 
 - The `object` record is `object_id`, `name`, `content_type`, `size_bytes`, an
-  optional `geofeature_id`, and `requested_by`, the account or Plugin that
-  stored it. `deletion` records an operator deleting one; the Object is hidden, not destroyed. *[Owner decision](../../atlas/decision-log.md#the-picture-and-plugins).*
+  optional `geofeature_id`, and `requested_by`, the account, Plugin, or Asset
+  that stored it. An Asset's Object reaches the map only through a geo feature
+  the Asset creates alongside it. *[Owner decision](../../atlas/decision-log.md#the-picture-and-plugins).* `deletion` records an operator deleting one; the Object is hidden, not destroyed. *[Owner decision](../../atlas/decision-log.md#the-picture-and-plugins).*
 - **Plugins describe their own actions.** `plugin.description` lists each
   action by name, with a label, optional `help_text`, and its inputs, each a
   `plugin_input` that names one of the fixed `input_kind` values. Its display
