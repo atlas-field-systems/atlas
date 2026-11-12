@@ -70,7 +70,7 @@ one.</li>
 item in the next run.</li>
 </ul>
 <p>Scope: an ID holds for one run. Within the run an Asset keeps its <code>asset_id</code>
-through reconnects, app restarts, and Core crashes; in the next run it gets a
+through reconnects, app restarts on the ground, and Core crashes; in the next run it gets a
 new one.</p>
 <h2 id="keys-and-registration">Keys and registration</h2>
 <ul>
@@ -81,17 +81,15 @@ An Asset key names no Asset. There is no enrollment key.</li>
 registers at most one Asset at a time. Registering again with the same key in
 the same run returns the same <code>asset_id</code>, unless an admin removed that Asset;
 then it registers as a new Asset with a new ID.</li>
-<li><strong>A restarted app rejoins as itself.</strong> The app restarts itself after a
-crash. If an Asset&#39;s app stops and starts again during a run, it registers
+<li><strong>A restarted app rejoins as itself.</strong> Nothing restarts the app on its own.
+If an Asset&#39;s app is started again on the ground during a run, it registers
 with its key and comes back as the same Asset, with the same <code>asset_id</code>. This holds even if it forgot its ID: the key
 proves which Asset it is. It still never picks or configures its own ID.</li>
-<li><strong>Work does not resume after a restart.</strong> On startup the app checks whether
-the vehicle is airborne. If it is, the Asset fires its failsafe instead of
-resuming its work
-(<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-in-flight-is-a-failsafe">Failsafes</a>),
-and operators see it as itself, in failsafe. An Asset that restarts on the
-ground drops its queued Tasks: operators see them marked not done and send
-again whatever still matters. Nothing resumes on its own.</li>
+<li><strong>Work does not resume after a restart.</strong> A restarted app drops its queued
+Tasks: operators see them marked not done and send again whatever still
+matters. Nothing resumes on its own. An app that fails in flight stays down,
+shown offline, while the flight controller returns the vehicle home
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight">Failsafes</a>).</li>
 <li><strong>A removed Asset&#39;s ID ends.</strong> If it registers again, it is a new Asset.</li>
 </ul>
 <h2 id="radio-assets">Radio Assets</h2>

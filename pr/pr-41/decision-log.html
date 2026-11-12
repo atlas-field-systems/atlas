@@ -29,13 +29,13 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>The Asset app restarts itself automatically after a crash. On startup it checks whether the vehicle is airborne; if it is, it fires its failsafe. Armed on the ground does not count. This replaces &quot;a restart while out on a Task&quot; as the trigger.</td>
-<td>An app restart during a run, on IP or radio.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-in-flight-is-a-failsafe">Failsafes</a></td>
+<td>Nothing restarts the Asset app on its own. If the app or its companion computer fails in the air, it stays down and operators see the Asset offline. The flight controller detects the loss and returns home by itself, independent of Atlas. The vehicle is inspected before its next flight.</td>
+<td>An app or companion-computer failure in flight.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight">Failsafes</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>An Asset that restarts on the ground, armed or not, drops its queued Tasks. Operators see them marked not done and send again whatever still matters. Nothing resumes on its own.</td>
+<td>An Asset app started again on the ground during a run drops its queued Tasks. Operators see them marked not done and send again whatever still matters. Nothing resumes on its own.</td>
 <td>An app restart during a run, on the ground.</td>
 <td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
 </tr>
@@ -71,7 +71,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>An Asset app that restarts mid-run rejoins as itself through its key, with the same <code>asset_id</code>, unless an admin removed it. Its work does not resume (see the restart entries). This holds even if it forgot its ID, because the key proves which Asset it is. IDs stay Core-assigned and new each run; Assets do not pick fixed IDs.</td>
+<td>An Asset app started again during a run rejoins as itself through its key, with the same <code>asset_id</code>, unless an admin removed it. Its work does not resume (see the restart entries). This holds even if it forgot its ID, because the key proves which Asset it is. IDs stay Core-assigned and new each run; Assets do not pick fixed IDs.</td>
 <td>Assets on IP, within one run.</td>
 <td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
 </tr>
@@ -83,7 +83,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>A radio Asset whose app restarts mid-run rejoins as itself by identifying itself to its gateway. It keeps its <code>asset_id</code>, unless an admin removed it. Its work does not resume (see the restart entries).</td>
+<td>A radio Asset whose app is started again during a run rejoins as itself by identifying itself to its gateway. It keeps its <code>asset_id</code>, unless an admin removed it. Its work does not resume (see the restart entries).</td>
 <td>Radio Assets, within one run.</td>
 <td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
 </tr>
@@ -195,21 +195,21 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
+<td>A critical battery rule is required on every flying Asset. Core refuses Tasks to a flying Asset that has none.</td>
+<td>Flying Assets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>A lower critical battery level always fires, even after a Hold or pause override, so a held Asset can&#39;t hover until its battery dies.</td>
 <td>Battery rules, in and out of failsafe state.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>The recommended Asset setup has the flight controller run its own failsafe, such as returning home, when it loses contact with the computer running the Asset app, independent of Atlas.</td>
+<td>Every flying Asset must have its flight controller run its own failsafe, such as returning home, when it loses contact with the computer running the Asset app, independent of Atlas.</td>
 <td>Flying Assets.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#independent-flight-controller-protections">Failsafes</a></td>
-</tr>
-<tr>
-<td>2026-11-11</td>
-<td>A restarted Asset with no failsafe rule for the restart falls back to a built-in safe action its maker chose, such as landing or returning home. Operators may configure a rule to choose something specific.</td>
-<td>A restart in flight. Otherwise no rule runs unless configured.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-restart-in-flight-is-a-failsafe">Failsafes</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
