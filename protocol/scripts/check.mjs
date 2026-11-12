@@ -111,7 +111,7 @@ for (const [file, s] of Object.entries(schemas)) {
   }
   // Requests are bodies, not records: Core stamps the record fields, so a request carries none of them.
   if (file.startsWith('requests/')) {
-    for (const f of ['type', 'time', 'asset_id', 'task_id', 'clear_count', 'send_last', 'requested_by', 'geofeature_id', 'track_id']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
+    for (const f of ['type', 'time', 'asset_id', 'task_id', 'send_last', 'requested_by', 'geofeature_id', 'track_id']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
     if (s.additionalProperties !== false && s.unevaluatedProperties !== false) errors.push(`${file}: law 1: a request sets additionalProperties or unevaluatedProperties to false`);
   }
   if (isKind(file)) {
@@ -169,7 +169,7 @@ if (description && registration) {
   const count = schemas['variables/command.json']?.enum?.length ?? 0;
   if (commands && !(commands.maxItems >= count)) errors.push(`records/description.json: law 9: the command list must hold every command: maxItems at least ${count}`);
 }
-for (const k of kindTargets('requests/task.json')) for (const f of ['task_id', 'clear_count', 'send_last', 'now', 'requested_by']) if (schemas[k]?.properties?.[f]) errors.push(`${k}: law 1: "${f}" is stamped by Core, not sent in a request`);
+for (const k of kindTargets('requests/task.json')) for (const f of ['task_id', 'send_last', 'now', 'requested_by']) if (schemas[k]?.properties?.[f]) errors.push(`${k}: law 1: "${f}" is stamped by Core, not sent in a request`);
 
 if (errors.length) {
   console.error(errors.join('\n'));

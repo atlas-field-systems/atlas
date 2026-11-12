@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/task.json",
   "title": "Task request item",
-  "description": "One Task as an operator asks for it: a Task kind and its fields, and nothing Core stamps. A Task that names a geo feature gives only its geofeature_id, never a position as well; Core copies the place into the Task. Core adds time, asset_id, task_id, clear_count, send_last, now and requested_by to make the Task record. Its kinds are exactly the Task record's kinds.",
+  "description": "One Task as an operator asks for it: a Task kind and its fields, and nothing Core stamps. A Task that names a geo feature gives only its geofeature_id, never a position as well; Core copies the place into the Task. Core adds time, asset_id, task_id, send_last, now and requested_by to make the Task record. Its kinds are exactly the Task record's kinds.",
   "type": "object",
   "required": [
     "kind"

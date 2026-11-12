@@ -32,14 +32,15 @@ coverage:
 - Losing a GPS fix without presenting an old position as new, and source and
   measurement time kept through reporting.
 - Tasks arriving out of order, more than once, or without the rest of their
-  request, Tasks sent before a clear, Tasks run with `now`, including `now` at
-  the 64-Task cap, cancel by `task_id`,
+  request, Tasks that arrive after a clear and run normally, Tasks run with
+  `now`, including `now` at the 64-Task cap, a 65th held Task reported
+  `cancelled`, dropped Tasks that never run, cancel by `task_id`,
   repeated events, and a `task_id` never running twice.
 - Task completion, failure, and the cancellation of the remaining Tasks.
 - Configured failsafes, the operator overrides allowed in failsafe state, and
   refusal of other work. Restore contact after activation, then lose it again;
-  expect the latch and ordinary-work lock to remain, with no repeated equal- or
-  lower-priority response. Then override with Hold now, lose contact again, and
+  expect the latch and ordinary-work lock to remain, and an equal- or
+  lower-priority rule not to interrupt a running response. Then override with Hold now, lose contact again, and
   expect the contact-loss rule to fire again
   ([re-arming](failsafes.md#an-override-with-hold-or-pause-re-arms-protection)).
   Check higher-priority interruption separately under
@@ -52,8 +53,8 @@ coverage:
   now or pause while the battery is below the critical level, and expect the
   rule to fire again at once.
 - Two critical rules matching at once: only the higher-priority one fires. Make
-  a critical rule's response fail: the Asset returns home, once. A policy whose
-  critical rule names a fallback is refused.
+  a critical rule's response fail: the Asset returns home, once. Make any other
+  rule's response fail: nothing is retried.
 - Kill the app in flight: it stays down, Core shows the Asset offline, and the
   flight controller's own failsafe returns it home after its timeout. Start the
   app again on the ground: it rejoins with the same `asset_id` and drops its

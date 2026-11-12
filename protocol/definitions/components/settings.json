@@ -68,9 +68,6 @@
           ],
           "response": {
             "kind": "return_to_home"
-          },
-          "fallback": {
-            "kind": "land"
           }
         },
         {
@@ -90,9 +87,6 @@
           ],
           "response": {
             "kind": "return_to_home"
-          },
-          "fallback": {
-            "kind": "land"
           }
         }
       ],

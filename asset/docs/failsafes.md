@@ -43,10 +43,8 @@ failure and each cancelled Task. The failed Task stays failed, and cancelled wor
 never returns through a repeated event or a reconnect. Another attempt needs new
 Tasks.
 
-The Asset raises its `clear_count` each time it clears its queue, for a failed
-command or a failsafe. A Task that Core accepted before it knew of the clear
-carries the old count, and the Asset reports that Task `cancelled` when it
-arrives.
+Tasks that arrive after the clear run normally, even if the operator sent them
+to follow the failed work; the operator cancels any that no longer make sense.
 
 Cancellation alone does not enter failsafe state or start a maneuver. An Atlas
 response starts only when a configured rule matches.
@@ -135,10 +133,8 @@ Conditions can include:
   from a saved place, even without an observed crossing, including at startup
   or after a policy replacement. A distance
   beyond the boundary and a duration outside are configured; either may be zero.
-  Altitude limits are deferred.
-- Missing or stale measurements, distinct from current values. Unknown position
-  proves neither inside nor outside the polygon; separate missing-data conditions
-  can select a response.
+  An unknown position is not outside, so the condition does not hold. Altitude
+  limits are deferred.
 
 The Asset reevaluates whenever relevant state or time changes, including when the
 last Task ends while it is already out of contact. Rules apply from startup, as
@@ -155,30 +151,30 @@ resolves home at activation and keeps that destination, and a Land with no
 position lands where the Asset is at activation.
 
 A failsafe Task has no Core `task_id`, because Core owns that numbering. Its rule
-and attempt, primary or fallback, and its start time name it; the built-in safe
-action has no rule. The Asset reports its state in a failsafe report, starting
+and its start time name it; the built-in safe action has no rule. The Asset
+reports its state in a failsafe report, starting
 with the response it runs and what set it off.
 
-A higher-priority matching rule interrupts the response. The Asset reports the
-interrupted Task `cancelled` and starts a new Task for the new rule. Priority
-only rises for the rest of the operation, including after a response completes.
-Equal- or lower-priority matches never start another response, except after
-[an override that re-arms protection](#an-override-with-hold-or-pause-re-arms-protection).
+A rule fires when its conditions start to hold. While a response runs, only a
+higher-priority rule interrupts it: the Asset reports the interrupted Task
+`cancelled` and starts the new rule's response. An equal- or lower-priority
+rule that fires then starts nothing. When neither a response nor an operator
+override is running, the next rule that fires starts its response. During an
+override, only the rules that
+[an override re-arms](#an-override-with-hold-or-pause-re-arms-protection) act.
 
-Each time a rule fires it gets one primary attempt and one optional fallback
-Task, using the same executor. A failed primary starts the fallback once, and
-each failure is reported. No response restarts or triggers itself. After both fail, the Asset
-stays in failsafe state and records the actual equipment state; failed attempts
-do not establish a landing. A higher-priority rule may still act.
+Each time a rule fires, its response runs once. A failed response is reported
+and never retried, and no response restarts or triggers itself. The Asset stays
+in failsafe state and records the actual equipment state; a failed response
+does not establish a landing. The one exception is a
+[critical battery rule](#an-override-with-hold-or-pause-re-arms-protection),
+whose failed response falls back to Return to home.
 
 ## Lock ordinary work for the rest of the operation
 
 Failsafe state lasts for the rest of the operation, including after a successful
-landing, renewed contact, or conditions becoming false. Losing contact again
-never restarts an equal- or lower-priority response, unless an operator has
-[re-armed protection](#an-override-with-hold-or-pause-re-arms-protection).
-Higher-priority matches follow the
-[existing priority rule](#a-failsafe-activates-a-configured-task).
+landing, renewed contact, or conditions becoming false. Rules that fire later
+follow the [priority rule](#a-failsafe-activates-a-configured-task).
 Cancelled Tasks never resume. Reports and logging continue.
 
 In failsafe state the operator can still override the response:
@@ -226,12 +222,11 @@ home overrides still stand. The overrides themselves are unchanged.
 at once, only the highest-priority one fires, and a lower-priority critical
 rule never interrupts its response.
 
-**A failed critical response falls back to Return to home.** A critical rule
-names no fallback of its own: if its response fails, the Asset returns home.
-The Asset refuses a policy in which a critical rule names a fallback, as it
-refuses any invalid policy. Nothing is retried: if the failed response was
-itself Return to home, or the return home fails, the Asset stays in failsafe
-state as after any [failed fallback](#a-failsafe-activates-a-configured-task).
+**A failed critical response falls back to Return to home.** If a critical
+rule's response fails, the Asset returns home. Nothing is retried: if the
+failed response was itself Return to home, or the return home fails, the Asset
+stays in failsafe state as after any
+[failed response](#a-failsafe-activates-a-configured-task).
 
 For example, an Asset has rule `LB` (battery below 25%, Return to home,
 priority 50), rule `CB1` (critical battery below 10%, Land at landing pad `P1`,
@@ -243,7 +238,7 @@ Land where it is, priority 90):
 | The battery falls below 25% | `LB` fires: Return to home |
 | The operator sends Hold now | Hold replaces Return to home; `LB` is re-armed |
 | The battery falls below 10%, contact still up | Only `CB1` matches: it fires at once, replacing the Hold, and heads for `P1` to land |
-| The landing at `P1` fails | The Asset returns home, as `CB1`'s fallback |
+| The landing at `P1` fails | The Asset returns home, the fixed critical fallback |
 | It lands at home | Final reports, then the app shuts down |
 
 Had contact also been lost when the battery fell below 10%, `CB1` and `CB2`
@@ -292,7 +287,7 @@ restarting idle or contact timers.
 ## Open
 
 - Flight-controller protection settings, triggers, timeouts, and the handover
-  procedure, including behavior after both the primary and fallback fail.
+  procedure, including behavior after an Atlas response fails.
 - Whether an operator override reaches the vehicle while an independent
   autopilot protection is in control.
 - How a later, higher-priority rule match interacts with an operator override.

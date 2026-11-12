@@ -15,14 +15,14 @@ has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/a
   run is not supported.
 - **No retention.** Core writes its Reset ZIP, checks it, and only then deletes
   the run's data. The ZIP is then the only copy of the run, and nothing deletes
-  a ZIP automatically. If the ZIP fails, Core deletes nothing and tries again at
-  its next start, but never serves that run through the Core API.
+  a ZIP automatically. If the ZIP fails, Core deletes nothing and tells the admin;
+  the next start begins a new run as usual.
 - **A crash resumes the run.** If Core crashes, loses power, or its computer
   reboots without a deliberate stop, its next start continues the same run:
   the same `run_id`, the same Asset IDs, and the same Task numbering. Nothing
   is reset. Assets, gateways, Plugins, and operators reconnect as after a
-  dropped link. A crash while Core was already stopping finishes that stop at
-  the next start ([Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly)).
+  dropped link. A crash while Core was already stopping resumes the run too
+  ([Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly)).
 - **Everyone signs in again** after Reset. Every session ends with the run; a
   crash ends none.
 - **Operator state is discarded.** Shared links, hidden Tracks and other view

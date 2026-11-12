@@ -5,9 +5,9 @@ This behavior is selected but not implemented.
 Core rejects requests it knows are invalid before they reach a field link. It
 validates request bodies with Protocol's validator, then checks the
 caller's session or key, the Asset's contact, the commands and settings its
-description lists, Task identities, and total outstanding Task capacity using
-the information it holds. The [operator request rules](api.md#operator-requests)
-own the 64-Task cap, the `now` exception, and atomic capacity reservation.
+description lists, Task identities, and the 64-Task cap against the Asset's
+latest queue report. The [operator request rules](api.md#operator-requests)
+own the cap and the `now` exception.
 Refusals follow the
 [Core API's errors](api.md#basics).
 
@@ -25,42 +25,21 @@ This follows
 
 These are required outcomes for the future runtime, not implemented tests.
 
-1. An online Asset is paused with no outstanding Tasks. An operator sends 32
-   Tasks. Core accepts them and reserves 32 places, even before delivery.
-2. Before those Tasks arrive, another request sends 32 more. Core accepts it;
-   all 64 places are now reserved across the two requests.
-3. A third request sends one Task while delivery is still in flight. Core
-   refuses the whole request with `409 queue_full`. It assigns no Task ID and
-   sends no work to the Asset.
-4. The paused Asset receives both accepted requests. Its complete queue reports
-   truthfully name all held unstarted Tasks, reaching 64 IDs. No report is
-   truncated, and the refused request adds no 65th ID.
-5. Another request while all 64 remain held is refused too. Retrying an accepted
-   request adds no work. Retrying a refused request repeats the refusal.
-6. The operator cancels one Task. Sending the cancel alone frees no place.
-   After Core stores the Asset's final `cancelled` report, a new request with a
-   new idempotency key can add one Task, returning the total to 64.
-
-Also check concurrent admission at 63 outstanding Tasks: two requests for one
-Task each allow exactly one acceptance. A request for two is refused whole.
-With one active Task and 63 accepted or held Tasks, new ordinary work is also
-refused.
-Dropping an unanswered request does not free its places. When the Asset
-returns, Core cancels each dropped Task it reports neither holding, nor
-running, nor ended; the places free when those final reports are stored.
+1. An online Asset is paused, and its latest queue report lists 63 held Tasks.
+   An operator sends one Task. Core accepts it.
+2. Once the Asset's queue report lists 64, another ordinary request is refused
+   whole with `409 queue_full`. Core assigns no Task ID and sends nothing.
+3. The operator cancels one Task. When the Asset's next queue report lists 63,
+   a new request for one Task is accepted again.
+4. Two requests for one Task each, sent before the Asset reports either, are
+   both accepted. The Asset holds 64 after the first, so it reports the second
+   Task `cancelled`, with a full queue as its explanation. No queue report
+   lists more than 64.
 
 ## Scenario: now at capacity
 
-These are required outcomes for the future runtime, not implemented tests.
-
-1. An online Asset has 64 outstanding Tasks, held or still in flight. An
-   ordinary request for one more Task is refused with `409 queue_full`.
-2. The operator sends one Task with `now`, such as Land or return-to-home.
-   Core accepts it. Outstanding work is briefly 65. The complete queue
-   report still has at most 64 unstarted IDs, because the `now` Task is
-   active, not held.
-3. A further ordinary request in that window is refused with `409 queue_full`.
-   Another `now` request is accepted.
-4. After Core stores the final `cancelled` reports for the displaced work,
-   ordinary admission is open again up to a total of 64, counting the
-   `now` Task until its own final report is stored.
+1. The Asset's latest queue report lists 64 held Tasks. An ordinary request for
+   one more is refused with `409 queue_full`.
+2. The operator sends one Task with `now`, such as Land or Return to home. Core
+   accepts it. It runs at once and cancels every lower `task_id`, so the next
+   queue report lists none of them.

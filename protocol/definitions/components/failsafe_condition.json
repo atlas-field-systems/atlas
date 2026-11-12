@@ -24,9 +24,6 @@
       "$ref": "failsafe_condition/outside_area.json"
     },
     {
-      "$ref": "failsafe_condition/measurement_stale.json"
-    },
-    {
       "$ref": "failsafe_condition/subsystem.json"
     },
     {
@@ -81,11 +78,6 @@
       ],
       "margin_m": 20,
       "for_s": 5
-    },
-    {
-      "kind": "measurement_stale",
-      "measurement": "position",
-      "stale_after_s": 5
     },
     {
       "kind": "subsystem",

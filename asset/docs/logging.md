@@ -15,8 +15,8 @@ and the diagnostics of its SDK client or Fieldlink. Logging is not implemented y
   command or equipment errors.
 - Each applied settings change, whether requested, local, queued, or forced by a
   failsafe, with the resulting value and reason.
-- Failsafe conditions, the selected rule and priority, interrupted Tasks, primary
-  and fallback outcomes, and each operator override.
+- Failsafe conditions, the selected rule and priority, interrupted Tasks, each
+  response's outcome, and each operator override.
 - Subsystem condition changes, and which ones the Asset chose to report.
 - Contact changes, link loss and reconnects, report batches sent, and their
   acknowledgements.
