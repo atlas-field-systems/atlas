@@ -42,6 +42,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-12 | A turret is aimed with Point At: a latitude and longitude, optionally an altitude, to look at. The Asset works out how to aim there; how it does that is defined later. | Pointing equipment, such as camera turrets. | [Assets and their equipment](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#fixed-camera-turret) |
 | 2026-11-12 | Core decides the 64-Task cap from the Asset's latest queue report of how many Tasks it holds. It does not count Tasks still crossing the link or keep capacity until final reports arrive. `now` Tasks are still admitted at the cap. | Per Asset, ordinary work. | [Core API, operator requests](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests) |
 | 2026-11-12 | No clear count. A failed Task clears the Asset's queue; Tasks that arrive later run normally, and operators cancel what they don't want. | Failed Tasks and the queue. | [Core API, operator requests](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests) |
 | 2026-11-12 | When an Asset goes offline, its unanswered requests and Tasks show as not done and operators send again whatever still matters. Core does not reconcile them when the Asset returns. | Requests to an Asset that goes offline. | [Core API, operator requests](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests) |
@@ -93,6 +94,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-12 | Every value that shapes how an Asset behaves, such as how close counts as arrived, how long a command may take, or how long it waits before shutting down, is set in that Asset's own configuration. Defaults are only starting points, because Assets set up differently respond differently. | Every Asset. | [Asset configuration](https://github.com/atlas-field-systems/atlas/blob/main/asset/config.md) |
 | 2026-11-12 | Fixed-wing aircraft are not part of the current design. They come later as a new kind of Asset with its own commands. | Asset kinds. | [Assets and their equipment](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#movement-module-and-profiles) |
 | 2026-11-11 | One site per Core. | A Core, at a time. | [Scale](scale.md#setup) |
 | 2026-11-11 | There is no remote shutdown or restart. | Assets. | [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#shut-down-and-retain-evidence) |

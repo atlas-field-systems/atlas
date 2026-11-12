@@ -8,4 +8,3 @@ belong to the [Core API](../../core/docs/api.md).
 ## Unresolved
 
 - **Record types in TypeScript.** Decide how TypeScript code learns record shapes without a hand-written copy that can drift from the definitions. Compare definitions that TypeScript reads directly with a generated types file. The owner allows generated types, as an exception to [no generated code](../../atlas/design-decisions.md#no-generated-code), if the comparison shows that design is better.
-- **Turret commands.** Define the turret-pointing command following [the Asset model](../../asset/docs/assets.md#fixed-camera-turret). Fixed-wing commands are [not part of the current design](../../atlas/decision-log.md#operations-and-setup).

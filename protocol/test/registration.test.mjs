@@ -4,7 +4,7 @@ import { load } from '../lib/node-protocol.mjs';
 import { validate } from '../lib/protocol.mjs';
 
 const protocol = await load();
-const commands = ['takeoff', 'move_to', 'land', 'return_to_home', 'hold', 'failsafe'];
+const commands = ['takeoff', 'move_to', 'land', 'return_to_home', 'hold', 'point_at', 'failsafe'];
 const body = { entity_type: 'drone', reports: ['status', 'failsafe'], commands };
 
 test('an Asset registers without an asset_id, because Core assigns it', () => {
@@ -24,7 +24,7 @@ test('the description record Core makes from it keeps the asset_id', () => {
   assert.equal(validate(protocol, 'records/description.json', unidentified).ok, false);
 });
 
-test('a flying Asset can list all five flight commands and Fail-safe', () => {
+test('an Asset can list every command', () => {
   assert.equal(commands.length, protocol.schemas['variables/command.json'].enum.length);
   const result = validate(protocol, 'records/description.json', { time: 1793667600100, asset_id: 'A1', ...body });
   assert.equal(result.ok, true, result.errors.join('\n'));

@@ -28,6 +28,9 @@
       "$ref": "task/hold.json"
     },
     {
+      "$ref": "task/point_at.json"
+    },
+    {
       "$ref": "task/failsafe.json"
     },
     {
@@ -150,6 +153,18 @@
       "requested_by": "OP1",
       "kind": "failsafe",
       "now": true
+    },
+    {
+      "time": 1793667605000,
+      "asset_id": "A3",
+      "task_id": 6,
+      "requested_by": "OP1",
+      "kind": "point_at",
+      "now": true,
+      "target": {
+        "latitude": 42.2758,
+        "longitude": -71.8041
+      }
     }
   ],
   "allOf": [

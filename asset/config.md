@@ -4,6 +4,12 @@ A discussion draft for the Asset app; nothing is implemented. Configuration
 selects the Asset's [modules and equipment drivers](docs/assets.md#modules-and-equipment-drivers)
 and how it reaches Core.
 
+**Every behavior value is configurable per Asset.** Tolerances, timeouts, waits,
+and limits that shape how an Asset behaves are set in that Asset's
+configuration, never fixed in the app, because Assets set up differently respond
+differently ([decision log](../atlas/decision-log.md#operations-and-setup)). A
+default here is only a starting point.
+
 ## Startup configuration and live settings
 
 Startup configuration describes the Asset's modules, equipment access, supported
