@@ -37,6 +37,7 @@
         "requests/settings.json",
         "requests/geofeature.json",
         "requests/plugin_call.json",
+        "requests/asset.json",
         "requests/radio.json"
       ]
     },

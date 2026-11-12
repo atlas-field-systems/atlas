@@ -157,6 +157,18 @@ for (const name of ['task', 'geofeature']) {
   const request = `requests/${name}.json`, record = `records/${name}.json`;
   if (schemas[request] && !sameNames(kindTargets(request), kindTargets(record))) errors.push(`${request}: ${name === 'task' ? 'law 12' : 'law 1'}: its kinds must be exactly the kinds of ${record}`);
 }
+// The registration request takes exactly the description record's fields, with the same definitions,
+// except time and asset_id, which Core stamps.
+const description = schemas['records/description.json'], registration = schemas['requests/asset.json'];
+if (description && registration) {
+  const own = (s) => Object.fromEntries(Object.entries(s.properties ?? {}).filter(([k]) => !['time', 'asset_id'].includes(k)));
+  const req = (s) => (s.required ?? []).filter((k) => !['time', 'asset_id'].includes(k)).sort().join();
+  if (JSON.stringify(own(description)) !== JSON.stringify(registration.properties ?? {}) || req(description) !== req(registration)) errors.push('requests/asset.json: law 1: it takes exactly the fields of records/description.json, with the same definitions, except time and asset_id');
+  // The command list must be able to hold every command.
+  const commands = description.properties?.commands;
+  const count = schemas['variables/command.json']?.enum?.length ?? 0;
+  if (commands && !(commands.maxItems >= count)) errors.push(`records/description.json: law 9: the command list must hold every command: maxItems at least ${count}`);
+}
 for (const k of kindTargets('requests/task.json')) for (const f of ['task_id', 'clear_count', 'send_last', 'now', 'requested_by']) if (schemas[k]?.properties?.[f]) errors.push(`${k}: law 1: "${f}" is stamped by Core, not sent in a request`);
 
 if (errors.length) {

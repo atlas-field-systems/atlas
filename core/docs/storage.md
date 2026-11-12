@@ -13,6 +13,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | Table | Owner | Holds |
 | --- | --- | --- |
 | `runs` | Shared | Each run's `run_id`, start, end, and each unexpected stop Core resumed from. Rows stay after the run is cleared, so `run_id` is never reused |
+| `asset_ids` | Shared | The last `asset_id` Core assigned. It stays after the run is cleared, so no Asset ID is reused in a later run ([Runs and identity](../../atlas/runs-and-identity.md#ids)) |
 | `events` | Shared | The [event log](api.md#the-event-log-and-live-stream): `event_id`, `time`, `kind`, `asset_id`, and the record |
 | `idempotency_keys` | Shared | Each caller's keys for the run, with a hash of the body and the non-secret response or credential acknowledgment ([retry rules](api.md#callers-and-credentials)) |
 | `accounts` | Administration | Admin and operator accounts and their password hashes |

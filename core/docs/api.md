@@ -15,8 +15,10 @@ explains why the API is the only way in.
   with the request's `event_id`. Task states and setting values change only from
   the Asset's reports.
 - **Compatibility.** Every request carries `Atlas-Definitions: <hash>`, the hash
-  of the Protocol definitions the caller uses. Core refuses a missing or different
-  hash with `409 definitions_mismatch`. `GET /about` needs no credential and
+  of the Protocol definitions the caller uses, made by Protocol's
+  [hash recipe](../../protocol/docs/decisions.md#definitions-hash). Core refuses
+  a missing or different hash with `409 definitions_mismatch`. `GET /about`
+  needs no credential and
   returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
   stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
@@ -46,7 +48,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
-| `409` | Refused: Asset or Plugin offline, flying Asset with no critical battery rule, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
+| `409` | Refused: Asset IDs used up, Asset or Plugin offline, flying Asset with no critical battery rule, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
@@ -133,7 +135,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `definitions.refused` | An Asset on IP, gateway, radio, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash`. For a radio: the `gateway_id`, `radio: true`, and the radio's hash |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `tasks.updated` | An operator edits a place and chooses to update the unfinished Tasks that use it | For one Asset, every updated Task body, in `task_id` order |
-| `task.dropped` | Core discards a Task the Asset never confirmed it holds | `drop`: `asset_id`, `task_id` |
+| `task.dropped` | Core discards a Task the Asset never confirmed it holds, or one a restarted Asset [no longer holds](#operator-requests) | `drop`: `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `drop`: `asset_id`, `request_id` |
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
 | `cancel.requested` | An operator cancels a Task | `asset_id`, `task_id`, `requested_by` |
@@ -231,6 +233,13 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   dropped `task_id` never blocks the Tasks after it. Those cancelled Tasks
   still hold their capacity places until those final reports are stored.
   An operator who still wants the work sends it again.
+- **A restarted app holds nothing.** An Asset that signs up again while
+  already registered has started again and
+  [dropped its queued Tasks](../../atlas/runs-and-identity.md#keys-and-registration).
+  Core adds `task.dropped` for each of its Tasks with no final report, and
+  those no longer count toward the 64. A drop claims no outcome: operators see
+  the Task as not done and send again what still matters. Results the app had
+  not reported before the restart are lost.
 - A dropped request may have reached the Asset before contact ended. The Asset's
   later reports say what it did. `request.dropped` does not prove the request
   never arrived.
@@ -261,16 +270,21 @@ accounts and Plugins read them. The rest of the picture is under
 
 Core assigns each Asset's `asset_id` when it registers
 ([Runs and identity](../../atlas/runs-and-identity.md#ids)). An Asset on IP
-starts in this order, and on reconnect within the run repeats it from step 2:
+starts in this order, and on reconnect within the run repeats it from step 3:
 
 1. `GET /about` with its Asset key, and compare the definitions hash.
-2. On start, `POST /entities/assets` with its description record. Core assigns
-   the next `asset_id`, adds `asset.registered`, and answers `201 {asset_id}`.
+2. On start, `POST /entities/assets` with `requests.asset`: its description
+   without `time` and `asset_id`. Core assigns the next `asset_id`, never one
+   used before, stamps `time` and the ID to make the description record, adds
+   `asset.registered` and `asset.described`, and answers `201 {asset_id}`.
    The Asset uses that ID for the rest of the run. Registering again with the
    same key in the run returns the same `asset_id`, even for an app that
    restarted and forgot its ID, unless an admin removed that Asset; then it
    becomes a new Asset with a new ID. A key registers at most one Asset at a
-   time. On reconnect, `PUT /entities/assets/{asset_id}/description` instead.
+   time. With no Asset ID left, Core refuses with `409 asset_ids_exhausted` and
+   tells the admin ([Runs and identity](../../atlas/runs-and-identity.md#ids)).
+   Only a start signs up: an app that started again registers, even if it
+   remembers its ID, and a reconnect skips this step.
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
@@ -332,6 +346,11 @@ Asset on its own side and speaks to Core only by `asset_id`.
   restarted mid-run identifies itself to that gateway through the Fieldlink and
   keeps its ID, but its work does not resume
   ([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
+  A radio Asset signs up through its gateway with
+  `PUT /entities/assets/{asset_id}/description` and its description record:
+  once after the gateway registers it, and again each time its app starts.
+  Core treats that as any [restarted app](#operator-requests); there is no
+  separate restart signal.
   A gateway that replaces it registers its radios as new Assets.
 - When an admin removes a radio Asset, its ID ends. If the radio is heard
   again, its gateway registers it as a new Asset with a new ID.

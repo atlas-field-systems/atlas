@@ -222,6 +222,33 @@ keeps it from acting: the rule fires again at once, replacing the Hold or the
 pause, so a held Asset can't hover until its battery dies. Land and Return to
 home overrides still stand. The overrides themselves are unchanged.
 
+**The highest-priority critical rule wins.** When several critical rules match
+at once, only the highest-priority one fires, and a lower-priority critical
+rule never interrupts its response.
+
+**A failed critical response falls back to Return to home.** A critical rule
+names no fallback of its own: if its response fails, the Asset returns home.
+The Asset refuses a policy in which a critical rule names a fallback, as it
+refuses any invalid policy. Nothing is retried: if the failed response was
+itself Return to home, or the return home fails, the Asset stays in failsafe
+state as after any [failed fallback](#a-failsafe-activates-a-configured-task).
+
+For example, an Asset has rule `LB` (battery below 25%, Return to home,
+priority 50), rule `CB1` (critical battery below 10%, Land at landing pad `P1`,
+priority 80), and rule `CB2` (critical battery below 10% with contact lost,
+Land where it is, priority 90):
+
+| Event | What the Asset does |
+| --- | --- |
+| The battery falls below 25% | `LB` fires: Return to home |
+| The operator sends Hold now | Hold replaces Return to home; `LB` is re-armed |
+| The battery falls below 10%, contact still up | Only `CB1` matches: it fires at once, replacing the Hold, and heads for `P1` to land |
+| The landing at `P1` fails | The Asset returns home, as `CB1`'s fallback |
+| It lands at home | Final reports, then the app shuts down |
+
+Had contact also been lost when the battery fell below 10%, `CB1` and `CB2`
+would both match, and only `CB2`, the higher priority, would fire.
+
 ## An operator can fire the failsafe
 
 Fail-safe is a command, like Land, Return to home, or Hold. An operator sends it

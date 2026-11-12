@@ -24,7 +24,10 @@ key. The SDK never puts a credential in a record, a URL, or a
 ## Definitions check
 
 The client loads Protocol's definitions and their hash from its Protocol package
-dependency. `connect()` calls `GET /about` and compares `definitions_hash` with its
+dependency. The hash follows Protocol's
+[recipe](../../protocol/docs/decisions.md#definitions-hash), so every program
+that loads the same definition files gets the same hash. `connect()` calls
+`GET /about` and compares `definitions_hash` with its
 own. On a mismatch, `connect()` returns `definitions_mismatch` with both hashes.
 Every later call returns the same result without sending. A client with a key
 sends its key and hash on `GET /about`, so Core

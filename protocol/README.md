@@ -46,9 +46,10 @@ is reworked into a record.
 
 Requests are not records. `requests/` defines the bodies callers send to the
 Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`,
-`geofeature`, `plugin_call`, and `radio`, with which a gateway registers a radio Asset. Core stamps the record fields, such as `time`, `task_id`,
+`geofeature`, `plugin_call`, `asset`, with which an Asset on IP registers, and `radio`, with which a gateway registers a radio Asset. Core stamps the record fields, such as `time`, `task_id`,
 `geofeature_id`, and `requested_by`, to make the `task`, `settings_change`,
-`geofeature`, and `plugin.call` records.
+`geofeature`, and `plugin.call` records, and assigns `asset_id` to make the
+`description` record.
 
 ## Try it
 
