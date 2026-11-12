@@ -42,12 +42,6 @@
     "example": "An admin sets up each radio before the run."
   },
   {
-    "phrase": "\\b(snapshots?|copy|copies) (of )?(the |its |a )?(place|geo ?feature)('s)? shape|\\b(snapshots?|copy|copies) (of )?(the |its )?shape (into|in) the task|\\b(place|geo ?feature|shape) snapshots?\\b|\\bsnapshots? (the |a |its )?(place|geo ?feature)\\b",
-    "unless": "\\b(no|not|never)\\b",
-    "why": "A Task holds a live reference to a place; Core never copies or snapshots its shape.",
-    "example": "Core copies the shape into the Task."
-  },
-  {
     "phrase": "\\b(retains?|keeps?) (the |a |each |every )?(ended|earlier|previous|old|past) runs?\\b|\\bretention (period|window|policy|time)\\b|\\bkeeps? (the )?history (of|from) (the )?(earlier|previous|ended|past) runs?",
     "unless": "\\b(not|never|no)\\b",
     "why": "No retention: once the Reset ZIP checks out, the run's data is deleted from Core.",
@@ -114,19 +108,13 @@
     "example": "Deleting a place cancels the Tasks that name it."
   },
   {
-    "phrase": "\\b(new|another) gateway\\b[^.]*\\bnew (asset_id|asset id|id)\\b",
-    "unless": "\\b(not|no|never|next run)\\b",
-    "why": "In a mid-run gateway swap, radios keep their IDs.",
-    "example": "A radio that reaches a new gateway registers with a new ID."
-  },
-  {
     "phrase": "\\bapi-proposal\\.md|\\bexperiments/final-report\\.md",
     "why": "Superseded plans live in atlas/archive/ and are never a source for current rules.",
     "example": "See [Fieldlinks](atlas/api-proposal.md#fieldlinks)."
   },
   {
     "phrase": "\\b(does not|doesn't|never|cannot|can't) (support (an asset |the asset )?)?rejoin(ing)?\\b|\\bapp (that )?stops leaves the (operation|run)\\b|\\brejoins? as a new asset\\b",
-    "why": "An Asset app that restarts mid-run rejoins as itself through its key, with the same asset_id and its unfinished work.",
+    "why": "An Asset app that restarts mid-run rejoins as itself through its key, with the same asset_id; its work does not resume.",
     "example": "Atlas does not support an Asset rejoining the run it left."
   },
   {
@@ -149,7 +137,7 @@
   {
     "phrase": "\\brestart(s|ed)?\\b[^.]*\\b(keeps?|resumes?|gets? back|continues?|with) (its |their )?(unfinished )?(work|tasks?)\\b",
     "unless": "\\b(not|never|no|instead)\\b",
-    "why": "Work does not resume after an app restart; a restart mid-flight enters failsafe state.",
+    "why": "Work does not resume after an app restart; a restart in flight fires the failsafe, and one on the ground drops queued Tasks.",
     "example": "A restarted app rejoins as the same Asset with its unfinished work."
   },
   {
@@ -180,5 +168,47 @@
     "unless": "\\b(no|not|never)\\b",
     "why": "A restart on the ground drops queued Tasks; nothing resumes on its own.",
     "example": "Queued Tasks resume after a restart."
+  },
+  {
+    "phrase": "\\blive reference\\b|\\bas it stands when it gets there\\b|\\b(keeps? (its|the) original plan|follows? the new shape)\\b|\\b(reads?|gets?|obtains?) (the |that )?place'?s? current shape\\b|\\bnever copies the shape\\b",
+    "unless": "\\b(no longer|not a)\\b",
+    "why": "A Task keeps a copy of its place as it was when sent; an edit updates Tasks only if the operator says yes.",
+    "example": "A Task names a place as a live reference, and the Asset reads the place's current shape."
+  },
+  {
+    "phrase": "\\bcrash(es)? ends the run\\b|\\b(never )?continues an interrupted run\\b|\\bcore (crashes|loses power)\\b[^.]*\\bthe run ends\\b|\\bcore never restarts during\\b",
+    "why": "An unplanned Core crash resumes the same run; only a deliberate stop is Reset.",
+    "example": "A crash ends the run too."
+  },
+  {
+    "phrase": "\\b(does not|doesn't|never) restarts? the app automatically\\b",
+    "why": "The Asset app restarts itself automatically after a crash.",
+    "example": "The service does not restart the app automatically."
+  },
+  {
+    "phrase": "\\brestart(s|ed)? mid-flight\\b|\\brestarts?\\b[^.]*\\bwhile (the asset is )?out on a task\\b",
+    "why": "The restart trigger is the startup check: if the vehicle is flying, the Asset fires its failsafe.",
+    "example": "If the app restarts during a run while the Asset is out on a Task, it enters failsafe state."
+  },
+  {
+    "phrase": "\\bgateway swaps?\\b|\\bswapped mid-run\\b|\\btakes? (it|the radio|a radio) over\\b|\\basset\\.carried\\b|\\b(moves?|moving) (a radio asset )?to (another|the new) gateway\\b",
+    "unless": "\\b(out of scope|no|not|never)\\b",
+    "why": "For now each Asset talks to only one gateway; gateway swaps with identity carry-over are out of scope.",
+    "example": "In a gateway swap, each radio keeps its ID and moves to the new gateway."
+  },
+  {
+    "phrase": "\\b(each|every) rule (runs|fires) (at most |only )?once\\b|\\bruns at most once in an operation\\b",
+    "why": "A Hold or pause override re-arms contact-loss and low-battery rules, so a rule may fire again.",
+    "example": "Each rule runs at most once in an operation."
+  },
+  {
+    "phrase": "\\bdelet\\w* (removes|destroys) the (object's )?file\\b|\\bdeletes the object and its file\\b",
+    "why": "Deleting an Object hides it; the Reset ZIP keeps it, marked deleted.",
+    "example": "Delete removes the file."
+  },
+  {
+    "phrase": "\\binspected before it runs again\\b",
+    "why": "A crashed Asset is inspected before its next flight.",
+    "example": "A crashed Asset is inspected before it runs again."
   }
 ]

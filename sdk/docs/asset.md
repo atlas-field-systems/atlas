@@ -72,6 +72,11 @@ it. The helper holds the Asset's Tasks and hands them to the app.
 - **Answers each request.** It sends a queue report with the `request_id` of each
   `tasks.requested`, listing the Tasks it holds.
 - **Never runs a `task_id` twice.** A repeated Task changes nothing.
+- **Applies place updates.** A `tasks.updated` event replaces the body of each
+  held Task it names and hands an updated running Task to the app; it changes
+  nothing for a Task that has ended. The helper answers it with a queue report
+  carrying its `request_id`
+  ([geo features](../../core/docs/api.md#geo-features)).
 - **The app pulls work.** The app calls `next()` when it is ready to run a Task,
   so pause, equipment checks and failsafes stay in the app. With `now`, the helper
   cancels every lower `task_id` and tells the app to end the running Task and run

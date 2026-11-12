@@ -175,6 +175,10 @@ it, so the confirmation lists the Tasks it will cancel.
 - **Cancel** names one Task; the rest of the queue stays.
 - **Change the order** of sent Tasks by cancelling them and sending new ones.
   Core has no reorder request.
+- **Fail-safe** fires the Asset's failsafe, as if a rule had fired. It is
+  offered when the Asset lists the `failsafe` command, is sent with `now`, and
+  asks for confirmation, because the Asset stays in failsafe state for the rest
+  of the operation ([Failsafes](../../asset/docs/failsafes.md#an-operator-can-fire-the-failsafe)).
 - **Pause and Resume** are a setting, sent as an end state.
   While paused, the active Task shows as held, not ended, and it continues on
   Resume. Pause is offered only when the Asset lists it as a supported setting.
@@ -198,20 +202,21 @@ search of an area, the operator fills it in either of two ways:
 - **Draw it on the spot.** The drawn area belongs to that draft only, and the
   Task carries it. It becomes a shared place only if the operator presses
   **Save as place**, and the Task then names that place instead.
-- **Pick a place.** The Task names the place; it carries no copy of its
-  shape. The Asset gets the place's current shape through Core, and hears of
-  each later edit or deletion ([Core API](../../core/docs/api.md#geo-features)).
+- **Pick a place.** The Task names the place and carries a copy of it as it
+  was when the Task was sent ([Core API](../../core/docs/api.md#geo-features)).
   The draft and the Task show the place's name and link to its page.
 
 A point place can also fill a position input, such as Move To a named helipad.
 The Task names the point place in the same way.
 
 Any operator may edit or delete a place that unfinished Tasks name. The change
-always goes through, and the confirmation lists those Tasks. What happens to
-the work is up to each Asset, as [Asset behavior](../../asset/docs/README.md#carry-out-work-and-report-its-result)
-allows: one may keep its original plan, another may follow the new shape. A
-changed or deleted place cancels nothing by itself. The Asset's own reports show
-what it did, so the interface never claims a Task follows the change.
+always goes through. When the operator saves an edit, the interface lists those
+Tasks and asks whether to update them to the new shape. Only if the operator
+says yes does Core send the updated Tasks; otherwise they keep the place as it
+was when sent. The interface then shows which Tasks Core updated and which it
+could not, such as those of an offline Asset. Deleting a place asks nothing and
+changes no Task already sent. A changed or deleted place cancels nothing by
+itself.
 
 A failsafe rule's boundary is never a place. The Asset stores its failsafe
 policy itself, so the operator draws each boundary in the failsafe rule, apart

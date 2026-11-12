@@ -10,7 +10,9 @@ No Asset runtime is built yet. Terms are in the [Atlas glossary](../../GLOSSARY.
 An Asset starts with no Atlas failsafe rules, battery rules included. Rules and
 their responses are configured explicitly for the Asset and the operation, using
 only actions the Asset supports. A reporting-only beacon has no failsafe. The one
-built-in response is the [restart fallback](#a-restart-mid-flight-is-a-failsafe).
+built-in response is the safe action its maker chose, used when the Asset
+[restarts in flight](#a-restart-in-flight-is-a-failsafe) or an operator
+[fires the failsafe](#an-operator-can-fire-the-failsafe).
 
 The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
 up to 16 rules. Its starting value comes from the Asset's
@@ -47,9 +49,32 @@ response starts only when a configured rule matches.
 The quadcopter needs flight-controller protections that work if the Asset app or
 companion computer fails. Atlas rules cannot act when their process has stopped
 or hung. The flight setup selects which conditions Atlas handles and which
-ArduPilot handles on its own, and can rely on ArduPilot's return to home,
-including for loss of Asset-app control. Enabling it does not prove a successful
+ArduPilot handles on its own. Enabling a protection does not prove a successful
 return or landing.
+
+**Recommended setup: the flight controller returns home on its own when it
+loses the Asset app.** The flight controller runs its own failsafe, such as
+return to home, when it stops hearing from the computer that runs the Asset
+app, without Atlas. This covers an app crash, a hang, a restart that takes too
+long, and a lost companion-to-controller link. On ArduPilot this is the
+[ground station (GCS) failsafe](https://ardupilot.org/copter/docs/gcs-failsafe.html),
+which watches MAVLink heartbeats:
+
+- The app sends MAVLink heartbeats from its control loop with the system ID
+  that ArduPilot counts as its ground station (`MAV_GCS_SYSID`, called
+  `SYSID_MYGCS` in older firmware). A hung app then stops them too.
+- `FS_GCS_ENABLE` selects the response, for example RTL, which lands instead
+  when GPS is not usable, and `FS_GCS_TIMEOUT` sets how long without a
+  heartbeat triggers it.
+- The setup leaves off the `FS_OPTIONS` choices that continue an Auto mission
+  or pilot control on a GCS failsafe.
+- Nothing else may send heartbeats with that system ID: not a ground station
+  program, a MAVLink router, or MAVProxy on the same computer. Their
+  heartbeats would keep the failsafe from firing.
+
+ArduPilot's own rules still apply: the failsafe stays inactive until the first
+heartbeat arrives, does nothing while disarmed, disarms a copter that has
+landed, and leaves the vehicle in the failsafe mode when heartbeats return.
 
 When the app detects an independent autopilot failsafe taking over, it cancels
 ordinary work and the remaining queue and enters
@@ -119,18 +144,19 @@ resolves home at activation and keeps that destination, and a Land with no
 position lands where the Asset is at activation.
 
 A failsafe Task has no Core `task_id`, because Core owns that numbering. Its rule
-and attempt, primary or fallback, name it, since each rule runs at most once in
-an operation. The Asset reports its state in a failsafe report, starting with the
-response it runs and what set it off.
+and attempt, primary or fallback, and its start time name it; the built-in safe
+action has no rule. The Asset reports its state in a failsafe report, starting
+with the response it runs and what set it off.
 
 A higher-priority matching rule interrupts the response. The Asset reports the
 interrupted Task `cancelled` and starts a new Task for the new rule. Priority
 only rises for the rest of the operation, including after a response completes.
-Equal- or lower-priority matches never start another response.
+Equal- or lower-priority matches never start another response, except after
+[an override that re-arms protection](#an-override-with-hold-or-pause-re-arms-protection).
 
-Each rule gets at most one primary attempt and one optional fallback Task, using
-the same executor. A failed primary starts the fallback once, and each failure is
-reported. No response restarts or triggers itself. After both fail, the Asset
+Each time a rule fires it gets one primary attempt and one optional fallback
+Task, using the same executor. A failed primary starts the fallback once, and
+each failure is reported. No response restarts or triggers itself. After both fail, the Asset
 stays in failsafe state and records the actual equipment state; failed attempts
 do not establish a landing. A higher-priority rule may still act.
 
@@ -138,8 +164,10 @@ do not establish a landing. A higher-priority rule may still act.
 
 Failsafe state lasts for the rest of the operation, including after a successful
 landing, renewed contact, or conditions becoming false. Losing contact again
-never restarts an equal- or lower-priority response. Higher-priority matches
-follow the [existing priority rule](#a-failsafe-activates-a-configured-task).
+never restarts an equal- or lower-priority response, unless an operator has
+[re-armed protection](#an-override-with-hold-or-pause-re-arms-protection).
+Higher-priority matches follow the
+[existing priority rule](#a-failsafe-activates-a-configured-task).
 Cancelled Tasks never resume. Reports and logging continue.
 
 In failsafe state the operator can still override the response:
@@ -164,20 +192,55 @@ shuts itself down. Core then shows the Asset offline, as it would after lost
 contact, and the other Assets keep working. Atlas has no remote restart and no
 way to clear the state.
 
-## A restart mid-flight is a failsafe
+## An override with Hold or pause re-arms protection
 
-If the app restarts during a run while the Asset is out on a Task, it rejoins
-Core as the same Asset, with the same `asset_id`
-([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)),
-and enters failsafe state instead of resuming its work. From there it is like
-any failsafe: operators see it as itself, in failsafe, the
+Hold now and pause leave the Asset in the air with no protective maneuver
+running. So when an operator overrides with either, the Asset re-arms every
+rule whose conditions include contact loss or low battery. A re-armed rule
+fires again, whatever its priority, when its conditions start to hold after the
+override: it starts its response, which replaces the Hold or the paused
+response Task. A condition that already holds at the override, such as a
+battery still below the rule's percentage, fires again only after it stops
+holding and holds again. The Asset stays in failsafe state throughout; re-arming
+never cancels it. A Land or Return to home override re-arms nothing.
+
+## An operator can fire the failsafe
+
+Fail-safe is a command, like Land, Return to home, or Hold. An operator sends it
+alone with `now`, and the Asset treats it exactly as if its failsafe had fired:
+it stops current work, clears its queue, enters failsafe state, and starts the
+built-in safe action its maker chose. From then on it is like any failsafe: the
+state can't be cancelled or left, and the
+[overrides above](#lock-ordinary-work-for-the-rest-of-the-operation) apply. The
+Fail-safe Task completes once the Asset is in failsafe state; the response runs
+as a failsafe Task. An Asset already in failsafe state refuses it like any
+other Task.
+
+An Asset that has failsafes lists `failsafe` among its commands. Like every
+command, it reaches only an Asset that is online: Core refuses it for an offline
+Asset ([operator requests](../../core/docs/api.md#operator-requests)). A vehicle
+out of contact relies on its own contact-loss rules and on the
+[flight controller's protections](#independent-flight-controller-protections).
+
+## A restart in flight is a failsafe
+
+The app restarts itself after a crash. On startup, before it runs any work, it
+checks whether the vehicle is flying: airborne, or armed. If it is, the Asset
+fires its failsafe and enters failsafe state instead of resuming its work. It
+rejoins Core as the same Asset, with the same `asset_id`
+([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
+From there it is like any failsafe: operators see it as itself, in failsafe, the
 [overrides above](#lock-ordinary-work-for-the-rest-of-the-operation) apply, and
-the state has no exit. A dropped link is not a restart.
+the state has no exit. A restart on the ground drops the queued Tasks instead.
+A dropped link is not a restart. A crashed Asset is inspected before its next
+flight.
 
 The response is the policy's, when a rule covers the restart. With no rule for
 it, the Asset falls back to a built-in safe action its maker chose, such as
 landing or returning home. Operators who want something specific configure a
-rule. This is the one response that runs without a configured rule.
+rule. The
+[flight controller's own protection](#independent-flight-controller-protections)
+covers the time the app is down.
 
 ## Replace the policy during ordinary operation
 
@@ -198,5 +261,9 @@ restarting idle or contact timers.
   Atlas response.
 - Boundary details and measurement freshness limits.
 - How a rule names a restart: no condition kind covers it yet.
+- Whether a rule may choose the response to the Fail-safe command instead of
+  the built-in safe action.
+- How the app tells airborne from armed on each platform at startup, and what
+  it does when it cannot read the flight controller yet.
 - What counts as safely stopped on each platform, and how long the app waits for
   Core to acknowledge its final reports before it shuts down.

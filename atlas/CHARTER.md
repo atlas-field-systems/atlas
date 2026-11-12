@@ -110,8 +110,8 @@ Fieldlinks. No program builds a second validator.
 See [design-decisions.md](design-decisions.md).
 
 The [decision log](decision-log.md) beats every other page. How-it-works docs,
-laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose with the owner; do not quietly diverge in
-code.
+laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose, in a pull request the owner approves; do not
+quietly diverge in code.
 
 Accepted acknowledgment and observed Asset outcomes are different facts. Asset
 reports are the observed outcome under the contract, not the same fact as

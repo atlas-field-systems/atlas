@@ -8,9 +8,9 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time. A gateway is not an Asset. See [Gateway](gateway/README.md). |
 | Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
 | Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It stays with the gateway and its Fieldlink; Core does not hold it. See [what every Fieldlink provides](gateway/README.md#what-every-fieldlink-provides). |
-| Run | Everything between one start of Core and the next stop. See [Runs and identity](atlas/runs-and-identity.md). |
+| Run | Everything between one start of Core and the next deliberate stop. A crash of Core resumes the run. See [Runs and identity](atlas/runs-and-identity.md). |
 | Registration | An Asset joining the current run and getting its `asset_id` from Core. See [Runs and identity](atlas/runs-and-identity.md#keys-and-registration). |
-| Reset | Ending a run by stopping Core. There is no Reset request or button. See [Runs and identity](atlas/runs-and-identity.md#a-run-and-reset). |
+| Reset | Ending a run by stopping Core on purpose. There is no Reset request or button. See [Runs and identity](atlas/runs-and-identity.md#a-run-and-reset). |
 | Reset ZIP | One part's own archive of a run or operation, for people and AI agents to investigate it. Core, each Asset, and each gateway write their own. See [Core Reset](core/docs/reset.md). |
 | Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
 | Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
@@ -45,5 +45,5 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | Failsafe condition | A test of an Asset's equipment, contact, or work state, used in a failsafe rule. |
 | Failsafe rule | Conditions, a priority, and a configured response, named by its rule ID. |
 | Failsafe response | A command the Asset supports and its parameters, with an optional fallback. A response always stops ordinary work; an Asset that should keep working has no rule for that situation. |
-| Failsafe task | One locally started execution of a configured response, using ordinary Task execution. It has no Core task number; its rule and attempt, primary or fallback, name it. |
-| Failsafe state | The Asset's [operation-long lock on ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation). |
+| Failsafe task | One locally started execution of a failsafe response, using ordinary Task execution. It has no Core task number; its rule, attempt (primary or fallback), and start time name it. |
+| Failsafe state | The Asset's [operation-long lock on ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation). A rule, a restart in flight, or the operator's Fail-safe command starts it. |

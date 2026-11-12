@@ -71,8 +71,8 @@ and `/debug` belong to no pillar and stay at the top level.
 | Caller | Credential | Event stream shows |
 | --- | --- | --- |
 | Account (admin or operator) | Session cookie from `POST /administration/login` | Everything |
-| Asset on IP | Bearer Asset key | Requests for the Asset it registered, and the places its unfinished Tasks name |
-| Gateway | Bearer key | Requests for the Assets it carries, and the places their unfinished Tasks name |
+| Asset on IP | Bearer Asset key | Requests for the Asset it registered |
+| Gateway | Bearer key | Requests for the Assets it carries |
 | Plugin | Bearer key | Calls addressed to it |
 
 - Accounts log in with `operator_id` and a password. Core stores password hashes
@@ -118,7 +118,6 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | --- | --- | --- |
 | `asset.registered`, `asset.removed` | An Asset [registers](#asset-and-gateway-calls), a gateway registers a radio Asset, or an admin removes an Asset | `registration` |
 | `gateway.provisioned`, `gateway.removed` | An admin adds or removes a gateway | `provisioning` |
-| `asset.carried` | A radio Asset moves to another gateway during the run, or its gateway is removed | `carrier`: `asset_id`, and `gateway_id` unless no gateway carries it |
 | `plugin.provisioned`, `plugin.removed` | An admin adds or removes a Plugin | `provisioning` |
 | `plugin.described` | A Plugin sends its description | `plugin.description` |
 | `plugin.contact` | Core's view of a Plugin's contact changes | `contact` |
@@ -133,6 +132,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `gateway.contact` | Core's view of the gateway's contact changes | `contact` |
 | `definitions.refused` | An Asset on IP, gateway, radio, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash`. For a radio: the `gateway_id`, `radio: true`, and the radio's hash |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
+| `tasks.updated` | An operator edits a place and chooses to update the unfinished Tasks that use it | For one Asset, every updated Task body, in `task_id` order |
 | `task.dropped` | Core discards a Task the Asset never confirmed it holds | `drop`: `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `drop`: `asset_id`, `request_id` |
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
@@ -167,7 +167,10 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 - Core validates the body, checks that the Asset is online and that its
   description lists every command and setting in it, and accepts or refuses the
   request whole. An unlisted command or setting is refused with `409`. Core
-  refuses commands to an offline Asset and holds nothing.
+  refuses commands to an offline Asset and holds nothing, Fail-safe included.
+- **Fail-safe runs now.** A `failsafe` Task is sent alone with `now`; Core
+  refuses it otherwise with `400 invalid`. The Asset treats it as if its
+  failsafe had fired ([Failsafes](../../asset/docs/failsafes.md#an-operator-can-fire-the-failsafe)).
 - **At most 64 Tasks may be outstanding per Asset.** Outstanding work includes
   every accepted Task still crossing the link, held unstarted, or active,
   including work held while paused. Core counts a Task until its final Asset
@@ -294,8 +297,7 @@ A gateway makes the same calls on behalf of each Asset it carries, with its own
 key, once it has [registered the radio](#radio-assets). It also sends
 `PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
 Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
-it carries, or one it [takes over](#radio-assets), named by the path; any other
-caller gets `403`. Core
+it carries, named by the path; any other caller gets `403`. Core
 authenticates the gateway and trusts it for which Asset sent what. Each Asset
 authenticates to the gateway, not to Core.
 
@@ -319,22 +321,18 @@ Asset on its own side and speaks to Core only by `asset_id`.
   ID through the Fieldlink.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
   adds `definitions.refused`. The refusal adds no Asset.
-- **A gateway swap keeps the Assets.** A radio that already has an `asset_id`
-  in this run tells it to the gateway it now reaches, through the Fieldlink. If
-  that Asset is a radio Asset of this run, not removed, and its carrier is
-  offline, removed, or none, the new gateway takes it over by sending
-  `PUT /entities/assets/{asset_id}/contact`. Core records the new carrier and
-  adds `asset.carried`. The Asset keeps its ID and its unfinished Tasks. A swap
-  is within the run; IDs change only with the next run. A radio whose app
-  restarted mid-run rejoins the same way and keeps its ID, but its work does
-  not resume ([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
+- **One gateway per radio Asset.** The gateway that registered a radio Asset
+  is the only one that carries it. A radio whose app restarted mid-run
+  identifies itself to that gateway through the Fieldlink and keeps its ID, but
+  its work does not resume
+  ([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
+  Another gateway that hears it registers it as a new Asset.
 - When an admin removes a radio Asset, its ID ends. If the radio is heard
   again, its gateway registers it as a new Asset with a new ID.
 - A gateway acts only for the Assets it carries. Its calls for any other Asset
   get `403`.
-- Removing a gateway leaves its radio Assets in the picture, offline, and
-  carried by no gateway, until they reach another gateway. Replacing its key
-  changes nothing for them.
+- Removing a gateway leaves its radio Assets in the picture, offline. Replacing
+  its key changes nothing for them.
 
 ## Contact
 
@@ -412,7 +410,7 @@ differently.
 | `/entities/assets` | The actor surface, already specified above: registration, description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Keys are under `/administration`. Tasks are under `/tasks`. |
 | `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
 | `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task may name a place by `geofeature_id`, as a live reference, and the Asset reads that place's current shape ([Geo features](#geo-features)). |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task that names a place by `geofeature_id` carries a copy of it ([Geo features](#geo-features)). |
 
 Objects are not Entities.
 
@@ -437,8 +435,7 @@ Objects are not Entities.
 - **Accounts and Plugins read the picture.** A Plugin uses this same API with
   its Plugin key, through the [Plugin interface](#plugins).
   Assets and gateways get `403` on these paths and keep only their own
-  `/entities/assets/{asset_id}` calls, plus the geo features their Tasks
-  [name](#geo-features).
+  `/entities/assets/{asset_id}` calls.
 - **Nothing expires during a run.** Observations stay in the picture for the
   whole run, and a Track stays until Fusion removes it. Core adds no stale
   status. Every record keeps its `time`, and readers show its age. A status
@@ -468,11 +465,11 @@ and a removal adds `track.removed`.
 | Request | Body | Result |
 | --- | --- | --- |
 | `POST /entities/geofeatures` | `requests.geofeature` | `200 {geofeature, event_id}` |
-| `PUT /entities/geofeatures/{geofeature_id}` | `requests.geofeature` | `200 {geofeature, event_id}` |
+| `PUT /entities/geofeatures/{geofeature_id}?update_tasks=<true or false>` | `requests.geofeature` | `200 {geofeature, event_id}`, and with `update_tasks=true`, `updated_task_ids` and `not_updated_task_ids` |
 | `DELETE /entities/geofeatures/{geofeature_id}` | Nothing | `200 {event_id}` |
 
-- These are local edits. Nothing goes to an Asset, so Core answers `200` with
-  the stored result, not `202`. The [retry rules](#basics) apply as to every
+- These are local edits. Nothing goes to an Asset unless an operator updates
+  Tasks, so Core answers `200` with the stored result, not `202`. The [retry rules](#basics) apply as to every
   change.
 - `POST` creates a geo feature, and Core assigns its `geofeature_id`. `PUT`
   replaces one whole, so a name left out is cleared and its shape may change
@@ -483,28 +480,31 @@ and a removal adds `track.removed`.
   key ([Plugins](#plugins)). Assets and gateways get `403`.
 - The event names who asked with `requested_by`, because the geo feature record
   names no author. A geo feature a Plugin creates names the Plugin.
-- **A Task names a place live.** `move_to` and `land` may name a point geo
-  feature by `geofeature_id` instead of a position. When it accepts the Task,
-  Core refuses a `geofeature_id` that does not exist with `404`, refuses a place
-  that is not a point, and never copies the shape into the Task. This is for a
-  named place; a shape drawn into one Task is carried by that Task. The Asset
-  learns of the place this way:
-  - An Asset, or the gateway carrying it, may
-    `GET /entities/geofeatures/{geofeature_id}` for a geo feature that one of the
-    Asset's unfinished Tasks names. Any other geo feature gets `403`.
-  - The Asset's event stream carries that geo feature's current record, and
-    each later `geofeature.replaced` or `geofeature.deleted`, while an
-    unfinished Task names it, so an edit reaches it as a new Task does. The
-    gateway sends over the radio only what the Asset lacks.
-  - Geo features are not otherwise sent to Assets, and Assets and gateways read
-    nothing else of the picture. Failsafe boundaries and failsafe responses
-    never name a geo feature.
+- **A Task keeps a copy of its place.** `move_to` and `land` may name a point
+  geo feature by `geofeature_id` instead of a position. When it accepts the
+  Task, Core refuses a `geofeature_id` that does not exist with `404` and
+  refuses a place that is not a point. It then copies the place's position
+  into the Task, beside the `geofeature_id`, so the Task keeps the place as it
+  was when it was sent. A shape drawn into one Task is carried by that Task the
+  same way.
+- **Assets never read places.** Geo features are never sent to Assets or
+  gateways, and they read nothing of the picture. Failsafe boundaries and
+  failsafe responses never name a geo feature.
 - **Edits are never blocked.** An operator may replace or delete a place while
-  unfinished Tasks name it. Core does not refuse the change and does not
-  cancel any Task. The Asset decides how to carry on: it may keep its original
-  plan or follow the new shape, and a Task whose place was deleted runs or
-  fails as the Asset decides, reporting what it did
-  ([Asset behavior](../../asset/docs/README.md#carry-out-work-and-report-its-result)).
+  unfinished Tasks name it. Core does not refuse the change and does not cancel
+  any Task. Deleting a place changes no Task already sent.
+- **An edit updates Tasks only when asked.** A Task is unfinished until its
+  final Asset report is stored. With `update_tasks=true`, Core makes a new copy
+  of the place for each unfinished Task that names it and adds one
+  `tasks.updated` event per Asset, each Task keeping its `task_id`, so the Asset
+  [uses the new copy](../../asset/docs/README.md#carry-out-work-and-report-its-result).
+  As for any request, only an online Asset gets it: Tasks of an offline Asset
+  are not updated, and the answer lists them in `not_updated_task_ids`. The
+  Asset answers with a queue report naming the event, and an update it has not
+  answered when it goes offline is dropped like any other request. Without
+  `update_tasks=true` the Tasks keep their copies. The
+  [Command Interface](../../command-interface/docs/README.md#area-and-place-inputs)
+  asks the operator which to do.
 - **Imagery shows a GeoTIFF on the map.** An imagery geo feature names one
   stored Object, and the map draws that file where the file says it belongs.
   Core refuses an Object that is not a GeoTIFF with `409`, and an `object_id`
@@ -527,7 +527,7 @@ Assets or gateways.
 | `GET /objects/{object_id}` | Account or Plugin | One Object record |
 | `GET /objects/{object_id}/file` | Account or Plugin | The file, with its `content_type` |
 | `PATCH /objects/{object_id}` | Account | `{"geofeature_id": <id or null>}` attaches, moves, or detaches it; `200 {event_id}` |
-| `DELETE /objects/{object_id}` | Account | Deletes the Object and its file; `200 {event_id}` |
+| `DELETE /objects/{object_id}` | Account | Deletes the Object: hides it and its file for the rest of the run; `200 {event_id}` |
 
 - **An upload is the file itself.** The body is the file's bytes and its
   `Content-Type` header is the file's type. `name` is required and
@@ -549,16 +549,19 @@ Assets or gateways.
   Deleting a geo feature leaves its Objects, which keep its ID as a record. This
   relies on a `geofeature_id` never being reused in a run, which the
   [Entities](#entities) design must keep.
-- **Delete removes the file.** The `object.stored` and `object.deleted` events
-  stay in history for the rest of the run, and then in its Reset ZIP, so the
-  record of the upload and of who deleted it remains.
+- **Delete hides the Object; it destroys nothing.** After a delete, the Object
+  and its file are gone from every read: lists leave it out, and its record
+  and file return `404`. Core keeps both until the run ends, and the Reset ZIP
+  holds them, marked deleted. The `object.stored` and `object.deleted` events
+  stay in history, so the record of the upload and of who deleted it remains.
   Only an operator deletes an Object. Core refuses to delete an Object that an
   imagery geo feature still shows with `409`; the operator deletes the imagery
   first.
 - **Who stored it** is `requested_by` in the Object record: the account that
   uploaded it or the Plugin that stored it. Core stamps it, as for Tasks.
-- **Objects belong to their run.** When the run ends, their files go into
-  Core's [Reset ZIP](reset.md#cores-reset-zip) and are cleared from Core. The
+- **Objects belong to their run.** When the run ends, their files, deleted
+  ones included, go into Core's [Reset ZIP](reset.md#cores-reset-zip) and are
+  cleared from Core. The
   next run starts with none.
 
 ## Plugins

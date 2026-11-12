@@ -39,8 +39,19 @@ coverage:
 - Configured failsafes, the operator overrides allowed in failsafe state, and
   refusal of other work. Restore contact after activation, then lose it again;
   expect the latch and ordinary-work lock to remain, with no repeated equal- or
-  lower-priority response. Check higher-priority interruption separately under
+  lower-priority response. Then override with Hold now, lose contact again, and
+  expect the contact-loss rule to fire again
+  ([re-arming](failsafes.md#an-override-with-hold-or-pause-re-arms-protection)).
+  Check higher-priority interruption separately under
   the [selected priority rules](failsafes.md#a-failsafe-activates-a-configured-task).
+- The Fail-safe command: the Asset enters failsafe state and runs its built-in
+  safe action, and refuses a second Fail-safe.
+- Kill the app in flight and on the ground. In flight, it restarts, rejoins
+  with the same `asset_id`, and fires its failsafe; on the ground, it drops its
+  queued Tasks. In both, the flight controller's own failsafe fires if the app
+  stays down past its timeout.
+- A [Task update](README.md#carry-out-work-and-report-its-result) for a queued
+  Task, the active Task, and a Task that has ended.
 - Link loss and reconnect while local execution continues, with final reports
   resent until acknowledged and history catch-up in report batches.
 - Separate loss of the Core path and the vehicle equipment link, including a

@@ -24,7 +24,6 @@ Definitions and records carry none.
 | `registration` | An Asset registered in the run or was removed from it | Core, for the Asset, its gateway, or an admin |
 | `provisioning` | An admin provisioned or removed a gateway or Plugin | Core, for an admin |
 | `contact` | Whether an Asset, gateway, or Plugin is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
-| `carrier` | Which gateway carries a radio Asset, or none | Core |
 | `drop` | A Task, request, or Plugin call Core stopped waiting on | Core |
 | `refusal` | A caller or radio Core refused for a different definitions hash | Core |
 | `report.status` | One subsystem's condition, one Task's state, or its task list | Asset |

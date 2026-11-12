@@ -11,8 +11,9 @@ says what Core records during the run.
 
 The admin starts and stops Core on Core's own computer.
 
-- **Starting Core** begins a new, empty run with the next `run_id`.
-- **Stopping Core** ends the run. Core stops accepting requests, writes its
+- **Starting Core** begins a new, empty run with the next `run_id`, unless the
+  last run never stopped: then Core [resumes it](#when-core-stops-unexpectedly).
+- **Stopping Core** on purpose ends the run. Core stops accepting requests, writes its
   Reset ZIP, checks it, clears the run, and exits.
 - **Shut the Assets down first.** Core does not check. An Asset left running
   into the next run is not supported: Task numbers start again at 1 in each run.
@@ -45,18 +46,18 @@ process.
 | --- | --- |
 | `README.md` | What each file is, so an AI agent or a person can find their way |
 | `summary.md` | The plain readable summary below |
-| `manifest.json` | Every file with its size and SHA-256, whether the run ended normally, and every known gap |
+| `manifest.json` | Every file with its size and SHA-256, each unexpected stop Core resumed from, and every known gap |
 | `events.jsonl` | The run's [event log](api.md#the-event-log-and-live-stream), one event per line in `event_id` order: every accepted request and stored report |
 | `state/` | The run's current-state rows when it ended, one JSON Lines file per table: Tasks, queues, Tracks, geo features, Objects, and the Assets, gateways, and Plugins seen |
-| `objects/` | Each Object's file, named by its `object_id` |
+| `objects/` | Each Object's file, named by its `object_id`, including Objects deleted during the run; `state/` marks those deleted |
 | `diagnostics/` | Core's [diagnostic log](logging.md) for the run, as written |
 | `config.json` | The resolved configuration, with secrets removed |
 | `versions.json` | Core's version, the Protocol package version, and the definitions hash |
 
 `summary.md` says, in plain words:
 
-- The run's ID, its start and end, and how it ended: stopped normally, or
-  stopped unexpectedly and possibly incomplete.
+- The run's ID, its start and end, and each time Core stopped unexpectedly
+  and resumed the run, with how long it was down.
 - Each Asset that took part: its ID, its gateway if any, and when Core first
   and last heard it.
 - Each Asset's Tasks in order, with their final reported outcome, or no
@@ -99,11 +100,25 @@ API ([storage](storage.md#runs)).
 
 ## When Core stops unexpectedly
 
-If Core crashes or loses power, the run ends there. At its next start, Core
-writes that run's ZIP as above. Its `summary.md` and `manifest.json` say "Core
-stopped unexpectedly; this record may be incomplete", and give the last event
-and the last diagnostic record Core holds. Core then starts a new run. It never
-continues an interrupted run.
+A crash, a power loss, or a reboot that was not a deliberate stop does not end
+the run ([Runs and identity](../../atlas/runs-and-identity.md#a-run-and-reset)).
+Every accepted change was written with its event ([storage](storage.md)), so
+at its next start Core finds the run that never stopped and resumes it: the same
+`run_id`, Assets and their IDs, Tasks and their numbering, places, Objects,
+sessions, and idempotency keys. It writes no ZIP and clears nothing.
+
+- Callers reconnect as after a dropped link. Operator applications and
+  gateways see the same `run_id` on `GET /about` and resume their event streams
+  from their last `event_id`. Assets on IP reconnect within the run.
+- Core's contact view starts again. An Asset or gateway it has not heard from
+  within `offline_after_s` of the start shows offline, and the
+  [offline rules](api.md#operator-requests) apply as usual.
+- Core records the stop and the resume in its diagnostics, and the run's ZIP
+  lists them as a gap.
+
+If Core crashes while it is already stopping, the deliberate stop stands: its
+next start finishes writing and checking that run's ZIP, clears the run, and
+then starts a new one.
 
 ## Scenarios
 
@@ -122,7 +137,10 @@ Behavior tests come from these, once Core exists.
 - Fill the disk, then stop Core. No ZIP appears under its final name, and Core
   prints the failure. Free space and start Core: the earlier run's ZIP is
   written before the new run starts.
-- Kill Core during a run, then start it. A ZIP marked as stopped unexpectedly
-  appears, and a new run starts.
+- Kill Core during a run, then start it. No ZIP appears. `GET /about` shows the
+  same `run_id`, the Assets keep their IDs, and the next Task an operator sends
+  gets the next `task_id`. Stop Core: the ZIP lists the unexpected stop as a gap.
+- Kill Core while it writes its ZIP, then start it. The ZIP is finished and
+  checked, and a new run starts.
 - Search every file of a ZIP for a password, a key, and a session token used in
   the run. None appears.
