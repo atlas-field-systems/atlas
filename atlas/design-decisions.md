@@ -107,8 +107,9 @@ never rebuilt from events. A slow or disconnected reader resumes from its last
 
 ## Stopping Core ends the run
 
-A run lasts from one start of Core to the next stop, and stopping Core is
-Reset. Core, each Asset, and each gateway write their own Reset ZIP, and the ZIP
+A run lasts from one start of Core to the next deliberate stop, and stopping
+Core on purpose is Reset. A crash or power loss resumes the same run. Core,
+each Asset, and each gateway write their own Reset ZIP, and the ZIP
 is the only copy of the run. [Runs and identity](runs-and-identity.md) owns the
 rules: what carries over, signing in again, and how Assets get their IDs. Each
 part's docs own its ZIP:

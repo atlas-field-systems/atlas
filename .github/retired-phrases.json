@@ -232,5 +232,17 @@
     "phrase": "\\bno (atlas )?failsafe rules, battery rules included\\b",
     "why": "Every flying Asset needs a critical battery rule.",
     "example": "An Asset starts with no Atlas failsafe rules, battery rules included."
+  },
+  {
+    "phrase": "\\b(stopping core|every stop( of core)?|any stop( of core)?) is reset\\b",
+    "unless": "\\b(on purpose|deliberate(ly)?)\\b",
+    "why": "Only a deliberate stop of Core is Reset; a crash or power loss resumes the run.",
+    "example": "A run lasts from one start of Core to the next stop, and stopping Core is Reset."
+  },
+  {
+    "phrase": "\\basset( |_)ids?\\b[^.]*\\b(start (again|over)|(is|are|gets?|get) reused|recycled)\\b",
+    "unless": "\\b(never|not|no|unlike)\\b",
+    "why": "Asset IDs are never reused, not even in a later run; when they run out, Core refuses new registrations and tells the admin.",
+    "example": "Asset IDs start again each run, like Task numbers."
   }
 ]

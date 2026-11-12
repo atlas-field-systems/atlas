@@ -51,6 +51,8 @@ coverage:
 - A critical battery rule: override its response, or an earlier one, with Hold
   now or pause while the battery is below the critical level, and expect the
   rule to fire again at once.
+- Two critical rules matching at once: only the higher-priority one fires. Make
+  a critical rule's Return to home fail: the Asset lands where it is, once.
 - Kill the app in flight: it stays down, Core shows the Asset offline, and the
   flight controller's own failsafe returns it home after its timeout. Start the
   app again on the ground: it rejoins with the same `asset_id` and drops its

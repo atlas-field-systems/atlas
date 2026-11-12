@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_rule.json",
   "title": "failsafe_rule",
-  "description": "One failsafe rule: its rule_id, its priority, the conditions that must all hold, its response, and an optional fallback that runs once if the response fails. Alternative combinations of conditions are separate rules.",
+  "description": "One failsafe rule: its rule_id, its priority, the conditions that must all hold, its response, and an optional fallback that runs once if the response fails. A rule with a critical battery condition falls back to Land whatever fallback it names. Alternative combinations of conditions are separate rules.",
   "type": "object",
   "required": [
     "rule_id",

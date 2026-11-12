@@ -9,7 +9,7 @@ has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/a
 ## A run and Reset
 
 - **A run** lasts from one start of Core to the next deliberate stop.
-- **Stopping Core is Reset.** There is no Reset request, API call, or button.
+- **Stopping Core on purpose is Reset.** There is no Reset request, API call, or button.
   The admin stops Core on its own computer. The operator is trusted to shut the
   Assets down first; Core does not check. An Asset left running into the next
   run is not supported.
@@ -45,7 +45,8 @@ picture expires, and neither a dropped link nor a crash of Core ends anything.
 | Installed Plugin setup | Operator state: sessions, links, and view filters |
 
 `event_id` keeps rising across runs, so an old cursor never matches a new
-event.
+event. Core also keeps the last `asset_id` it assigned, so a new run never
+reuses an [Asset ID](#ids).
 
 ## IDs
 
@@ -53,9 +54,19 @@ event.
   the acknowledgement tells the registrant: the Asset on IP, or the gateway for
   a radio Asset. Nothing picks its own `asset_id`, and no configuration holds
   one.
+- **An Asset ID is never reused**, not even in a later run. Unlike the other
+  IDs Core assigns, it does not start again each run. For example, if `A7` was
+  a drone in one run, no Asset in any later run is `A7`; the drone gets a new
+  ID there, such as `B2`.
+- **Core refuses registration when Asset IDs run out.** IDs are 1 to 4 letters
+  or digits, over a million of them. If Core ever has none left, it refuses
+  each new registration with `409 asset_ids_exhausted`, prints why on its
+  console and in its diagnostic log so the admin sees it, and adds no Asset. It
+  never reuses an old ID to make room.
 - **Assets choose `observation_id`**, unique for that Asset within a run.
 - **Core assigns the other IDs:** `task_id`, `track_id`, `geofeature_id`, and
-  `object_id`. They start again each run, so the same ID can name a different
+  `object_id`. Unlike `asset_id`, they start again each run, so the same ID
+  can name a different
   item in the next run.
 
 Scope: an ID holds for one run. Within the run an Asset keeps its `asset_id`
@@ -77,7 +88,11 @@ new one.
   proves which Asset it is. It still never picks or configures its own ID.
 - **Work does not resume after a restart.** A restarted app drops its queued
   Tasks: operators see them marked not done and send again whatever still
-  matters. Nothing resumes on its own. An app that fails in flight stays down,
+  matters. Nothing resumes on its own. The app reports only what it knows: its
+  settings, an empty queue, and a `cancelled` report for each Task it still
+  remembers. Core marks the rest not done by dropping them, which claims no
+  outcome ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#asset-and-gateway-calls)).
+  An app that fails in flight stays down,
   shown offline, while the flight controller returns the vehicle home
   ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight)).
 - **A removed Asset's ID ends.** If it registers again, it is a new Asset.
@@ -117,4 +132,8 @@ a new Asset.
 
 ## Open
 
-- Which reports mark a restarted Asset's dropped Tasks not done.
+- Whether a restarted app must keep its unacknowledged final Task reports
+  through the restart, so an outcome it saw before restarting still reaches
+  Core. Today they are lost if the app forgot them.
+- How a gateway tells Core that a radio Asset it carries restarted, so Core
+  drops that Asset's Tasks as it does for an Asset on IP.

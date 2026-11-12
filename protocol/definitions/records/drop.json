@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/drop.json",
   "title": "Drop",
-  "description": "Core stopped waiting for an answer that never came. The event kind says which: task.dropped names a Task the Asset never confirmed it holds (asset_id and task_id); request.dropped names a request the Asset did not answer before it went offline (asset_id and request_id); plugin.dropped names a call the Plugin did not answer before it went offline or was removed (plugin_id and request_id). A drop does not prove the request never arrived.",
+  "description": "Core stopped waiting for an answer that never came. The event kind says which: task.dropped names a Task the Asset never confirmed it holds, or one with no final report when the Asset's app started again and so no longer holds it (asset_id and task_id); request.dropped names a request the Asset did not answer before it went offline (asset_id and request_id); plugin.dropped names a call the Plugin did not answer before it went offline or was removed (plugin_id and request_id). A drop does not prove the request never arrived, and claims no outcome for a Task.",
   "type": "object",
   "required": [
     "time"

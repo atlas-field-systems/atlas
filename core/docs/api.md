@@ -15,8 +15,10 @@ explains why the API is the only way in.
   with the request's `event_id`. Task states and setting values change only from
   the Asset's reports.
 - **Compatibility.** Every request carries `Atlas-Definitions: <hash>`, the hash
-  of the Protocol definitions the caller uses. Core refuses a missing or different
-  hash with `409 definitions_mismatch`. `GET /about` needs no credential and
+  of the Protocol definitions the caller uses, made by Protocol's
+  [hash recipe](../../protocol/docs/decisions.md#definitions-hash). Core refuses
+  a missing or different hash with `409 definitions_mismatch`. `GET /about`
+  needs no credential and
   returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
   stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
@@ -46,7 +48,7 @@ explains why the API is the only way in.
 | `401` | No valid session or key |
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
-| `409` | Refused: Asset or Plugin offline, flying Asset with no critical battery rule, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
+| `409` | Refused: Asset IDs used up, Asset or Plugin offline, flying Asset with no critical battery rule, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
@@ -133,7 +135,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `definitions.refused` | An Asset on IP, gateway, radio, or Plugin connects with a different definitions hash | `refusal`: its `asset_id`, `gateway_id`, or `plugin_id`, and its `definitions_hash`. For a radio: the `gateway_id`, `radio: true`, and the radio's hash |
 | `tasks.requested` | An operator sends Tasks | Every Task body in the request, in `task_id` order |
 | `tasks.updated` | An operator edits a place and chooses to update the unfinished Tasks that use it | For one Asset, every updated Task body, in `task_id` order |
-| `task.dropped` | Core discards a Task the Asset never confirmed it holds | `drop`: `asset_id`, `task_id` |
+| `task.dropped` | Core discards a Task the Asset never confirmed it holds, or one a restarted Asset [no longer holds](#asset-and-gateway-calls) | `drop`: `asset_id`, `task_id` |
 | `request.dropped` | Core stops delivering a request the Asset did not answer before it went offline | `drop`: `asset_id`, `request_id` |
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
 | `cancel.requested` | An operator cancels a Task | `asset_id`, `task_id`, `requested_by` |
@@ -231,6 +233,17 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   dropped `task_id` never blocks the Tasks after it. Those cancelled Tasks
   still hold their capacity places until those final reports are stored.
   An operator who still wants the work sends it again.
+- **A restarted app holds nothing.** When an Asset that is already
+  registered registers again, its app started again and
+  [dropped its queued Tasks](../../atlas/runs-and-identity.md#keys-and-registration).
+  Core first ends every request the Asset has not answered, as when it goes
+  offline. It then adds `task.dropped` for each of the Asset's Tasks that has
+  no final report, held, active, or still crossing the link, and those Tasks
+  no longer count toward the 64. A drop claims no outcome: the Task keeps its
+  last reported state, and operators see it as not done. The restarted app
+  reports in step 3 only what it knows: its settings, an empty queue, and a
+  final `cancelled` report, explaining the restart, for each Task it still
+  remembers. A Task outcome it did not observe is never reported.
 - A dropped request may have reached the Asset before contact ended. The Asset's
   later reports say what it did. `request.dropped` does not prove the request
   never arrived.
@@ -264,13 +277,19 @@ Core assigns each Asset's `asset_id` when it registers
 starts in this order, and on reconnect within the run repeats it from step 2:
 
 1. `GET /about` with its Asset key, and compare the definitions hash.
-2. On start, `POST /entities/assets` with its description record. Core assigns
-   the next `asset_id`, adds `asset.registered`, and answers `201 {asset_id}`.
+2. On start, `POST /entities/assets` with `requests.asset`: its description
+   without `time` and `asset_id`. Core assigns the next `asset_id`, never one
+   used before, stamps `time` and the ID to make the description record, adds
+   `asset.registered` and `asset.described`, and answers `201 {asset_id}`.
    The Asset uses that ID for the rest of the run. Registering again with the
    same key in the run returns the same `asset_id`, even for an app that
    restarted and forgot its ID, unless an admin removed that Asset; then it
    becomes a new Asset with a new ID. A key registers at most one Asset at a
-   time. On reconnect, `PUT /entities/assets/{asset_id}/description` instead.
+   time. With no Asset ID left, Core refuses with `409 asset_ids_exhausted` and
+   tells the admin ([Runs and identity](../../atlas/runs-and-identity.md#ids)).
+   On reconnect, `PUT /entities/assets/{asset_id}/description` with the
+   description record instead. An app that started again always registers,
+   even if it remembers its ID.
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
