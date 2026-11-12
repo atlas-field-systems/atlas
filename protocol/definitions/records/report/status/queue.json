@@ -2,20 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/status/queue.json",
   "title": "queue",
-  "description": "The Asset's task list: the task_id of every Task it holds and has not started, in the order it will run them, and its clear_count. Sent whenever the list changes and when the Asset starts or reconnects with a list. An empty list means nothing is queued. When it answers a request, request_id names it. This is the complete list, never a truncated or windowed subset. Core admits at most 64 ordinary outstanding Tasks per Asset, including accepted in-flight, held unstarted, and active Tasks, so every permitted unstarted queue fits this report. A `now` Task may briefly take outstanding work over 64; it is active, not a 65th held ID.",
+  "description": "The Asset's task list: the task_id of every Task it holds and has not started, in the order it will run them. Sent whenever the list changes and when the Asset starts or reconnects with a list. An empty list means nothing is queued. When it answers a request, request_id names it. This is the complete list, never a truncated or windowed subset. Core counts the latest one against its cap of 64 ordinary Tasks per Asset. The Asset reports a further ordinary Task cancelled once it holds 64, so the list never exceeds 64. A `now` Task is active, not held.",
   "type": "object",
   "required": [
     "kind",
-    "clear_count",
     "task_ids"
   ],
   "properties": {
     "kind": {
       "$ref": "../../../variables/kind.json",
       "const": "queue"
-    },
-    "clear_count": {
-      "$ref": "../../../variables/clear_count.json"
     },
     "task_ids": {
       "type": "array",
@@ -31,7 +27,6 @@
   "examples": [
     {
       "kind": "queue",
-      "clear_count": 1,
       "task_ids": [
         1,
         2,
@@ -41,12 +36,10 @@
     },
     {
       "kind": "queue",
-      "clear_count": 2,
       "task_ids": []
     },
     {
       "kind": "queue",
-      "clear_count": 0,
       "task_ids": [
         1,
         2,

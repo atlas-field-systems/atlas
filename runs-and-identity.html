@@ -15,14 +15,14 @@ Assets down first; Core does not check. An Asset left running into the next
 run is not supported.</li>
 <li><strong>No retention.</strong> Core writes its Reset ZIP, checks it, and only then deletes
 the run&#39;s data. The ZIP is then the only copy of the run, and nothing deletes
-a ZIP automatically. If the ZIP fails, Core deletes nothing and tries again at
-its next start, but never serves that run through the Core API.</li>
+a ZIP automatically. If the ZIP fails, Core deletes nothing and tells the admin;
+the next start begins a new run as usual.</li>
 <li><strong>A crash resumes the run.</strong> If Core crashes, loses power, or its computer
 reboots without a deliberate stop, its next start continues the same run:
 the same <code>run_id</code>, the same Asset IDs, and the same Task numbering. Nothing
 is reset. Assets, gateways, Plugins, and operators reconnect as after a
-dropped link. A crash while Core was already stopping finishes that stop at
-the next start (<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly">Core Reset</a>).</li>
+dropped link. A crash while Core was already stopping resumes the run too
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly">Core Reset</a>).</li>
 <li><strong>Everyone signs in again</strong> after Reset. Every session ends with the run; a
 crash ends none.</li>
 <li><strong>Operator state is discarded.</strong> Shared links, hidden Tracks and other view

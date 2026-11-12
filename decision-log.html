@@ -23,6 +23,18 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
+<td>If an Asset&#39;s or gateway&#39;s Reset ZIP fails, it keeps the records and tells whoever runs it, as Core does. It does not try again at its next start.</td>
+<td>Asset and gateway Reset ZIPs.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip">Asset logging</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>If the Reset ZIP fails, Core keeps the run&#39;s data and tells the admin. It does not try again at later starts. A crash while Core is stopping on purpose just resumes the run.</td>
+<td>Core Reset.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-the-zip-fails">Core Reset</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
 <td>Results an Asset app had not reported before it was started again on the ground are lost; nothing keeps them. When it signs up again, Core marks its Tasks with no final report not done, claiming no outcome.</td>
 <td>An app restart during a run, on the ground.</td>
 <td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
@@ -125,7 +137,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>No retention. Once the Reset ZIP checks out, the run&#39;s data is deleted from Core; the ZIP is the only copy and is never deleted automatically. A run whose ZIP failed is never served through the Core API.</td>
+<td>No retention. Once the Reset ZIP checks out, the run&#39;s data is deleted from Core; the ZIP is the only copy and is never deleted automatically. If the ZIP fails, see the 2026-11-12 entry.</td>
 <td>Across runs. Within a run, nothing in the picture expires.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#check-then-clear">Core Reset</a></td>
 </tr>
@@ -141,6 +153,24 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-12</td>
+<td>Core decides the 64-Task cap from the Asset&#39;s latest queue report of how many Tasks it holds. It does not count Tasks still crossing the link or keep capacity until final reports arrive. <code>now</code> Tasks are still admitted at the cap.</td>
+<td>Per Asset, ordinary work.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests">Core API, operator requests</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>No clear count. A failed Task clears the Asset&#39;s queue; Tasks that arrive later run normally, and operators cancel what they don&#39;t want.</td>
+<td>Failed Tasks and the queue.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests">Core API, operator requests</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>When an Asset goes offline, its unanswered requests and Tasks show as not done and operators send again whatever still matters. Core does not reconcile them when the Asset returns.</td>
+<td>Requests to an Asset that goes offline.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests">Core API, operator requests</a></td>
+</tr>
+<tr>
 <td>2026-11-11</td>
 <td>There are no multi-step Plans, only individual Tasks.</td>
 <td>All work.</td>
@@ -179,7 +209,7 @@ back.</p>
 <tr>
 <td>2026-11-10</td>
 <td>The Task cap is 64 ordinary Tasks; a <code>now</code> Task is admitted even at 64.</td>
-<td>Per Asset, outstanding work.</td>
+<td>Per Asset, ordinary work.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests">Core API, operator requests</a></td>
 </tr>
 <tr>
@@ -201,7 +231,13 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
-<td>When several critical battery rules match, the highest-priority one wins. If a critical rule&#39;s response fails while the battery is still critical, the Asset falls back to Return to home, so a critical rule names no fallback of its own. Nothing is retried.</td>
+<td>Failsafe rules are simpler: each firing runs its response once, with no configurable fallback (the critical Return-to-home fallback stays); priority does not only rise, so a rule can act again once no response is running; and there are no separate missing- or stale-data conditions. Area rules keep their distance margin and time outside.</td>
+<td>Failsafe rules.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failsafe-activates-a-configured-task">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>When several critical battery rules match, the highest-priority one wins. If a critical rule&#39;s response fails while the battery is still critical, the Asset falls back to Return to home, and that is the only fallback. Nothing is retried.</td>
 <td>Critical battery rules.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
 </tr>
