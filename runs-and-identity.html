@@ -8,7 +8,7 @@ has the calls behind them, <a href="https://github.com/atlas-field-systems/atlas
 <a href="decision-log.html#runs-and-identity">decision log</a> dates each decision.</p>
 <h2 id="a-run-and-reset">A run and Reset</h2>
 <ul>
-<li><strong>A run</strong> lasts from one start of Core to the next stop.</li>
+<li><strong>A run</strong> lasts from one start of Core to the next deliberate stop.</li>
 <li><strong>Stopping Core is Reset.</strong> There is no Reset request, API call, or button.
 The admin stops Core on its own computer. The operator is trusted to shut the
 Assets down first; Core does not check. An Asset left running into the next
@@ -16,9 +16,15 @@ run is not supported.</li>
 <li><strong>No retention.</strong> Core writes its Reset ZIP, checks it, and only then deletes
 the run&#39;s data. The ZIP is then the only copy of the run, and nothing deletes
 a ZIP automatically. If the ZIP fails, Core deletes nothing and tries again at
-its next start, but never serves that run through the Core API. A crash ends
-the run too; the next start writes its ZIP, marked as possibly incomplete.</li>
-<li><strong>Everyone signs in again.</strong> Every session ends with the run.</li>
+its next start, but never serves that run through the Core API.</li>
+<li><strong>A crash resumes the run.</strong> If Core crashes, loses power, or its computer
+reboots without a deliberate stop, its next start continues the same run:
+the same <code>run_id</code>, the same Asset IDs, and the same Task numbering. Nothing
+is reset. Assets, gateways, Plugins, and operators reconnect as after a
+dropped link. A crash while Core was already stopping finishes that stop at
+the next start (<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly">Core Reset</a>).</li>
+<li><strong>Everyone signs in again</strong> after Reset. Every session ends with the run; a
+crash ends none.</li>
 <li><strong>Operator state is discarded.</strong> Shared links, hidden Tracks and other view
 filters, drafts, and result overlays belong to one run. A link names its run,
 and a link from an ended run never opens an item of the new run.</li>
@@ -27,9 +33,8 @@ and a link from an ended run never opens an item of the new run.</li>
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip">each gateway</a>. Merging them is
 a separate process.</li>
 </ul>
-<p>Scope: only stopping Core ends a run. Within a run nothing in the picture
-expires, a dropped link does not end anything, and a gateway swap is not a new
-run.</p>
+<p>Scope: only a deliberate stop of Core ends a run. Within a run nothing in the
+picture expires, and neither a dropped link nor a crash of Core ends anything.</p>
 <h2 id="what-carries-over">What carries over</h2>
 <table>
 <thead>
@@ -65,7 +70,7 @@ one.</li>
 item in the next run.</li>
 </ul>
 <p>Scope: an ID holds for one run. Within the run an Asset keeps its <code>asset_id</code>
-through reconnects, app restarts, and gateway swaps; in the next run it gets a
+through reconnects, app restarts on the ground, and Core crashes; in the next run it gets a
 new one.</p>
 <h2 id="keys-and-registration">Keys and registration</h2>
 <ul>
@@ -76,11 +81,15 @@ An Asset key names no Asset. There is no enrollment key.</li>
 registers at most one Asset at a time. Registering again with the same key in
 the same run returns the same <code>asset_id</code>, unless an admin removed that Asset;
 then it registers as a new Asset with a new ID.</li>
-<li><strong>A restarted app rejoins as itself.</strong> If an Asset&#39;s app stops and starts
-again during a run, it registers with its key and comes back as the same
-Asset, with the same <code>asset_id</code> and its unfinished work. This holds even if it
-forgot its ID: the key proves which Asset it is. It still never picks or
-configures its own ID.</li>
+<li><strong>A restarted app rejoins as itself.</strong> Nothing restarts the app on its own.
+If an Asset&#39;s app is started again on the ground during a run, it registers
+with its key and comes back as the same Asset, with the same <code>asset_id</code>. This holds even if it forgot its ID: the key
+proves which Asset it is. It still never picks or configures its own ID.</li>
+<li><strong>Work does not resume after a restart.</strong> A restarted app drops its queued
+Tasks: operators see them marked not done and send again whatever still
+matters. Nothing resumes on its own. An app that fails in flight stays down,
+shown offline, while the flight controller returns the vehicle home
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight">Failsafes</a>).</li>
 <li><strong>A removed Asset&#39;s ID ends.</strong> If it registers again, it is a new Asset.</li>
 </ul>
 <h2 id="radio-assets">Radio Assets</h2>
@@ -93,27 +102,31 @@ Radio identity stays on the gateway side; Core knows radio Assets only by
 it in the run. Core assigns its <code>asset_id</code>, and the gateway tells the radio.
 There is no approval step.</li>
 <li><strong>A restarted radio rejoins as itself.</strong> If a radio Asset&#39;s app stops and
-starts again during a run, it identifies itself to the gateway through its
-Fieldlink, the same way as in a gateway swap, and keeps its <code>asset_id</code> and its
-unfinished work.</li>
+starts again during a run, it identifies itself to its gateway through its
+Fieldlink and keeps its <code>asset_id</code>. Its work does not resume, as for any
+restarted app.</li>
 <li><strong>A removed radio can come back.</strong> If it is heard again, the gateway
 registers it as a new Asset with a new ID.</li>
-<li><strong>One gateway per site</strong> at a time (<a href="scale.html#setup">Scale</a>).</li>
+<li><strong>One gateway for the whole network.</strong> One gateway is deployed per area
+(<a href="scale.html#setup">Scale</a>). The radio network is a mesh: Assets talk to each
+other and to that one gateway, and every radio Asset in the area rides on it.
+No Asset uses two gateways. Several gateways in one network, and moving a
+radio Asset to another gateway while it keeps its ID, are out of scope.</li>
 </ul>
 <h2 id="when-the-gateway-changes">When the gateway changes</h2>
 <ul>
-<li><strong>Swapped mid-run.</strong> Radios stay the same Assets. Each tells the new gateway
-its <code>asset_id</code> and keeps it and its unfinished work. The new gateway takes a
-radio over only when its old carrier is offline, removed, or none.</li>
-<li><strong>Removed and not replaced.</strong> Its radio Assets stay in the picture, offline,
-as the same Assets, carried by no gateway until another one hears them.</li>
-<li><strong>Key replaced.</strong> The radios are unaffected.</li>
+<li><strong>Removed.</strong> Its radio Assets stay in the picture, offline. No other gateway
+takes them over.</li>
+<li><strong>Replaced by another gateway mid-run.</strong> The new gateway registers each radio
+it hears as a new Asset with a new ID. The old Assets stay in the picture,
+offline, and their unfinished Tasks are not carried over.</li>
+<li><strong>Key replaced.</strong> The gateway and its radios are unaffected.</li>
 </ul>
 <p>Scope: these hold within a run. In the next run every radio registers again as
 a new Asset.</p>
 <h2 id="open">Open</h2>
 <ul>
-<li>How a restarted Asset app gets its unfinished work back from Core.</li>
+<li>Which reports mark a restarted Asset&#39;s dropped Tasks not done.</li>
 </ul>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

@@ -23,6 +23,42 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
+<td>An unplanned Core crash or reboot resumes the same run: the same run, the same Asset IDs, and the same Task numbering. Operators reconnect. Only a deliberate stop of Core is Reset.</td>
+<td>Core crashes and power loss during a run.</td>
+<td><a href="runs-and-identity.html#a-run-and-reset">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>Nothing restarts the Asset app on its own. If the app or its companion computer fails in the air, it stays down and operators see the Asset offline. The flight controller detects the loss and returns home by itself, independent of Atlas. The vehicle is inspected before its next flight.</td>
+<td>An app or companion-computer failure in flight.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>An Asset app started again on the ground during a run drops its queued Tasks. Operators see them marked not done and send again whatever still matters. Nothing resumes on its own.</td>
+<td>An app restart during a run, on the ground.</td>
+<td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>One gateway is deployed per area, for the whole radio network. The network is a mesh: Assets talk to each other and to that one gateway, and many Assets ride on it. No Asset uses two gateways; several gateways in one network are out of scope.</td>
+<td>Radio Assets and gateways.</td>
+<td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A gateway replaced mid-run registers the radios it hears as new Assets with new IDs. The old Assets stay offline, and their unfinished Tasks are not carried over.</td>
+<td>Within a run.</td>
+<td><a href="runs-and-identity.html#when-the-gateway-changes">Runs and identity</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>&quot;Registration&quot; means an Asset joining a run: the event is <code>asset.registered</code> and the record is <code>registration</code>. &quot;Provisioning&quot; means only admin setup work, such as handing out keys and adding gateways and Plugins.</td>
+<td>Docs and records.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md#records">Protocol records</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
 <td>Every run starts the picture fresh. Across runs, every Asset registers again and comes back as a new Asset with a new ID that Core assigns; the acknowledgement tells it the ID. Nothing picks its own <code>asset_id</code>. <code>observation_id</code> stays Asset-chosen. Assets on IP work the same way: the admin hands out only the access key.</td>
 <td>Across runs. Within a run, IDs stay.</td>
 <td><a href="runs-and-identity.html#ids">Runs and identity</a></td>
@@ -35,7 +71,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>An Asset app that restarts mid-run rejoins as itself through its key: the same <code>asset_id</code> and its unfinished work, unless an admin removed it. This holds even if it forgot its ID, because the key proves which Asset it is. IDs stay Core-assigned and new each run; Assets do not pick fixed IDs.</td>
+<td>An Asset app started again during a run rejoins as itself through its key, with the same <code>asset_id</code>, unless an admin removed it. Its work does not resume (see the restart entries). This holds even if it forgot its ID, because the key proves which Asset it is. IDs stay Core-assigned and new each run; Assets do not pick fixed IDs.</td>
 <td>Assets on IP, within one run.</td>
 <td><a href="runs-and-identity.html#keys-and-registration">Runs and identity</a></td>
 </tr>
@@ -47,15 +83,9 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>A radio Asset whose app restarts mid-run rejoins as itself by identifying itself to the gateway, the same way as in a gateway swap. It keeps its <code>asset_id</code> and unfinished work, unless an admin removed it.</td>
+<td>A radio Asset whose app is started again during a run rejoins as itself by identifying itself to its gateway. It keeps its <code>asset_id</code>, unless an admin removed it. Its work does not resume (see the restart entries).</td>
 <td>Radio Assets, within one run.</td>
 <td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
-</tr>
-<tr>
-<td>2026-11-11</td>
-<td>Mid-run gateway swap: radios stay the same Assets, tell the new gateway who they are, and keep their IDs and unfinished work. A gateway removed and not replaced leaves its radio Assets offline but still the same Assets. Takeover happens only when the old carrier is offline, removed, or none.</td>
-<td>Within a run. A new run still gives new IDs.</td>
-<td><a href="runs-and-identity.html#when-the-gateway-changes">Runs and identity</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
@@ -71,7 +101,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>Stopping Core is Reset; there is no separate Reset button. After Core stops, everyone signs in again. Leftover operator state (shared links, hidden tracks, sessions) is discarded, and links belong to one run.</td>
+<td>Stopping Core on purpose is Reset; there is no separate Reset button. After Core stops, everyone signs in again. Leftover operator state (shared links, hidden tracks, sessions) is discarded, and links belong to one run.</td>
 <td>Across runs.</td>
 <td><a href="runs-and-identity.html#a-run-and-reset">Runs and identity</a></td>
 </tr>
@@ -94,15 +124,27 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-11</td>
-<td>A Task holds a live reference to a place (<code>geofeature_id</code>). The Asset obtains the current shape; Core never copies or snapshots it. Assets get read access to the named place only. Edits reach the Asset as <code>geofeature.replaced</code> or <code>geofeature.deleted</code>.</td>
-<td>A named place. A shape drawn into one Task is carried by that Task.</td>
+<td>There are no multi-step Plans, only individual Tasks.</td>
+<td>All work.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks">Protocol working choices</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>Assets have no custom per-Asset settings yet.</td>
+<td>Asset settings.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#settings">Protocol working choices</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A Task keeps the place as it was when it was sent: a copy, not a live reference.</td>
+<td>A named place in a Task.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features">Core API, geo features</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>Place edits and deletes go through while Tasks use the place. Core blocks nothing and cancels nothing; each Asset may keep its original plan or follow the new shape.</td>
+<td>When an operator edits a place that unfinished Tasks use, they are asked whether to update those Tasks. Core sends updated Tasks only if they say yes. Deleting a place does not change Tasks already sent. Edits and deletes still go through, and Core cancels nothing.</td>
 <td>Places named by unfinished Tasks.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#carry-out-work-and-report-its-result">Asset behavior</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features">Core API, geo features</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
@@ -126,7 +168,7 @@ back.</p>
 <td>2026-11-10</td>
 <td>Hold is an ordinary command, like Land. It is not pause: it keeps no earlier Task to resume.</td>
 <td>Commands. Pause stays a setting.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks">Protocol decisions</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause">Asset behavior, pause</a></td>
 </tr>
 </tbody></table>
 <h2 id="failsafes">Failsafes</h2>
@@ -140,6 +182,42 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-11</td>
+<td>Operators can send a Fail-safe command to an Asset, as they send Land, Return to home, or Hold. The Asset treats it exactly as if its failsafe had fired: it runs the operator&#39;s failsafe rule for the command, and only if no rule applies falls back to the maker&#39;s built-in safe action. This is the answer to emergency commands for an offline Asset; Land, Return to home, and Hold get no offline exemption.</td>
+<td>Commands.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-operator-can-fire-the-failsafe">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>When an operator overrides a fired failsafe with Hold or pause, lost-contact and low-battery protection are re-armed and can fire again once their condition recurs. A fired failsafe still can&#39;t be cancelled. The overrides stay.</td>
+<td>Failsafe state, after a Hold now or pause override.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A critical battery rule is required on every flying Asset. Core refuses Tasks to a flying Asset that has none.</td>
+<td>Flying Assets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A lower critical battery level always fires, even after a Hold or pause override, so a held Asset can&#39;t hover until its battery dies.</td>
+<td>Battery rules, in and out of failsafe state.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>Every flying Asset must have its flight controller run its own failsafe, such as returning home, when it loses contact with the computer running the Asset app, independent of Atlas.</td>
+<td>Flying Assets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#independent-flight-controller-protections">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-11</td>
+<td>A failsafe response is always protective. There is no &quot;keep going&quot; or continue response: a condition whose response would be to keep going is not a failsafe.</td>
+<td>Failsafe responses.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default">Failsafes</a></td>
+</tr>
+<tr>
 <td>2026-11-11</td>
 <td>During a failsafe the operator may override with Land, Return to home, or Hold sent with <code>now</code>, or with pause.</td>
 <td>Failsafe state.</td>
@@ -161,7 +239,7 @@ back.</p>
 <td>2026-11-11</td>
 <td>Up to 16 failsafe rules and 16 pieces of equipment (subsystems) per Asset.</td>
 <td>Per Asset.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#failsafes">Protocol decisions</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#failsafes">Protocol failsafe records</a></td>
 </tr>
 <tr>
 <td>2026-11-10</td>
@@ -193,6 +271,12 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-11</td>
+<td>Deleting an Object hides it from operators for the rest of the run. Core keeps it, marked deleted, in the end-of-run ZIP; it is not destroyed.</td>
+<td>Objects.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects">Core API, Objects</a></td>
+</tr>
+<tr>
 <td>2026-11-11</td>
 <td>Object files are capped at 100 MB by default. An admin may change the limit through the <code>max_object_bytes</code> setting.</td>
 <td>Object files.</td>
@@ -253,9 +337,9 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>A crashed Asset is inspected before it runs again.</td>
+<td>A crashed Asset is inspected before its next flight.</td>
 <td>An Asset after a crash.</td>
-<td><a href="using-atlas.html#an-operation-runs-without-restarts">Using Atlas</a></td>
+<td><a href="using-atlas.html#an-operation-runs-without-planned-restarts">Using Atlas</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>

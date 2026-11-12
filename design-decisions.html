@@ -115,7 +115,7 @@ soon as it accepts it, so an Asset that loses contact already holds its work. Th
 Asset runs its Tasks in number order. A Task can run now, cancelling the Tasks
 before it. Cancel names its Task. Hold is a command like Land; pause is a
 setting, not a Task (<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause">pause</a>).
-A command may name a saved place, as a live reference
+A command may name a saved place, and keeps a copy of it as it was when sent
 (<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#geo-features">geo features</a>).
 Retries are safe by design: creates carry an idempotency key, settings are end
 states, and each <code>task_id</code> runs once.</p>
@@ -135,7 +135,7 @@ without Core. A failsafe&#39;s response stops ordinary work and is reported apar
 from Core&#39;s numbered Tasks.
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">Failsafes</a>
 owns the behavior, and
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#failsafes">Protocol decisions</a>
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#failsafes">Protocol&#39;s working choices</a>
 the records.</p>
 <h2 id="plugins-describe-their-own-actions">Plugins describe their own actions</h2>
 <p>Each Plugin names and describes its own actions, built from a fixed set of

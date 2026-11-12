@@ -79,7 +79,9 @@ Asset offline. Local intervention and a manual restart of the app on the ground
 Pi are required before another operation. Atlas does not manage that recovery.
 The failure is evaluated from the Reset ZIPs.
 Atlas enables no failsafe rules by default. The flight setup explicitly supplies
-the intended rules, including any battery response during an intentional wait.
+the intended rules, including the
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default">required critical battery rule</a>
+and any battery response during an intentional wait.
 The Asset owns
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions, cancellation rule, overrides, and remaining decisions</a>.</p>
 <h2 id="keep-the-whole-run-for-debugging">Keep the whole run for debugging</h2>
