@@ -244,5 +244,22 @@
     "unless": "\\b(never|not|no|unlike)\\b",
     "why": "Asset IDs are never reused, not even in a later run; when they run out, Core refuses new registrations and tells the admin.",
     "example": "Asset IDs start again each run, like Task numbers."
+  },
+  {
+    "phrase": "\\bcritical\\b[^.]*\\b(falls? back to land|lands where it is)\\b",
+    "why": "A failed critical failsafe response falls back to Return to home, not Land.",
+    "example": "A failed critical response falls back to Land."
+  },
+  {
+    "phrase": "\\b(on|after|each) reconnect\\b[^.]*\\b(sends?|send|puts?|resends?) (its |the )?description\\b",
+    "unless": "\\b(never|not|no|skips?)\\b",
+    "why": "An Asset signs up with its description only when its app starts, never on a reconnect.",
+    "example": "On reconnect, the Asset sends its description again."
+  },
+  {
+    "phrase": "\\b(keeps?|persists?|stores?) (its )?unacknowledged final (task )?reports through (a|the) restart\\b",
+    "unless": "\\b(never|not|no|nothing)\\b",
+    "why": "Results an app had not reported before a restart on the ground are lost.",
+    "example": "The app keeps its unacknowledged final reports through the restart."
   }
 ]

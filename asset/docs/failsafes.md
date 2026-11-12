@@ -226,25 +226,25 @@ home overrides still stand. The overrides themselves are unchanged.
 at once, only the highest-priority one fires, and a lower-priority critical
 rule never interrupts its response.
 
-**A failed critical response falls back to Land.** If a critical rule's
-response fails, for example Return to home fails while the battery is still
-below the critical level, the Asset lands where it is. That Land is the rule's
-fallback, whatever fallback the rule names. Nothing is retried: if the failed
-response was itself Land, or the Land fails, the Asset stays in failsafe state
-as after any [failed fallback](#a-failsafe-activates-a-configured-task).
+**A failed critical response falls back to Return to home.** A critical rule
+names no fallback of its own: if its response fails, the Asset returns home.
+The Asset refuses a policy in which a critical rule names a fallback, as it
+refuses any invalid policy. Nothing is retried: if the failed response was
+itself Return to home, or the return home fails, the Asset stays in failsafe
+state as after any [failed fallback](#a-failsafe-activates-a-configured-task).
 
 For example, an Asset has rule `LB` (battery below 25%, Return to home,
-priority 50), rule `CB1` (critical battery below 10%, Return to home, priority
-80), and rule `CB2` (critical battery below 10% with contact lost, Land,
-priority 90):
+priority 50), rule `CB1` (critical battery below 10%, Land at landing pad `P1`,
+priority 80), and rule `CB2` (critical battery below 10% with contact lost,
+Land where it is, priority 90):
 
 | Event | What the Asset does |
 | --- | --- |
 | The battery falls below 25% | `LB` fires: Return to home |
 | The operator sends Hold now | Hold replaces Return to home; `LB` is re-armed |
-| The battery falls below 10%, contact still up | Only `CB1` matches: it fires at once, replacing the Hold, and returns home |
-| Return to home fails | The Asset lands where it is, as `CB1`'s fallback |
-| The landing completes | Final reports, then the app shuts down |
+| The battery falls below 10%, contact still up | Only `CB1` matches: it fires at once, replacing the Hold, and heads for `P1` to land |
+| The landing at `P1` fails | The Asset returns home, as `CB1`'s fallback |
+| It lands at home | Final reports, then the app shuts down |
 
 Had contact also been lost when the battery fell below 10%, `CB1` and `CB2`
 would both match, and only `CB2`, the higher priority, would fire.

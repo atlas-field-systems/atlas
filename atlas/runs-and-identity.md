@@ -88,10 +88,10 @@ new one.
   proves which Asset it is. It still never picks or configures its own ID.
 - **Work does not resume after a restart.** A restarted app drops its queued
   Tasks: operators see them marked not done and send again whatever still
-  matters. Nothing resumes on its own. The app reports only what it knows: its
-  settings, an empty queue, and a `cancelled` report for each Task it still
-  remembers. Core marks the rest not done by dropping them, which claims no
-  outcome ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#asset-and-gateway-calls)).
+  matters. Nothing resumes on its own. When the app signs up again, Core drops
+  each of its Tasks with no final report, claiming no outcome
+  ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests)).
+  Results the app had not reported before the restart are lost.
   An app that fails in flight stays down,
   shown offline, while the flight controller returns the vehicle home
   ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight)).
@@ -108,8 +108,8 @@ new one.
   There is no approval step.
 - **A restarted radio rejoins as itself.** If a radio Asset's app stops and
   starts again during a run, it identifies itself to its gateway through its
-  Fieldlink and keeps its `asset_id`. Its work does not resume, as for any
-  restarted app.
+  Fieldlink and keeps its `asset_id`, and the gateway signs it up again. Its
+  work does not resume, as for any restarted app.
 - **A removed radio can come back.** If it is heard again, the gateway
   registers it as a new Asset with a new ID.
 - **One gateway for the whole network.** One gateway is deployed per area
@@ -129,11 +129,3 @@ new one.
 
 Scope: these hold within a run. In the next run every radio registers again as
 a new Asset.
-
-## Open
-
-- Whether a restarted app must keep its unacknowledged final Task reports
-  through the restart, so an outcome it saw before restarting still reaches
-  Core. Today they are lost if the app forgot them.
-- How a gateway tells Core that a radio Asset it carries restarted, so Core
-  drops that Asset's Tasks as it does for an Asset on IP.

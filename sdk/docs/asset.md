@@ -26,11 +26,11 @@ The Asset app's code is the same on both.
 
 `startAsset(atlas, { description, settings, queue })` follows the sequence in
 [Asset and gateway calls](../../core/docs/api.md#asset-and-gateway-calls) on every
-start and reconnect:
+start, and from step 3 on reconnect:
 
 1. `connect()`, which compares the definitions hash.
-2. Register with the description, as `requests.asset`, on start, which
-   returns the `asset_id`; on reconnect, send the description record with it.
+2. Register with the description, as `requests.asset`, which returns the
+   `asset_id`. Only a start registers.
 3. Send one report batch with the known settings, the queue report if the queue
    helper holds Tasks, the active Task's report, and every final Task report not
    yet acknowledged.
