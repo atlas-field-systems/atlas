@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/task.json",
+  "title": "Task request item",
+  "description": "One Task as an operator asks for it: a Task kind and its fields, and nothing Core stamps. A Task that names a geo feature gives only its geofeature_id, never a position as well; Core copies the place into the Task. Core adds time, asset_id, task_id, send_last, now and requested_by to make the Task record. Its kinds are exactly the Task record's kinds.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "../records/task/takeoff.json"
+    },
+    {
+      "$ref": "../records/task/move_to.json"
+    },
+    {
+      "$ref": "../records/task/land.json"
+    },
+    {
+      "$ref": "../records/task/return_to_home.json"
+    },
+    {
+      "$ref": "../records/task/hold.json"
+    },
+    {
+      "$ref": "../records/task/point_at.json"
+    },
+    {
+      "$ref": "../records/task/failsafe.json"
+    },
+    {
+      "$ref": "../records/task/settings.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "kind": {
+      "$ref": "../variables/kind.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "takeoff",
+      "target_altitude": {
+        "altitude_m": 30,
+        "altitude_reference": "launch"
+      }
+    },
+    {
+      "kind": "move_to",
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      }
+    },
+    {
+      "kind": "move_to",
+      "geofeature_id": "G2"
+    },
+    {
+      "kind": "land",
+      "landing_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      }
+    },
+    {
+      "kind": "return_to_home"
+    },
+    {
+      "kind": "hold"
+    },
+    {
+      "kind": "failsafe"
+    },
+    {
+      "kind": "settings",
+      "settings": {
+        "run_state": "paused"
+      }
+    }
+  ],
+  "not": {
+    "anyOf": [
+      {
+        "required": [
+          "destination",
+          "geofeature_id"
+        ]
+      },
+      {
+        "required": [
+          "landing_position",
+          "geofeature_id"
+        ]
+      }
+    ]
+  }
+}

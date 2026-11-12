@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/tasks.json",
+  "title": "Tasks request",
+  "description": "The body of POST /tasks/{asset_id}: one or more Tasks in the order they run, up to Core's 64-Task cap. With now, it holds exactly one Task, which runs at once. A failsafe Task is always sent this way. Core stamps the record fields and accepts or refuses the request whole.",
+  "type": "object",
+  "required": [
+    "tasks"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "now"
+        ],
+        "properties": {
+          "now": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "maxItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "tasks"
+        ],
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "failsafe"
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "now"
+        ],
+        "properties": {
+          "now": {
+            "const": true
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "task.json"
+      },
+      "minItems": 1,
+      "maxItems": 64
+    },
+    "now": {
+      "$ref": "../variables/now.json"
+    }
+  },
+  "examples": [
+    {
+      "tasks": [
+        {
+          "kind": "takeoff",
+          "target_altitude": {
+            "altitude_m": 30,
+            "altitude_reference": "launch"
+          }
+        },
+        {
+          "kind": "move_to",
+          "destination": {
+            "latitude": 42.2746,
+            "longitude": -71.8063
+          }
+        },
+        {
+          "kind": "land",
+          "landing_position": {
+            "latitude": 42.2746,
+            "longitude": -71.8063
+          }
+        }
+      ]
+    },
+    {
+      "tasks": [
+        {
+          "kind": "return_to_home"
+        }
+      ],
+      "now": true
+    },
+    {
+      "tasks": [
+        {
+          "kind": "failsafe"
+        }
+      ],
+      "now": true
+    }
+  ]
+}
