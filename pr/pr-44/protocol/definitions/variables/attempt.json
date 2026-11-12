@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/attempt.json",
+  "title": "attempt",
+  "description": "Which try of a failsafe rule's response a failsafe Task is: its primary response, or its fallback, which runs once if the primary fails. A critical battery rule's fallback is always Land where the Asset is.",
+  "enum": [
+    "primary",
+    "fallback"
+  ],
+  "examples": [
+    "primary"
+  ]
+}
