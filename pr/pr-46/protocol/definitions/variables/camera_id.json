@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/camera_id.json",
+  "title": "camera_id",
+  "description": "Which camera on the Asset, as declared in its description, such as \"C1\". Up to 4 letters or digits.",
+  "type": "string",
+  "pattern": "^[A-Za-z0-9]{1,4}$",
+  "minLength": 1,
+  "maxLength": 4,
+  "examples": [
+    "C1"
+  ]
+}
