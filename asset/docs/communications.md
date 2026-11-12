@@ -8,8 +8,9 @@ reports back. This behavior is planned, not implemented.
 - **On IP**, the module uses the [SDK](../../sdk/README.md) client to make the
   [Core API's Asset calls](../../core/docs/api.md#asset-and-gateway-calls) over
   HTTPS and follow its event stream.
-- **On radio**, it uses a Fieldlink. The same Fieldlink package runs on the
-  gateway, which makes the Core API calls for the Asset. The Asset holds no Core
+- **On radio**, it uses a [Fieldlink](../../gateway/README.md#fieldlinks-are-the-gateways-operating-modes).
+  When the Fieldlink carries Atlas to the Asset, the same Fieldlink package runs
+  on the gateway, which makes the Core API calls for the Asset. The Asset holds no Core
   key and never calls the Core API. It authenticates to its gateway through its
   Fieldlink, as [every Fieldlink provides](../../gateway/README.md#what-every-fieldlink-provides),
   and learns its `asset_id` for the run from the gateway.
@@ -20,10 +21,11 @@ reports back. This behavior is planned, not implemented.
 Inside the Asset, both use one interface to receive requests in event order,
 send reports, and track contact. The rest of the Asset code is the same either
 way.
-The rest of the gateway and Fieldlink design is deferred. The
-[first setup](assets.md#ardupilot-quadcopter) is on IP and needs neither. Its SiK
-radio is an equipment-driver connection to the flight controller, not an Atlas
-link.
+When the Fieldlink instead runs the Asset app on the gateway, as
+[SiK](../../gateway/fieldlinks/sik/README.md) does for the
+[first setup](assets.md#ardupilot-quadcopter), the app reaches Core through the
+gateway's connection, and the radio is an equipment-driver connection to the
+flight controller, not an Atlas link.
 
 ## Requests and reports
 
@@ -74,4 +76,3 @@ Atlas assumes an Asset connects to Wi-Fi during startup or setup.
 
 - Reporting thresholds, rates, and priorities under congestion.
 - How several links, and relaying for peers, fit behind the one interface.
-- The rest of the gateway and Fieldlink design.

@@ -6,13 +6,12 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 
 ## This folder
 
-- The gateway app and the Fieldlinks go here: how a gateway uplinks to Core, and
-  how each Fieldlink carries Atlas across its field link.
+- The gateway app and the Fieldlinks go here. `README.md` owns the gateway app;
+  each Fieldlink lives in `fieldlinks/<name>/` with its own page.
 - Each Fieldlink owns compact encoding, retries, duplicate handling, contact
   timing, and link security for its medium. Put those rules with that Fieldlink.
 - Shared records live in `protocol/`, how a gateway talks to Core lives in
   the [Core API](../core/docs/api.md), and how radio Assets register and keep
   their IDs lives in [Runs and identity](../atlas/runs-and-identity.md). Link to
   those rules; do not copy them.
-- The rest of the gateway design is deferred.
 - Planning only: no code until the owner asks. Do not merge without the developer's approval.

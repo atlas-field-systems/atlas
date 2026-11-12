@@ -1,22 +1,80 @@
 # Atlas Gateway
 
-A gateway carries Atlas across field links. It runs on its own computer, uplinks
-to the [Core API](../core/docs/api.md) over broadband IP, and runs the Fieldlinks
-its radios need. A gateway is not an Asset.
+A gateway carries Atlas across a field link. It runs on its own computer,
+uplinks to the [Core API](../core/docs/api.md) over broadband IP, and talks to
+Assets over a radio. A gateway is not an Asset.
 
-**Planning.** Nothing is built. This page records what every Fieldlink must
-provide, the LoRa Fieldlink sketch, gateway contact, and the gateway's Reset
-ZIP. The rest of the gateway design is deferred.
+**Planning.** Nothing is built. This page owns the gateway app: the framework
+every gateway runs, how it runs one operating mode, and what every mode
+provides. Each mode has its own page under [fieldlinks/](fieldlinks/).
 
-## The gateway app and its Fieldlinks
+## The gateway app is a framework
 
-- **The gateway app** is the software every gateway runs. It calls the Core
-  API with the [SDK](../sdk/README.md) on behalf of the Assets it carries.
-- **A Fieldlink** is a package installed on the gateway app. It carries Atlas over
-  one kind of field link, such as Meshtastic LoRa. A gateway installs the
-  Fieldlinks its radios need, and the radio Asset runs the same package.
-- Fieldlinks live in this folder beside the gateway app, so the two are tested
-  together.
+The gateway app does the work every gateway shares, whatever its radio:
+
+- It connects to Core with the gateway's key, through the [SDK](../sdk/README.md).
+- It [registers](../core/docs/api.md#radio-assets) each Asset its radio hears
+  and makes that Asset's Core API calls.
+- It reports each Asset's [contact](#gateway-contact).
+- It checks its configuration, and writes its diagnostics and its
+  [Reset ZIP](#the-gateways-reset-zip).
+
+Everything about the radio itself belongs to a Fieldlink.
+
+## Fieldlinks are the gateway's operating modes
+
+A Fieldlink is one operating mode of the gateway. It is defined by two things:
+the radio hardware plugged into the gateway, and the software that runs over
+it. It owns everything about that radio: driving the hardware, its encoding,
+retries, duplicates, contact timing, and link security.
+
+| Fieldlink | Radio hardware | Radio software | Assets | Page |
+| --- | --- | --- | --- | --- |
+| SiK | A SiK telemetry radio pair | MAVLink | One vehicle | [SiK](fieldlinks/sik/README.md) |
+| Meshtastic | LoRa radios | Meshtastic firmware | Many, in a mesh | [Meshtastic](fieldlinks/meshtastic/README.md) |
+
+FLRC and other radios get their own Fieldlinks later. A mesh that mixes radio
+types is one Fieldlink covering both.
+
+- **One mode at a time.** The admin picks the gateway's Fieldlink in its
+  configuration. At start the gateway app checks that the Fieldlink's radio
+  hardware is present; if not, it does not start and prints why. Changing modes
+  means changing the configuration and restarting the gateway between runs.
+- **Every Fieldlink ships with the gateway app.** They are released together
+  from this folder, so a gateway already holds every mode and the admin only
+  picks one. Nothing is downloaded or installed separately.
+
+A Fieldlink works in one of two ways:
+
+- **It carries Atlas to the Asset.** The Asset runs the [Asset app](../asset/README.md)
+  and the same Fieldlink package, and Atlas records cross the radio in the
+  Fieldlink's compact encoding. Meshtastic works this way.
+- **It runs the Asset app on the gateway.** The vehicle speaks only its own
+  protocol, such as MAVLink, and runs no Atlas software. The Fieldlink runs the
+  Asset app for that vehicle on the gateway, and the app's equipment driver
+  talks to the vehicle over the radio. SiK works this way.
+
+Either way the operator sees the same Asset. An Asset with its own IP link
+needs no gateway: it [calls the Core API itself](../core/docs/api.md#asset-and-gateway-calls).
+
+### The Fieldlink interface
+
+The gateway app starts its one Fieldlink and hands it a small interface. The
+Fieldlink tells the app when it hears a new radio, and the app registers it and
+answers with its `asset_id`. For each Asset, the Fieldlink then supplies an
+[Asset link](../sdk/docs/asset.md#the-asset-link): a Fieldlink that carries
+Atlas builds it over the radio, and one that runs the Asset app on the gateway
+builds it on the gateway's own Core connection. The gateway app logs both
+sides. The exact TypeScript interface is written with the first Fieldlink.
+
+## Folder layout
+
+| Path | Holds |
+| --- | --- |
+| `gateway/README.md` | This page: the gateway app |
+| `gateway/fieldlinks/<name>/` | One Fieldlink: its page now, its code later |
+
+The gateway app's code will sit beside `fieldlinks/` when it is written.
 
 ## One gateway per site
 
@@ -24,9 +82,10 @@ A site runs one gateway at a time. Each radio Asset is carried by that gateway:
 the gateway hears it, makes its Core API calls, and reports its contact. Core
 shows which gateway carries each Asset. Core authenticates the gateway with its
 key and trusts it for which radio Asset sent what. A gateway can register radio
-Assets, but it cannot register an Asset on IP or issue a Core key. The radio
-network is a mesh: Assets talk to each other and to the one gateway, and many
-Assets ride on it. Several gateways in one network are out of scope.
+Assets, but it cannot register an Asset on IP or issue a Core key. On a mesh
+Fieldlink such as Meshtastic, Assets talk to each other and to the one gateway,
+and many Assets ride on it; a SiK gateway carries one vehicle. Several gateways
+in one network are out of scope.
 
 How radio Assets register, keep their IDs, and what happens when the gateway
 changes is in
@@ -35,8 +94,8 @@ behind it are in the [Core API](../core/docs/api.md#radio-assets).
 
 ## What every Fieldlink provides
 
-Each Fieldlink decides how it meets these rules on its link. The rules are the
-same for all of them.
+Each Fieldlink decides how it meets these rules on its link and says how on its
+own page. The rules are the same for all of them.
 
 - **Each radio has its own identity**, made with the field link's own
   cryptography, such as a Meshtastic node's public key or a Reticulum identity.
@@ -49,24 +108,13 @@ same for all of them.
 - **Joining the field link is the Fieldlink's own step**, such as receiving a
   private channel's key. A radio that has joined can appear as a new Asset, but
   it can never speak as an Asset that is already some other radio.
-- **The definitions hash is checked each time a radio's link opens.** The
-  Fieldlink compares the radio's hash with the gateway's. A radio with
+- **The definitions hash is checked each time a radio's link opens.** A
+  Fieldlink that carries Atlas compares the radio's hash with the gateway's.
+  One that runs the Asset app on the gateway uses the gateway's own definitions,
+  so there is nothing to compare. A radio with
   different definitions is refused and not added as an Asset; operators see
   "a radio on gateway G1 was refused: different definitions", as they would
   for an Asset on IP.
-
-Each Fieldlink's own docs say how it meets these rules, once written.
-
-## The LoRa Fieldlink (sketch)
-
-For the LoRa phase, the Fieldlink builds on Meshtastic: a private channel, a
-private app port, and Meshtastic's encryption, routing, and per-hop
-acknowledgements. The Fieldlink adds end-to-end acknowledgement of Tasks and
-final reports, idempotency by `task_id`, and per-Asset contact reports to Core.
-Protocol defines no short keys, so each Fieldlink chooses its own compact
-encoding. The gateway's link to Core is broadband IP, so the gateway keeps its
-Assets' full state and sends over the radio only what each Asset does not
-already have. FLRC follows with its own Fieldlink.
 
 ## Gateway contact
 
@@ -129,6 +177,8 @@ Behavior tests come from these, once the gateway exists.
 - Switch on a radio with different definitions. Operators see the refusal, and
   no Asset is added.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
+- Configure a Fieldlink whose radio is not plugged in. The gateway does not
+  start and prints which radio it is missing.
 - Stop the gateway. The gateway and every radio it carries show offline after
   `offline_after_s`.
 - Remove the gateway and add a new one during the run. Each radio the new
@@ -153,12 +203,12 @@ Behavior tests come from these, once the gateway exists.
   gateway designs change over time.
 - [The Asset link](../sdk/docs/asset.md#the-asset-link): the interface a
   Fieldlink gives the Asset app.
+- [SiK](fieldlinks/sik/README.md) and [Meshtastic](fieldlinks/meshtastic/README.md):
+  the first two Fieldlinks.
 
 ## Not designed yet
 
-- The gateway app: its parts, its configuration, and what its diagnostics record.
-- How a Fieldlink is installed, started, and tested with the gateway app.
-- Each Fieldlink's docs, including how it meets the rules above.
+- The gateway app's configuration file and what its diagnostics record.
 - What each field link can carry. [About 20 Assets](../atlas/scale.md#fleet) is a
   goal, and a Fieldlink states what its link supports.
 

@@ -26,7 +26,7 @@ Propose changes to the owner rather than making them quietly. See
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is not built yet | Planning |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
-| [gateway/](gateway/) | Atlas Gateway: the gateway app and the Fieldlink packages installed on it, which carry Atlas across field links | Planning; what every Fieldlink provides and the gateway's Reset ZIP are designed, the rest deferred |
+| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that runs one Fieldlink (operating mode) at a time, and the Fieldlinks under `gateway/fieldlinks/` | Planning; the framework, SiK and Meshtastic modes are designed |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
 - Want the exact shape of a record? Go to `protocol/`.
@@ -57,7 +57,8 @@ Each topic has one home. Other pages link to it.
 | Failsafes and their overrides | [asset/docs/failsafes.md](asset/docs/failsafes.md) |
 | Settings, intended use | [atlas/settings.md](atlas/settings.md) |
 | Plugins, intended use | [atlas/plugins.md](atlas/plugins.md) |
-| What every Fieldlink provides, the gateway's Reset ZIP | [gateway/README.md](gateway/README.md) |
+| The gateway app, what every Fieldlink provides, the gateway's Reset ZIP | [gateway/README.md](gateway/README.md) |
+| One Fieldlink's radio, behavior, and security | `gateway/fieldlinks/<name>/README.md` |
 | Operator screens and workflows | [command-interface/docs/](command-interface/docs/README.md) |
 | The client library | [sdk/](sdk/README.md) |
 
