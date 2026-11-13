@@ -25,7 +25,9 @@ The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
 up to 16 rules. Its starting value comes from the Asset's
 [configuration](../config.md), and any operator can replace it as they change
 other settings. Each response is a command the Asset supports, such as Land,
-Return to home, or Hold. A response is always protective. Atlas has no
+Return to home, or Hold. A response should protect the Asset, but Atlas does not
+limit which supported command it names; choosing a sensible one is the
+operator's job. Atlas has no
 "continue" response: a situation the Asset should keep working through is not a
 failsafe, so the Asset has no rule for it. [Protocol](../../protocol/docs/decisions.md#failsafes) defines the
 records.

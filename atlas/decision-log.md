@@ -70,6 +70,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | A failsafe response may be any command the Asset supports except Fail-safe. Atlas does not limit responses to protective commands; it trusts the operator to choose a sensible one. | Failsafe responses. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default) |
 | 2026-11-13 | A boundary rule may set a maximum height and a minimum height, so it catches an Asset that climbs too high or flies too low, as well as one that leaves the area. | Failsafe boundary rules. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#configure-conditions-as-well-as-responses) |
 | 2026-11-12 | While the flight controller's own protection is in control, operators can only watch. The Asset shows that the flight controller took over and refuses operator commands until a person hands control back to Atlas. | Flying Assets. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control) |
 | 2026-11-12 | An override with Hold or pause re-arms every failsafe rule, not only lost-contact and low-battery rules, so a held Asset stays protected by everything the operator set up. | Failsafe state, after a Hold now or pause override. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection) |
