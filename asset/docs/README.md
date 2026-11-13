@@ -145,8 +145,8 @@ takeoff.
 ### Pause
 
 Pause is a setting, not a Task. It suspends current movement with a
-platform-specific hold: copters stop and loiter in place, fixed-wing aircraft
-loiter, and ground vehicles brake and stop. A paused Asset does not advance its
+platform-specific hold: copters stop and loiter in place, and ground vehicles
+brake and stop. A paused Asset does not advance its
 queue, though a Task sent with `now` still runs.
 
 Pause keeps the active Task; it does not end it. The Task stays `active` and

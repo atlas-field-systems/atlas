@@ -559,8 +559,11 @@ them to Assets or gateways.
   Fieldlink can carry the file. An Asset's file is not put on the map by
   itself. To show where it belongs, the Asset first
   [creates a geo feature](#geo-features), such as a point where the photo was
-  taken, then uploads the file naming it. An Asset never reads, moves, or
-  deletes an Object.
+  taken, then uploads the file naming it. A gateway adds `asset_id=<id>` to
+  both calls to say which Asset it acts for, and Core refuses an Asset it does
+  not carry with `403`; an Asset on IP needs none, because its key names it.
+  `requested_by` is that `asset_id`. An Asset never reads, moves, or deletes an
+  Object.
 - **Core assigns `object_id`** and never reuses it in a run, even after a delete.
 - **Stored whole or not at all.** Core writes the file, then adds the Object's
   row and its `object.stored` event in one transaction. There is no half-stored
