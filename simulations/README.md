@@ -49,8 +49,10 @@ built on the SDK's [Asset helpers](../sdk/docs/asset.md): the startup sequence,
 the report outbox, and the queue helper. It does only what its scenario tells
 it, such as "report Task 2 completed" or "go silent for 60 s". It makes no
 decision of its own, so it never becomes a second Asset app that drifts from
-the real one. When the Asset app exists, Asset scenarios run it with simulated
-equipment instead ([Asset simulations](docs/asset.md)).
+the real one. Scripted Assets are temporary. When the Asset app exists, every
+simulation that uses one is reworked to run the real Asset app with simulated
+equipment ([Asset simulations](docs/asset.md)), and the scripted Assets are
+deleted.
 
 ## Two kinds of eval
 
