@@ -1,10 +1,23 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFile, readdir, mkdtemp, writeFile, rm } from "node:fs/promises";
+import {
+  readFile,
+  readdir,
+  mkdtemp,
+  writeFile,
+  rm,
+  chmod,
+  stat,
+  copyFile,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { startCore } from "../src/core.ts";
+import { readZip } from "../src/reset/zip.ts";
+import { checkZip } from "../src/reset/reset.ts";
+import { clock } from "./harness.ts";
 import { startHarness, password, protocol } from "./harness.ts";
 
 test("1. issuance retry acknowledges; replacement rejects old keys [api.md#credential-retry-scenarios]", async () => {
@@ -167,6 +180,18 @@ test("3. stored state and diagnostics contain no credentials [api.md#credential-
       }
     }
     await inspect(h.dataDir);
+    const archives = await readdir(join(h.dataDir, "archive"));
+    assert.equal(archives.length, 1);
+    for (const entry of await readZip(
+      join(h.dataDir, "archive", archives[0]!),
+    )) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of entry.open()) chunks.push(chunk);
+      const bytes = Buffer.concat(chunks);
+      for (const secret of secrets)
+        assert.equal(bytes.includes(Buffer.from(secret)), false, entry.name);
+      assert.doesNotMatch(bytes.toString(), /scrypt\$/);
+    }
   } finally {
     await h.close();
   }
@@ -198,6 +223,7 @@ async function child(configPath: string) {
   });
   return {
     url,
+    process,
     async kill(signal: "SIGKILL" | "SIGTERM") {
       const exited = once(process, "exit");
       process.kill(signal);
@@ -412,5 +438,213 @@ test("14. retries add no event, conflict returns 409; SSE resumes by header [api
     );
   } finally {
     await h.close();
+  }
+});
+
+test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and global IDs [reset.md#scenarios, runs-and-identity.md#ids]", async () => {
+  const h = await startHarness();
+  let next: Awaited<ReturnType<typeof startCore>> | undefined;
+  try {
+    assert.equal(
+      (
+        await h.call("POST", "/administration/accounts", {
+          cookie: h.admin,
+          body: { operator_id: "OP2", password, admin: false },
+        })
+      ).status,
+      201,
+    );
+    const gateway = await h.call("POST", "/administration/gateways", {
+      cookie: h.admin,
+    });
+    const stopped = await h.core.stop();
+    assert.equal(stopped.archived, true);
+    assert.deepEqual(await checkZip(stopped.zip, h.core.runId), { ok: true });
+    const entries = await readZip(stopped.zip);
+    for (const name of [
+      "manifest.json",
+      "summary.md",
+      "events.jsonl",
+      "state/assets.jsonl",
+      "state/tasks.jsonl",
+      "state/gateways.jsonl",
+      "config.json",
+      "versions.json",
+    ])
+      assert.ok(
+        entries.some((entry) => entry.name === name),
+        name,
+      );
+    assert.deepEqual(await readdir(join(h.dataDir, "diagnostics")), []);
+    next = await startCore({ clock, config: h.config });
+    assert.equal(
+      (await (await fetch(next.url + "/about")).json()).run_id,
+      h.core.runId + 1,
+    );
+    const headers = {
+      "atlas-definitions": protocol.hash,
+      "content-type": "application/json",
+    };
+    assert.equal(
+      (
+        await fetch(next.url + "/administration/me", {
+          headers: { ...headers, cookie: h.admin },
+        })
+      ).status,
+      401,
+    );
+    const login = await fetch(next.url + "/administration/login", {
+      method: "POST",
+      headers: { ...headers, "idempotency-key": "op-login" },
+      body: JSON.stringify({ operator_id: "OP2", password }),
+    });
+    assert.equal(login.status, 200);
+    await login.text();
+    const adminLogin = await fetch(next.url + "/administration/login", {
+      method: "POST",
+      headers: { ...headers, "idempotency-key": "admin-login" },
+      body: JSON.stringify({ operator_id: "ADM", password }),
+    });
+    const cookie = adminLogin.headers.get("set-cookie")!.split(";")[0];
+    await adminLogin.text();
+    const issued = await (
+      await fetch(next.url + "/administration/gateways", {
+        method: "POST",
+        headers: { ...headers, cookie, "idempotency-key": "new-gateway" },
+      })
+    ).json();
+    assert.notEqual(issued.gateway_id, gateway.body.gateway_id);
+    assert.ok(issued.event_id > gateway.body.event_id);
+    assert.equal(
+      (
+        await fetch(next.url + "/about", {
+          headers: { ...headers, authorization: `Bearer ${gateway.body.key}` },
+        })
+      ).status,
+      200,
+    );
+  } finally {
+    await next?.stop();
+    await h.close();
+  }
+});
+
+test("12. an unwritable archive clears nothing and next start is new [reset.md#when-the-zip-fails]", async () => {
+  const h = await startHarness();
+  let next: Awaited<ReturnType<typeof startCore>> | undefined;
+  try {
+    await h.call("POST", "/administration/gateways", { cookie: h.admin });
+    await chmod(join(h.dataDir, "archive"), 0o500);
+    const result = await h.core.stop();
+    assert.equal(result.archived, false);
+    assert.deepEqual(await readdir(join(h.dataDir, "archive")), []);
+    assert.ok(
+      (await readdir(join(h.dataDir, "diagnostics", `run-${h.core.runId}`)))
+        .length > 0,
+    );
+    await chmod(join(h.dataDir, "archive"), 0o700);
+    next = await startCore({ clock, config: h.config });
+    assert.equal(next.runId, h.core.runId + 1);
+  } finally {
+    await chmod(join(h.dataDir, "archive"), 0o700);
+    await next?.stop();
+    await h.close();
+  }
+});
+
+test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios]", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-reset-kill-"));
+  let running: Awaited<ReturnType<typeof child>> | undefined;
+  try {
+    const cfg = join(dir, "config.json");
+    await writeFile(
+      cfg,
+      JSON.stringify({
+        listen_address: "127.0.0.1",
+        port: 0,
+        data_directory: dir,
+      }),
+    );
+    running = await child(cfg);
+    const run = (await (await fetch(running.url + "/about")).json()).run_id;
+    // A real diagnostic file keeps the archive stream open long enough to observe its process boundary.
+    const { randomBytes } = await import("node:crypto");
+    const { open, watch } = await import("node:fs/promises");
+    const log = await open(
+      join(dir, "diagnostics", `run-${run}`, "bulk.jsonl"),
+      "w",
+    );
+    try {
+      for (let i = 0; i < 64; i++) await log.write(randomBytes(1024 * 1024));
+    } finally {
+      await log.close();
+    }
+    const watcher = watch(join(dir, "archive"), {
+      signal: AbortSignal.timeout(15000),
+    });
+    const exited = once(running.process, "exit");
+    running.process.kill("SIGTERM");
+    let partial: string | undefined;
+    for await (const event of watcher) {
+      if (event.filename?.endsWith(".partial")) {
+        partial = event.filename;
+        if ((await stat(join(dir, "archive", partial))).size > 0) break;
+      }
+    }
+    assert.ok(partial);
+    running.process.kill("SIGKILL");
+    assert.equal((await exited)[1], "SIGKILL");
+    running = await child(cfg);
+    assert.equal(
+      (await (await fetch(running.url + "/about")).json()).run_id,
+      run,
+    );
+    assert.deepEqual(await readdir(join(dir, "archive")), []);
+    assert.equal((await running.kill("SIGTERM"))[0], 0);
+    running = undefined;
+  } finally {
+    if (running) await running.kill("SIGKILL");
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes without overwrite [reset.md#when-core-stops-unexpectedly]", async () => {
+  for (const corrupt of [false, true]) {
+    const h = await startHarness();
+    let resumed: Awaited<ReturnType<typeof startCore>> | undefined;
+    const snapshot = await mkdtemp(join(tmpdir(), "atlas-reset-snapshot-"));
+    try {
+      for (const name of ["core.sqlite", "core.sqlite-wal", "core.sqlite-shm"])
+        await copyFile(join(h.dataDir, name), join(snapshot, name));
+      const stopped = await h.core.stop();
+      assert.equal(stopped.archived, true);
+      const zip = stopped.zip;
+      if (corrupt) {
+        const { open } = await import("node:fs/promises");
+        const file = await open(zip, "r+");
+        try {
+          await file.write(Buffer.from("broken"), 0, 6, 0);
+        } finally {
+          await file.close();
+        }
+        assert.equal((await checkZip(zip)).ok, false);
+      }
+      const zipBytes = await readFile(zip);
+      for (const name of ["core.sqlite", "core.sqlite-wal", "core.sqlite-shm"])
+        await copyFile(join(snapshot, name), join(h.dataDir, name));
+      resumed = await startCore({ clock, config: h.config });
+      assert.equal(resumed.runId, h.core.runId + (corrupt ? 0 : 1));
+      const response = await fetch(resumed.url + "/administration/me", {
+        headers: { "atlas-definitions": protocol.hash, cookie: h.admin },
+      });
+      assert.equal(response.status, corrupt ? 200 : 401);
+      await response.text();
+      assert.equal((await resumed.stop()).archived, !corrupt);
+      assert.deepEqual(await readFile(zip), zipBytes);
+    } finally {
+      await resumed?.stop();
+      await h.close();
+      await rm(snapshot, { recursive: true, force: true });
+    }
   }
 });

@@ -29,9 +29,16 @@ let stopping = false;
 const stop = async () => {
   if (stopping) return; // a second signal does not start a second Reset
   stopping = true;
-  const result = await core.stop();
-  if (!result.archived) process.stderr.write(result.explanation + "\n");
-  process.exit(result.archived ? 0 : 1);
+  try {
+    const result = await core.stop();
+    if (!result.archived) process.stderr.write(result.explanation + "\n");
+    process.exit(result.archived ? 0 : 1);
+  } catch (error) {
+    process.stderr.write(
+      `Reset failed: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    process.exit(1);
+  }
 };
 process.on("SIGTERM", stop);
 process.on("SIGINT", stop);

@@ -1,6 +1,7 @@
 import { mkdir, readFile } from "node:fs/promises";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import { resolveConfig, pathsFor, redactConfig } from "./config.ts";
+import { recoverReset, stopRun } from "./reset/reset.ts";
 import { startLog } from "./log.ts";
 import { openStore } from "./store/db.ts";
 import * as events from "./store/events.ts";
@@ -32,8 +33,7 @@ export interface RunningCore {
 }
 
 export type StopResult =
-  | { archived: true; zip: string }
-  | { archived: false; explanation: string }; // reset.md#when-the-zip-fails: nothing cleared
+  { archived: true; zip: string } | { archived: false; explanation: string }; // reset.md#when-the-zip-fails: nothing cleared
 
 export interface Env {
   readonly protocol: Protocol; // loadPackagedProtocol(), loaded once
@@ -90,7 +90,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     log,
     versions,
   };
-  const store = openStore(env, [
+  const tables = [
     ...runs.TABLES,
     ...events.TABLES,
     ...idempotency.TABLES,
@@ -99,8 +99,10 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     ...tasks.TABLES,
     ...objects.TABLES,
     ...fusion.TABLES,
-  ]);
+  ];
+  const store = openStore(env, tables);
   try {
+    await recoverReset(env, store, tables);
     const run = runs.beginOrResume(env, store);
     await log.openRun(run.runId);
     if (
@@ -151,21 +153,11 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       runId: run.runId,
       debugUrl: server.debugUrl,
       stop() {
-        return (stopped ??= (async () => {
-          await server.close();
-          const explanation = "Reset ZIP is not implemented; run data retained";
-          log.record({ level: "error", area: "reset", msg: explanation });
-          await log.flush();
-          store.write((tx) => {
-            tx.run(
-              "UPDATE runs SET ended_at=?,outcome='archive_failed' WHERE run_id=?",
-              tx.now,
-              run.runId,
-            );
-          });
-          store.close();
-          return { archived: false, explanation };
-        })());
+        return (stopped ??= stopRun(env, store, tables, {
+          closeServer: () => server.close(),
+          stopContact() {},
+          async drainFusion() {},
+        }));
       },
     };
   } catch (error) {

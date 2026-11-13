@@ -40,5 +40,6 @@ owns runs, counters, events, and retry keys. [Storage](storage.md) lists the
 tables and [pillars](pillars.md#rules) defines access across owners.
 
 Administration and shared storage are implemented. Other pillar bodies remain
-explicit stubs and their routes return `501 not_implemented`. Reset ZIP is also
-pending. A deliberate stop currently records archive failure and retains data.
+explicit stubs and their routes return `501 not_implemented`.
+[Reset](reset.md) writes and checks the archive before clearing the run.
+Contact and Fusion shutdown callbacks still need their runtime implementations.
