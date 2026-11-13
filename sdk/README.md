@@ -15,7 +15,8 @@ behavior; these pages describe only what the client adds and link there for the 
 
 Records come from [Protocol](../protocol/README.md). The SDK loads Protocol's
 definitions as data, validates with Protocol's one validator, and defines no record
-of its own. Nothing is generated.
+of its own. Compile-time shapes come from [Protocol
+types](../protocol/docs/decisions.md#typescript-types).
 
 ## Non-goals
 

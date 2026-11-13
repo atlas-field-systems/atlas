@@ -337,5 +337,10 @@
     "phrase": "Altitude limits are (deferred|not defined)",
     "why": "Boundary rules now support minimum and maximum altitudes.",
     "example": "Altitude limits are deferred."
+  },
+  {
+    "phrase": "\\bNothing is generated\\.",
+    "why": "The SDK imports Protocol declarations under the measured TypeScript working choice.",
+    "example": "The SDK defines no record of its own. Nothing is generated."
   }
 ]

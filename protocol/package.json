@@ -3,11 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check.mjs",
+    "check": "node scripts/check.mjs && node scripts/types.mjs --check",
     "test": "node --test test/*.test.mjs",
     "cli": "node cli/cli.mjs",
     "site": "node scripts/build-site.mjs && node scripts/serve.mjs",
-    "build:site": "node scripts/build-site.mjs"
+    "build:site": "node scripts/build-site.mjs",
+    "types": "node scripts/types.mjs"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.7.5",
@@ -22,10 +23,13 @@
   "files": [
     "cli",
     "lib",
-    "definitions"
+    "definitions",
+    "types.d.ts"
   ],
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "json-schema-to-typescript": "16.0.0",
+    "typescript": "7.0.2"
   },
   "exports": {
     ".": {
@@ -35,6 +39,9 @@
     "./browser": {
       "types": "./lib/browser.d.ts",
       "default": "./lib/browser.mjs"
+    },
+    "./types": {
+      "types": "./types.d.ts"
     }
   }
 }

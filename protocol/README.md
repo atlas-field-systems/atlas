@@ -88,7 +88,7 @@ with the application, preserving their bytes. The loader performs no I/O and use
 package's own folder, independent of the working directory or environment.
 
 Both entries are JavaScript ESM with hand-written declarations for this API.
-They define no TypeScript record types. Protocol remains unpublished; programs
+Record types come from [`@atlas/protocol/types`](#typescript-consumers). Protocol remains unpublished; programs
 use it from this repository under the [release policy](../atlas/design-decisions.md#changes-and-releases).
 
 ## Try it
@@ -99,6 +99,23 @@ use it from this repository under the [release policy](../atlas/design-decisions
 Pick a definition to see its description, its fields, an example, whether it is
 valid, and its size (compact and compressed). Edit any field to see the effect.
 Both tools only display what the definitions say. They never send anything.
+
+## TypeScript consumers
+
+Import the type map from `@atlas/protocol/types`. Use a type-only import so Node
+24 erases it before execution.
+
+```ts
+import type { ProtocolTypes } from '@atlas/protocol/types';
+type Task = ProtocolTypes['task'];
+type Status = ProtocolTypes['report.status'];
+type TasksRequest = ProtocolTypes['requests.tasks'];
+const request: TasksRequest = { tasks: [{ kind: 'hold' }] };
+```
+
+After editing definitions, run `npm run types` and commit `types.d.ts` with them.
+`npm run check` rejects stale declarations. The [working choice](docs/decisions.md#typescript-types)
+records the comparison and the limits of compile-time checking.
 
 ## Layout
 
