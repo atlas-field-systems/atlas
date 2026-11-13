@@ -4,6 +4,7 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 
 | Term | Meaning |
 | --- | --- |
+| Capture | A Task that asks a camera for a photo or clip. See [capture files](asset/docs/README.md#capture-files). |
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
 | Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time. A gateway is not an Asset. See [Gateway](gateway/README.md). |
 | Gateway app | The framework every gateway runs. It connects to Core, registers the Assets its radio hears, installs Fieldlinks, and runs one through its stable gateway interface. See [Gateway](gateway/README.md). |

@@ -332,5 +332,10 @@
     "phrase": "\\b(implements?|builds?) everything (together|at once)\\b|\\bnot one slice at a time\\b",
     "why": "The build goes one part at a time: Protocol, then Core, then the SDK. Each part is built whole.",
     "example": "The build then implements everything together from the finished design, not one slice at a time."
+  },
+  {
+    "phrase": "Altitude limits are (deferred|not defined)",
+    "why": "Boundary rules now support minimum and maximum altitudes.",
+    "example": "Altitude limits are deferred."
   }
 ]

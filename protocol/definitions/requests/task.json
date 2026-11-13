@@ -31,6 +31,9 @@
     },
     {
       "$ref": "../records/task/settings.json"
+    },
+    {
+      "$ref": "../records/task/capture.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -79,6 +82,17 @@
       "settings": {
         "run_state": "paused"
       }
+    },
+    {
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "photo"
+    },
+    {
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "clip",
+      "duration_s": 10
     }
   ],
   "not": {

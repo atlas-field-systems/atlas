@@ -158,11 +158,14 @@ carry out. Configuration does not change shared meanings: advertised commands,
 Task outcomes, subsystem conditions, and failsafe policies keep their agreed
 meanings. See [configuration](../config.md) and [behavior](README.md).
 
+Gimbal cameras use [Protocol's gimbal report](../../protocol/definitions/records/report/gimbal.json)
+to show where each camera points. Camera images reach Core as
+[uploaded files](README.md#capture-files).
+
 ## Open
 
 - Module and equipment-driver interfaces, the full module catalog, and driver
   connection options.
 - Freshness limits, local storage layout and limits, and overflow behavior.
-- How a turret works out its aim from a Point At target, and gimbal control.
-  Camera images reach Core as [uploaded files](README.md#capture-files).
+- How a turret works out its aim from a Point At target.
 - Packaging, service configuration, and installation commands.

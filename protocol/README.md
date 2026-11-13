@@ -18,7 +18,7 @@ Definitions and records carry none.
 | Record | What it is | Who makes it |
 | --- | --- | --- |
 | `description` | What an Asset is: its reports, command kinds, supported settings, subsystems, and cameras | Asset |
-| `task` | One Task's body: a command kind and its fields, or a settings change | Core, for an operator |
+| `task` | One Task's body, including Capture, or a settings change | Core, for an operator |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
 | `registration` | An Asset registered in the run or was removed from it | Core, for the Asset, its gateway, or an admin |
@@ -28,12 +28,13 @@ Definitions and records carry none.
 | `refusal` | A caller or radio Core refused for a different definitions hash | Core |
 | `report.status` | One subsystem's condition, one Task's state, or its task list | Asset |
 | `report.telemetry`, `report.battery` | Where it is and how it moves; its battery | Asset |
+| `report.gimbal` | Where each gimbal camera points | Asset |
 | `report.settings` | Its settings' values | Asset |
 | `report.failsafe` | A failsafe Task's state, an operator override, or a flight-controller takeover | Asset |
 | `report.observation` | Something the Asset sees: where it is, or which way | Asset |
 | `track` | Fusion's conclusion about one target, and the Observations it rests on | Core's Fusion |
-| `geofeature` | A place on the map: a point, line, area, or GeoTIFF imagery, with an optional name | Core, for an account or a Plugin |
-| `object` | A file Core holds: its name, type, size, and geo feature | Core, for an account or a Plugin |
+| `geofeature` | A place on the map: a point, line, area, or GeoTIFF imagery, with an optional name | Core, for an account, Plugin, or Asset |
+| `object` | A file Core holds: its name, type, size, and geo feature | Core, for an account, Plugin, or Asset |
 | `deletion` | An Object was deleted | Core, for an operator |
 | `plugin.description` | A Plugin's name and the actions it offers, with their inputs | Plugin |
 | `plugin.call` | One call of a Plugin action, with its input values | Core, for an operator |
@@ -41,8 +42,7 @@ Definitions and records carry none.
 
 Each record has its own definition with a description and examples. Plugins
 describe their own actions from Protocol's common input kinds, so Protocol
-lists no actions. The gimbal definition is [parked](parked/README.md) until it
-is reworked into a record.
+lists no actions.
 
 Requests are not records. `requests/` defines the bodies callers send to the
 Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`,
@@ -66,7 +66,6 @@ Both tools only display what the definitions say. They never send anything.
 - `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: working choices behind the records, below the [decision log](../atlas/decision-log.md). `docs/open-questions.md`: what is not decided.
 - `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer.
 - `scripts/check.mjs`: checks every definition and its examples (`npm ci && npm run check && npm test`).
-- `parked/`: earlier definitions waiting to be reworked into records. Not checked.
 
 The [SDK](../sdk/README.md) is the client for the Core API and loads these
 definitions. AI agents: read [AGENTS.md](AGENTS.md).

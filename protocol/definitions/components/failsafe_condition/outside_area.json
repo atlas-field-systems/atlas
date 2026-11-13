@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/outside_area.json",
   "title": "outside_area",
-  "description": "The Asset is outside an area by more than margin_m, for for_s, even without an observed crossing, including at startup or after the policy is replaced. Both are 0 if left out. An unknown position is not outside, so the condition does not hold. Altitude limits are not defined.",
+  "description": "The Asset is outside area, above max_altitude, or below min_altitude by more than margin_m, continuously for for_s. Margin and time default to zero. Each altitude uses its own reference. Unknown position or altitude cannot establish that limit was crossed; another known limit may still hold, including at startup or after policy replacement.",
   "type": "object",
   "required": [
     "kind",
@@ -21,6 +21,12 @@
     },
     "for_s": {
       "$ref": "../../variables/for_s.json"
+    },
+    "max_altitude": {
+      "$ref": "../altitude.json"
+    },
+    "min_altitude": {
+      "$ref": "../altitude.json"
     }
   },
   "examples": [
@@ -46,6 +52,91 @@
       ],
       "margin_m": 20,
       "for_s": 5
+    },
+    {
+      "kind": "outside_area",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ],
+      "margin_m": 20,
+      "for_s": 5,
+      "max_altitude": {
+        "altitude_m": 120,
+        "altitude_reference": "launch"
+      }
+    },
+    {
+      "kind": "outside_area",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ],
+      "margin_m": 20,
+      "for_s": 5,
+      "min_altitude": {
+        "altitude_m": 10,
+        "altitude_reference": "ground"
+      }
+    },
+    {
+      "kind": "outside_area",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ],
+      "margin_m": 20,
+      "for_s": 5,
+      "max_altitude": {
+        "altitude_m": 120,
+        "altitude_reference": "launch"
+      },
+      "min_altitude": {
+        "altitude_m": 10,
+        "altitude_reference": "launch"
+      }
     }
   ]
 }

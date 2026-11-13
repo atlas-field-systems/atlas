@@ -25,7 +25,9 @@ The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
 up to 16 rules. Its starting value comes from the Asset's
 [configuration](../config.md), and any operator can replace it as they change
 other settings. Each response is a command the Asset supports, such as Land,
-Return to home, or Hold. A response is always protective. Atlas has no
+Return to home, or Hold. A response should protect the Asset, but Atlas does not
+limit which supported command it names; choosing a sensible one is the
+operator's job. Atlas has no
 "continue" response: a situation the Asset should keep working through is not a
 failsafe, so the Asset has no rule for it. [Protocol](../../protocol/docs/decisions.md#failsafes) defines the
 records.
@@ -153,12 +155,15 @@ Conditions can include:
   an Asset that holds only such Tasks is idle. Telemetry does not reset the
   timer. Each new idle interval starts fresh.
 - Being airborne, for example combined with contact loss and no remaining work.
-- Being outside a horizontal polygon drawn in the rule itself, never taken
-  from a saved place, even without an observed crossing, including at startup
-  or after a policy replacement. A distance
-  beyond the boundary and a duration outside are configured; either may be zero.
-  An unknown position is not outside, so the condition does not hold. Altitude
-  limits are deferred.
+- Being outside a polygon drawn in the rule itself, never taken from a saved
+  place, above an optional maximum altitude, or below an optional minimum
+  altitude. Each height says what it is measured from. Any one of these limits
+  holds the condition when exceeded by more than the configured distance
+  margin for the configured duration; either value may be zero. No observed
+  crossing is needed, including at startup or after policy replacement. An
+  unknown position does not establish horizontal escape, and an unknown
+  altitude does not establish a height violation. Another known limit may
+  still hold the condition.
 
 A measurement older than `measurement_stale_after_s` in the Asset's
 [configuration](../config.md) counts as unknown, and an unknown value never makes

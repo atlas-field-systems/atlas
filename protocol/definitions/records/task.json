@@ -35,6 +35,9 @@
     },
     {
       "$ref": "task/settings.json"
+    },
+    {
+      "$ref": "task/capture.json"
     }
   ],
   "unevaluatedProperties": false,
@@ -165,6 +168,25 @@
         "latitude": 42.2758,
         "longitude": -71.8041
       }
+    },
+    {
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "task_id": 9,
+      "requested_by": "OP1",
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "photo"
+    },
+    {
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "task_id": 9,
+      "requested_by": "OP1",
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "clip",
+      "duration_s": 10
     }
   ],
   "allOf": [

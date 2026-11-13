@@ -51,6 +51,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | Operators can ask an Asset for a photo or a short clip with a Capture command. A command that results in a photo or clip stores it as an Object and names that Object. | Commands that produce files. | [Protocol working choices](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks) |
+| 2026-11-13 | Move To may set a speed. Without one the Asset uses its own default, and it never goes faster than its own safe maximum. | Move To. | [Protocol working choices](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks) |
 | 2026-11-12 | A turret is aimed with Point At: a latitude and longitude, optionally an altitude, to look at. The Asset works out how to aim there; how it does that is defined later. | Pointing equipment, such as camera turrets. | [Assets and their equipment](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#fixed-camera-turret) |
 | 2026-11-12 | Core decides the 64-Task cap from the Asset's latest queue report of how many Tasks it holds. It does not count Tasks still crossing the link or keep capacity until final reports arrive. `now` Tasks are still admitted at the cap. | Per Asset, ordinary work. | [Core API, operator requests](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests) |
 | 2026-11-12 | No clear count. A failed Task clears the Asset's queue; Tasks that arrive later run normally, and operators cancel what they don't want. | Failed Tasks and the queue. | [Core API, operator requests](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests) |
@@ -68,6 +70,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | A failsafe response may be any command the Asset supports except Fail-safe. Atlas does not limit responses to protective commands; it trusts the operator to choose a sensible one. | Failsafe responses. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default) |
+| 2026-11-13 | A boundary rule may set a maximum height and a minimum height, so it catches an Asset that climbs too high or flies too low, as well as one that leaves the area. | Failsafe boundary rules. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#configure-conditions-as-well-as-responses) |
 | 2026-11-12 | While the flight controller's own protection is in control, operators can only watch. The Asset shows that the flight controller took over and refuses operator commands until a person hands control back to Atlas. | Flying Assets. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control) |
 | 2026-11-12 | An override with Hold or pause re-arms every failsafe rule, not only lost-contact and low-battery rules, so a held Asset stays protected by everything the operator set up. | Failsafe state, after a Hold now or pause override. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection) |
 | 2026-11-12 | Failsafe rules are simpler: each firing runs its response once, with no configurable fallback (the critical Return-to-home fallback stays); priority does not only rise, so a rule can act again once no response is running; and there are no separate missing- or stale-data conditions. Area rules keep their distance margin and time outside. | Failsafe rules. | [Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failsafe-activates-a-configured-task) |
@@ -90,6 +94,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | All files, photos and clips included, are stored as Objects. | Every file in Atlas. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
+| 2026-11-13 | An Asset with a gimbal camera reports which way it points, so operators see where each camera is looking. | Gimbal cameras. | [Protocol records](https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md#records) |
 | 2026-11-13 | Each Asset decides which files it sends, by its configuration and link. A file a Task asks for is sent with that Task; other files are sent when the link allows, such as over Wi-Fi but not LoRa. Operators never fetch an earlier file from an Asset, and Assets never answer operators directly: everything goes through Core. | Files from Assets. | [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#capture-files) |
 | 2026-11-12 | Assets can upload files as Objects. An Asset's file is not pinned to where it was taken automatically: the Asset creates a geo feature alongside it, and the two are linked. | Assets and Objects. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
 | 2026-11-11 | Deleting an Object hides it from operators for the rest of the run. Core keeps it, marked deleted, in the end-of-run ZIP; it is not destroyed. | Objects. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
@@ -115,6 +121,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | Any change to Protocol's files, wording included, is a new version. Every part updates together, and wording fixes wait for the next real release. | Protocol releases. | [Protocol working choices](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#definitions-hash) |
+| 2026-11-13 | Protocol stays unpublished during the first development run, and the other parts use it from this repository. It will be published publicly later. | Protocol publishing. | [Design decisions, changes and releases](https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#changes-and-releases) |
 | 2026-11-13 | Atlas keeps few unit tests. End-to-end simulations are the main tests. | Every part. | [Charter, Test what matters](https://github.com/atlas-field-systems/atlas/blob/main/atlas/CHARTER.md#test-what-matters) |
 | 2026-11-13 | Simulations that use scripted Assets are reworked to use the real Asset app once it is built. | Simulations. | [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets) |
 | 2026-11-13 | The first version builds Protocol, then Core, then the SDK, one part at a time, with the simulations that test them. Problems found building one part change how the next is built. | The first version. | [Design decisions](https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#design-the-whole-product-then-build-it) |

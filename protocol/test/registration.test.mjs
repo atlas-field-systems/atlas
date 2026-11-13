@@ -4,7 +4,7 @@ import { load } from '../lib/node-protocol.mjs';
 import { validate } from '../lib/protocol.mjs';
 
 const protocol = await load();
-const commands = ['takeoff', 'move_to', 'land', 'return_to_home', 'hold', 'point_at', 'failsafe'];
+const commands = ['takeoff', 'move_to', 'land', 'return_to_home', 'hold', 'point_at', 'failsafe', 'capture'];
 const body = { entity_type: 'drone', reports: ['status', 'failsafe'], commands };
 
 test('an Asset registers without an asset_id, because Core assigns it', () => {
