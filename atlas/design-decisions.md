@@ -214,7 +214,12 @@ built.
   version, with no separate version counter.
 - The Core API and each Fieldlink report the hash of the Protocol definitions they
   use. A mismatch is refused with an explanation.
-- Protocol is an unpublished draft. Package publishing is not configured yet.
-- Programs select Protocol through their package dependency.
+- Protocol stays unpublished during the first development run. Other parts use
+  it from this repository; it will be public later
+  ([decision log](decision-log.md#build-and-test)).
+- Any change to Protocol files, wording included, is a new version. Wording
+  fixes wait for the next real release, and every part updates together
+  ([decision log](decision-log.md#build-and-test)).
+- Once published, programs select Protocol through their package dependency.
 - All Atlas work lands in this repository through `main`. Only approved commits
   on `main` are released through `prod`.

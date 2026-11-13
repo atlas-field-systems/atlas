@@ -86,7 +86,10 @@ disagree, fix one of them.
 
 ## Definitions hash
 
-- **The hash covers every definition file byte for byte**, descriptions and examples included, so programs agree only when they load the same files. A wording fix gives a new hash; programs take definitions from the same Protocol package release, so they move together.
+During the first development run, parts use Protocol from this repository under
+the [release policy](../../atlas/design-decisions.md#changes-and-releases).
+
+- **The hash covers every definition file byte for byte**, descriptions and examples included, so programs agree only when they load the same files. Any file change, wording included, is a new Protocol version. Wording fixes wait for the next real release, and every part updates together. *[Owner decision](../../atlas/decision-log.md#build-and-test).*
 - **Recipe.** Take every `.json` file in `definitions/`, `index.json` included. Name each by its path relative to `definitions/`, with `/` between folders, and sort the paths by their UTF-8 bytes. For each file in that order, append its path, a newline (byte `0x0A`), its length in bytes as a decimal number, a newline, and then its exact bytes. The hash is SHA-256 of the result, written as `sha256:` and 64 lowercase hex digits.
 - **Test vector.** Two files: `index.json` holding the 14 bytes `{"title":"T"}` and a newline, and `variables/a_id.json` holding the 17 bytes `{"title":"a_id"}` and a newline. The input is `index.json\n14\n{"title":"T"}\nvariables/a_id.json\n17\n{"title":"a_id"}\n`, where `\n` is one newline byte, and its hash is `sha256:b393b32791af143e2e3f7b210546be519504aca5204b2bf1ecad03303c640209`.
 
