@@ -60,3 +60,22 @@ test('docs/laws.md law 5: names identify whole records and requests, never kind 
   assert.throws(() => protocol.check('not_a_record', {}), /Unknown Protocol name/);
   assert.deepEqual(protocol.check('requests.tasks', { tasks: [{ kind: 'hold' }] }), { ok: true });
 });
+
+test('README Use the library: a kind reports only its own problems', () => {
+  const result = protocol.check('requests.tasks', { tasks: [{ kind: 'capture', camera_id: 'C1', media: 'clip' }] });
+  assert.deepEqual(result, { ok: false, problems: [{ path: '/tasks/0/duration_s', message: 'is required' }] });
+});
+
+test('README Use the library: an unknown kind is one problem that lists the kinds', () => {
+  const { problems } = protocol.check('requests.task', { kind: 'fly', destination: { latitude: 1, longitude: 1 } });
+  assert.equal(problems.length, 1, JSON.stringify(problems));
+  assert.equal(problems[0].path, '/kind');
+  assert.match(problems[0].message, /^must be one of .*"takeoff".*"capture"/);
+  for (const kind of ['Fly', 5]) {
+    assert.deepEqual(protocol.check('requests.task', { kind }).problems.map((p) => p.path), ['/kind'], String(kind));
+  }
+});
+
+test('README Use the library: the definition files must include index.json', async () => {
+  await assert.rejects(loadProtocol(new Map()), /index\.json/);
+});

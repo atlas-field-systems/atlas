@@ -20,47 +20,110 @@ export async function hashDefinitions(files) {
   return `sha256:${[...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
 }
 
+// The definition file a $ref in another definition file points at.
+export function resolveRef(file, ref) {
+  const parts = file.split('/').slice(0, -1);
+  for (const part of ref.split('/')) {
+    if (part === '..') parts.pop();
+    else if (part !== '.') parts.push(part);
+  }
+  return parts.join('/');
+}
+
+const parentOf = (file) => `${file.slice(0, file.lastIndexOf('/'))}.json`;
+
+// Law 5: <dir>/<kind>.json beside <dir>.json is a kind of that record or component.
+export const isKindFile = (file, exists) => /^(records|components)\//.test(file) && exists(parentOf(file));
+
+// Law 5 names: records/report/status.json is report.status; requests/tasks.json is requests.tasks.
+export function protocolNames(files) {
+  const exists = (file) => files.includes(file);
+  return new Map(files.flatMap((file) => {
+    if (file.startsWith('requests/')) return [[file.slice(0, -5).replaceAll('/', '.'), file]];
+    if (file.startsWith('records/') && !isKindFile(file, exists)) return [[file.slice(8, -5).replaceAll('/', '.'), file]];
+    return [];
+  }));
+}
+
 const pointer = (key) => String(key).replaceAll('~', '~0').replaceAll('/', '~1');
+
+const messages = {
+  required: () => 'is required',
+  additionalProperties: () => 'is not allowed',
+  unevaluatedProperties: () => 'is not allowed',
+  not: () => 'is not allowed',
+  anyOf: () => 'must match one allowed shape',
+  oneOf: () => 'must match one allowed shape',
+  const: ({ params }) => `must be ${JSON.stringify(params.allowedValue)}`,
+  enum: ({ params }) => `must be one of ${params.allowedValues.map((value) => JSON.stringify(value)).join(', ')}`,
+};
 
 export async function loadDefinitions(files) {
   // Snapshot bytes before yielding, so the hash and schemas describe the same files.
   files = new Map([...files].map(([path, bytes]) => [path, new Uint8Array(bytes)]));
+  if (!files.has('index.json')) throw new Error('The definition files must include index.json');
   const decoder = new TextDecoder('utf-8', { fatal: true });
   const index = JSON.parse(decoder.decode(files.get('index.json')));
   const schemas = Object.fromEntries([...files]
     .filter(([path]) => path.endsWith('.json') && path !== 'index.json')
     .map(([path, bytes]) => [path, JSON.parse(decoder.decode(bytes))]));
-  const ajv = new Ajv({ strict: true, strictRequired: false, allowUnionTypes: true, allErrors: true });
-  addFormats(ajv);
-  for (const [file, schema] of Object.entries(schemas)) ajv.addSchema(schema, file);
+  const newAjv = (options) => {
+    const ajv = new Ajv({ strict: true, strictRequired: false, allowUnionTypes: true, allErrors: true, ...options });
+    addFormats(ajv);
+    return ajv;
+  };
+  // The verdict comes from plain JSON Schema. Its problems for a record with kinds list
+  // every kind's failures, so a second validator explains a failure using only the kind the
+  // value names. Law 5 makes every oneOf a choice of kinds by "kind".
+  const verdict = newAjv();
+  const explainer = newAjv({ discriminator: true, verbose: true });
+  // Ajv's discriminator does not pass on which fields the chosen kind evaluated, so the
+  // explainer would call them unevaluated. Keep, per schema, the fields each kind may carry.
+  const kindFields = new Map();
+  for (const [file, schema] of Object.entries(schemas)) {
+    verdict.addSchema(schema, file);
+    // A oneOf that breaks law 5 gets the plain explanation; the definition check reports it.
+    const kinds = schema.oneOf?.map(({ $ref }) => $ref && schemas[resolveRef(file, $ref)]);
+    if (!kinds?.every((kind) => kind?.properties?.kind?.const)) { explainer.addSchema(schema, file); continue; }
+    const withKinds = { ...schema, discriminator: { propertyName: 'kind' } };
+    kindFields.set(withKinds, new Map(kinds.map((kind) =>
+      [kind.properties.kind.const, new Set([...Object.keys(schema.properties ?? {}), ...Object.keys(kind.properties)])])));
+    explainer.addSchema(withKinds, file);
+  }
+  const problemOf = (error) => {
+    const kinds = kindFields.get(error.parentSchema);
+    if (error.keyword === 'if') return [];
+    if (error.keyword === 'discriminator') {
+      return error.data.kind === undefined ? [] : [{
+        path: `${error.instancePath}/kind`,
+        message: `must be one of ${[...kinds.keys()].map((kind) => JSON.stringify(kind)).join(', ')}`,
+        unknownKind: true,
+      }];
+    }
+    if (error.keyword === 'unevaluatedProperties' && kinds) {
+      // With an unknown kind, a field any kind allows is not the problem; the kind is.
+      const allowed = kinds.has(error.data.kind) ? [kinds.get(error.data.kind)] : [...kinds.values()];
+      if (allowed.some((fields) => fields.has(error.params.unevaluatedProperty))) return [];
+    }
+    const property = error.params.missingProperty ?? error.params.additionalProperty ?? error.params.unevaluatedProperty;
+    const path = error.instancePath + (property === undefined ? '' : `/${pointer(property)}`);
+    return [{ path, message: messages[error.keyword]?.(error) ?? error.message }];
+  };
   const checkFile = (file, value) => {
-    const validate = ajv.getSchema(file);
+    const validate = verdict.getSchema(file);
     if (!validate) throw new Error(`Unknown definition: ${file}`);
     if (validate(value)) return { ok: true };
-    return { ok: false, problems: validate.errors.map((error) => {
-      const property = error.params.missingProperty ?? error.params.additionalProperty ?? error.params.unevaluatedProperty;
-      const path = error.instancePath + (property === undefined ? '' : `/${pointer(property)}`);
-      const message = error.keyword === 'required' ? 'is required'
-        : ['additionalProperties', 'unevaluatedProperties'].includes(error.keyword) ? 'is not allowed'
-        : error.keyword === 'const' ? `must be ${JSON.stringify(error.params.allowedValue)}`
-        : error.keyword === 'enum' ? `must be one of ${error.params.allowedValues.map((value) => JSON.stringify(value)).join(', ')}`
-        : error.keyword === 'oneOf' ? 'must match one allowed shape'
-        : error.keyword === 'if' ? 'must satisfy the condition'
-        : error.keyword === 'not' ? 'is not allowed'
-        : error.message;
-      return { path, message };
-    }) };
+    const explain = explainer.getSchema(file);
+    explain(value);
+    const explained = (explain.errors ?? []).flatMap(problemOf);
+    // An unknown kind is one problem: the list of kinds replaces the kind's other problems.
+    const unknownKinds = new Set(explained.filter((p) => p.unknownKind).map((p) => p.path));
+    const problems = explained.filter((p) => p.unknownKind || !unknownKinds.has(p.path)).map(({ path, message }) => ({ path, message }));
+    return { ok: false, problems: problems.length ? problems : validate.errors.flatMap(problemOf) };
   };
-  const registry = new Map();
-  for (const file of index.groups.flatMap((group) => group.files)) {
-    if (!schemas[file]) throw new Error(`index.json: ${file} does not exist`);
-    const parent = `${file.slice(0, file.lastIndexOf('/'))}.json`;
-    if (file.startsWith('records/') && !schemas[parent]) {
-      registry.set(file.slice('records/'.length, -5).replaceAll('/', '.'), file);
-    } else if (file.startsWith('requests/')) {
-      registry.set(file.slice(0, -5).replaceAll('/', '.'), file);
-    }
-  }
+  const listed = index.groups.flatMap((group) => group.files);
+  for (const file of listed) if (!schemas[file]) throw new Error(`index.json: ${file} does not exist`);
+  const registry = protocolNames(listed);
   const protocol = Object.freeze({
     hash: await hashDefinitions(files),
     names: Object.freeze([...registry.keys()]),

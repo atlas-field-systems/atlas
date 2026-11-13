@@ -75,6 +75,8 @@ through their record, not as separate names.
 `{ ok: false, problems: [{ path, message }] }`. Each path is a JSON Pointer into
 the value, including the name of a missing or extra field. The empty path means
 the whole value. Messages are short explanations for callers to display.
+For a record or request with kinds, problems come only from the kind its `kind`
+names. A `kind` that names no kind is one problem at its path, listing the kinds.
 An unknown name throws because it is a programming error. Validation leaves the
 value unchanged.
 
