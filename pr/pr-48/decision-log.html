@@ -546,9 +546,15 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-13</td>
-<td>When Atlas fails, a simulation that makes the failure happen is built first. The fix is verified by that simulation passing, and the simulation is kept.</td>
+<td>When Atlas fails, a test that makes the failure happen is built first: a simulation when the failure crosses parts, or a test at one part&#39;s contract when it stays inside it. The fix is verified by that test passing, and the test is kept.</td>
 <td>Every failure found.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-simulation">Simulations</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-test">Simulations</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>A part taking its clock from outside, as Core and the SDK do, is not a hook added only for tests, because the shipped program passes in the real clock.</td>
+<td>Every part.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/atlas/CHARTER.md#test-what-matters">Charter, Test what matters</a></td>
 </tr>
 <tr>
 <td>2026-11-13</td>

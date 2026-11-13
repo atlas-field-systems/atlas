@@ -143,11 +143,13 @@ already catches that bug.</li>
 deleted. That includes comparing a value with itself, searching source text,
 checking how code is called instead of what it does, expected values copied
 from the code&#39;s output, mocks that supply the behavior being checked, and
-hooks added to a part only so a test can reach inside it.</li>
+hooks added to a part only so a test can reach inside it. Something the
+shipped program also passes in, such as its clock, is not such a hook.</li>
 <li><strong>The failing test comes first.</strong> Every failure is first reproduced by a
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-simulation">simulation</a>
-that fails for the right reason. The fix makes it pass, and it stays. One
-test per bug, not one at every layer the bug passed through.</li>
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-test">test that fails</a>
+for the right reason: a simulation when the failure crosses parts, or a test
+at one part&#39;s contract when it stays inside it. The fix makes it pass, and it
+stays. One test per bug, not one at every layer the bug passed through.</li>
 <li><strong>Protect the check.</strong> A change that fixes code never weakens the test that
 checks it. A test&#39;s expected result changes only after its page changes, in a
 change the owner can see. A check that cannot fail protects nothing, so break
