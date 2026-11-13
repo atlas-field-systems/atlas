@@ -59,7 +59,6 @@ export type ChangeRoute = Common & {
   kind: "change";
   body: BodySpec;
   prepare?: (req: Req<any>, store: Store) => Promise<unknown>;
-  abandon?: (prepared: any) => Promise<void>;
   commit: (
     tx: Tx,
     req: Req<any>,
@@ -87,7 +86,6 @@ function change<S extends BodySpec, P = undefined>(
   r: Common & {
     body: S;
     prepare?: (req: Req<Body<S>>, store: Store) => Promise<P>;
-    abandon?: (p: P) => Promise<void>;
     commit: (tx: Tx, req: Req<Body<S>>, prepared: P) => Reply;
   },
 ): ChangeRoute {
@@ -151,10 +149,14 @@ async function hashNewPassword(
 ): Promise<string> {
   return admin.hashPassword(req.body.password);
 }
-async function receiveUpload(): Promise<objects.ReceivedFile> {
-  throw new Error("not implemented");
+function creatingCall(tx: ReadTx, r: Req<unknown>): number | null {
+  if (r.who.caller.kind !== "plugin") return null;
+  const id = Number(r.query.get("request_id"));
+  if (!Number.isSafeInteger(id) || id < 1)
+    refuse("invalid", "Plugin writes require request_id");
+  plugins.requireOpenCall(tx, r.who.caller.plugin_id, id);
+  return id;
 }
-async function deletePart(): Promise<void> {}
 
 const a = (r: { params: Record<string, string> }) => r.params.asset_id!;
 
@@ -362,7 +364,8 @@ export const ROUTES: readonly Route[] = [
     who: ["account", "plugin", "asset", "gateway"],
     actsFor: "query:asset_id",
     body: P("requests.geofeature"),
-    commit: (tx, r) => ok(entities.createGeofeature(tx, r.body, r.who.by)),
+    commit: (tx, r) =>
+      ok(entities.createGeofeature(tx, r.body, r.who.by, creatingCall(tx, r))),
   }),
   change({
     method: "PUT",
@@ -397,13 +400,11 @@ export const ROUTES: readonly Route[] = [
     who: ["account", "plugin", "asset", "gateway"],
     actsFor: "query:asset_id",
     body: { kind: "file" },
-    prepare: receiveUpload,
-    abandon: deletePart,
-    commit: (tx, r, file) =>
+    commit: (tx, r) =>
       created(
         objects.store(
           tx,
-          file,
+          r.body,
           {
             name: r.query.get("name") ?? "",
             ...(r.query.has("geofeature_id")
@@ -411,6 +412,7 @@ export const ROUTES: readonly Route[] = [
               : {}),
           },
           r.who.by,
+          creatingCall(tx, r),
         ),
       ),
   }),

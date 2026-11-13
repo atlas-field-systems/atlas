@@ -457,6 +457,19 @@ test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and gl
     const gateway = await h.call("POST", "/administration/gateways", {
       cookie: h.admin,
     });
+    const assetKey = await h.call("POST", "/administration/asset-keys", {
+      cookie: h.admin,
+    });
+    const description = {
+      reports: ["status"],
+      commands: ["hold"],
+      settings: ["lights"],
+    };
+    const firstAsset = await h.call("POST", "/entities/assets", {
+      key: assetKey.body.key,
+      body: description,
+    });
+    assert.equal(firstAsset.status, 201);
     const stopped = await h.core.stop();
     assert.equal(stopped.archived, true);
     assert.deepEqual(await checkZip(stopped.zip, h.core.runId), { ok: true });
@@ -513,6 +526,17 @@ test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and gl
         headers: { ...headers, cookie, "idempotency-key": "new-gateway" },
       })
     ).json();
+    const newAsset = await fetch(next.url + "/entities/assets", {
+      method: "POST",
+      headers: {
+        ...headers,
+        authorization: `Bearer ${assetKey.body.key}`,
+        "idempotency-key": "new-asset",
+      },
+      body: JSON.stringify(description),
+    });
+    assert.equal(newAsset.status, 201);
+    assert.notEqual((await newAsset.json()).asset_id, firstAsset.body.asset_id);
     assert.notEqual(issued.gateway_id, gateway.body.gateway_id);
     assert.ok(issued.event_id > gateway.body.event_id);
     assert.equal(

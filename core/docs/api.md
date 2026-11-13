@@ -732,6 +732,10 @@ they can use.
 
 Every `geofeature_id` and `object_id` in a Plugin answer must exist and have
 been created by that Plugin's call. Otherwise Core returns `400 invalid`.
+A Plugin supplies `request_id=<call event_id>` on `POST /objects` and
+`POST /entities/geofeatures`. Core requires a still-open call addressed to
+that Plugin and keeps the creation's call identity. Concurrent calls therefore
+cannot claim each other's output.
 
 `POST /plugins/{plugin_id}/answers` takes one answer record, which names its
 call with `request_id`, the call's `event_id`. Every action answers the same

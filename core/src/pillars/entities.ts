@@ -1,3 +1,4 @@
+import * as objects from "./objects.ts";
 import { refuse, checkOrRefuse } from "../api/errors.ts";
 import { nextGlobalId, nextRunSeq } from "../store/runs.ts";
 import { encodeShortId } from "../ids.ts";
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     runScoped: true,
     ddl: `
 CREATE TABLE IF NOT EXISTS geofeatures (
+  creating_call INTEGER,
   run_id        INTEGER NOT NULL,
   geofeature_id TEXT    NOT NULL,          -- from runs.last_geofeature_seq, never reused in the run
   record        TEXT    NOT NULL,
@@ -555,18 +557,21 @@ export function createGeofeature(
   tx: Tx,
   body: ProtocolTypes["requests.geofeature"],
   by: string,
+  creatingCall: number | null = null,
 ): { geofeature: Geofeature; event_id: number } {
+  if (body.kind === "imagery") objects.objectForImagery(tx, body.object_id);
   const geofeature: Geofeature = {
     ...body,
     time: tx.now,
     geofeature_id: encodeShortId(nextRunSeq(tx, "geofeature")),
   };
   tx.run(
-    "INSERT INTO geofeatures(run_id,geofeature_id,record,requested_by) VALUES (?,?,?,?)",
+    "INSERT INTO geofeatures(run_id,geofeature_id,record,requested_by,creating_call) VALUES (?,?,?,?,?)",
     tx.runId,
     geofeature.geofeature_id,
     JSON.stringify(geofeature),
     by,
+    creatingCall,
   );
   return {
     geofeature,
@@ -792,4 +797,13 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
     settings,
     subsystems,
   };
+}
+
+export function createdFor(tx: ReadTx, id: string, call: number): boolean {
+  return !!tx.get(
+    "SELECT 1 FROM geofeatures WHERE run_id=? AND geofeature_id=? AND creating_call=?",
+    tx.runId,
+    id,
+    call,
+  );
 }

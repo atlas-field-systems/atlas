@@ -1,3 +1,6 @@
+import * as objects from "../pillars/objects.ts";
+import { createReadStream } from "node:fs";
+import { pipeline } from "node:stream/promises";
 import * as entities from "../pillars/entities.ts";
 import { createServer as httpServer } from "node:http";
 import { createServer as httpsServer } from "node:https";
@@ -126,19 +129,6 @@ export async function startServer(
           "definitions_mismatch",
           "Use the definitions hash reported by GET /about",
         );
-      const implemented =
-        url.pathname === "/about" ||
-        url.pathname === "/events" ||
-        url.pathname.startsWith("/entities") ||
-        url.pathname.startsWith("/tasks") ||
-        url.pathname.startsWith("/history") ||
-        url.pathname.startsWith("/administration/assets/") ||
-        (url.pathname.startsWith("/administration/") &&
-          !url.pathname.startsWith("/administration/assets/"));
-      if (!implemented) {
-        send(501, { error: "not_implemented" });
-        return;
-      }
       if (principal.heard) contact.heard(principal.heard);
       else if (caller.kind === "asset") {
         const asset_id = store.read((tx) =>
@@ -169,42 +159,84 @@ export async function startServer(
         );
         return;
       }
-      if (route.kind !== "change") {
-        send(501, { error: "not_implemented" });
+      if (route.kind === "file") {
+        const file = store.read((tx) => route.serve(tx, request));
+        res.writeHead(200, {
+          "content-type": file.content_type,
+          "content-length": file.size_bytes,
+        });
+        await pipeline(createReadStream(file.path), res);
         return;
       }
       const key = req.headers["idempotency-key"];
       if (typeof key !== "string" || !key.length || key.length > 64)
         refuse("invalid", "Idempotency-Key must contain 1 to 64 characters");
-      if (req.headers["content-type"]?.split(";")[0] !== "application/json")
-        refuse("invalid", "State changes require application/json");
-      const chunks: Buffer[] = [];
-      let size = 0;
-      for await (const chunk of req) {
-        size += chunk.length;
-        if (size > 16 * 1024 * 1024)
-          refuse("too_large", "JSON body exceeds 16 MiB");
-        chunks.push(chunk);
+      let bytes: Buffer;
+      let upload: objects.ReceivedFile | undefined;
+      const runId = store.read((tx) => tx.runId);
+      if (route.body.kind === "file") {
+        upload = await objects.receive(
+          env,
+          req,
+          req.headers["content-type"]?.split(";")[0] ??
+            "application/octet-stream",
+        );
+        try {
+          await objects.placeFile(env, runId, upload);
+        } catch (error) {
+          await objects.abandon(env, runId, upload);
+          throw error;
+        }
+        request.body = upload;
+        bytes = Buffer.from(
+          JSON.stringify({
+            sha256: upload.sha256,
+            content_type: upload.content_type,
+          }),
+        );
+      } else {
+        if (req.headers["content-type"]?.split(";")[0] !== "application/json")
+          refuse("invalid", "State changes require application/json");
+        const chunks: Buffer[] = [];
+        let size = 0;
+        for await (const chunk of req) {
+          size += chunk.length;
+          if (size > 16 * 1024 * 1024)
+            refuse("too_large", "JSON body exceeds 16 MiB");
+          chunks.push(chunk);
+        }
+        bytes = Buffer.concat(chunks);
+        let value: unknown;
+        try {
+          value = bytes.length ? JSON.parse(bytes.toString()) : undefined;
+        } catch {
+          refuse("invalid", "Malformed JSON");
+        }
+        if (route.body.kind === "protocol")
+          request.body = checkOrRefuse(env.protocol, route.body.name, value);
+        else if (route.body.kind === "core") {
+          const name = route.body.name;
+          if (name === "answer") {
+            const type =
+              value && typeof value === "object" && "type" in value
+                ? value.type
+                : null;
+            if (type !== "plugin.result" && type !== "plugin.failure")
+              refuse("invalid", "Expected a Plugin answer");
+            request.body = checkOrRefuse(env.protocol, type, value);
+          } else
+            request.body = checkOrRefuse(
+              env.protocol,
+              `requests.${name}`,
+              value,
+            );
+        } else if (
+          value !== undefined &&
+          value !== null &&
+          JSON.stringify(value) !== "{}"
+        )
+          refuse("invalid", "This route takes no body");
       }
-      const bytes = Buffer.concat(chunks);
-      let value: unknown;
-      try {
-        value = bytes.length ? JSON.parse(bytes.toString()) : undefined;
-      } catch {
-        refuse("invalid", "Malformed JSON");
-      }
-      if (route.body.kind === "protocol")
-        request.body = checkOrRefuse(env.protocol, route.body.name, value);
-      else if (route.body.kind === "core") {
-        const name = route.body.name;
-        if (name === "answer") refuse("invalid", "Not implemented");
-        request.body = checkOrRefuse(env.protocol, `requests.${name}`, value);
-      } else if (
-        value !== undefined &&
-        value !== null &&
-        JSON.stringify(value) !== "{}"
-      )
-        refuse("invalid", "This route takes no body");
       const prepared = await route.prepare?.(request, store);
       const login = url.pathname === "/administration/login";
       const scope = login
@@ -217,35 +249,45 @@ export async function startServer(
         query: url.searchParams.toString(),
         body: login ? { operator_id: request.body.operator_id } : bytes,
       });
-      const reply = store.write((tx) => {
-        if (stopping) refuse("stopping", "Core is stopping");
-        const current = callerFor(tx, credentialOf(req.headers));
-        if (!current) refuse("unauthenticated", "Invalid credential");
-        authorize(
-          tx,
-          current,
-          route.who,
-          route.actsFor,
-          params,
-          url.searchParams,
-        );
-        const prior = lookup(tx, scope, key, fp);
-        if (prior.found) {
-          if (!prior.same)
-            refuse(
-              "idempotency_conflict",
-              "This key was used for another request",
-            );
-          return prior.retained;
-        }
-        const before = tx.get<{ n: number }>("SELECT total_changes() n")!.n;
-        const result = route.commit(tx, request, prepared);
-        const first = "first" in result ? result.first : result;
-        const keep = "ack" in result ? result.ack : result;
-        if (tx.get<{ n: number }>("SELECT total_changes() n")!.n > before)
-          retain(tx, scope, key, fp, keep);
-        return first;
-      });
+      let storedUpload = false;
+      let reply;
+      try {
+        reply = store.write((tx) => {
+          if (stopping) refuse("stopping", "Core is stopping");
+          const current = callerFor(tx, credentialOf(req.headers));
+          if (!current) refuse("unauthenticated", "Invalid credential");
+          authorize(
+            tx,
+            current,
+            route.who,
+            route.actsFor,
+            params,
+            url.searchParams,
+          );
+          const prior = lookup(tx, scope, key, fp);
+          if (prior.found) {
+            if (!prior.same)
+              refuse(
+                "idempotency_conflict",
+                "This key was used for another request",
+              );
+            return prior.retained;
+          }
+          const before = tx.get<{ n: number }>("SELECT total_changes() n")!.n;
+          const result = route.commit(tx, request, prepared);
+          const first = "first" in result ? result.first : result;
+          const keep = "ack" in result ? result.ack : result;
+          if (tx.get<{ n: number }>("SELECT total_changes() n")!.n > before)
+            retain(tx, scope, key, fp, keep);
+          storedUpload = true;
+          return first;
+        });
+      } catch (error) {
+        storedUpload = false;
+        throw error;
+      } finally {
+        if (upload && !storedUpload) await objects.abandon(env, runId, upload);
+      }
       if (route.path === "/entities/assets" && caller.kind === "asset") {
         const asset_id = store.read((tx) =>
           entities.assetForKey(tx, caller.key_id),
@@ -265,6 +307,20 @@ export async function startServer(
         status: reply.status,
       });
     } catch (e) {
+      if (res.headersSent) {
+        res.destroy();
+        return;
+      }
+      if (
+        e instanceof Error &&
+        ["ENOSPC", "EDQUOT", "EIO"].includes(String(Reflect.get(e, "code")))
+      ) {
+        send(507, {
+          error: "storage_full",
+          explanation: "Core could not store the file",
+        });
+        return;
+      }
       if (e instanceof Refusal)
         send(e.status, { error: e.code, explanation: e.message, ...e.extra });
       else {

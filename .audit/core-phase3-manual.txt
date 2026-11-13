@@ -1,0 +1,39 @@
+$ node core/src/main.ts <temporary config>
+{"url":"http://127.0.0.1:42225","run_id":1,"debug_url":null}
+POST /administration/login -> 200 {"operator_id":"ADM","logged_in":true}
+POST /administration/accounts -> 201 {"operator_id":"OP1"}
+POST /administration/plugins -> 201 {"plugin_id":"A","event_id":1}
+POST /administration/login -> 200 {"operator_id":"OP1","logged_in":true}
+POST /objects?name=note.txt -> 201 {"object_id":"A","event_id":2}
+POST /entities/geofeatures -> 200 {"geofeature":{"kind":"point","name":"Test place","position":{"latitude":0,"longitude":0},"time":1794614344781,"geofeature_id":"A"},"event_id":3}
+PATCH /objects/A -> 200 {"event_id":4}
+PUT /plugins/A/description -> 200 {"event_id":6}
+POST /plugins/A/actions/lookup -> 202 {"event_id":7}
+POST /plugins/A/answers -> 200 {"event_id":8}
+$ kill -TERM <Core PID>
+Core exit 0
+$ unzip -l /tmp/atlas-phase3-manual-3vMpe3/archive/core-run-1-20261113T235904Z.zip
+Archive:  /tmp/atlas-phase3-manual-3vMpe3/archive/core-run-1-20261113T235904Z.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+      419  1980-01-01 00:00   README.md
+      128  1980-01-01 00:00   summary.md
+     1419  1980-01-01 00:00   events.jsonl
+     1504  1980-01-01 00:00   state/idempotency_keys.jsonl
+      172  1980-01-01 00:00   state/sessions.jsonl
+        0  1980-01-01 00:00   state/gateways.jsonl
+      334  1980-01-01 00:00   state/plugins.jsonl
+        0  1980-01-01 00:00   state/assets.jsonl
+        0  1980-01-01 00:00   state/tracks.jsonl
+      241  1980-01-01 00:00   state/geofeatures.jsonl
+        0  1980-01-01 00:00   state/tasks.jsonl
+        0  1980-01-01 00:00   state/queues.jsonl
+      397  1980-01-01 00:00   state/objects.jsonl
+        0  1980-01-01 00:00   state/fusion_cursor.jsonl
+       12  1980-01-01 00:00   objects/A
+     3211  1980-01-01 00:00   diagnostics/core-0.jsonl
+      523  1980-01-01 00:00   config.json
+      144  1980-01-01 00:00   versions.json
+     2056  1980-01-01 00:00   manifest.json
+---------                     -------
+    10560                     19 files

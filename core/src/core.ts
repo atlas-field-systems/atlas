@@ -104,6 +104,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
   try {
     await recoverReset(env, store, tables);
     const run = runs.beginOrResume(env, store);
+    await objects.cleanOrphans(env, run.runId, store.read(objects.storedFiles));
     await log.openRun(run.runId);
     if (
       config.first_admin &&

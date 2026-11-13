@@ -39,7 +39,6 @@ Each pillar exports its table definitions and owns its SQL. Shared storage
 owns runs, counters, events, and retry keys. [Storage](storage.md) lists the
 tables and [pillars](pillars.md#rules) defines access across owners.
 
-Administration and shared storage are implemented. Other pillar bodies remain
-explicit stubs and their routes return `501 not_implemented`.
+All pillars and the Plugin interface are implemented.
 [Reset](reset.md) writes and checks the archive before clearing the run.
-Contact and Fusion shutdown callbacks still need their runtime implementations.
+Contact stops and Fusion drains before Reset exports state.
