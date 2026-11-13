@@ -522,7 +522,9 @@ and a removal adds `track.removed`.
   `tasks.updated` event per Asset, each Task keeping its `task_id`, so the Asset
   [uses the new copy](../../asset/docs/README.md#carry-out-work-and-report-its-result).
   As for any request, only an online Asset gets it: Tasks of an offline Asset
-  are not updated, and the answer lists them in `not_updated_task_ids`. The
+  are not updated, and the answer lists them in `not_updated_task_ids`. A
+  `move_to` or `land` Task whose place is no longer a point keeps its copy and
+  is listed there too; the edit itself still goes through. The
   Asset answers with a queue report naming the event, and an update it has not
   answered when it goes offline is dropped like any other request. Without
   `update_tasks=true` the Tasks keep their copies. The

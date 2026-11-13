@@ -12,5 +12,6 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
   configuration and diagnostic records belong here, in [config.md](config.md)
   and [logging](docs/logging.md).
 - The client programs use to call the API lives in `sdk/`.
-- Planning only: no runtime code until the owner asks. Do not merge without the
-  developer's approval.
+- The owner asked for Core's runtime on 2026-11-13. It is built whole, all
+  pillars together ([decision log](../atlas/decision-log.md#build-and-test)).
+- Do not merge without the developer's approval.
