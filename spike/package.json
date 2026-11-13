@@ -1,0 +1,19 @@
+{
+  "name": "atlas-throwaway-v2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.ts",
+    "start": "node server.ts",
+    "check": "tsc"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "fflate": "0.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}
