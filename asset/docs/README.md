@@ -202,9 +202,19 @@ photo or a short clip, to Core as an [Object](../../core/docs/api.md#objects).
 The file is not pinned to the map by itself. To show where it belongs, the
 Asset creates a place alongside it, such as a point where the photo was taken,
 and the file is attached to that place. Operators see it like any other file,
-with the Asset as who stored it. A link too narrow for files leaves them on the
-Asset, and its [Reset ZIP](logging.md#export-the-assets-reset-zip) keeps every
-file it captured.
+with the Asset as who stored it.
+
+Files reach operators only through Core; an Asset never answers an operator
+directly. Which files to send is the Asset's choice, set in its
+[configuration](../config.md):
+
+- **A file a Task asks for is sent** as part of that Task.
+- **Other files go when the link allows.** Over a fast link such as Wi-Fi the
+  Asset sends them; over a narrow one such as LoRa it does not. The Asset judges
+  by the capacity its link reports.
+- **A file not sent is never asked for later.** No operator request fetches an
+  earlier file. Its [Reset ZIP](logging.md#export-the-assets-reset-zip) keeps
+  every file it captured.
 
 ## Shut down and retain evidence
 
