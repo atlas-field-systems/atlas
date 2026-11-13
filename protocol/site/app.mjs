@@ -100,9 +100,9 @@ function show(id) {
     if (!fromText) $('json').value = JSON.stringify(value, null, 2);
     const v = protocol.checkFile(splitId(id).file, value);
     const m = measure(value, compress);
-    $('compact').innerHTML = `<p class="lbl">Compact JSON, line for line with the record JSON. Sent minified on one line: <b>${m.bytes}</b> bytes</p><pre class="aligned">${esc(m.aligned)}</pre>`;
+    $('compact').innerHTML = `<p class="lbl">Compact JSON, as sent on one line: <b>${m.bytes}</b> bytes</p><pre class="wrap">${esc(m.json)}</pre>`;
     $('readlbl').innerHTML = `Readable: <b>${m.readableBytes}</b> bytes`;
-    $('json').rows = Math.max(m.aligned.split('\n').length, $('json').value.split('\n').length) + 1;
+    $('json').rows = $('json').value.split('\n').length + 1;
     renderPacked(m);
     $('verdict').innerHTML = `<p class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'Valid' : 'Invalid'}</p>
       ${(v.ok ? [] : v.problems).map((p) => `<div class="bad">${esc(p.path)} ${esc(p.message)}</div>`).join('')}

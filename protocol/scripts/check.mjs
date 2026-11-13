@@ -1,9 +1,8 @@
 // Checks every definition: valid JSON Schema, listed in index.json, examples pass,
 // records, kinds and components only reference variables, components or records, and the laws below.
-import { existsSync } from 'node:fs';
-import { join, posix } from 'node:path';
+import { posix } from 'node:path';
 import { readDefinitionFiles } from '../lib/node-definitions.mjs';
-import { loadDefinitions } from '../lib/definitions.mjs';
+import { isKindFile, loadDefinitions, protocolNames, resolveRef as resolve } from '../lib/definitions.mjs';
 
 const root = process.env.ATLAS_DEFINITIONS ?? 'definitions';
 const { index, schemas, checkFile } = await loadDefinitions(await readDefinitionFiles(root));
@@ -19,19 +18,14 @@ const onlyReferences = (d) => {
 };
 const files = Object.keys(schemas).sort();
 
-const resolve = (file, ref) => posix.normalize(posix.join(posix.dirname(file), ref));
-
 const listed = index.groups.flatMap((g) => g.files);
 for (const f of files) if (!listed.includes(f)) errors.push(`${f}: not listed in index.json`);
 for (const f of listed) if (!schemas[f]) errors.push(`index.json: ${f} does not exist`);
 
-// records/<name>.json and records/<group>/<name>.json are records; records/<...>/<record>/<kind>.json,
-// beside records/<...>/<record>.json, is a kind of that record. A component can have kinds the same way:
-// components/<component>/<kind>.json beside components/<component>.json.
-const isKind = (f) => /^(records|components)\//.test(f) && existsSync(join(root, `${posix.dirname(f)}.json`));
+const isKind = (f) => isKindFile(f, (parent) => parent in schemas);
 const isRecord = (f) => f.startsWith('records/') && !isKind(f);
 const base = (f) => f.split('/').pop().replace('.json', '');
-const nameOf = (f) => f.replace(/^records\//, '').replace('.json', '').replaceAll('/', '.');
+const names = new Map([...protocolNames(files)].map(([name, file]) => [file, name]));
 const refTo = (file, def, target) => def?.$ref && resolve(file, def.$ref) === target;
 
 for (const [file, s] of Object.entries(schemas)) {
@@ -64,7 +58,7 @@ for (const [file, s] of Object.entries(schemas)) {
     if (/(^|_)version$/.test(prop)) errors.push(`${file}: law 14: definitions carry no version field ("${prop}")`);
   }
   if (isRecord(file)) {
-    const name = nameOf(file);
+    const name = names.get(file);
     if (!s.required?.includes('time') || !refTo(file, props.time, 'variables/time.json')) errors.push(`${file}: law 6: must require "time" from variables/time.json`);
     if (props.asset_id && !refTo(file, props.asset_id, 'variables/asset_id.json')) errors.push(`${file}: law 6: asset_id must come from variables/asset_id.json`);
     if (name.includes('.')) {

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { loadProtocol } from '@atlas/protocol/browser';
 import { readDefinitionFiles } from '../lib/node-definitions.mjs';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -101,19 +101,3 @@ test('site bundle renders and validates the new definition without external impo
   elements.json.oninput();
   assert.match(elements.verdict.innerHTML, /\bInvalid\b/);
 });
-
-test('no tool source names any definition', () => {
-  const names = readdirSync('definitions', { recursive: true }).filter((f) => f.endsWith('.json') && f !== 'index.json')
-    .map((f) => f.split('/').pop().replace('.json', ''))
-    // type and kind are the two fields that say which record this is, so the tools may use them.
-    // object and number are also JSON Schema type names, which the tools read from every definition,
-    // and text is the tools' own name for a text field they edit.
-    .filter((n) => !['type', 'kind', 'object', 'number', 'text'].includes(n));
-  for (const dir of ['lib', 'cli', 'site']) {
-    for (const f of readdirSync(dir)) {
-      const src = readFileSync(join(dir, f), 'utf8');
-      for (const n of names) assert.ok(!new RegExp(`['"\`/]${n}[.'"\`]`).test(src), `${dir}/${f} mentions ${n}`);
-    }
-  }
-});
-

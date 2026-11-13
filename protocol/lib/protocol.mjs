@@ -1,14 +1,6 @@
 // Shared viewer logic. Runs in Node and the browser.
 // Knows only JSON Schema, never any specific Atlas record.
-
-function join(base, ref) {
-  const parts = base.split('/').slice(0, -1);
-  for (const p of ref.split('/')) {
-    if (p === '..') parts.pop();
-    else if (p !== '.') parts.push(p);
-  }
-  return parts.join('/');
-}
+import { protocolNames, resolveRef as join } from './definitions.mjs';
 
 // A record with kinds lists them in oneOf: records/<record>/<kind>.json.
 export function kindsOf(protocol, file) {
@@ -18,21 +10,16 @@ export function kindsOf(protocol, file) {
   });
 }
 
-// The records as a tree: group > record > kinds, from the folders under records/.
-// A record is records/<name>.json or records/<group>/<name>.json; its group is '' or <group>.
+// The records as a tree: group > record > kinds. report.status is in group report; task in group ''.
 export function recordTree(protocol) {
-  const files = protocol.index.groups.flatMap((g) => g.files);
-  const kindFiles = new Set(files.flatMap((f) => kindsOf(protocol, f).map((k) => k.file)));
-  const groups = [];
-  for (const f of files) {
-    const m = f.match(/^records\/(?:([a-z_]+)\/)?([a-z_]+)\.json$/);
-    if (!m || kindFiles.has(f)) continue;
-    const group = m[1] ?? '';
-    let g = groups.find((x) => x.name === group);
-    if (!g) groups.push(g = { name: group, records: [] });
-    g.records.push({ file: f, name: group ? `${group}.${m[2]}` : m[2], kinds: kindsOf(protocol, f) });
+  const groups = new Map();
+  for (const [name, file] of protocolNames(protocol.index.groups.flatMap((g) => g.files))) {
+    if (!file.startsWith('records/')) continue;
+    const group = name.includes('.') ? name.slice(0, name.indexOf('.')) : '';
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push({ file, name, kinds: kindsOf(protocol, file) });
   }
-  return groups;
+  return [...groups].map(([name, records]) => ({ name, records }));
 }
 
 // "records/<record>.json@<kind>" names one kind of a record; the part before @ is the file.
@@ -43,11 +30,16 @@ export function fieldTree(protocol, id, name = '', required = true) {
   const { file, kind } = splitId(id);
   const s = protocol.schemas[file];
   const n = node(protocol, s, file, name, required);
-  const k = kind && kindsOf(protocol, file).find((x) => x.name === kind);
-  if (!k) return n;
-  const extra = node(protocol, protocol.schemas[k.file], k.file, '', true).children;
-  n.children = [...n.children.map((c) => (c.name === 'kind' ? extra.find((e) => e.name === 'kind') : c)), ...extra.filter((e) => e.name !== 'kind')];
-  return n;
+  if (!kind) return n;
+  // The kind is fixed by the id, so it is the only option.
+  const children = fieldsOf(n, kind).map((c) => (c.name === 'kind' ? { ...c, options: [kind] } : c));
+  return { ...n, children, kinds: undefined };
+}
+
+// An object's fields, with those of the kind it names when it has kinds.
+function fieldsOf(n, kind) {
+  const k = n.kinds?.find((x) => x.name === kind);
+  return k ? [...n.children, ...k.children] : n.children;
 }
 
 function node(protocol, s, file, name, required) {
@@ -69,6 +61,15 @@ function node(protocol, s, file, name, required) {
     n.kind = 'object';
     n.children = Object.entries(s.properties ?? {}).map(([k, v]) =>
       node(protocol, v, file, k, req.includes(k)));
+    if (s.oneOf) {
+      n.kinds = kindsOf(protocol, file).map((k) => ({
+        name: k.name,
+        children: node(protocol, protocol.schemas[k.file], k.file, '', true).children.filter((c) => c.name !== 'kind'),
+      }));
+      // kind takes one of these kinds, not the shared kind variable's example.
+      const options = n.kinds.map((k) => k.name);
+      n.children = n.children.map((c) => (c.name === 'kind' ? { ...c, kind: 'enum', options, schema: { ...c.schema, examples: undefined } } : c));
+    }
   } else if (s.type === 'array') {
     n.kind = 'array';
     n.item = node(protocol, s.items, file, '[]', true);
@@ -93,7 +94,7 @@ export function describeType(n) {
 // Flattens a tree into leaf rows with JSON paths such as ["a", 0, "b"].
 export function leaves(tree, value, path = []) {
   if (tree.kind === 'object') {
-    return tree.children.flatMap((c) => leaves(c, value?.[c.name], [...path, c.name]));
+    return fieldsOf(tree, value?.kind).flatMap((c) => leaves(c, value?.[c.name], [...path, c.name]));
   }
   if (tree.kind === 'array') {
     const items = Array.isArray(value) && value.length ? value : [undefined];
@@ -123,6 +124,7 @@ export function generate(n) {
 }
 
 export function setPath(value, path, v) {
+  if (!path.length) return v;
   const copy = structuredClone(value);
   let cur = copy;
   path.slice(0, -1).forEach((p, i) => {
@@ -138,16 +140,15 @@ export function setPath(value, path, v) {
 // Text from a person into the field's type.
 export function parseInput(n, text) {
   if (text === '') return undefined;
-  if (n.kind === 'number') return Number(text);
-  if (n.kind === 'integer') return parseInt(text, 10);
-  if (n.kind === 'boolean') return text === 'true';
+  // Text that is not a number or boolean stays text, so the checker reports it as typed.
+  if ((n.kind === 'number' || n.kind === 'integer') && text.trim() && Number.isFinite(Number(text))) return Number(text);
+  if (n.kind === 'boolean' && (text === 'true' || text === 'false')) return text === 'true';
   return text;
 }
 
 // Sizes in bytes. compress is a function bytes -> bytes (deflate today; swappable later).
 export function measure(value, compress) {
   const enc = new TextEncoder();
-  const readable = JSON.stringify(value, null, 2);
   const json = JSON.stringify(value);
   const bytes = enc.encode(json);
   const fields = [];
@@ -165,8 +166,7 @@ export function measure(value, compress) {
   const packed = compress ? compress(bytes) : null;
   return {
     json,
-    aligned: JSON.stringify(value, null, 2),
-    readableBytes: enc.encode(readable).length,
+    readableBytes: enc.encode(JSON.stringify(value, null, 2)).length,
     bytes: bytes.length,
     compressed: packed?.length ?? null,
     hex: packed ? hexDump(packed) : '',

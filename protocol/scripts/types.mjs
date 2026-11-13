@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { compile } from 'json-schema-to-typescript';
+import { protocolNames } from '../lib/definitions.mjs';
 
 const definitions = new URL('../definitions/', import.meta.url);
 const output = new URL('../types.d.ts', import.meta.url);
@@ -30,12 +31,9 @@ function schemaForTypes(value, file) {
 const schemas = Object.fromEntries(await Promise.all(files.map(async file => [
   keys.get(file), schemaForTypes(JSON.parse(await readFile(new URL(file, definitions), 'utf8')), file),
 ])));
-const properties = Object.fromEntries(index.groups
-  .filter(group => ['Records', 'Requests'].includes(group.name))
-  .flatMap(group => group.files.map(file => [
-    file.replace(/^records\//, '').replace(/\.json$/, '').replaceAll('/', '.'),
-    { $ref: `#/$defs/${keys.get(file)}` },
-  ])).sort(([a], [b]) => a.localeCompare(b, 'en')));
+const properties = Object.fromEntries([...protocolNames(files)]
+  .map(([name, file]) => [name, { $ref: `#/$defs/${keys.get(file)}` }])
+  .sort(([a], [b]) => a.localeCompare(b, 'en')));
 const declaration = await compile({
   type: 'object', properties, required: Object.keys(properties), additionalProperties: false, $defs: schemas,
 }, 'ProtocolTypes', {
