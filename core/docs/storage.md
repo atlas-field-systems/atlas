@@ -5,6 +5,14 @@ belong to [Protocol](../../protocol/README.md); this page says where Core puts t
 
 ## Tables hold current state
 
+`fusion_cursor` belongs to Fusion and stores its last processed event ID per
+run. Fusion commits the cursor with its Track changes.
+
+The run row holds the last Track, geo feature, and Object sequence numbers.
+Deleting a current row never makes its ID available again in that run.
+The `queues` table is a deliberate copy of the latest eligible queue report,
+written in the report's transaction for admission.
+
 Core keeps one SQLite database in its `data_directory` ([configuration](../config.md)).
 Core reads and changes current state in ordinary tables with plain SQL.
 
@@ -36,12 +44,12 @@ indexed query for the latest `report.observation` of its `asset_id` and
 
 A change updates its tables and appends its event in the same transaction. The
 event stream therefore never shows a change that was not stored, and every stored
-change appears in it. Core never rebuilds tables from events.
+domain change appears in it. Credential and account changes use diagnostics only. Core never rebuilds tables from events.
 
 Asset reports, Plugin calls, and Plugin answers are stored only as events.
 History, the latest report of each kind, each setting's latest value, and each
 subsystem's latest condition are indexed queries on `events`, so no report is
-kept twice.
+kept twice, except the queue copy described above.
 
 ## Runs
 

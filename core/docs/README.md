@@ -1,9 +1,10 @@
 # Core docs
 
-Selected behavior for the Core runtime. None of it is implemented yet.
+Selected behavior for the Core runtime. Administration and the storage/API foundation are implemented; other pillars remain pending.
 
 - [Core API](api.md): requests, reads, the event stream, Asset and gateway calls,
   contact, provisioning, Objects, and Plugins.
+- [Architecture](architecture.md): modules and transaction boundaries.
 - [Pillars](pillars.md): Entities, Tasks, Objects, Fusion, and Administration, and
   how they share Core's process.
 - [Storage](storage.md): the SQLite tables, the event log, and runs.
@@ -11,7 +12,7 @@ Selected behavior for the Core runtime. None of it is implemented yet.
 - [Fusion](fusion.md): the module inside Core that turns Observations into Tracks.
 - [Logging](logging.md): the diagnostic evidence Core keeps and puts in its Reset archive.
 - [Reset](reset.md): how Core ends a run, its Reset ZIP, and what it clears. The rules are in [Runs and identity](../../atlas/runs-and-identity.md).
-- [Configuration](../config.md): proposed options.
+- [Configuration](../config.md): options and defaults.
 
 ## Inside Core
 

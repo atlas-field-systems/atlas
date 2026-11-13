@@ -108,7 +108,7 @@ down first, and then the admin stops Core on its own computer. Stopping Core
 ends the run ([Runs and identity](runs-and-identity.md#a-run-and-reset)).
 Core's ZIP holds:
 
-- Its run's data, including the event log: every accepted request and every
+- Its run's data, including the event log: every accepted domain request and every
   stored report, in order.
 - Its diagnostics, such as errors, link drops, and contact changes.
 - Its configuration, without secrets.

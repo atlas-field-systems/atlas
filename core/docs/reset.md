@@ -47,7 +47,7 @@ process.
 | `README.md` | What each file is, so an AI agent or a person can find their way |
 | `summary.md` | The plain readable summary below |
 | `manifest.json` | Every file with its size and SHA-256, each unexpected stop Core resumed from, and every known gap |
-| `events.jsonl` | The run's [event log](api.md#the-event-log-and-live-stream), one event per line in `event_id` order: every accepted request and stored report |
+| `events.jsonl` | The run's [event log](api.md#the-event-log-and-live-stream), one event per line in `event_id` order: every accepted domain request and stored report |
 | `state/` | The run's current-state rows when it ended, one JSON Lines file per table: Tasks, queues, Tracks, geo features, Objects, and the Assets, gateways, and Plugins seen |
 | `objects/` | Each Object's file, named by its `object_id`, including Objects deleted during the run; `state/` marks those deleted |
 | `diagnostics/` | Core's [diagnostic log](logging.md) for the run, as written |
@@ -97,6 +97,13 @@ run's data stays in the database until the admin removes it
 ([storage](storage.md#runs)).
 
 ## When Core stops unexpectedly
+
+If the open run already has a final-named ZIP, Core checks it again and
+finishes the clear before starting a new run. If it fails the check, Core
+resumes the run and refuses to overwrite that ZIP on the next stop.
+The last sign of life is the newer of the last event and diagnostic record;
+the resulting downtime is an estimate. Plugins receive the same fresh contact
+window as Assets and gateways.
 
 A crash, a power loss, or a reboot that was not a deliberate stop does not end
 the run ([Runs and identity](../../atlas/runs-and-identity.md#a-run-and-reset)).

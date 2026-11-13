@@ -38,6 +38,9 @@ These are required outcomes for the future runtime, not implemented tests.
 
 ## Scenario: now at capacity
 
+[Operator requests](api.md#operator-requests) also owns the critical battery
+rule required before accepting Tasks.
+
 1. The Asset's latest queue report lists 64 held Tasks. An ordinary request for
    one more is refused with `409 queue_full`.
 2. The operator sends one Task with `now`, such as Land or Return to home. Core

@@ -83,6 +83,9 @@ behind it are in the [Core API](../core/docs/api.md#radio-assets).
 
 ## Gateway contact
 
+On reconnect to Core, the gateway sends contact for every Asset it carries,
+even when its Fieldlink's view has not changed.
+
 Core shows each gateway online or offline by the same `offline_after_s` rule it
 uses for Assets. When the gateway goes offline, every radio Asset it carries
 shows offline too. An operator can therefore tell a gateway that is down (the

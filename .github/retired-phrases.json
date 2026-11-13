@@ -342,5 +342,15 @@
     "phrase": "\\bNothing is generated\\.",
     "why": "The SDK imports Protocol declarations under the measured TypeScript working choice.",
     "example": "The SDK defines no record of its own. Nothing is generated."
+  },
+  {
+    "phrase": "every accepted request and every Asset report also adds a row",
+    "why": "Credential and account changes use diagnostics; events record domain changes.",
+    "example": "Every accepted request and every Asset report also adds a row to events."
+  },
+  {
+    "phrase": "409 unknown Task",
+    "why": "An unknown Task is 404 not_found.",
+    "example": "Core refuses with 409 unknown Task."
   }
 ]
