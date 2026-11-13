@@ -245,6 +245,18 @@ export type RecordsReportStatusTask = {
   object_ids?: VariablesObjectId[];
 };
 export type VariablesHeadingDeg = number;
+export type VariablesOperatorId = string;
+export type VariablesPassword = string;
+export type VariablesAdmin = boolean;
+export type VariablesAttachment = VariablesGeofeatureId | null;
+export type VariablesAssetReport =
+  | RecordsReportStatus
+  | RecordsReportFailsafe
+  | RecordsReportTelemetry
+  | RecordsReportBattery
+  | RecordsReportGimbal
+  | RecordsReportSettings
+  | RecordsReportObservation;
 export type RequestsTask = {
   kind: VariablesKind;
 } & RequestsTask1;
@@ -311,10 +323,14 @@ export interface ProtocolTypes {
   "report.settings": RecordsReportSettings;
   "report.status": RecordsReportStatus;
   "report.telemetry": RecordsReportTelemetry;
+  "requests.account": RequestsAccount;
   "requests.asset": RequestsAsset;
+  "requests.attach": RequestsAttach;
   "requests.geofeature": RequestsGeofeature;
+  "requests.login": RequestsLogin;
   "requests.plugin_call": RequestsPluginCall;
   "requests.radio": RequestsRadio;
+  "requests.reports": RequestsReports;
   "requests.settings": RequestsSettings;
   "requests.task": RequestsTask;
   "requests.tasks": RequestsTasks;
@@ -691,6 +707,11 @@ export interface RecordsReportTelemetry {
   ground_speed_mps?: VariablesGroundSpeedMps;
   heading_deg?: VariablesHeadingDeg;
 }
+export interface RequestsAccount {
+  operator_id: VariablesOperatorId;
+  password: VariablesPassword;
+  admin: VariablesAdmin;
+}
 export interface RequestsAsset {
   entity_type?: VariablesEntityType;
   /**
@@ -719,6 +740,13 @@ export interface RequestsAsset {
    */
   cameras?: ComponentsCamera[];
 }
+export interface RequestsAttach {
+  geofeature_id: VariablesAttachment;
+}
+export interface RequestsLogin {
+  operator_id: VariablesOperatorId;
+  password: VariablesPassword;
+}
 export interface RequestsPluginCall {
   /**
    * @maxItems 16
@@ -727,6 +755,13 @@ export interface RequestsPluginCall {
 }
 export interface RequestsRadio {
   definitions_hash: VariablesDefinitionsHash;
+}
+export interface RequestsReports {
+  /**
+   * @minItems 0
+   * @maxItems 1000
+   */
+  reports: VariablesAssetReport[];
 }
 export interface RequestsSettings {
   settings: ComponentsSettings;

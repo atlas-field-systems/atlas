@@ -99,7 +99,7 @@ for (const [file, s] of Object.entries(schemas)) {
   }
   // Requests are bodies, not records: Core stamps the record fields, so a request carries none of them.
   if (file.startsWith('requests/')) {
-    for (const f of ['type', 'time', 'asset_id', 'task_id', 'send_last', 'requested_by', 'geofeature_id', 'track_id']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
+    for (const f of ['type', 'time', 'asset_id', 'task_id', 'send_last', 'requested_by', 'geofeature_id', 'track_id']) if (props[f] && !(file === 'requests/attach.json' && f === 'geofeature_id')) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
     if (s.additionalProperties !== false && s.unevaluatedProperties !== false) errors.push(`${file}: law 1: a request sets additionalProperties or unevaluatedProperties to false`);
   }
   if (isKind(file)) {
