@@ -89,6 +89,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | Each Asset decides which files it sends, by its configuration and link. A file a Task asks for is sent with that Task; other files are sent when the link allows, such as over Wi-Fi but not LoRa. Operators never fetch an earlier file from an Asset, and Assets never answer operators directly: everything goes through Core. | Files from Assets. | [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#capture-files) |
 | 2026-11-12 | Assets can upload files as Objects. An Asset's file is not pinned to where it was taken automatically: the Asset creates a geo feature alongside it, and the two are linked. | Assets and Objects. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
 | 2026-11-11 | Deleting an Object hides it from operators for the rest of the run. Core keeps it, marked deleted, in the end-of-run ZIP; it is not destroyed. | Objects. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
 | 2026-11-11 | Object files are capped at 100 MB by default. An admin may change the limit through the `max_object_bytes` setting. | Object files. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
