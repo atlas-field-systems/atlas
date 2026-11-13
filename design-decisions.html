@@ -178,8 +178,13 @@ them reaches Core, gateways, Assets, and the Command Interface together.</li>
 version, with no separate version counter.</li>
 <li>The Core API and each Fieldlink report the hash of the Protocol definitions they
 use. A mismatch is refused with an explanation.</li>
-<li>Protocol is an unpublished draft. Package publishing is not configured yet.</li>
-<li>Programs select Protocol through their package dependency.</li>
+<li>Protocol stays unpublished during the first development run. Other parts use
+it from this repository; it will be public later
+(<a href="decision-log.html#build-and-test">decision log</a>).</li>
+<li>Any change to Protocol files, wording included, is a new version. Wording
+fixes wait for the next real release, and every part updates together
+(<a href="decision-log.html#build-and-test">decision log</a>).</li>
+<li>Once published, programs select Protocol through their package dependency.</li>
 <li>All Atlas work lands in this repository through <code>main</code>. Only approved commits
 on <code>main</code> are released through <code>prod</code>.</li>
 </ul>

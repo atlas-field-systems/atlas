@@ -117,6 +117,21 @@
         }
       ],
       "now": true
+    },
+    {
+      "tasks": [
+        {
+          "kind": "capture",
+          "camera_id": "C1",
+          "media": "photo"
+        },
+        {
+          "kind": "capture",
+          "camera_id": "C1",
+          "media": "clip",
+          "duration_s": 10
+        }
+      ]
     }
   ]
 }

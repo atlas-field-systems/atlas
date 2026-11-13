@@ -207,6 +207,18 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-13</td>
+<td>Operators can ask an Asset for a photo or a short clip with a Capture command. A command that results in a photo or clip stores it as an Object and names that Object.</td>
+<td>Commands that produce files.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks">Protocol working choices</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>Move To may set a speed. Without one the Asset uses its own default, and it never goes faster than its own safe maximum.</td>
+<td>Move To.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#tasks">Protocol working choices</a></td>
+</tr>
+<tr>
 <td>2026-11-12</td>
 <td>A turret is aimed with Point At: a latitude and longitude, optionally an altitude, to look at. The Asset works out how to aim there; how it does that is defined later.</td>
 <td>Pointing equipment, such as camera turrets.</td>
@@ -290,6 +302,18 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-13</td>
+<td>A failsafe response may be any command the Asset supports except Fail-safe. Atlas does not limit responses to protective commands; it trusts the operator to choose a sensible one.</td>
+<td>Failsafe responses.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#no-rules-are-enabled-by-default">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>A boundary rule may set a maximum height and a minimum height, so it catches an Asset that climbs too high or flies too low, as well as one that leaves the area.</td>
+<td>Failsafe boundary rules.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#configure-conditions-as-well-as-responses">Failsafes</a></td>
+</tr>
+<tr>
 <td>2026-11-12</td>
 <td>While the flight controller&#39;s own protection is in control, operators can only watch. The Asset shows that the flight controller took over and refuses operator commands until a person hands control back to Atlas.</td>
 <td>Flying Assets.</td>
@@ -404,6 +428,18 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-13</td>
+<td>All files, photos and clips included, are stored as Objects.</td>
+<td>Every file in Atlas.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects">Core API, Objects</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>An Asset with a gimbal camera reports which way it points, so operators see where each camera is looking.</td>
+<td>Gimbal cameras.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md#records">Protocol records</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
 <td>Each Asset decides which files it sends, by its configuration and link. A file a Task asks for is sent with that Task; other files are sent when the link allows, such as over Wi-Fi but not LoRa. Operators never fetch an earlier file from an Asset, and Assets never answer operators directly: everything goes through Core.</td>
 <td>Files from Assets.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#capture-files">Asset behavior</a></td>
@@ -515,6 +551,18 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-13</td>
+<td>Any change to Protocol&#39;s files, wording included, is a new version. Every part updates together, and wording fixes wait for the next real release.</td>
+<td>Protocol releases.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#definitions-hash">Protocol working choices</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>Protocol stays unpublished during the first development run, and the other parts use it from this repository. It will be published publicly later.</td>
+<td>Protocol publishing.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#changes-and-releases">Design decisions, changes and releases</a></td>
+</tr>
+<tr>
 <td>2026-11-13</td>
 <td>Atlas keeps few unit tests. End-to-end simulations are the main tests.</td>
 <td>Every part.</td>

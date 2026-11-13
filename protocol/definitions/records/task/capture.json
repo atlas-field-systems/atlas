@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task/capture.json",
+  "title": "capture",
+  "description": "Capture a photo or clip with a camera declared in the description. A clip requires duration_s; a photo forbids it. Execution and file handling follow Asset capture behavior.",
+  "type": "object",
+  "required": [
+    "kind",
+    "camera_id",
+    "media"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "capture"
+    },
+    "camera_id": {
+      "$ref": "../../variables/camera_id.json"
+    },
+    "media": {
+      "$ref": "../../variables/media.json"
+    },
+    "duration_s": {
+      "$ref": "../../variables/duration_s.json"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "media"
+        ],
+        "properties": {
+          "media": {
+            "const": "clip"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "duration_s"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "duration_s"
+          ]
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "photo"
+    },
+    {
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "clip",
+      "duration_s": 10
+    }
+  ]
+}

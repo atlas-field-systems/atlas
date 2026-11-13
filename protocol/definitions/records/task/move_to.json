@@ -17,6 +17,9 @@
     },
     "geofeature_id": {
       "$ref": "../../variables/geofeature_id.json"
+    },
+    "ground_speed_mps": {
+      "$ref": "../../variables/ground_speed_mps.json"
     }
   },
   "examples": [
@@ -44,6 +47,20 @@
         "latitude": 42.2751,
         "longitude": -71.8049
       }
+    },
+    {
+      "kind": "move_to",
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "launch"
+          }
+        ]
+      },
+      "ground_speed_mps": 4.2
     }
   ],
   "allOf": [
