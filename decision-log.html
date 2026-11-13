@@ -154,6 +154,12 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
+<td>A turret is aimed with Point At: a latitude and longitude, optionally an altitude, to look at. The Asset works out how to aim there; how it does that is defined later.</td>
+<td>Pointing equipment, such as camera turrets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#fixed-camera-turret">Assets and their equipment</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
 <td>Core decides the 64-Task cap from the Asset&#39;s latest queue report of how many Tasks it holds. It does not count Tasks still crossing the link or keep capacity until final reports arrive. <code>now</code> Tasks are still admitted at the cap.</td>
 <td>Per Asset, ordinary work.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests">Core API, operator requests</a></td>
@@ -231,6 +237,18 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-12</td>
+<td>While the flight controller&#39;s own protection is in control, operators can only watch. The Asset shows that the flight controller took over and refuses operator commands until a person hands control back to Atlas.</td>
+<td>Flying Assets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>An override with Hold or pause re-arms every failsafe rule, not only lost-contact and low-battery rules, so a held Asset stays protected by everything the operator set up.</td>
+<td>Failsafe state, after a Hold now or pause override.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
 <td>Failsafe rules are simpler: each firing runs its response once, with no configurable fallback (the critical Return-to-home fallback stays); priority does not only rise, so a rule can act again once no response is running; and there are no separate missing- or stale-data conditions. Area rules keep their distance margin and time outside.</td>
 <td>Failsafe rules.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failsafe-activates-a-configured-task">Failsafes</a></td>
@@ -249,7 +267,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>When an operator overrides a fired failsafe with Hold or pause, lost-contact and low-battery protection are re-armed and can fire again once their condition recurs. A fired failsafe still can&#39;t be cancelled. The overrides stay.</td>
+<td>When an operator overrides a fired failsafe with Hold or pause, protection is re-armed and can fire again once its condition recurs; which rules are re-armed is the 2026-11-12 entry. A fired failsafe still can&#39;t be cancelled. The overrides stay.</td>
 <td>Failsafe state, after a Hold now or pause override.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#an-override-with-hold-or-pause-re-arms-protection">Failsafes</a></td>
 </tr>
@@ -331,6 +349,18 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-13</td>
+<td>Each Asset decides which files it sends, by its configuration and link. A file a Task asks for is sent with that Task; other files are sent when the link allows, such as over Wi-Fi but not LoRa. Operators never fetch an earlier file from an Asset, and Assets never answer operators directly: everything goes through Core.</td>
+<td>Files from Assets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#capture-files">Asset behavior</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>Assets can upload files as Objects. An Asset&#39;s file is not pinned to where it was taken automatically: the Asset creates a geo feature alongside it, and the two are linked.</td>
+<td>Assets and Objects.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects">Core API, Objects</a></td>
+</tr>
+<tr>
 <td>2026-11-11</td>
 <td>Deleting an Object hides it from operators for the rest of the run. Core keeps it, marked deleted, in the end-of-run ZIP; it is not destroyed.</td>
 <td>Objects.</td>
@@ -384,6 +414,18 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-12</td>
+<td>Every value that shapes how an Asset behaves, such as how close counts as arrived, how long a command may take, or how long it waits before shutting down, is set in that Asset&#39;s own configuration. Defaults are only starting points, because Assets set up differently respond differently.</td>
+<td>Every Asset.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/config.md">Asset configuration</a></td>
+</tr>
+<tr>
+<td>2026-11-12</td>
+<td>Fixed-wing aircraft are not part of the current design. They come later as a new kind of Asset with its own commands.</td>
+<td>Asset kinds.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#movement-module-and-profiles">Assets and their equipment</a></td>
+</tr>
+<tr>
 <td>2026-11-11</td>
 <td>One site per Core.</td>
 <td>A Core, at a time.</td>

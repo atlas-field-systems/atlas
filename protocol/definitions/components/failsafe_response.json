@@ -22,6 +22,9 @@
     },
     {
       "$ref": "../records/task/hold.json"
+    },
+    {
+      "$ref": "../records/task/point_at.json"
     }
   ],
   "unevaluatedProperties": false,
