@@ -7,7 +7,9 @@ live settings.
 
 **Planning.** No runtime exists yet. The first setup runs on a Raspberry Pi on
 the ground that acts as the companion computer for an ArduPilot quadcopter over
-a SiK radio. The Pi is a direct-IP Asset and calls the Core API itself.
+a SiK radio. The Pi is the gateway, running the
+[SiK Fieldlink](../fieldlink/sik/README.md), and runs the Asset app for
+the vehicle.
 The [first-flight story](../atlas/first-flight.md) describes the workflow.
 
 - [Behavior](docs/README.md): startup, work, link loss, and shutdown.

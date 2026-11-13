@@ -71,7 +71,9 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
   [shared data rules](#keep-shared-data-simple). Core owns the Core API and
   server mechanisms. The SDK owns the client for that API.
   [Gateway](https://github.com/atlas-field-systems/atlas/tree/main/gateway)
-  owns gateways and their Fieldlinks.
+  owns the gateway app, and
+  [Fieldlink](https://github.com/atlas-field-systems/atlas/tree/main/fieldlink)
+  owns each field link, both its ends.
   [Asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
   owns how an Asset behaves, and
   [Command Interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface)

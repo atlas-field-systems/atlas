@@ -88,12 +88,17 @@ The parts:
 - **The SDK is the client** for the Core API, used by operator applications,
   Assets on IP, gateways, and Plugins.
 - **Gateways** run on their own computers, uplink to the Core API over
-  broadband IP, and run the Fieldlinks their hardware supports. A gateway is not
-  an Asset.
-- **Fieldlinks** carry Atlas across one kind of field link, such as Meshtastic
-  LoRa. The same Fieldlink package runs on the gateway and on the radio Asset. It
-  owns compact encoding, retries, duplicate handling, contact timing, and link
-  security for its medium.
+  broadband IP, and run the gateway app, a framework running one Fieldlink at a
+  time. A gateway is not an Asset.
+- **Fieldlinks** are their own part, each a package released and installed on
+  its own and defined by its radio hardware and software, such as SiK with
+  MAVLink or LoRa with Meshtastic. A Fieldlink holds both ends of its link: a
+  gateway side and, unless the vehicle runs no Atlas software, an Asset side.
+  It owns compact encoding, retries, duplicate handling, contact timing, and
+  link security for its medium, and never decides Asset behavior
+  ([Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides)).
+  It uses only the gateway interface and the Asset link, never the SDK
+  directly.
 
 ## Core keeps one event log
 
@@ -129,7 +134,7 @@ listed in the ZIP.
   owns registration and IDs.
 - Core authenticates a gateway and trusts it for which radio Asset sent what. A
   radio Asset authenticates to the gateway through its Fieldlink, never to
-  Core ([Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides)).
+  Core ([Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#what-every-fieldlink-provides)).
 - TLS secures IP links. Each Fieldlink uses its radio's own encryption and
   authentication. Records never carry credentials.
 

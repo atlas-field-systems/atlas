@@ -317,5 +317,15 @@
     "phrase": "\\bfiles from assets\\b[^.]*\\bnot designed\\b",
     "why": "Assets upload files as Objects, placed through a geo feature they create.",
     "example": "Files from Assets, such as drone photos, are not designed yet."
+  },
+  {
+    "phrase": "\\bPi (is|as) a direct-IP Asset\\b|\\bfirst (setup|flight)[^.]*\\b(with )?no gateway\\b",
+    "why": "First flight's ground Pi is a gateway in SiK mode.",
+    "example": "The Pi is a direct-IP Asset and calls the Core API itself."
+  },
+  {
+    "phrase": "\\b(every|each) Fieldlink ships with the gateway app\\b|\\bnothing is (downloaded or )?installed separately\\b",
+    "why": "Fieldlinks are separate packages, released and installed on their own.",
+    "example": "Every Fieldlink ships with the gateway app."
   }
 ]

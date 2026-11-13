@@ -113,8 +113,9 @@ new one.
 - **A removed radio can come back.** If it is heard again, the gateway
   registers it as a new Asset with a new ID.
 - **One gateway for the whole network.** One gateway is deployed per area
-  ([Scale](scale.md#setup)). The radio network is a mesh: Assets talk to each
-  other and to that one gateway, and every radio Asset in the area rides on it.
+  ([Scale](scale.md#setup)). On a mesh Fieldlink, Assets talk to each other and
+  to that one gateway, and every radio Asset in the area rides on it; the
+  [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md) carries one drone.
   No Asset uses two gateways. Several gateways in one network, and moving a
   radio Asset to another gateway while it keeps its ID, are out of scope.
 

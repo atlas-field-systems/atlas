@@ -29,16 +29,16 @@ Everything else sits outside the city and reaches
 Core only through the [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md).
 [Design decisions](design-decisions.md#a-walled-city) has the layout.
 
-Most physical Assets use the gateway path. The gateway and the radio Asset run the
-same Fieldlink package for their field link. A direct-IP Asset, often a digital
+Most physical Assets use the gateway path, through the gateway's one
+[Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#two-kinds-of-fieldlink). A direct-IP Asset, often a digital
 one, calls the Core API itself. A site runs one gateway at a time, and the
 gateway design can change as [connectivity evolves](environment.md#connectivity-evolves). The diagram shows
 responsibilities, not a required network topology.
 
-The [first-flight setup](first-flight.md) runs the Asset app on a ground Raspberry
-Pi that calls the Core API directly over IP, with no gateway. A separate SiK
-equipment link connects that Pi to the ArduPilot vehicle. The app represents the
-vehicle even though it is not aboard it.
+The [first-flight setup](first-flight.md) uses a ground Raspberry Pi as a
+gateway with the [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md). It runs the Asset
+app for the ArduPilot vehicle and talks to it over a SiK radio. The app
+represents the vehicle even though it is not aboard it.
 
 ## What the parts do
 

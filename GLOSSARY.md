@@ -6,8 +6,9 @@ Behavior belongs to the owning subsystem; shared formats belong to Protocol.
 | --- | --- |
 | Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
 | Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. A site runs one gateway at a time. A gateway is not an Asset. See [Gateway](gateway/README.md). |
-| Fieldlink | A package that carries Atlas over one kind of field link, such as Meshtastic LoRa. It is installed on the gateway app, and the same package runs on the radio Asset. See [Gateway](gateway/README.md). |
-| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It stays with the gateway and its Fieldlink; Core does not hold it. See [what every Fieldlink provides](gateway/README.md#what-every-fieldlink-provides). |
+| Gateway app | The framework every gateway runs. It connects to Core, registers the Assets its radio hears, installs Fieldlinks, and runs one through its stable gateway interface. See [Gateway](gateway/README.md). |
+| Fieldlink | A separately released package that carries Atlas across one kind of field link, defined by its radio hardware and the software over it, such as SiK with MAVLink or LoRa with Meshtastic. It holds both ends: a gateway side and, unless the vehicle runs no Atlas software, an Asset side. A gateway runs one at a time. See [Fieldlink](fieldlink/README.md). |
+| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It stays with the gateway and its Fieldlink; Core does not hold it. See [what every Fieldlink provides](fieldlink/README.md#what-every-fieldlink-provides). |
 | Run | Everything between one start of Core and the next deliberate stop. A crash of Core resumes the run. See [Runs and identity](atlas/runs-and-identity.md). |
 | Registration | An Asset joining the current run and getting its `asset_id` from Core. See [Runs and identity](atlas/runs-and-identity.md#keys-and-registration). |
 | Reset | Ending a run by stopping Core on purpose. There is no Reset request or button. See [Runs and identity](atlas/runs-and-identity.md#a-run-and-reset). |

@@ -1,8 +1,8 @@
 # First flight
 
-The first setup uses a Raspberry Pi on the ground. The Pi runs the Asset app and
-is a direct-IP Asset: it calls the Core API itself, with no gateway. The Pi
-connects to an ArduPilot quadcopter through a SiK radio link. It acts as the
+The first setup uses a Raspberry Pi on the ground as the gateway, running the
+[SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md). The gateway runs
+the Asset app for an ArduPilot quadcopter and talks to it over a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
 such as QGroundControl. The vehicle remains the Asset represented in Atlas.
 
@@ -38,11 +38,11 @@ The Asset owns [platform-specific preparation and arming](https://github.com/atl
 ```mermaid
 sequenceDiagram
     participant Drone as ArduPilot vehicle
-    participant Pi as Asset app on ground Pi
+    participant Pi as Asset app on the SiK gateway (ground Pi)
     participant Core
     participant UI as Command Interface
     Drone->>Pi: Equipment state over SiK
-    Pi->>Core: Description and vehicle reports through the Core API
+    Pi->>Core: Registration, description and vehicle reports through the Core API
     Core-->>UI: Show the reported state
     UI->>Core: Send Takeoff, Move To and Land in one request
     Core->>Pi: Tasks 1, 2 and 3, sent together
