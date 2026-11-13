@@ -39,11 +39,16 @@ types is one Fieldlink covering both.
 - **Each Fieldlink is its own package.** It has its own version and is
   released on its own, so updating a Fieldlink never needs a new gateway app.
   It states which gateway app versions it works with.
-- **The admin installs Fieldlinks on the gateway.** The gateway app's install
-  command takes a Fieldlink package file, so it works in the field with no
-  internet. The gateway app lists, updates, and removes installed Fieldlinks.
-  It refuses a Fieldlink that does not work with its version, and says why. An
-  install or update takes effect when the gateway next starts, between runs.
+- **Installing and updating takes one action.** The gateway app has a text
+  screen (TUI) on the gateway's console. It lists every published Fieldlink,
+  marks which are installed and which have an update, and installs or updates
+  one with a single keypress. The same actions are plain commands (CLI) for
+  scripts. With internet, the gateway fetches the package from the Atlas
+  releases and checks it against its published checksum. Without internet, the
+  admin picks a package file, such as one on a USB stick, from the same screen.
+  The gateway app refuses a Fieldlink that does not work with its version, and
+  says which version it needs. An install or update takes effect when the
+  gateway next starts, between runs.
 - **One mode at a time.** The admin picks one installed Fieldlink in the
   gateway's configuration. At start the gateway app checks that the Fieldlink
   is installed and fits its version, and that its radio hardware is present; if
@@ -189,6 +194,8 @@ Behavior tests come from these, once the gateway exists.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
 - Configure a Fieldlink whose radio is not plugged in. The gateway does not
   start and prints which radio it is missing.
+- Open the gateway's screen with internet, and press install on SiK. It is
+  installed with no other step.
 - Install a newer version of the gateway's Fieldlink from a file, with no
   internet, and restart the gateway between runs. It runs the new version with
   the same gateway app.
