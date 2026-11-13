@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/commanded.json",
+  "title": "commanded",
+  "description": "An operator sent the Fail-safe command. It holds when that command arrives. The highest-priority rule with this condition whose other conditions also hold runs; with none, the Asset runs its built-in safe action.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "commanded"
+    }
+  },
+  "examples": [
+    {
+      "kind": "commanded"
+    }
+  ]
+}

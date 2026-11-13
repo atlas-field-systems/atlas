@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/input_value.json",
+  "title": "Input value",
+  "description": "The value given for one input of a Plugin call: the input's name, its kind, and the value. Core checks that each value names an input the action's description lists, with the same kind, that a choice is one the Plugin listed, and that every input not marked optional is given once.",
+  "type": "object",
+  "required": [
+    "kind",
+    "input"
+  ],
+  "oneOf": [
+    {
+      "$ref": "input_value/area.json"
+    },
+    {
+      "$ref": "input_value/position.json"
+    },
+    {
+      "$ref": "input_value/time.json"
+    },
+    {
+      "$ref": "input_value/geofeature.json"
+    },
+    {
+      "$ref": "input_value/number.json"
+    },
+    {
+      "$ref": "input_value/text.json"
+    },
+    {
+      "$ref": "input_value/choice.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "kind": {
+      "$ref": "../variables/kind.json"
+    },
+    "input": {
+      "$ref": "../variables/input.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "area",
+      "input": "box",
+      "area": [
+        {
+          "latitude": 42.2761,
+          "longitude": -71.8031
+        },
+        {
+          "latitude": 42.2768,
+          "longitude": -71.8012
+        },
+        {
+          "latitude": 42.2752,
+          "longitude": -71.8004
+        },
+        {
+          "latitude": 42.2747,
+          "longitude": -71.8025
+        }
+      ]
+    },
+    {
+      "kind": "position",
+      "input": "spot",
+      "position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      }
+    },
+    {
+      "kind": "time",
+      "input": "when",
+      "target_time": 1793671200000
+    },
+    {
+      "kind": "geofeature",
+      "input": "building",
+      "geofeature_id": "G1"
+    },
+    {
+      "kind": "number",
+      "input": "height",
+      "number": 120
+    },
+    {
+      "kind": "text",
+      "input": "street",
+      "text": "Main Street"
+    },
+    {
+      "kind": "choice",
+      "input": "type",
+      "choice": "hospital"
+    }
+  ]
+}
