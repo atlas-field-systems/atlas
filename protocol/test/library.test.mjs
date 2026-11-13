@@ -67,7 +67,7 @@ test('README Use the library: a kind reports only its own problems', () => {
 });
 
 test('README Use the library: an unknown kind is one problem that lists the kinds', () => {
-  const { problems } = protocol.check('requests.task', { kind: 'fly' });
+  const { problems } = protocol.check('requests.task', { kind: 'fly', destination: { latitude: 1, longitude: 1 } });
   assert.equal(problems.length, 1, JSON.stringify(problems));
   assert.equal(problems[0].path, '/kind');
   assert.match(problems[0].message, /^must be one of .*"takeoff".*"capture"/);

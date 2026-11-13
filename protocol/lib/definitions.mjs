@@ -99,7 +99,11 @@ export async function loadDefinitions(files) {
         message: `must be one of ${[...kinds.keys()].map((kind) => JSON.stringify(kind)).join(', ')}`,
       }];
     }
-    if (error.keyword === 'unevaluatedProperties' && kinds?.get(error.data.kind)?.has(error.params.unevaluatedProperty)) return [];
+    if (error.keyword === 'unevaluatedProperties' && kinds) {
+      // With an unknown kind, a field any kind allows is not the problem; the kind is.
+      const allowed = kinds.has(error.data.kind) ? [kinds.get(error.data.kind)] : [...kinds.values()];
+      if (allowed.some((fields) => fields.has(error.params.unevaluatedProperty))) return [];
+    }
     const property = error.params.missingProperty ?? error.params.additionalProperty ?? error.params.unevaluatedProperty;
     const path = error.instancePath + (property === undefined ? '' : `/${pointer(property)}`);
     return [{ path, message: messages[error.keyword]?.(error) ?? error.message }];

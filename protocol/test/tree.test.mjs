@@ -53,6 +53,7 @@ test('an item in a list shows the fields of the kind it names, and offers every 
 test('a definition that is a single value can be edited', () => {
   const [row] = leaves(fieldTree(protocol, 'variables/zz_size.json'), 3);
   assert.equal(setPath(3, row.path, 4), 4);
+  assert.equal(setPath(3, row.path, undefined), 3, 'the whole value cannot be removed');
 });
 
 test('typed numbers reach the checker as typed', () => {

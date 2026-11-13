@@ -124,7 +124,8 @@ export function generate(n) {
 }
 
 export function setPath(value, path, v) {
-  if (!path.length) return v;
+  // The whole value is never removed, only replaced.
+  if (!path.length) return v === undefined ? value : v;
   const copy = structuredClone(value);
   let cur = copy;
   path.slice(0, -1).forEach((p, i) => {
