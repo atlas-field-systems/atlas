@@ -23,6 +23,10 @@ container if it needs one, connect out to Core with their own keys, and reach
 Core through its Plugin interface. See the
 [walled city](../../atlas/design-decisions.md#a-walled-city).
 
+Core takes its clock and its data directory from whoever starts it, so
+[Simulations](../../simulations/README.md#what-each-part-allows) can run it
+unchanged in a simulated world.
+
 [Prototyping findings](../../atlas/archive/prototype-findings.md), now in the
 archive, records lessons from earlier experiments. Their runtimes and the
 first-flight prototype were removed.

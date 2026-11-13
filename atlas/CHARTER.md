@@ -77,7 +77,10 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
   [Asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
   owns how an Asset behaves, and
   [Command Interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface)
-  owns how the operator application works. Other components own their runtime details.
+  owns how the operator application works.
+  [Simulations](https://github.com/atlas-field-systems/atlas/tree/main/simulations)
+  owns the end-to-end simulations that test the parts together. Other
+  components own their runtime details.
 
 Keep each rule with its owner and link to it from other documents.
 When a subsystem rule conflicts with the operating context, surface the mismatch
@@ -139,6 +142,53 @@ Every coding agent reads and upholds this charter and
 Reading or quoting it does not prove a change meets it. A change should make clear
 what problem it solves, why this is the simplest credible fix, and what evidence
 supports the claim.
+
+## Test what matters
+
+Tests exist to catch bugs. Count the bugs a test could catch, not the tests
+written. AI agents write most of Atlas's code, and they overproduce tests that
+check nothing, so these rules guard against that first.
+
+- **The docs are the answer key.** A test checks a rule that a page states, and
+  names that page. Expected results come from the docs, ArduPilot SITL, and
+  hardware. They never come from running the code under test, and tests are
+  never generated from Protocol's definitions: a system and its tests made
+  from the same source agree even when both are wrong. Protocol's examples test
+  only record shapes and the validator.
+- **Simulations are the main tests.** Most testing runs the real parts
+  together, through their public interfaces, in
+  [Simulations](https://github.com/atlas-field-systems/atlas/tree/main/simulations).
+  Every run can be repeated and leaves a record someone can check again.
+- **Few other tests, each at a contract.** A part keeps its own tests only for
+  a contract a simulation checks poorly, such as Protocol's validator, storage
+  and recovery, credentials, or a rule with many cases like Task ordering. They
+  go through the part's public interface. Before adding one, say what behavior
+  it protects, what realistic bug would make it fail, and why no existing test
+  already catches that bug.
+- **No tautological tests.** A test that repeats the code back to itself is
+  deleted. That includes comparing a value with itself, searching source text,
+  checking how code is called instead of what it does, expected values copied
+  from the code's output, mocks that supply the behavior being checked, and
+  hooks added to a part only so a test can reach inside it. Something the
+  shipped program also passes in, such as its clock, is not such a hook.
+- **The failing test comes first.** Every failure is first reproduced by a
+  [test that fails](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-test)
+  for the right reason: a simulation when the failure crosses parts, or a test
+  at one part's contract when it stays inside it. The fix makes it pass, and it
+  stays. One test per bug, not one at every layer the bug passed through.
+- **Protect the check.** A change that fixes code never weakens the test that
+  checks it. A test's expected result changes only after its page changes, in a
+  change the owner can see. A check that cannot fail protects nothing, so break
+  a rule on purpose now and then and confirm a test catches it.
+- **Enforce in code, not prose.** A rule that CI, a lint, or a type can check is
+  checked that way, as Atlas already checks links and retired phrases. A
+  written rule is the fallback.
+- **No flaky tests.** A test that sometimes fails with no change is a bug in the
+  test or the part, fixed at once and never retried until it passes. Simulated
+  time and recorded seeds make every run repeatable.
+- **Say what was verified.** A result names what passed, what failed, and what
+  was not checked. A simulated pass is labelled simulated and proves nothing
+  about real flight or radios.
 
 ## Change Atlas deliberately
 

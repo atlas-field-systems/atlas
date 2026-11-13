@@ -17,7 +17,7 @@ The [first-flight story](../atlas/first-flight.md) describes the workflow.
 - [Communications](docs/communications.md): how the Asset reaches Core over IP or a Fieldlink.
 - [Command failures and failsafes](docs/failsafes.md): cancellation, configured rules, and operator overrides.
 - [Subsystem conditions](docs/status.md): hardware-status reporting.
-- [Testing and CI](docs/testing.md): ArduPilot SITL and simulated equipment.
+- [Asset simulations](../simulations/docs/asset.md): ArduPilot SITL and simulated equipment, in [Simulations](../simulations/README.md).
 - [Configuration](config.md) and [logging](docs/logging.md): local options and diagnostic evidence.
 - [Core API](../core/docs/api.md): how the Asset talks to Core.
 - [Protocol](../protocol/README.md): the shared records.

@@ -95,7 +95,7 @@ without the ground app.
 
 Before the first copter flight, document the retained autopilot protections and
 their settings. Verify the interaction in
-[SITL and equipment checks](testing.md), including an Asset-app crash or hang,
+[SITL and equipment checks](../../simulations/docs/asset.md), including an Asset-app crash or hang,
 loss of the companion-to-controller link, and an autopilot intervention during
 work or during an Atlas response.
 
@@ -318,4 +318,4 @@ restarting idle or contact timers.
 ## Open
 
 - Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
-  failsafe levels, are tuned in [SITL](testing.md) before the first flight.
+  failsafe levels, are tuned in [SITL](../../simulations/docs/asset.md) before the first flight.

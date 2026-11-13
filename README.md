@@ -12,6 +12,7 @@ This repository holds every part of it, one folder each:
 - [command-interface/](command-interface/): the operator interface. Planning.
 - [gateway/](gateway/): the gateway app, which installs and runs a Fieldlink. Planning.
 - [fieldlink/](fieldlink/): the Fieldlinks, each holding both ends of a field link. Planning.
+- [simulations/](simulations/): the parts run together in a simulated world, as end-to-end tests. Planning.
 
 The Charter and the Protocol viewer are published at
 https://atlas-field-systems.github.io/atlas/ (the viewer is under `protocol/`).
