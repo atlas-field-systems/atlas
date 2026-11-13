@@ -53,7 +53,7 @@ Atlas code is written by hand and read by people. Do not generate code from
 definitions or docs. Programs load the definitions as data instead.
 
 Protocol proposes one exception for checked-in TypeScript declarations. The
-[measured working choice](../protocol/docs/decisions.md#typescript-types) explains
+[measured working choice](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#typescript-types) explains
 why. It is a working choice the owner may overturn, not an owner decision.
 
 ## Testing
