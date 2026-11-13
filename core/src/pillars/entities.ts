@@ -1,12 +1,14 @@
-/**
- * Entities pillar (pillars.md): the shared picture. Assets with their
- * descriptions, contact, reports, and settings; Observations; Tracks; geo
- * features. Owns `assets`, `tracks`, `geofeatures`.
- *
- * Reports, Observations, settings values, and subsystem conditions have no
- * table: they are events, and "latest" is store/events.ts latestReport
- * (storage.md: "no report is kept twice").
- */
+import { refuse, checkOrRefuse } from "../api/errors.ts";
+import { nextGlobalId, nextRunSeq } from "../store/runs.ts";
+import { encodeShortId } from "../ids.ts";
+import {
+  latestReport,
+  historyPage,
+  dropUnsettled,
+  EVENT_KINDS,
+} from "../store/events.ts";
+import * as tasks from "./tasks.ts";
+import * as admin from "./administration.ts";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { ReadTx, TableDef, Tx } from "../store/db.ts";
 import type {
@@ -75,9 +77,6 @@ CREATE INDEX IF NOT EXISTS geofeatures_object ON geofeatures(run_id, object_id) 
   },
 ];
 
-// --- who an Asset is ---------------------------------------------------------
-
-/** The Asset a key registered in this run and that was not removed. */
 export function assetForKey(tx: ReadTx, key_id: string): string | null {
   return (
     tx.get<{ asset_id: string }>(
@@ -87,7 +86,6 @@ export function assetForKey(tx: ReadTx, key_id: string): string | null {
     )?.asset_id ?? null
   );
 }
-/** The gateway carrying a radio Asset, or null for an Asset on IP. */
 export function carrierOf(tx: ReadTx, asset_id: string): string | null {
   return (
     tx.get<{ gateway_id: string | null }>(
@@ -97,7 +95,6 @@ export function carrierOf(tx: ReadTx, asset_id: string): string | null {
     )?.gateway_id ?? null
   );
 }
-/** Assets a gateway registered in this run (its stream audience; api.md#radio-assets). Removed ones too: their drops still reach it. */
 export function carriedBy(tx: ReadTx, gateway_id: string): string[] {
   return tx
     .all<{
@@ -110,37 +107,37 @@ export function carriedBy(tx: ReadTx, gateway_id: string): string[] {
     .map((row) => row.asset_id);
 }
 
-// --- registration (api.md#asset-and-gateway-calls, #radio-assets) -------------
-
-/**
- * POST /entities/assets, an Asset key, body requests.asset.
- * - The key has a live Asset this run → it is the same Asset, started again
- *   (runs-and-identity.md#keys-and-registration): store the new description,
- *   add asset.described, then Tasks.dropUnfinished (task.dropped for every Task
- *   with no final report). Same asset_id.
- * - Otherwise nextGlobalId; none left → refuse asset_ids_exhausted and print
- *   it (runs-and-identity.md#ids). Insert the row online, add
- *   asset.registered {time, asset_id} and asset.described.
- * Answer 201 {asset_id, last_task_id} (Tasks.lastTaskId, 0 for a new Asset).
- * Unsettled settings and cancel requests of a restarted app: doc gap G8.
- */
 export function registerAsset(
   tx: Tx,
   key_id: string,
   body: ProtocolTypes["requests.asset"],
 ): { asset_id: string; last_task_id: number } {
-  throw new Error("not implemented");
+  let asset_id = assetForKey(tx, key_id);
+  if (asset_id) restart(tx, asset_id);
+  else {
+    asset_id = nextGlobalId(tx);
+    if (!asset_id) refuse("asset_ids_exhausted", "Asset IDs exhausted");
+    tx.run(
+      "INSERT INTO assets(run_id,asset_id,key_id,contact) VALUES (?,?,?,?)",
+      tx.runId,
+      asset_id,
+      key_id,
+      JSON.stringify({ time: tx.now, asset_id, contact: "online" }),
+    );
+    tx.append("asset.registered", { time: tx.now, asset_id });
+  }
+  const description = { ...body, time: tx.now, asset_id };
+  tx.run(
+    "UPDATE assets SET description=? WHERE run_id=? AND asset_id=?",
+    JSON.stringify(description),
+    tx.runId,
+    asset_id,
+  );
+  tx.append("asset.described", description);
+  applyContact(tx, asset_id, { time: tx.now, asset_id, contact: "online" });
+  return { asset_id, last_task_id: tasks.lastTaskId(tx, asset_id) };
 }
 
-/**
- * POST /entities/assets/radios, a gateway, body requests.radio.
- * A different definitions hash is refused, but the refusal is itself a change:
- * it adds definitions.refused {time, gateway_id, radio: true, definitions_hash}
- * and commits. So this returns the refusal instead of throwing it.
- * Otherwise: new asset_id, row with gateway_id, description NULL, contact
- * offline until the gateway sends one; asset.registered with requested_by =
- * gateway_id. 201 {asset_id}.
- */
 export function registerRadio(
   tx: Tx,
   gateway_id: string,
@@ -148,89 +145,155 @@ export function registerRadio(
 ):
   | { registered: true; asset_id: string }
   | { registered: false; refusal_event_id: number } {
-  throw new Error("not implemented");
+  if (body.definitions_hash !== tx.env.protocol.hash)
+    return {
+      registered: false,
+      refusal_event_id: tx.append("definitions.refused", {
+        time: tx.now,
+        gateway_id,
+        radio: true,
+        definitions_hash: body.definitions_hash,
+      }),
+    };
+  const asset_id = nextGlobalId(tx);
+  if (!asset_id) refuse("asset_ids_exhausted", "Asset IDs exhausted");
+  tx.run(
+    "INSERT INTO assets(run_id,asset_id,gateway_id,contact) VALUES (?,?,?,?)",
+    tx.runId,
+    asset_id,
+    gateway_id,
+    JSON.stringify({ time: tx.now, asset_id, contact: "offline" }),
+  );
+  tx.append("asset.registered", {
+    time: tx.now,
+    asset_id,
+    requested_by: gateway_id,
+  });
+  return { registered: true, asset_id };
 }
 
-/**
- * PUT /entities/assets/{asset_id}/description, the carrying gateway, body the
- * description record. A radio Asset signs up: the first time after
- * registration, and again each time its app starts. Every time after the
- * first is a restarted app (api.md#radio-assets): Tasks.dropUnfinished.
- * Adds asset.described. The record's asset_id must equal the path's (400).
- */
 export function signUpRadio(
   tx: Tx,
   asset_id: string,
   description: Description,
 ): { event_id: number } {
-  throw new Error("not implemented");
+  const row = requireAsset(tx, asset_id);
+  if (description.asset_id !== asset_id)
+    refuse("invalid", "Description Asset differs from path");
+  if (row.description) restart(tx, asset_id);
+  tx.run(
+    "UPDATE assets SET description=? WHERE run_id=? AND asset_id=?",
+    JSON.stringify(description),
+    tx.runId,
+    asset_id,
+  );
+  return { event_id: tx.append("asset.described", description) };
 }
 
-/** DELETE /administration/assets/{asset_id}, an admin. Marks it removed; adds asset.removed. Unfinished work: doc gap G14. */
 export function removeAsset(
   tx: Tx,
   asset_id: string,
   by: string,
 ): { event_id: number } {
-  throw new Error("not implemented");
+  requireAsset(tx, asset_id);
+  restart(tx, asset_id);
+  tx.run(
+    "UPDATE assets SET removed=1 WHERE run_id=? AND asset_id=?",
+    tx.runId,
+    asset_id,
+  );
+  return {
+    event_id: tx.append("asset.removed", {
+      time: tx.now,
+      asset_id,
+      requested_by: by,
+    }),
+  };
 }
 
-// --- reports (api.md#asset-and-gateway-calls) ---------------------------------
-
-/**
- * POST /entities/assets/{asset_id}/reports {"reports": [...]}, the Asset or its gateway.
- * The whole batch is stored or none of it (one transaction), then 200.
- * For each report, in batch order:
- *  1. `type` must name a report kind, then protocol.check(type, report) (400 invalid, path prefixed /reports/<i>).
- *  2. report.asset_id must equal the path's asset_id (403).
- *  3. clock_ahead = report.time > tx.now + clock_ahead_s*1000.
- *  4. append `report.<name>` with {clock_ahead} when set.
- *  5. report.status kind 'task'  → Tasks.applyTaskReport (moves state forward only; see tasks.ts).
- *     report.status kind 'queue' → Tasks.applyQueueReport, unless clock_ahead (it is a latest value).
- * Observations need nothing more: Fusion follows the log.
- * An empty batch stores nothing and still answers 200: the call itself is the
- * contact (api.md#contact); the API pipeline already told contact.ts.
- */
 export function storeReports(
   tx: Tx,
   asset_id: string,
   reports: unknown[],
 ): { stored: number } {
-  throw new Error("not implemented");
+  requireAsset(tx, asset_id);
+  for (const [i, value] of reports.entries()) {
+    if (
+      !value ||
+      typeof value !== "object" ||
+      !("type" in value) ||
+      typeof value.type !== "string" ||
+      !reportKinds.includes(value.type as ReportKind)
+    )
+      refuse("invalid", `/reports/${i}/type: unknown report`);
+    const report = checkOrRefuse<Report>(tx.env.protocol, value.type, value);
+    if (report.asset_id !== asset_id)
+      refuse("forbidden", "Report Asset differs from path");
+    const ahead = report.time > tx.now + tx.env.config.clock_ahead_s * 1000;
+    const event_id = tx.append(
+      report.type,
+      report,
+      ahead ? { clock_ahead: true } : undefined,
+    );
+    tx.env.log.record({
+      level: "trace",
+      area: "entities",
+      msg: "Report stored",
+      asset_id,
+      event_id,
+      report_type: report.type,
+      report_time: report.time,
+      clock_ahead: ahead,
+    });
+    if (report.type === "report.status" && report.kind === "task")
+      tasks.applyTaskReport(tx, asset_id, report);
+    if (!ahead && report.type === "report.status" && report.kind === "queue")
+      tasks.applyQueueReport(tx, asset_id, report, event_id);
+  }
+  return { stored: reports.length };
 }
 
-// --- contact (api.md#contact) ------------------------------------------------
-
-/**
- * The one place an Asset's contact changes. Called by:
- *  - PUT /entities/assets/{asset_id}/contact (its gateway, a contact record);
- *  - contact.ts, for an Asset on IP heard again or gone quiet, and for every
- *    Asset of a gateway that went quiet or was removed.
- * Stores the record and adds asset.contact only when online/offline changes.
- * Going offline, in this same transaction (api.md#operator-requests):
- *  dropUnsettled({asset_id}) → request.dropped for each unanswered request,
- *  then Tasks.dropUnconfirmed(asset_id) → task.dropped for each Task the Asset
- *  never reported holding.
- */
 export function applyContact(
   tx: Tx,
   asset_id: string,
   record: Contact,
 ): { changed: boolean } {
-  throw new Error("not implemented");
+  const row = requireAsset(tx, asset_id);
+  if (record.asset_id !== asset_id)
+    refuse("invalid", "Contact Asset differs from path");
+  if (JSON.parse(row.contact).contact === record.contact)
+    return { changed: false };
+  tx.run(
+    "UPDATE assets SET contact=? WHERE run_id=? AND asset_id=?",
+    JSON.stringify(record),
+    tx.runId,
+    asset_id,
+  );
+  const event_id = tx.append("asset.contact", record);
+  tx.env.log.record({
+    level: "trace",
+    area: "contact",
+    msg: "Asset contact changed",
+    asset_id,
+    event_id,
+    contact: record.contact,
+    last_heard: record.time,
+  });
+  if (record.contact === "offline") {
+    dropUnsettled(tx, { asset_id });
+    tasks.dropUnconfirmed(tx, asset_id);
+  }
+  return { changed: true };
 }
-/** For contact.resume() and the contact sweep: Assets on IP this run shows online. */
 export function onlineAssetsOnIp(tx: ReadTx): string[] {
-  throw new Error("not implemented");
+  return tx
+    .all<{ asset_id: string }>(
+      "SELECT asset_id FROM assets WHERE run_id=? AND removed=0 AND gateway_id IS NULL AND json_extract(contact,'$.contact')='online'",
+      tx.runId,
+    )
+    .map((r) => r.asset_id);
 }
 
-// --- what admission needs to know about an Asset ---------------------------
-
-/**
- * Everything Tasks and settings admission check against, read once
- * (api.md#operator-requests). online is Core's view: for a radio Asset, its
- * gateway's latest contact record for it, and offline whenever the gateway is.
- */
 export type AdmissionView = {
   asset_id: string;
   description: Description; // a radio Asset not yet signed up has none → refused not_supported
@@ -238,50 +301,69 @@ export type AdmissionView = {
   flying: boolean; // description lists takeoff
   hasCriticalBatteryRule: boolean; // latest reported failsafe_policy has a battery_below rule with critical: true
 };
-/** 404 for an unknown or removed Asset. */
 export function admissionView(tx: ReadTx, asset_id: string): AdmissionView {
-  throw new Error("not implemented");
+  const row = requireAsset(tx, asset_id);
+  const online =
+    JSON.parse(row.contact).contact === "online" &&
+    (!row.gateway_id ||
+      admin.gatewayContact(tx, row.gateway_id).contact === "online");
+  if (!row.description) refuse("not_supported", "Asset has no description");
+  const description: Description = JSON.parse(row.description);
+  const latest = latestReport(tx, {
+    asset_id,
+    kind: "report.settings",
+    setting: "failsafe_policy",
+  });
+  return {
+    asset_id,
+    description,
+    online,
+    flying: description.commands.includes("takeoff"),
+    hasCriticalBatteryRule: policyHasCriticalBatteryRule(
+      latest?.kind === "report.settings"
+        ? latest.record.settings.failsafe_policy
+        : undefined,
+    ),
+  };
 }
-/** Pure: does this policy keep a critical battery rule? Used for the current policy and for a requested one. */
 export function policyHasCriticalBatteryRule(
   policy: Settings["failsafe_policy"],
 ): boolean {
-  throw new Error("not implemented");
+  return !!policy?.some((rule) =>
+    rule.conditions.some(
+      (c) => c.kind === "battery_below" && c.critical === true,
+    ),
+  );
 }
 
-// --- settings (api.md#operator-requests) ---------------------------------------
-
-/**
- * PATCH /entities/assets/{asset_id}/settings, an account, body requests.settings.
- * Refuse: asset_offline; not_supported for a setting the description does
- * not list; no_critical_battery_rule when a flying Asset's new
- * failsafe_policy has none. Then settings.requested with a settings_change
- * record {time, asset_id, requested_by, settings}. 202 {event_id}.
- */
 export function requestSettings(
   tx: Tx,
   asset_id: string,
   body: ProtocolTypes["requests.settings"],
   by: string,
 ): { event_id: number } {
-  throw new Error("not implemented");
+  const v = admissionView(tx, asset_id);
+  if (!v.online) refuse("asset_offline", "Asset is offline");
+  checkSettings(v, body.settings);
+  return {
+    event_id: tx.append("settings.requested", {
+      time: tx.now,
+      asset_id,
+      requested_by: by,
+      settings: body.settings,
+    }),
+  };
 }
 
-// --- reads (api.md#reads, #entities) -------------------------------------------
-
-/** One Asset as GET /entities/assets shows it. The shape is Core's; api.md should state it (see core/docs/api.md). */
 export type AssetEntry = {
   asset_id: string;
   gateway_id: string | null;
   description: Description | null;
   contact: Contact;
-  /** Latest report of each kind except report.observation, by report time, never clock_ahead. */
   reports: Partial<Record<Exclude<ReportKind, "report.observation">, Report>>;
-  /** Each setting's latest value, from the newest report.settings that carries it. */
   settings: Partial<{
     [K in keyof Settings]: { value: Settings[K]; time: number };
   }>;
-  /** Each declared subsystem's latest condition. */
   subsystems: Record<string, ProtocolTypes["report.status"]>;
 };
 
@@ -290,43 +372,95 @@ export function listAssets(tx: ReadTx): {
   items: AssetEntry[];
   gateways: Contact[];
 } {
-  throw new Error("not implemented");
+  return {
+    as_of: tx.asOf(),
+    items: tx
+      .all<AssetRow>(
+        "SELECT * FROM assets WHERE run_id=? AND removed=0 ORDER BY asset_id",
+        tx.runId,
+      )
+      .map((r) => assetEntry(tx, r)),
+    gateways: admin.exportRows(tx).gateways.map((row) => {
+      if (
+        !row ||
+        typeof row !== "object" ||
+        !("gateway_id" in row) ||
+        typeof row.gateway_id !== "string"
+      )
+        throw new Error("Invalid gateway row");
+      return admin.gatewayContact(tx, row.gateway_id);
+    }),
+  };
 }
 export function getAsset(
   tx: ReadTx,
   asset_id: string,
 ): { as_of: number; item: AssetEntry } {
-  throw new Error("not implemented");
+  return { as_of: tx.asOf(), item: assetEntry(tx, requireAsset(tx, asset_id)) };
 }
-/** Latest report.observation per (asset_id, observation_id); one window query on events_observation. */
 export function listObservations(tx: ReadTx): {
   as_of: number;
   items: Observation[];
 } {
-  throw new Error("not implemented");
+  return {
+    as_of: tx.asOf(),
+    items: tx
+      .all<{ record: string }>(
+        "SELECT record FROM (SELECT record,ROW_NUMBER() OVER (PARTITION BY asset_id,observation_id ORDER BY order_time DESC,event_id DESC) n FROM events WHERE run_id=? AND kind='report.observation' AND clock_ahead=0) WHERE n=1",
+        tx.runId,
+      )
+      .map((r) => JSON.parse(r.record)),
+  };
 }
 export function listTracks(tx: ReadTx): { as_of: number; items: Track[] } {
-  throw new Error("not implemented");
+  return {
+    as_of: tx.asOf(),
+    items: tx
+      .all<{ record: string }>(
+        "SELECT record FROM tracks WHERE run_id=? ORDER BY track_id",
+        tx.runId,
+      )
+      .map((r) => JSON.parse(r.record)),
+  };
 }
 export function getTrack(
   tx: ReadTx,
   track_id: string,
 ): { as_of: number; item: Track } {
-  throw new Error("not implemented");
+  const row = tx.get<{ record: string }>(
+    "SELECT record FROM tracks WHERE run_id=? AND track_id=?",
+    tx.runId,
+    track_id,
+  );
+  if (!row) refuse("not_found", "No such Track");
+  return { as_of: tx.asOf(), item: JSON.parse(row.record) };
 }
 export function listGeofeatures(tx: ReadTx): {
   as_of: number;
   items: Geofeature[];
 } {
-  throw new Error("not implemented");
+  return {
+    as_of: tx.asOf(),
+    items: tx
+      .all<{ record: string }>(
+        "SELECT record FROM geofeatures WHERE run_id=? ORDER BY geofeature_id",
+        tx.runId,
+      )
+      .map((r) => JSON.parse(r.record)),
+  };
 }
 export function getGeofeature(
   tx: ReadTx,
   geofeature_id: string,
 ): { as_of: number; item: Geofeature } {
-  throw new Error("not implemented");
+  const row = tx.get<{ record: string }>(
+    "SELECT record FROM geofeatures WHERE run_id=? AND geofeature_id=?",
+    tx.runId,
+    geofeature_id,
+  );
+  if (!row) refuse("not_found", "No such geo feature");
+  return { as_of: tx.asOf(), item: JSON.parse(row.record) };
 }
-/** GET /entities: the four lists from one ReadTx, so one as_of covers them all. */
 export function picture(tx: ReadTx): {
   as_of: number;
   assets: AssetEntry[];
@@ -334,44 +468,112 @@ export function picture(tx: ReadTx): {
   tracks: Track[];
   geofeatures: Geofeature[];
 } {
-  throw new Error("not implemented");
+  return {
+    as_of: tx.asOf(),
+    assets: listAssets(tx).items,
+    observations: listObservations(tx).items,
+    tracks: listTracks(tx).items,
+    geofeatures: listGeofeatures(tx).items,
+  };
 }
 
-/** GET /history, /history/tracks, /history/geofeatures: store/events.ts historyPage with limit ≤ 1000. */
 export function history(
   tx: ReadTx,
   of: "reports" | "tracks" | "geofeatures",
   query: URLSearchParams,
   cursor: Cursor | null,
 ): HistoryPage<AtlasEvent> {
-  throw new Error("not implemented");
+  const time = (key: string) => {
+    const raw = query.get(key);
+    if (raw === null) return undefined;
+    const n = Number(raw);
+    if (!Number.isSafeInteger(n) || n < 0)
+      refuse("invalid", `${key} must be a time`);
+    return n;
+  };
+  const limit = Number(query.get("limit") ?? 1000);
+  if (!Number.isInteger(limit) || limit < 1)
+    refuse("invalid", "Invalid history limit");
+  if (cursor) {
+    try {
+      const pair = JSON.parse(Buffer.from(cursor, "base64url").toString());
+      if (
+        !Array.isArray(pair) ||
+        pair.length !== 2 ||
+        !pair.every((n) => Number.isSafeInteger(n) && n >= 0)
+      )
+        throw Error();
+    } catch {
+      refuse("invalid", "Invalid history cursor");
+    }
+  }
+  const common = { since: time("since"), until: time("until") };
+  if (of === "reports") {
+    const report = query.get("report");
+    const kind = report
+      ? report.startsWith("report.")
+        ? report
+        : `report.${report}`
+      : undefined;
+    if (kind && !reportKinds.includes(kind as ReportKind))
+      refuse("invalid", "Unknown report kind");
+    return historyPage(
+      tx,
+      {
+        of,
+        ...common,
+        ...(query.has("asset_id") ? { asset_id: query.get("asset_id")! } : {}),
+        ...(kind ? { report: kind as ReportKind } : {}),
+      },
+      cursor,
+      limit,
+    );
+  }
+  return historyPage(
+    tx,
+    of === "tracks"
+      ? {
+          of,
+          ...common,
+          ...(query.has("track_id")
+            ? { track_id: query.get("track_id")! }
+            : {}),
+        }
+      : {
+          of,
+          ...common,
+          ...(query.has("geofeature_id")
+            ? { geofeature_id: query.get("geofeature_id")! }
+            : {}),
+        },
+    cursor,
+    limit,
+  );
 }
 
-// --- geo features (api.md#geo-features) ------------------------------------
-
-/**
- * POST /entities/geofeatures. An account, a Plugin, an Asset on IP, or a
- * gateway acting for an Asset it carries. Imagery: the Object must exist
- * (Objects.objectForImagery: 404) and be a GeoTIFF (409 not_geotiff).
- * Assigns geofeature_id, adds geofeature.created with requested_by. 200 {geofeature, event_id}.
- */
 export function createGeofeature(
   tx: Tx,
   body: ProtocolTypes["requests.geofeature"],
   by: string,
 ): { geofeature: Geofeature; event_id: number } {
-  throw new Error("not implemented");
+  const geofeature: Geofeature = {
+    ...body,
+    time: tx.now,
+    geofeature_id: encodeShortId(nextRunSeq(tx, "geofeature")),
+  };
+  tx.run(
+    "INSERT INTO geofeatures(run_id,geofeature_id,record,requested_by) VALUES (?,?,?,?)",
+    tx.runId,
+    geofeature.geofeature_id,
+    JSON.stringify(geofeature),
+    by,
+  );
+  return {
+    geofeature,
+    event_id: tx.append("geofeature.created", geofeature, { requested_by: by }),
+  };
 }
 
-/**
- * PUT /entities/geofeatures/{id}?update_tasks=, an account. Replaces whole
- * (a name left out is cleared). Imagery may change only its name, and no
- * other kind becomes imagery (409 imagery_fixed). Adds geofeature.replaced.
- * With update_tasks=true, Tasks.updatePlace(tx, geofeature, by) in this same
- * transaction makes a new copy for each unfinished Task naming it, one
- * tasks.updated per online Asset, and reports the offline ones.
- * Never refused because Tasks name the place, and never cancels a Task.
- */
 export function replaceGeofeature(
   tx: Tx,
   geofeature_id: string,
@@ -384,64 +586,120 @@ export function replaceGeofeature(
   updated_task_ids?: { asset_id: string; task_id: number }[];
   not_updated_task_ids?: { asset_id: string; task_id: number }[];
 } {
-  throw new Error("not implemented");
+  const old = getGeofeature(tx, geofeature_id).item;
+  if (
+    (old.kind === "imagery" || body.kind === "imagery") &&
+    !(
+      old.kind === "imagery" &&
+      body.kind === "imagery" &&
+      old.object_id === body.object_id
+    )
+  )
+    refuse("imagery_fixed", "Imagery may change only its name");
+  const geofeature: Geofeature = { ...body, time: tx.now, geofeature_id };
+  tx.run(
+    "UPDATE geofeatures SET record=? WHERE run_id=? AND geofeature_id=?",
+    JSON.stringify(geofeature),
+    tx.runId,
+    geofeature_id,
+  );
+  const event_id = tx.append("geofeature.replaced", geofeature, {
+    requested_by: by,
+  });
+  return {
+    geofeature,
+    event_id,
+    ...(updateTasks ? tasks.updatePlace(tx, geofeature) : {}),
+  };
 }
 
-/** DELETE, an account. Adds geofeature.deleted with the record as it last stood. Leaves Tasks, Objects, and imagery's Object. */
 export function deleteGeofeature(
   tx: Tx,
   geofeature_id: string,
   by: string,
 ): { event_id: number } {
-  throw new Error("not implemented");
+  const old = getGeofeature(tx, geofeature_id).item;
+  tx.run(
+    "DELETE FROM geofeatures WHERE run_id=? AND geofeature_id=?",
+    tx.runId,
+    geofeature_id,
+  );
+  return {
+    event_id: tx.append("geofeature.deleted", old, { requested_by: by }),
+  };
 }
 
-/**
- * For Tasks admission: a move_to or land naming a place gets a copy of its
- * position. 404 when the place does not exist in the run or was deleted;
- * 409 not_a_point otherwise.
- */
 export function pointOf(tx: ReadTx, geofeature_id: string): Position {
-  throw new Error("not implemented");
+  const place = getGeofeature(tx, geofeature_id).item;
+  if (place.kind !== "point") refuse("not_a_point", "Place is not a point");
+  return place.position;
 }
-/** For Objects: does an existing geo feature have this ID? (attach, upload with geofeature_id) */
 export function geofeatureExists(tx: ReadTx, geofeature_id: string): boolean {
-  throw new Error("not implemented");
+  return !!tx.get(
+    "SELECT 1 FROM geofeatures WHERE run_id=? AND geofeature_id=?",
+    tx.runId,
+    geofeature_id,
+  );
 }
-/** For Objects: is an imagery geo feature still showing this Object? (api.md#objects: 409 on delete) */
 export function imageryShows(tx: ReadTx, object_id: string): boolean {
-  throw new Error("not implemented");
+  return !!tx.get(
+    "SELECT 1 FROM geofeatures WHERE run_id=? AND object_id=?",
+    tx.runId,
+    object_id,
+  );
 }
 
-// --- Tracks: written only by Fusion, through these two (api.md#tracks) -----
-
-/** Creates (no track_id: assigns the next) or replaces a Track; adds track.updated. Returns the track_id. */
 export function putTrack(
   tx: Tx,
   track: Omit<Track, "track_id"> & { track_id?: string },
 ): string {
-  throw new Error("not implemented");
+  const record: Track = {
+    ...track,
+    track_id: track.track_id ?? encodeShortId(nextRunSeq(tx, "track")),
+  };
+  tx.run(
+    "INSERT INTO tracks VALUES (?,?,?) ON CONFLICT(run_id,track_id) DO UPDATE SET record=excluded.record",
+    tx.runId,
+    record.track_id,
+    JSON.stringify(record),
+  );
+  tx.append("track.updated", record);
+  return record.track_id;
 }
-/** Deletes the row; adds track.removed with the Track as it last stood. */
 export function removeTrack(tx: Tx, track_id: string): void {
-  throw new Error("not implemented");
+  const old = getTrack(tx, track_id).item;
+  tx.run(
+    "DELETE FROM tracks WHERE run_id=? AND track_id=?",
+    tx.runId,
+    track_id,
+  );
+  tx.append("track.removed", old);
 }
-/** Fusion's view: current Tracks that list this source. */
 export function tracksWithSource(
   tx: ReadTx,
   asset_id: string,
   observation_id: string,
 ): Track[] {
-  throw new Error("not implemented");
+  return tx
+    .all<{ record: string }>(
+      "SELECT record FROM tracks WHERE run_id=? AND EXISTS (SELECT 1 FROM json_each(tracks.record,'$.sources') s WHERE json_extract(s.value,'$.asset_id')=? AND json_extract(s.value,'$.observation_id')=?)",
+      tx.runId,
+      asset_id,
+      observation_id,
+    )
+    .map((r) => JSON.parse(r.record));
 }
 
-/** Reset ZIP state/: assets, tracks, geofeatures. */
 export function exportRows(tx: ReadTx): {
   assets: unknown[];
   tracks: unknown[];
   geofeatures: unknown[];
 } {
-  throw new Error("not implemented");
+  return {
+    assets: tx.all("SELECT * FROM assets WHERE run_id=?", tx.runId),
+    tracks: tx.all("SELECT * FROM tracks WHERE run_id=?", tx.runId),
+    geofeatures: tx.all("SELECT * FROM geofeatures WHERE run_id=?", tx.runId),
+  };
 }
 
 export function assetIdInUse(tx: ReadTx, id: string): boolean {
@@ -450,4 +708,88 @@ export function assetIdInUse(tx: ReadTx, id: string): boolean {
     tx.runId,
     id,
   );
+}
+
+type AssetRow = {
+  asset_id: string;
+  gateway_id: string | null;
+  description: string | null;
+  contact: string;
+};
+export function requireAsset(tx: ReadTx, asset_id: string): AssetRow {
+  const row = tx.get<AssetRow>(
+    "SELECT * FROM assets WHERE run_id=? AND asset_id=? AND removed=0",
+    tx.runId,
+    asset_id,
+  );
+  if (!row) refuse("not_found", "No such Asset");
+  return row;
+}
+function restart(tx: Tx, asset_id: string): void {
+  dropUnsettled(tx, { asset_id });
+  tasks.dropUnfinished(tx, asset_id);
+}
+export function checkSettings(v: AdmissionView, settings: Settings): void {
+  for (const key of Object.keys(settings))
+    if (!v.description.settings?.some((s) => s === key))
+      refuse("not_supported", "Setting is not declared");
+  if (
+    v.flying &&
+    settings.failsafe_policy &&
+    !policyHasCriticalBatteryRule(settings.failsafe_policy)
+  )
+    refuse("no_critical_battery_rule", "Policy needs a critical battery rule");
+}
+const reportKinds = Object.keys(EVENT_KINDS).filter((k): k is ReportKind =>
+  k.startsWith("report."),
+);
+function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
+  const description: Description | null = row.description
+    ? JSON.parse(row.description)
+    : null;
+  const reports: AssetEntry["reports"] = {};
+  for (const kind of reportKinds)
+    if (kind !== "report.observation") {
+      const e = latestReport(tx, { asset_id: row.asset_id, kind });
+      if (e) reports[kind] = e.record;
+    }
+  const settings: AssetEntry["settings"] = {};
+  for (const name of [
+    "run_state",
+    "lights",
+    "landing_gear",
+    "link_loss_after_s",
+    "failsafe_policy",
+    "home_position",
+    "telemetry_every_s",
+  ] as const) {
+    const e = latestReport(tx, {
+      asset_id: row.asset_id,
+      kind: "report.settings",
+      setting: name,
+    });
+    if (e?.kind === "report.settings")
+      Object.assign(settings, {
+        [name]: { value: e.record.settings[name], time: e.record.time },
+      });
+  }
+  const subsystems: AssetEntry["subsystems"] = {};
+  for (const { subsystem_id } of description?.subsystems ?? []) {
+    const e = latestReport(tx, {
+      asset_id: row.asset_id,
+      kind: "report.status",
+      sub_kind: "subsystem",
+      subsystem_id,
+    });
+    if (e?.kind === "report.status") subsystems[subsystem_id] = e.record;
+  }
+  return {
+    asset_id: row.asset_id,
+    gateway_id: row.gateway_id,
+    description,
+    contact: JSON.parse(row.contact),
+    reports,
+    settings,
+    subsystems,
+  };
 }

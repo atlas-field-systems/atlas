@@ -1,19 +1,6 @@
-/**
- * Fusion pillar (core/docs/fusion.md). A replaceable module that turns
- * Observations into Tracks. Two parts:
- *
- *  - FusionModule: the algorithm, a pure function. It reads a view of the
- *    current Tracks and returns the changes. It never touches storage, time,
- *    or IDs, so replacing it (DEMs, real association) changes one file.
- *  - the follower: follows the event log for report.observation like any other
- *    reader (pillars.md#rules), and applies the module's changes through
- *    Entities.putTrack / removeTrack. Its cursor advances in the same
- *    transaction as the Track changes it caused, so after a crash it resumes
- *    exactly where its last commit left off: no Observation is fused twice or skipped.
- *
- * Owns one table, `fusion_cursor` (doc gap G17: storage.md lists none for Fusion).
- */
 import type { ProtocolTypes } from "@atlas/protocol/types";
+import * as entities from "./entities.ts";
+import { getEvent } from "../store/events.ts";
 import type { Store, TableDef } from "../store/db.ts";
 
 type Track = ProtocolTypes["track"];
@@ -42,45 +29,135 @@ export interface TrackView {
 
 export interface FusionModule {
   readonly name: string;
-  /** Called once per stored, not clock_ahead, report.observation, in event_id order. */
   observe(observation: Observation, tracks: TrackView): TrackChange[];
 }
 
-/**
- * The temporary first iteration (fusion.md): one Track per (asset_id,
- * observation_id), never removed. A newer report replaces it; an older one
- * (a retained report caught up after a gap) changes nothing, because a
- * Track's time is its newest sighting.
- *
- *   [t] = tracks.withSource(o.asset_id, o.observation_id)
- *   if (t && t.time >= o.time) return []
- *   return [{ put: { track_id: t?.track_id, time: o.time, entity_type: o.entity_type,
- *                    details: o.details,
- *                    ...(o.kind === 'coordinates' && { position: o.position, uncertainty: o.uncertainty }),
- *                    sources: [{ asset_id: o.asset_id, observation_id: o.observation_id }] } }]
- */
 export const onePerObservation: FusionModule = {
   name: "one-track-per-observation",
   observe(observation, tracks) {
-    throw new Error("not implemented");
+    const old = tracks.withSource(
+      observation.asset_id,
+      observation.observation_id,
+    )[0];
+    if (old && old.time >= observation.time) return [];
+    return [
+      {
+        put: {
+          ...(old ? { track_id: old.track_id } : {}),
+          time: observation.time,
+          ...(observation.entity_type
+            ? { entity_type: observation.entity_type }
+            : {}),
+          ...(observation.details ? { details: observation.details } : {}),
+          ...(observation.kind === "coordinates"
+            ? {
+                position: observation.position,
+                ...(observation.uncertainty
+                  ? { uncertainty: observation.uncertainty }
+                  : {}),
+              }
+            : {}),
+          sources: [
+            {
+              asset_id: observation.asset_id,
+              observation_id: observation.observation_id,
+            },
+          ],
+        },
+      },
+    ];
   },
 };
 
 export interface Follower {
-  /** Resolves once the cursor reaches the last event stored (Reset waits on it before the ZIP). */
   drain(): Promise<void>;
   stop(): void;
 }
 
-/**
- * Wakes on Store.onCommit. Loop: in one write transaction, read up to 100
- * report.observation events after the cursor (not clock_ahead), call
- * module.observe for each with a view over Entities.tracksWithSource, apply
- * the changes, set the cursor to the last event read. Repeat until a page is
- * empty. A module that throws is logged with the event_id and the cursor
- * passes that event (one bad Observation never stops Fusion); the gap is
- * recorded in diagnostics.
- */
 export function startFusion(store: Store, module: FusionModule): Follower {
-  throw new Error("not implemented");
+  let stopped = false;
+  function follow(): void {
+    if (stopped) return;
+    while (true) {
+      const count = store.write((tx) => {
+        const cursor =
+          tx.get<{ after_event_id: number }>(
+            "SELECT after_event_id FROM fusion_cursor WHERE run_id=?",
+            tx.runId,
+          )?.after_event_id ?? 0;
+        const ids = tx.all<{ event_id: number }>(
+          "SELECT event_id FROM events WHERE run_id=? AND kind='report.observation' AND event_id>? AND clock_ahead=0 ORDER BY event_id LIMIT 100",
+          tx.runId,
+          cursor,
+        );
+        for (const { event_id } of ids) {
+          const e = getEvent(tx, event_id);
+          if (e?.kind !== "report.observation") continue;
+          let changes: TrackChange[];
+          try {
+            changes = module.observe(e.record, {
+              withSource: (a, o) => entities.tracksWithSource(tx, a, o),
+            });
+          } catch (error) {
+            tx.env.log.record({
+              level: "error",
+              area: "fusion",
+              msg: "Observation skipped",
+              event_id,
+              error: String(error),
+            });
+            continue;
+          }
+          for (const change of changes)
+            if ("put" in change) entities.putTrack(tx, change.put);
+            else entities.removeTrack(tx, change.remove);
+        }
+        const last = ids.at(-1);
+        if (last)
+          tx.run(
+            "INSERT INTO fusion_cursor VALUES (?,?) ON CONFLICT(run_id) DO UPDATE SET after_event_id=excluded.after_event_id",
+            tx.runId,
+            last.event_id,
+          );
+        return ids.length;
+      });
+      if (count < 100) break;
+    }
+  }
+  // Empty writes emit commit notifications too; only new observations wake the follower.
+  const unsubscribe = store.onCommit(() => {
+    if (stopped) return;
+    const pending = store.read(
+      (tx) =>
+        !!tx.get(
+          "SELECT 1 FROM events WHERE run_id=? AND kind='report.observation' AND clock_ahead=0 AND event_id>COALESCE((SELECT after_event_id FROM fusion_cursor WHERE run_id=?),0) LIMIT 1",
+          tx.runId,
+          tx.runId,
+        ),
+    );
+    if (pending) {
+      try {
+        follow();
+      } catch (error) {
+        store.read((tx) =>
+          tx.env.log.record({
+            level: "error",
+            area: "fusion",
+            msg: "Follower transaction failed; cursor retained",
+            error: String(error),
+          }),
+        );
+      }
+    }
+  });
+  follow();
+  return {
+    async drain() {
+      follow();
+    },
+    stop() {
+      stopped = true;
+      unsubscribe();
+    },
+  };
 }

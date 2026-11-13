@@ -11,6 +11,7 @@ import * as entities from "./pillars/entities.ts";
 import * as tasks from "./pillars/tasks.ts";
 import * as objects from "./pillars/objects.ts";
 import * as fusion from "./pillars/fusion.ts";
+import { startContact } from "./contact.ts";
 import { startStreams } from "./api/stream.ts";
 import { startServer } from "./api/server.ts";
 import type { Protocol } from "@atlas/protocol";
@@ -121,13 +122,22 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       run_id: run.runId,
       config: redactConfig(config),
     });
-    const streams = startStreams(store, options.clock);
-    const server = await startServer(
-      env,
+    const contact = startContact(
       store,
-      { heard() {}, resume() {}, stop() {} },
-      streams,
+      options.clock,
+      config.offline_after_s * 1000,
     );
+    contact.resume();
+    const follower = fusion.startFusion(store, fusion.onePerObservation);
+    const streams = startStreams(store, options.clock);
+    const server = await startServer(env, store, contact, streams);
+    const closeServer = server.close.bind(server);
+    server.close = async () => {
+      await closeServer();
+      contact.stop();
+      await follower.drain();
+      follower.stop();
+    };
     process.stdout.write(
       JSON.stringify({
         url: server.url,

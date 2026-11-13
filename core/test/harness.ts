@@ -14,7 +14,7 @@ export const clock: Clock = {
 };
 export const protocol = await loadPackagedProtocol();
 export const password = "contract-password-unique";
-export async function startHarness() {
+export async function startHarness(testClock: Clock = clock) {
   const dataDir = await mkdtemp(join(tmpdir(), "atlas-core-"));
   const pw = join(dataDir, "first-password");
   await writeFile(pw, password);
@@ -24,7 +24,7 @@ export async function startHarness() {
     port: 0,
     first_admin: { operator_id: "ADM", password_file: pw },
   };
-  const core = await startCore({ clock, config });
+  const core = await startCore({ clock: testClock, config });
   async function call(
     method: string,
     path: string,

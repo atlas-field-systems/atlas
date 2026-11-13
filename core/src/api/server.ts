@@ -1,3 +1,4 @@
+import * as entities from "../pillars/entities.ts";
 import { createServer as httpServer } from "node:http";
 import { createServer as httpsServer } from "node:https";
 import { randomBytes } from "node:crypto";
@@ -106,7 +107,14 @@ export async function startServer(
           });
       }
       const principal = store.read((tx) =>
-        authorize(tx, caller, route.who, undefined, params, url.searchParams),
+        authorize(
+          tx,
+          caller,
+          route.who,
+          route.actsFor,
+          params,
+          url.searchParams,
+        ),
       );
       if (
         url.pathname !== "/about" &&
@@ -121,6 +129,10 @@ export async function startServer(
       const implemented =
         url.pathname === "/about" ||
         url.pathname === "/events" ||
+        url.pathname.startsWith("/entities") ||
+        url.pathname.startsWith("/tasks") ||
+        url.pathname.startsWith("/history") ||
+        url.pathname.startsWith("/administration/assets/") ||
         (url.pathname.startsWith("/administration/") &&
           !url.pathname.startsWith("/administration/assets/"));
       if (!implemented) {
@@ -128,6 +140,12 @@ export async function startServer(
         return;
       }
       if (principal.heard) contact.heard(principal.heard);
+      else if (caller.kind === "asset") {
+        const asset_id = store.read((tx) =>
+          entities.assetForKey(tx, caller.key_id),
+        );
+        if (asset_id) contact.heard({ asset_id });
+      }
       const request: Req<any> = {
         params,
         query: url.searchParams,
@@ -228,6 +246,12 @@ export async function startServer(
           retain(tx, scope, key, fp, keep);
         return first;
       });
+      if (route.path === "/entities/assets" && caller.kind === "asset") {
+        const asset_id = store.read((tx) =>
+          entities.assetForKey(tx, caller.key_id),
+        );
+        if (asset_id) contact.heard({ asset_id });
+      }
       send(
         reply.status,
         reply.body,

@@ -240,6 +240,52 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
         headers: { ...headers, cookie, "idempotency-key": "provision" },
       })
     ).json();
+    const request = async (path: string, body?: unknown, assetKey?: string) => {
+      const response = await fetch(running!.url + path, {
+        method: "POST",
+        headers: {
+          ...headers,
+          cookie,
+          "idempotency-key": crypto.randomUUID(),
+          ...(assetKey ? { authorization: `Bearer ${assetKey}` } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      assert.ok(response.ok, await response.clone().text());
+      return response.json();
+    };
+    const assetKey = await request("/administration/asset-keys");
+    const description = {
+      reports: ["status", "observation"],
+      commands: ["hold"],
+    };
+    const asset = await request("/entities/assets", description, assetKey.key);
+    const sent = await request(`/tasks/${asset.asset_id}`, {
+      tasks: [{ kind: "hold" }],
+    });
+    assert.deepEqual(sent.task_ids, [1]);
+    await request(
+      `/entities/assets/${asset.asset_id}/reports`,
+      {
+        reports: [
+          {
+            type: "report.observation",
+            kind: "coordinates",
+            time: Date.now(),
+            asset_id: asset.asset_id,
+            observation_id: "OBS",
+            position: { latitude: 1, longitude: 2 },
+          },
+        ],
+      },
+      assetKey.key,
+    );
+    const tracksBefore = await (
+      await fetch(running.url + "/entities/tracks", {
+        headers: { ...headers, cookie },
+      })
+    ).json();
+    assert.equal(tracksBefore.items.length, 1);
     await running.kill("SIGKILL");
     running = await child(cfg);
     assert.equal(
@@ -270,6 +316,38 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
     ).json();
     assert.notEqual(next.gateway_id, key.gateway_id);
     assert.ok(next.event_id > key.event_id);
+    const retained = await (
+      await fetch(running.url + `/tasks/${asset.asset_id}`, {
+        headers: { ...headers, cookie },
+      })
+    ).json();
+    assert.equal(retained.items[0].state, "sent");
+    const nextTask = await request(`/tasks/${asset.asset_id}`, {
+      tasks: [{ kind: "hold" }],
+    });
+    assert.deepEqual(nextTask.task_ids, [2]);
+    const restarted = await request(
+      "/entities/assets",
+      description,
+      assetKey.key,
+    );
+    assert.equal(restarted.asset_id, asset.asset_id);
+    assert.equal(restarted.last_task_id, 2);
+    const tracksAfter = await (
+      await fetch(running.url + "/entities/tracks", {
+        headers: { ...headers, cookie },
+      })
+    ).json();
+    assert.equal(tracksAfter.items.length, 1);
+    assert.equal(tracksAfter.items[0].track_id, tracksBefore.items[0].track_id);
+
+    const otherKey = await request("/administration/asset-keys");
+    const otherAsset = await request(
+      "/entities/assets",
+      description,
+      otherKey.key,
+    );
+    assert.notEqual(otherAsset.asset_id, asset.asset_id);
   } finally {
     if (running) await running.kill("SIGTERM");
     await rm(dir, { recursive: true, force: true });
@@ -330,7 +408,7 @@ test("14. retries add no event, conflict returns 409; SSE resumes by header [api
     await reader.cancel().catch(() => {});
     assert.equal(
       (await h.call("GET", "/entities", { cookie: h.admin })).status,
-      501,
+      200,
     );
   } finally {
     await h.close();
