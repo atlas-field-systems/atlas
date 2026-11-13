@@ -133,13 +133,6 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     const follower = fusion.startFusion(store, fusion.onePerObservation);
     const streams = startStreams(store, options.clock);
     const server = await startServer(env, store, contact, streams);
-    const closeServer = server.close.bind(server);
-    server.close = async () => {
-      await closeServer();
-      contact.stop();
-      await follower.drain();
-      follower.stop();
-    };
     process.stdout.write(
       JSON.stringify({
         url: server.url,
@@ -155,8 +148,11 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       stop() {
         return (stopped ??= stopRun(env, store, tables, {
           closeServer: () => server.close(),
-          stopContact() {},
-          async drainFusion() {},
+          stopContact: () => contact.stop(),
+          async drainFusion() {
+            await follower.drain();
+            follower.stop();
+          },
         }));
       },
     };
