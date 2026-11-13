@@ -1,0 +1,7 @@
+decision	reason	evidence	result
+Use @types/node as a dev dependency	TypeScript needs declarations for Node builtins, including node:sqlite; it adds no runtime dependency	core/tsconfig.json and tsc --noEmit	Runtime dependency remains only @atlas/protocol
+Prepare receives Store	Login must read a stored password hash before asynchronous scrypt	core/src/api/routes.ts verifyLogin	No transaction spans await
+Implement Entities identity reads only	Authorization, keyed SSE, account collision checks and gateway removal need the owning pillar to read identities	core/src/pillars/entities.ts	Other Entities bodies remain stubs
+Deliberate stop follows archive failure path	Reset ZIP belongs to a later phase	core/src/core.ts stop and core/docs/reset.md	No clear, ended run retained, exit status 1
+Test 10 checks gateway numbering in Phase 1	Asset registration and Tasks are explicitly outside this phase	core/test/contract.test.ts	SIGKILL proves run, session, retry and global IDs persist; Task numbering and ZIP checks pending later pillars
+Bootstrap request definitions use shared variables	Protocol laws require reusable fields; Object attachment references an existing geo feature rather than assigning its ID	protocol/docs/laws.md and npm run check	No Core-local validator
