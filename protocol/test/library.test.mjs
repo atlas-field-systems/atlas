@@ -71,6 +71,9 @@ test('README Use the library: an unknown kind is one problem that lists the kind
   assert.equal(problems.length, 1, JSON.stringify(problems));
   assert.equal(problems[0].path, '/kind');
   assert.match(problems[0].message, /^must be one of .*"takeoff".*"capture"/);
+  for (const kind of ['Fly', 5]) {
+    assert.deepEqual(protocol.check('requests.task', { kind }).problems.map((p) => p.path), ['/kind'], String(kind));
+  }
 });
 
 test('README Use the library: the definition files must include index.json', async () => {

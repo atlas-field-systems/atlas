@@ -97,6 +97,7 @@ export async function loadDefinitions(files) {
       return error.data.kind === undefined ? [] : [{
         path: `${error.instancePath}/kind`,
         message: `must be one of ${[...kinds.keys()].map((kind) => JSON.stringify(kind)).join(', ')}`,
+        unknownKind: true,
       }];
     }
     if (error.keyword === 'unevaluatedProperties' && kinds) {
@@ -114,7 +115,10 @@ export async function loadDefinitions(files) {
     if (validate(value)) return { ok: true };
     const explain = explainer.getSchema(file);
     explain(value);
-    const problems = (explain.errors ?? []).flatMap(problemOf);
+    const explained = (explain.errors ?? []).flatMap(problemOf);
+    // An unknown kind is one problem: the list of kinds replaces the kind's other problems.
+    const unknownKinds = new Set(explained.filter((p) => p.unknownKind).map((p) => p.path));
+    const problems = explained.filter((p) => p.unknownKind || !unknownKinds.has(p.path)).map(({ path, message }) => ({ path, message }));
     return { ok: false, problems: problems.length ? problems : validate.errors.flatMap(problemOf) };
   };
   const listed = index.groups.flatMap((group) => group.files);
