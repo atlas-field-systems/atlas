@@ -81,15 +81,10 @@ When Atlas fails, in a simulation, a prototype, or the field:
 3. Fix the part, and watch the simulation pass.
 4. Keep the simulation. It runs on every change from then on.
 
-## Simulated is not real
+## Rules
 
-A simulated pass proves that the parts agree under the conditions simulated. It
-does not prove real flight, radio performance, or mesh routing. Reports from a
-simulation always say they are simulated. Hardware testing is still needed.
-
-Simulations follow [tests come from behavior](../atlas/design-decisions.md#tests-come-from-behavior):
-scenarios come from the rules the owner states in each part's docs, never from
-Protocol's definitions.
+Simulations follow the Charter's [Test what matters](../atlas/CHARTER.md#test-what-matters),
+including that a simulated pass proves nothing about real flight or radios.
 
 ## Docs
 

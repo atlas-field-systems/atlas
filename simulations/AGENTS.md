@@ -18,6 +18,6 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 - A simulated Asset runs only its script and makes no decision of its own
   ([simulated Assets](README.md#simulated-assets)).
 - Never generate scenarios or expected results from Protocol's definitions
-  ([tests come from behavior](../atlas/design-decisions.md#tests-come-from-behavior)).
+  ([test what matters](../atlas/CHARTER.md#test-what-matters)).
 - Planning only: no code until the owner asks. Do not merge without the
   developer's approval.

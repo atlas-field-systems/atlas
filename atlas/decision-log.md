@@ -115,6 +115,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | Atlas keeps few unit tests. End-to-end simulations are the main tests. | Every part. | [Charter, Test what matters](https://github.com/atlas-field-systems/atlas/blob/main/atlas/CHARTER.md#test-what-matters) |
+| 2026-11-13 | Simulations that use scripted Assets are reworked to use the real Asset app once it is built. | Simulations. | [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets) |
 | 2026-11-13 | The first version builds Protocol, then Core, then the SDK, one part at a time, with the simulations that test them. Problems found building one part change how the next is built. | The first version. | [Design decisions](https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#design-the-whole-product-then-build-it) |
 | 2026-11-13 | Each part is built whole, not feature by feature: Core's Entities, Tasks, and Objects are built together, because they share much of their underlying code. | Every part. | [Design decisions](https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#design-the-whole-product-then-build-it) |
 | 2026-11-13 | Simulations is its own part of Atlas. It runs Atlas parts together in a simulated world, with simulated links and simulated Assets, to test what they do end to end. | Integration tests and evals. | [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md) |
