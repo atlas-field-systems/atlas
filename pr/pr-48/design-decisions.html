@@ -35,15 +35,8 @@ owning docs. A prototype proves nothing on its own; the docs stay the source.</p
 <h2 id="no-generated-code">No generated code</h2>
 <p>Atlas code is written by hand and read by people. Do not generate code from
 definitions or docs. Programs load the definitions as data instead.</p>
-<h2 id="tests-come-from-behavior">Tests come from behavior</h2>
-<p>Write tests from what a part must do. Never generate them from Protocol&#39;s
-definitions. A system and its tests built from the same definitions agree with
-each other even when both are wrong. Protocol&#39;s examples test only record shapes
-and the validator. Behavior tests come from the scenarios the owner states in
-each part&#39;s docs, from ArduPilot SITL, and from hardware.
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md">Simulations</a>
-runs the parts together in a simulated world, and every failure found becomes a
-simulation that reproduces it.</p>
+<h2 id="testing">Testing</h2>
+<p>How Atlas tests lives in the Charter, <a href="CHARTER.html#test-what-matters">Test what matters</a>.</p>
 <h2 id="a-walled-city">A walled city</h2>
 <p>Atlas is laid out in rings, so each can change without breaking the others.</p>
 <ul>
