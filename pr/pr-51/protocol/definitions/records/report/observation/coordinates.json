@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/observation/coordinates.json",
+  "title": "coordinates",
+  "description": "The sensor knows where the target is: its position, and how uncertain that is. ADS-B, GPS trackers and cameras that work out a target's place send this. A position with no altitude means the altitude was not measured; displays draw it at ground level.",
+  "type": "object",
+  "required": [
+    "kind",
+    "position"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../../variables/kind.json",
+      "const": "coordinates"
+    },
+    "position": {
+      "$ref": "../../../components/position.json"
+    },
+    "uncertainty": {
+      "$ref": "../../../components/uncertainty.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "coordinates",
+      "position": {
+        "latitude": 42.2758,
+        "longitude": -71.8041
+      },
+      "uncertainty": {
+        "semi_major_m": 15
+      }
+    }
+  ]
+}

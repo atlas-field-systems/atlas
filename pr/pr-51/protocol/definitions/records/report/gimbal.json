@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/gimbal.json",
+  "title": "Gimbal report",
+  "description": "Where a declared gimbal camera points, relative to the Asset's nose and level body, at time. The Asset reports changes while the camera moves or is in use. Readers show the age of the last report.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "asset_id",
+    "camera_id",
+    "yaw_deg",
+    "pitch_deg"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "report.gimbal"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "camera_id": {
+      "$ref": "../../variables/camera_id.json"
+    },
+    "yaw_deg": {
+      "$ref": "../../variables/yaw_deg.json"
+    },
+    "pitch_deg": {
+      "$ref": "../../variables/pitch_deg.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "report.gimbal",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "camera_id": "C1",
+      "yaw_deg": 35,
+      "pitch_deg": -30
+    }
+  ]
+}
