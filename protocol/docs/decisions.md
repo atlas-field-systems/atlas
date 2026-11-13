@@ -123,3 +123,74 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
   items; a Plugin with more fails rather than answering in part. *[Owner decision](../../atlas/decision-log.md#the-picture-and-plugins).*
 - The Plugin records are grouped under `plugin`, with `type`, because one
   answer call takes either a result or a failure.
+
+## TypeScript types
+
+**Working choice, proposed for this draft.** Check in `types.d.ts`, generated
+from `definitions/` by `npm run types`. The owner may overturn this choice.
+This proposes a narrow exception to [no generated code](../../atlas/design-decisions.md#no-generated-code).
+Definitions remain the only authored shapes. No runtime code is generated.
+
+`@atlas/protocol/types` exposes `ProtocolTypes` through a types-only package
+export. Its keys are record names from law 5 and `requests.<file>` for requests.
+Kinds form unions discriminated by `kind`; grouped records also fix `type`.
+Consumers use `import type`, so Node 24 never loads TypeScript from
+`node_modules`. [Consumer instructions](../README.md#typescript-consumers) show
+how to import it.
+
+### Comparison evidence
+
+Prototypes ran outside the repository in `/tmp/atlas-types-comparison`, using
+this draft's real definitions at `b72aa83`, Node 24.22.2, TypeScript 7.0.2,
+`json-schema-to-ts` 3.1.1 and `json-schema-to-typescript` 16.0.0.
+Each consumer constructed `task`, `report.status` and `requests.tasks`, narrowed
+Task kinds, and tried six wrong field names or kinds with `@ts-expect-error`.
+Removing those directives confirmed actual compiler errors.
+
+| Approach | Consumer result | Compile wall time, median and range of 5 runs |
+| --- | --- | --- |
+| Direct JSON import into `FromSchema` | Fails. JSON keywords widen to `string`; `as const` on the import is rejected with TS1355. | Not timed; no usable type. |
+| Literal schemas plus cross-file references | Fails with TS2589, excessive instantiation depth, even with the reference registry limited to reachable schemas per root. Several bad values then escape checking. | 7,215 ms; 7,005 to 8,280 ms, all failed. |
+| Dereferenced literal schemas plus `FromSchema` | All six negative cases and narrowing pass. Requires making a literal copy of the definitions, which is itself generated or maintained twice. | 539 ms; 530 to 662 ms, all passed. |
+| Generated declaration map | All six negative cases and narrowing pass. Errors name the bad field and suggest `destination` or `task_state`. | 125 ms; 120 to 146 ms, all passed. |
+
+Times include compiler process startup and the whole consumer check. The harness
+alternated the three compilable approaches for five rounds with `--noEmit
+--strict --skipLibCheck --module nodenext`, no incremental cache. It recorded
+exit codes as well as elapsed time. The host had four cores and a load average
+of 0.07 before measurement. These small-consumer measurements are diagnostic,
+not a speedup claim for a future Atlas application. A separate extended-diagnostics
+run of the declaration consumer reported 51 instantiations and 0.012 seconds
+checking; compiler startup and parsing dominated its whole run.
+
+Raw milliseconds in run order were 662, 530, 538, 539, 545 for dereferenced
+inference; 8280, 7875, 7090, 7215, 7005 for referenced inference; and 124, 120,
+125, 146, 128 for declarations. The stale-declaration check took a median of
+502 ms across five runs, ranging from 472 to 537 ms.
+
+### Maintenance and limits
+
+Generation wins because ordinary consumers read plain declarations without
+recursive schema inference or a schema-literal mirror. Shared definitions become
+named aliases, and the map gives consumers stable names without knowing those
+aliases. The generator and TypeScript are pinned development dependencies;
+consumers need neither schema-to-types library. Direct inference would add
+`json-schema-to-ts` and its transitive types to every consumer's compiler work.
+
+A definition edit costs one `npm run types` and review of the resulting diff.
+`npm run check` regenerates in memory and fails if the committed file differs.
+Changing the `time` variable's type without regeneration was verified to fail
+that check; the definition was then restored. The single consumer contract test
+protects against open index signatures silently accepting misspelled fields.
+The unadapted generator admitted those signatures around conditional schemas.
+The adapter closes object shapes for TypeScript composition and resolves indexed
+references into shared definitions, without changing the JSON files.
+
+Types describe fields, required fields declared on objects, primitive values,
+enums and kind unions. They are not proof that data meets JSON Schema. Numeric
+bounds, patterns, array lengths, uniqueness, `if`/`then`/`else`, `not`, and
+required-only composition constraints remain runtime checks. In particular,
+place-copy requirements, photo versus clip duration, and `now` request limits
+still need the validator. TypeScript structural assignment also permits some
+extra properties on existing variables. The adapter omits conditional and
+negative constraints deliberately; it does not implement another validator.
