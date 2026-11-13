@@ -1,17 +1,6 @@
 // Shared viewer logic. Runs in Node and the browser.
 // Knows only JSON Schema, never any specific Atlas record.
 
-export async function loadProtocol(readJson, Ajv, addFormats) {
-  const index = await readJson('index.json');
-  const files = index.groups.flatMap((g) => g.files);
-  const schemas = {};
-  for (const f of files) schemas[f] = await readJson(f);
-  const ajv = new Ajv({ strict: false, allErrors: true });
-  if (addFormats) addFormats(ajv);
-  for (const s of Object.values(schemas)) ajv.addSchema(s);
-  return { index, schemas, ajv };
-}
-
 function join(base, ref) {
   const parts = base.split('/').slice(0, -1);
   for (const p of ref.split('/')) {
@@ -153,12 +142,6 @@ export function parseInput(n, text) {
   if (n.kind === 'integer') return parseInt(text, 10);
   if (n.kind === 'boolean') return text === 'true';
   return text;
-}
-
-export function validate(protocol, id, value) {
-  const v = protocol.ajv.getSchema(protocol.schemas[splitId(id).file].$id);
-  const ok = v(value);
-  return { ok, errors: ok ? [] : v.errors.map((e) => `${e.instancePath || '(record)'} ${e.message}`) };
 }
 
 // Sizes in bytes. compress is a function bytes -> bytes (deflate today; swappable later).

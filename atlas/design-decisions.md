@@ -52,6 +52,10 @@ owning docs. A prototype proves nothing on its own; the docs stay the source.
 Atlas code is written by hand and read by people. Do not generate code from
 definitions or docs. Programs load the definitions as data instead.
 
+Protocol proposes one exception for checked-in TypeScript declarations. The
+[measured working choice](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#typescript-types) explains
+why. It is a working choice the owner may overturn, not an owner decision.
+
 ## Testing
 
 How Atlas tests lives in the Charter, [Test what matters](CHARTER.md#test-what-matters).

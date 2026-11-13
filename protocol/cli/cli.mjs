@@ -2,7 +2,7 @@
 // Atlas Protocol viewer for the terminal. Everything shown comes from definitions/.
 import { select, input } from '@inquirer/prompts';
 import { load, compress } from '../lib/node-protocol.mjs';
-import { fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, recordTree, splitId } from '../lib/protocol.mjs';
+import { fieldTree, leaves, example, generate, setPath, parseInput, measure, describeType, recordTree, splitId } from '../lib/protocol.mjs';
 
 const protocol = await load();
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
@@ -19,7 +19,7 @@ function printFields(n, depth = 0) {
 }
 
 function report(file, value) {
-  const v = validate(protocol, file, value);
+  const v = protocol.checkFile(splitId(file).file, value);
   const m = measure(value, compress);
   const left = ['Record JSON', ...JSON.stringify(value, null, 2).split('\n')];
   const right = [`Compact JSON (sent minified on one line: ${m.bytes} bytes)`, ...m.aligned.split('\n'), '', `Compressed (deflate, ${m.compressed} bytes)`, ...m.hex.split('\n'), '', 'Base64:', ...(m.base64.match(/.{1,64}/g) ?? [])];
@@ -28,7 +28,7 @@ function report(file, value) {
   for (let i = 0; i < Math.max(left.length, right.length); i++) {
     console.log((left[i] ?? '').padEnd(width) + dim(right[i] ?? ''));
   }
-  console.log(v.ok ? '\x1b[32mValid\x1b[0m' : '\x1b[31mInvalid\x1b[0m\n  ' + v.errors.join('\n  '));
+  console.log(v.ok ? '\x1b[32mValid\x1b[0m' : '\x1b[31mInvalid\x1b[0m\n  ' + v.problems.map((p) => `${p.path || '(value)'} ${p.message}`).join('\n  '));
   console.log(`Size: ${m.bytes} bytes as compact JSON, ${m.compressed} bytes compressed (deflate)`);
   console.log('Largest fields:');
   m.fields.slice(0, 5).forEach((f) => console.log(`  ${String(f.bytes).padStart(4)} B  ${f.path}`));
@@ -96,7 +96,7 @@ if (process.argv[2] === '--list') {
 } else if (process.argv[2] === '--show') {
   const file = process.argv[3];
   const value = example(protocol, file);
-  console.log(JSON.stringify({ file, value, validation: validate(protocol, file, value), size: measure(value, compress) }));
+  console.log(JSON.stringify({ file, value, validation: protocol.checkFile(splitId(file).file, value), size: measure(value, compress) }));
 } else {
   console.log(bold(protocol.index.title));
   try {

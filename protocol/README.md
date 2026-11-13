@@ -51,6 +51,46 @@ Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`,
 `geofeature`, and `plugin.call` records, and assigns `asset_id` to make the
 `description` record.
 
+## Use the library
+
+Node programs use the package's own definitions:
+
+```js
+import { loadPackagedProtocol } from '@atlas/protocol';
+
+const protocol = await loadPackagedProtocol();
+const result = protocol.check('requests.tasks', body);
+if (!result.ok) {
+  const explanation = result.problems.map(({ path, message }) => `${path}: ${message}`).join('; ');
+}
+```
+
+Load once and reuse the returned Protocol. `hash` is the definitions hash from
+[the exact-byte recipe](docs/decisions.md#definitions-hash). `names` lists every
+checkable record and request, using [law 5's names](docs/laws.md), such as `task`,
+`report.status`, `plugin.result`, and `requests.tasks`. Kind files are checked
+through their record, not as separate names.
+
+`check(name, value)` returns `{ ok: true }` or
+`{ ok: false, problems: [{ path, message }] }`. Each path is a JSON Pointer into
+the value, including the name of a missing or extra field. The empty path means
+the whole value. Messages are short explanations for callers to display.
+An unknown name throws because it is a programming error. Validation leaves the
+value unchanged.
+
+Browser programs import `loadProtocol` from `@atlas/protocol/browser`. Node also
+exports it from `@atlas/protocol`. It takes a `Map<string, Uint8Array>` containing
+every JSON file under `definitions/`, including `index.json`. Keys are relative
+paths with `/` separators; values are the exact file bytes. Supply these files
+with the application, preserving their bytes. The loader performs no I/O and uses
+`globalThis.crypto.subtle` for SHA-256. It returns `Promise<Protocol>`.
+`loadPackagedProtocol()` also returns `Promise<Protocol>` and always reads this
+package's own folder, independent of the working directory or environment.
+
+Both entries are JavaScript ESM with hand-written declarations for this API.
+Record types come from [`@atlas/protocol/types`](#typescript-consumers). Protocol remains unpublished; programs
+use it from this repository under the [release policy](../atlas/design-decisions.md#changes-and-releases).
+
 ## Try it
 
 - Web viewer: https://atlas-field-systems.github.io/atlas/protocol/
@@ -60,11 +100,28 @@ Pick a definition to see its description, its fields, an example, whether it is
 valid, and its size (compact and compressed). Edit any field to see the effect.
 Both tools only display what the definitions say. They never send anything.
 
+## TypeScript consumers
+
+Import the type map from `@atlas/protocol/types`. Use a type-only import so Node
+24 erases it before execution.
+
+```ts
+import type { ProtocolTypes } from '@atlas/protocol/types';
+type Task = ProtocolTypes['task'];
+type Status = ProtocolTypes['report.status'];
+type TasksRequest = ProtocolTypes['requests.tasks'];
+const request: TasksRequest = { tasks: [{ kind: 'hold' }] };
+```
+
+After editing definitions, run `npm run types` and commit `types.d.ts` with them.
+`npm run check` rejects stale declarations. The [working choice](docs/decisions.md#typescript-types)
+records the comparison and the limits of compile-time checking.
+
 ## Layout
 
 - `definitions/`: `variables/`, `components/`, `records/`, `requests/`, and `index.json`. The examples in each definition are the validator's test vectors.
 - `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: working choices behind the records, below the [decision log](../atlas/decision-log.md). `docs/open-questions.md`: what is not decided.
-- `lib/`: shared viewer logic. `cli/`: terminal viewer. `site/`: web viewer.
+- `lib/`: the validator, loaders, API declarations, and shared viewer display helpers. `cli/`: terminal viewer. `site/`: web viewer.
 - `scripts/check.mjs`: checks every definition and its examples (`npm ci && npm run check && npm test`).
 
 The [SDK](../sdk/README.md) is the client for the Core API and loads these

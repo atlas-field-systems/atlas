@@ -1,13 +1,21 @@
 // Atlas Protocol viewer for the browser. Everything shown comes from definitions/.
 // Bundled into one local file at build time, so the site needs no outside servers.
-import Ajv from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
+import { loadDefinitions } from '../lib/definitions.mjs';
 import { deflateSync } from 'fflate';
 import { marked } from 'marked';
-import { loadProtocol, fieldTree, leaves, example, generate, setPath, parseInput, validate, measure, describeType, recordTree, splitId } from '../lib/protocol.mjs';
+import { fieldTree, leaves, example, generate, setPath, parseInput, measure, describeType, recordTree, splitId } from '../lib/protocol.mjs';
 
-const readJson = async (f) => (await fetch(`definitions/${f}`)).json();
-const protocol = await loadProtocol(readJson, Ajv, addFormats);
+const readBytes = async (file) => {
+  const response = await fetch(`definitions/${file}`);
+  if (!response.ok) throw new Error(`Cannot load definition: ${file}`);
+  return new Uint8Array(await response.arrayBuffer());
+};
+const indexBytes = await readBytes('index.json');
+const index = JSON.parse(new TextDecoder().decode(indexBytes));
+const files = new Map(await Promise.all(index.groups.flatMap((g) => g.files)
+  .map(async (file) => [file, await readBytes(file)])));
+files.set('index.json', indexBytes);
+const protocol = await loadDefinitions(files);
 const compress = (b) => deflateSync(b, { level: 9 });
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -90,14 +98,14 @@ function show(id) {
       render();
     };
     if (!fromText) $('json').value = JSON.stringify(value, null, 2);
-    const v = validate(protocol, id, value);
+    const v = protocol.checkFile(splitId(id).file, value);
     const m = measure(value, compress);
     $('compact').innerHTML = `<p class="lbl">Compact JSON, line for line with the record JSON. Sent minified on one line: <b>${m.bytes}</b> bytes</p><pre class="aligned">${esc(m.aligned)}</pre>`;
     $('readlbl').innerHTML = `Readable: <b>${m.readableBytes}</b> bytes`;
     $('json').rows = Math.max(m.aligned.split('\n').length, $('json').value.split('\n').length) + 1;
     renderPacked(m);
     $('verdict').innerHTML = `<p class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'Valid' : 'Invalid'}</p>
-      ${v.errors.map((e) => `<div class="bad">${esc(e)}</div>`).join('')}
+      ${(v.ok ? [] : v.problems).map((p) => `<div class="bad">${esc(p.path)} ${esc(p.message)}</div>`).join('')}
       <p><b>${m.bytes}</b> bytes as compact JSON, <b>${m.compressed}</b> bytes compressed (deflate)</p>
       <table><tr><th>Largest fields</th><th>Bytes</th></tr>${m.fields.slice(0, 8).map((f) => `<tr><td>${esc(f.path)}</td><td>${f.bytes}</td></tr>`).join('')}</table>`;
   };
