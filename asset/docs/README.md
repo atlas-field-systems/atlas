@@ -5,7 +5,7 @@ supported work through configurable [modules and equipment drivers](assets.md).
 This is the selected plan. No runtime exists yet.
 
 Protocol owns the records named here: the description, Task, settings change,
-and cancel, and the subsystem, task, queue, telemetry, battery, settings, and
+and cancel, and the subsystem, task, queue, telemetry, battery, settings, gimbal, and
 failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 
 ## Start and connect
@@ -83,6 +83,12 @@ Tasks that use it, Core sends those Tasks again with the new copy
 for a Task it has not started; an active Task carries on to the updated place;
 an update to a Task that has ended changes nothing. An updated place is not a
 failure by itself, so it never cancels the remaining Tasks.
+
+### Move To speed
+
+A Move To without a requested speed uses the Asset's configured default. The
+Asset caps a request above its configured safe maximum at that maximum, so
+it never exceeds the limit. [Configuration](../config.md) owns both values.
 
 ### The queue
 
@@ -196,6 +202,13 @@ These reports fill shared history. They are separate from local diagnostic logs
 and Reset ZIPs.
 
 ## Capture files
+
+Capture asks a declared camera for a photo or a clip. The Asset captures the
+file and stores it in Core as an Object, with a geo feature alongside it. The
+Task completes only once the Object is stored. If capture or sending fails,
+the Task fails with an explanation. Its command timeout bounds the wait. Every
+command that produces a file names its stored Object in its completed Task
+report ([Protocol](../../protocol/definitions/records/report/status/task.json)).
 
 An Asset with a camera or another sensor can send what it captures, such as a
 photo or a short clip, to Core as an [Object](../../core/docs/api.md#objects).

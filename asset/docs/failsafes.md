@@ -153,12 +153,15 @@ Conditions can include:
   an Asset that holds only such Tasks is idle. Telemetry does not reset the
   timer. Each new idle interval starts fresh.
 - Being airborne, for example combined with contact loss and no remaining work.
-- Being outside a horizontal polygon drawn in the rule itself, never taken
-  from a saved place, even without an observed crossing, including at startup
-  or after a policy replacement. A distance
-  beyond the boundary and a duration outside are configured; either may be zero.
-  An unknown position is not outside, so the condition does not hold. Altitude
-  limits are deferred.
+- Being outside a polygon drawn in the rule itself, never taken from a saved
+  place, above an optional maximum altitude, or below an optional minimum
+  altitude. Each height says what it is measured from. Any one of these limits
+  holds the condition when exceeded by more than the configured distance
+  margin for the configured duration; either value may be zero. No observed
+  crossing is needed, including at startup or after policy replacement. An
+  unknown position does not establish horizontal escape, and an unknown
+  altitude does not establish a height violation. Another known limit may
+  still hold the condition.
 
 A measurement older than `measurement_stale_after_s` in the Asset's
 [configuration](../config.md) counts as unknown, and an unknown value never makes

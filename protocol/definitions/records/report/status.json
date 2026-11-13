@@ -83,6 +83,17 @@
         3
       ],
       "request_id": 120
+    },
+    {
+      "type": "report.status",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "task",
+      "task_id": 9,
+      "task_state": "completed",
+      "object_ids": [
+        "F1"
+      ]
     }
   ]
 }

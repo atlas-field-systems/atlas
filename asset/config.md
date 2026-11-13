@@ -38,6 +38,9 @@ Names are proposed keys, not an implemented format.
 | `initial_settings` | Starting values for supported live settings | An explicit home takes precedence over automatic home. Includes the starting `failsafe_policy` |
 | `startup_behavior` | Acquisition, reporting, and initial equipment behavior | Example setups report at once and wait for movement Tasks |
 | `completion_tolerances`, `command_timeouts` | How close counts as done, and how long a command may run before its Task fails | Per command; defaults are tuned in SITL |
+| `default_ground_speed_mps` | Move To speed when none is requested | Required for movement, nonnegative and no greater than `max_ground_speed_mps`; chosen for the equipment |
+| `max_ground_speed_mps` | Safe maximum horizontal speed | Required for movement, positive and chosen for the equipment; [Move To caps faster requests](docs/README.md#move-to-speed) |
+
 | `measurement_stale_after_s` | Age at which a measurement counts as unknown to [failsafe conditions](docs/failsafes.md#configure-conditions-as-well-as-responses) | Proposed default 5 |
 | `final_report_wait_s` | How long the app waits for Core to acknowledge its final reports before it [shuts itself down](docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation) | Proposed default 30 |
 | `reporting` | Which reports to send from local state, and how often | No mandatory periodic health snapshots |

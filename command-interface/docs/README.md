@@ -138,6 +138,17 @@ explanations beside the controls. Support is separate from whether a current
 setting value is known. A reporting-only tracker needs no movement controls,
 pause control, or artificial home.
 
+For Capture, the operator chooses one of the Asset's declared cameras, then
+a photo or clip. A clip also asks for its duration. Finished Tasks link to the
+Objects they made ([capture behavior](../../asset/docs/README.md#capture-files)).
+Move To offers an optional speed and explains the Asset's
+[configured default and cap](../../asset/docs/README.md#move-to-speed).
+
+For each gimbal camera, show where it points using its latest
+[gimbal report](../../protocol/definitions/records/report/gimbal.json) and the
+Asset's attitude. Show the report's age, and show unknown direction when the
+needed attitude is unknown.
+
 Commanding works as in a small tactical RTS game. An operator directs a few
 Assets one at a time, so there is no box selection and no order to a group.
 
@@ -221,7 +232,10 @@ itself.
 
 A failsafe rule's boundary is never a place. The Asset stores its failsafe
 policy itself, so the operator draws each boundary in the failsafe rule, apart
-from the places on the map.
+from the places on the map. The rule editor offers optional minimum and
+maximum heights, each with a reference, beside the distance margin and time.
+Show the limits on the boundary and explain
+[when the condition holds](../../asset/docs/failsafes.md#configure-conditions-as-well-as-responses).
 
 Drawing an area never sends anything, tasks an Asset, or creates an enforced
 geofence by itself.

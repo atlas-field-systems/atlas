@@ -171,6 +171,10 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   description lists every command and setting in it, and accepts or refuses the
   request whole. An unlisted command or setting is refused with `409`. Core
   refuses commands to an offline Asset and holds nothing, Fail-safe included.
+- **Capture names a declared camera.** Core refuses a `capture` Task with
+  `409` when `camera_id` is not in the Asset's description.
+  [Protocol Task kinds](../../protocol/definitions/records/task.json) define
+  the accepted kinds, including Capture.
 - **A flying Asset needs a critical battery rule.** An Asset whose description
   lists `takeoff` is a flying Asset. Core refuses Tasks to it with
   `409 no_critical_battery_rule` while its latest reported `failsafe_policy`
@@ -548,6 +552,9 @@ them to Assets or gateways.
 | `PATCH /objects/{object_id}` | Account | `{"geofeature_id": <id or null>}` attaches, moves, or detaches it; `200 {event_id}` |
 | `DELETE /objects/{object_id}` | Account | Deletes the Object: hides it and its file for the rest of the run; `200 {event_id}` |
 
+All files, including photos and clips, are Objects
+([decision log](../../atlas/decision-log.md#the-picture-and-plugins)).
+
 - **An upload is the file itself.** The body is the file's bytes and its
   `Content-Type` header is the file's type. `name` is required and
   `geofeature_id` is optional. It is the one state change whose body is not
@@ -564,6 +571,9 @@ them to Assets or gateways.
   not carry with `403`; an Asset on IP needs none, because its key names it.
   `requested_by` is that `asset_id`. An Asset never reads, moves, or deletes an
   Object.
+- **Task output names its Objects.** A completed Task report carries the
+  `object_ids` of files it made, as [Protocol defines](../../protocol/definitions/records/report/status/task.json).
+  These are the IDs returned by upload, not file names.
 - **Core assigns `object_id`** and never reuses it in a run, even after a delete.
 - **Stored whole or not at all.** Core writes the file, then adds the Object's
   row and its `object.stored` event in one transaction. There is no half-stored

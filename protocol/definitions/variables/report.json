@@ -9,7 +9,8 @@
     "telemetry",
     "battery",
     "settings",
-    "observation"
+    "observation",
+    "gimbal"
   ],
   "examples": [
     "battery"

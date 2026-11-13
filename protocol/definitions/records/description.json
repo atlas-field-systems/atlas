@@ -27,7 +27,7 @@
         "$ref": "../variables/report.json"
       },
       "minItems": 1,
-      "maxItems": 6
+      "maxItems": 7
     },
     "commands": {
       "type": "array",
@@ -35,7 +35,7 @@
         "$ref": "../variables/command.json"
       },
       "minItems": 0,
-      "maxItems": 7
+      "maxItems": 16
     },
     "settings": {
       "type": "array",
@@ -72,7 +72,8 @@
         "failsafe",
         "telemetry",
         "battery",
-        "settings"
+        "settings",
+        "gimbal"
       ],
       "commands": [
         "takeoff",
@@ -80,7 +81,8 @@
         "land",
         "return_to_home",
         "hold",
-        "failsafe"
+        "failsafe",
+        "capture"
       ],
       "settings": [
         "run_state",
