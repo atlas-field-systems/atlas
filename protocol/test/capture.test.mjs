@@ -1,14 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { load } from '../lib/node-protocol.mjs';
-import { validate } from '../lib/protocol.mjs';
+import { loadPackagedProtocol } from '@atlas/protocol';
 
-const protocol = await load();
+const protocol = await loadPackagedProtocol();
 
 // Task shapes and output IDs: docs/decisions.md, Tasks.
 test('capture requires a duration only for clips', () => {
   const capture = { kind: 'capture', camera_id: 'C1', media: 'photo' };
-  const accepts = (body) => validate(protocol, 'requests/task.json', body).ok;
+  const accepts = (body) => protocol.check('requests.task', body).ok;
   assert.equal(accepts(capture), true);
   assert.equal(accepts({ ...capture, duration_s: 10 }), false);
   assert.equal(accepts({ ...capture, camera_id: undefined }), false);
@@ -20,7 +19,7 @@ test('capture requires a duration only for clips', () => {
 
 test('only completed Tasks name stored Objects, up to 16', () => {
   const report = { type: 'report.status', time: 1793667600000, asset_id: 'A1', kind: 'task', task_id: 9, task_state: 'completed', object_ids: ['F1'] };
-  const accepts = (body) => validate(protocol, 'records/report/status.json', body).ok;
+  const accepts = (body) => protocol.check('report.status', body).ok;
   assert.equal(accepts(report), true);
   for (const task_state of ['active', 'failed', 'cancelled']) {
     assert.equal(accepts({ ...report, task_state }), false);

@@ -1,6 +1,8 @@
 // Proves the CLI and the site have nothing hardcoded: add a brand-new definition
 // in a temporary copy of definitions/, and both tools must pick it up unchanged.
 import { test } from 'node:test';
+import { loadProtocol } from '@atlas/protocol/browser';
+import { readDefinitionFiles } from '../lib/node-definitions.mjs';
 import assert from 'node:assert/strict';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -42,6 +44,14 @@ index.groups.at(-1).files.push('variables/zz_probe_level.json');
 writeFileSync(join(defs, 'index.json'), JSON.stringify(index));
 const env = { ...process.env, ATLAS_DEFINITIONS: defs };
 
+test('docs/laws.md law 5: a new indexed record becomes a checkable name without changing code', async () => {
+  const protocol = await loadProtocol(await readDefinitionFiles(defs));
+  assert.ok(protocol.names.includes('zz_probe.dummy'));
+  assert.ok(!protocol.names.includes('zz_probe.dummy.ping'));
+  assert.deepEqual(protocol.check('zz_probe.dummy', { type: 'zz_probe.dummy', time: 1793667600000, kind: 'ping', probe_level: 7 }), { ok: true });
+  assert.equal(protocol.check('zz_probe.dummy', { type: 'zz_probe.dummy', time: 1793667600000, kind: 'ping', probe_level: 6 }).ok, false);
+});
+
 test('CLI lists and renders the new definition', () => {
   const list = execFileSync('node', ['cli/cli.mjs', '--list'], { env, encoding: 'utf8' });
   assert.match(list, /records\/zz_probe\/dummy\.json@ping\tzz_probe › dummy › ping/);
@@ -69,6 +79,7 @@ test('site bundle renders and validates the new definition without external impo
     },
     location: { pathname: '/', hash: '#records/zz_probe/dummy.json@ping' },
     window: {},
+    crypto: globalThis.crypto,
     TextEncoder,
     TextDecoder,
     structuredClone,
@@ -76,7 +87,7 @@ test('site bundle renders and validates the new definition without external impo
     fetch: async (path) => {
       requests.push(path);
       const body = readFileSync(join(out, path), 'utf8');
-      return { json: async () => JSON.parse(body), text: async () => body };
+      return { ok: true, arrayBuffer: async () => new TextEncoder().encode(body).buffer, json: async () => JSON.parse(body), text: async () => body };
     },
   });
   assert.ok(requests.every((path) => !/^https?:/.test(path)), 'site must load local files only');

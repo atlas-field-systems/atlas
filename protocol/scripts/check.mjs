@@ -1,13 +1,12 @@
 // Checks every definition: valid JSON Schema, listed in index.json, examples pass,
 // records, kinds and components only reference variables, components or records, and the laws below.
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join, posix } from 'node:path';
-import Ajv from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
+import { readDefinitionFiles } from '../lib/node-definitions.mjs';
+import { loadDefinitions } from '../lib/definitions.mjs';
 
 const root = process.env.ATLAS_DEFINITIONS ?? 'definitions';
-const ajv = new Ajv({ strict: true, strictRequired: false, allowUnionTypes: true, allErrors: true });
-addFormats(ajv);
+const { index, schemas, checkFile } = await loadDefinitions(await readDefinitionFiles(root));
 
 const errors = [];
 // A record, kind or component may only point at definitions: a $ref, a $ref fixed to one
@@ -18,15 +17,10 @@ const onlyReferences = (d) => {
   const list = Object.keys(d).filter((k) => !['minItems', 'maxItems'].includes(k)).sort().join();
   return d.type === 'array' && list === 'items,type' && Object.keys(d.items).join() === '$ref';
 };
-const files = ['variables', 'components', 'records', 'requests'].flatMap((k) =>
-  readdirSync(join(root, k), { recursive: true }).filter((f) => f.endsWith('.json')).map((f) => `${k}/${f}`)).sort();
-const schemas = Object.fromEntries(files.map((f) => [f, JSON.parse(readFileSync(join(root, f), 'utf8'))]));
+const files = Object.keys(schemas).sort();
 
 const resolve = (file, ref) => posix.normalize(posix.join(posix.dirname(file), ref));
 
-for (const s of Object.values(schemas)) ajv.addSchema(s);
-
-const index = JSON.parse(readFileSync(join(root, 'index.json'), 'utf8'));
 const listed = index.groups.flatMap((g) => g.files);
 for (const f of files) if (!listed.includes(f)) errors.push(`${f}: not listed in index.json`);
 for (const f of listed) if (!schemas[f]) errors.push(`index.json: ${f} does not exist`);
@@ -51,9 +45,9 @@ for (const [file, s] of Object.entries(schemas)) {
     }
   }
   try {
-    const validate = ajv.getSchema(s.$id);
     for (const [i, ex] of (s.examples ?? []).entries()) {
-      if (!validate(ex)) errors.push(`${file}: example ${i + 1} fails: ${ajv.errorsText(validate.errors)}`);
+      const result = checkFile(file, ex);
+      if (!result.ok) errors.push(`${file}: example ${i + 1} fails: ${result.problems.map((p) => `${p.path} ${p.message}`).join(', ')}`);
     }
   } catch (e) {
     errors.push(`${file}: ${e.message}`);

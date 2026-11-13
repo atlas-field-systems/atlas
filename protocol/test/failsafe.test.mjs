@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { load } from '../lib/node-protocol.mjs';
-import { validate } from '../lib/protocol.mjs';
 
 const protocol = await load();
 const rule = {
@@ -12,19 +11,19 @@ const rule = {
 };
 
 test('a failsafe rule has one response and no fallback', () => {
-  const result = validate(protocol, 'components/failsafe_rule.json', rule);
-  assert.equal(result.ok, true, result.errors.join('\n'));
-  assert.equal(validate(protocol, 'components/failsafe_rule.json', { ...rule, fallback: { kind: 'return_to_home' } }).ok, false);
+  const result = protocol.checkFile('components/failsafe_rule.json', rule);
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(protocol.checkFile('components/failsafe_rule.json', { ...rule, fallback: { kind: 'return_to_home' } }).ok, false);
 });
 
 test('there is no stale-data condition', () => {
   const stale = { ...rule, conditions: [{ kind: 'measurement_stale', measurement: 'position', stale_after_s: 5 }] };
-  assert.equal(validate(protocol, 'components/failsafe_rule.json', stale).ok, false);
+  assert.equal(protocol.checkFile('components/failsafe_rule.json', stale).ok, false);
 });
 
 test('a failsafe response report names no attempt', () => {
   const report = { type: 'report.failsafe', time: 1793667600000, asset_id: 'A1', kind: 'response', rule_id: 'CB1', task_state: 'active', response: { kind: 'return_to_home' } };
-  const result = validate(protocol, 'records/report/failsafe.json', report);
-  assert.equal(result.ok, true, result.errors.join('\n'));
-  assert.equal(validate(protocol, 'records/report/failsafe.json', { ...report, attempt: 'fallback' }).ok, false);
+  const result = protocol.protocol.check('report.failsafe', report);
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(protocol.protocol.check('report.failsafe', { ...report, attempt: 'fallback' }).ok, false);
 });

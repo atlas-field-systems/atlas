@@ -1,8 +1,8 @@
 // A field shows what its own definition says, also when that definition points at another one.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import Ajv from 'ajv/dist/2020.js';
-import { loadProtocol, fieldTree, leaves, generate } from '../lib/protocol.mjs';
+import { loadDefinitions } from '../lib/definitions.mjs';
+import { fieldTree, leaves, generate } from '../lib/protocol.mjs';
 
 const id = (f) => `https://atlas-field-systems.github.io/protocol/definitions/${f}`;
 const files = {
@@ -12,7 +12,7 @@ const files = {
   'records/zz_probe.json': { $id: id('records/zz_probe.json'), title: 'Probe', description: 'Test only.', type: 'object', required: ['plain', 'narrow'],
     properties: { plain: { $ref: '../variables/zz_base.json' }, narrow: { $ref: '../variables/zz_narrow.json' } } },
 };
-const protocol = await loadProtocol(async (f) => files[f], Ajv);
+const protocol = await loadDefinitions(new Map(Object.entries(files).map(([path, value]) => [path, new TextEncoder().encode(JSON.stringify(value))])));
 const tree = fieldTree(protocol, 'records/zz_probe.json');
 const field = (name) => leaves(tree, {}).find((r) => r.path[0] === name).node;
 

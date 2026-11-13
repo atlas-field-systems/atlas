@@ -7,6 +7,7 @@ Everything here, laws included, is a [draft](../atlas/CHARTER.md#everything-is-a
 ## This folder
 
 - `definitions/` is the source of truth. Docs, the CLI and the viewer follow it; never hardcode a record elsewhere.
+- Programs using the validator or definitions hash follow [Use the library](README.md#use-the-library).
 - Protocol defines shared records and their validator. The [Core API](../core/docs/api.md) and the Fieldlink docs define how programs talk, including requests, events, delivery, acknowledgements, and credentials. Do not add link mechanics here.
 - [docs/laws.md](docs/laws.md) lists the rules every definition follows. Change a law on purpose before breaking it.
 - [docs/decisions.md](docs/decisions.md) records working choices behind the records, made in design threads; they change with a stated reason. The owner's decisions are in the [decision log](../atlas/decision-log.md), which wins; [docs/open-questions.md](docs/open-questions.md) lists what is not decided.
