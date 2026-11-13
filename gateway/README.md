@@ -36,18 +36,24 @@ retries, duplicates, contact timing, and link security.
 FLRC and other radios get their own Fieldlinks later. A mesh that mixes radio
 types is one Fieldlink covering both.
 
-- **One mode at a time.** The admin picks the gateway's Fieldlink in its
-  configuration. At start the gateway app checks that the Fieldlink's radio
-  hardware is present; if not, it does not start and prints why. Changing modes
-  means changing the configuration and restarting the gateway between runs.
-- **Every Fieldlink ships with the gateway app.** They are released together
-  from this folder, so a gateway already holds every mode and the admin only
-  picks one. Nothing is downloaded or installed separately.
+- **Each Fieldlink is its own package.** It has its own version and is
+  released on its own, so updating a Fieldlink never needs a new gateway app.
+  It states which gateway app versions it works with.
+- **The admin installs Fieldlinks on the gateway.** The gateway app's install
+  command takes a Fieldlink package file, so it works in the field with no
+  internet. The gateway app lists, updates, and removes installed Fieldlinks.
+  It refuses a Fieldlink that does not work with its version, and says why. An
+  install or update takes effect when the gateway next starts, between runs.
+- **One mode at a time.** The admin picks one installed Fieldlink in the
+  gateway's configuration. At start the gateway app checks that the Fieldlink
+  is installed and fits its version, and that its radio hardware is present; if
+  not, it does not start and prints why. Changing modes means changing the
+  configuration and restarting the gateway between runs.
 
 A Fieldlink works in one of two ways:
 
 - **It carries Atlas to the Asset.** The Asset runs the [Asset app](../asset/README.md)
-  and the same Fieldlink package, and Atlas records cross the radio in the
+  with the same Fieldlink package installed the same way, and Atlas records cross the radio in the
   Fieldlink's compact encoding. Meshtastic works this way.
 - **It runs the Asset app on the gateway.** The vehicle speaks only its own
   protocol, such as MAVLink, and runs no Atlas software. The Fieldlink runs the
@@ -65,16 +71,20 @@ answers with its `asset_id`. For each Asset, the Fieldlink then supplies an
 [Asset link](../sdk/docs/asset.md#the-asset-link): a Fieldlink that carries
 Atlas builds it over the radio, and one that runs the Asset app on the gateway
 builds it on the gateway's own Core connection. The gateway app logs both
-sides. The exact TypeScript interface is written with the first Fieldlink.
+sides. Because Fieldlinks are released apart from the gateway app, this
+interface is the contract between them: it changes only with a new gateway app
+version. The exact TypeScript interface is written with the first Fieldlink.
 
 ## Folder layout
 
 | Path | Holds |
 | --- | --- |
 | `gateway/README.md` | This page: the gateway app |
-| `gateway/fieldlinks/<name>/` | One Fieldlink: its page now, its code later |
+| `gateway/fieldlinks/<name>/` | One Fieldlink package: its page now, its code later, with its own version |
 
-The gateway app's code will sit beside `fieldlinks/` when it is written.
+The gateway app's code will sit beside `fieldlinks/` when it is written. Each
+Fieldlink is released from `prod` as its own package, like Protocol; publishing
+is set up when the first one has code.
 
 ## One gateway per site
 
@@ -179,6 +189,11 @@ Behavior tests come from these, once the gateway exists.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
 - Configure a Fieldlink whose radio is not plugged in. The gateway does not
   start and prints which radio it is missing.
+- Install a newer version of the gateway's Fieldlink from a file, with no
+  internet, and restart the gateway between runs. It runs the new version with
+  the same gateway app.
+- Install a Fieldlink that does not work with this gateway app's version. The
+  gateway app refuses it and says which versions it needs.
 - Stop the gateway. The gateway and every radio it carries show offline after
   `offline_after_s`.
 - Remove the gateway and add a new one during the run. Each radio the new

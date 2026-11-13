@@ -90,7 +90,8 @@ The parts:
 - **Gateways** run on their own computers, uplink to the Core API over
   broadband IP, and run the gateway app, a framework running one Fieldlink at a
   time. A gateway is not an Asset.
-- **Fieldlinks** are the gateway's operating modes, each defined by its radio
+- **Fieldlinks** are the gateway's operating modes, separate packages released
+  and installed on their own, each defined by its radio
   hardware and software, such as SiK with MAVLink or LoRa with Meshtastic. A
   Fieldlink either carries Atlas to an Asset running the same package, or runs
   the Asset app on the gateway for a vehicle that runs no Atlas software. It

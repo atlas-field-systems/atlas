@@ -26,7 +26,7 @@ Propose changes to the owner rather than making them quietly. See
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is not built yet | Planning |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
-| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that runs one Fieldlink (operating mode) at a time, and the Fieldlinks under `gateway/fieldlinks/` | Planning; the framework, SiK and Meshtastic modes are designed |
+| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that runs one installed Fieldlink (operating mode) at a time, and the Fieldlink packages under `gateway/fieldlinks/`, each released on its own | Planning; the framework, SiK and Meshtastic modes are designed |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
 - Want the exact shape of a record? Go to `protocol/`.

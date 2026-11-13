@@ -17,6 +17,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | Fieldlinks are separate packages, released and updated on their own and installed on the gateway app, so updating a Fieldlink never needs new gateway software. | Every Fieldlink. | [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#fieldlinks-are-the-gateways-operating-modes) |
 | 2026-11-12 | The gateway app is a framework. It runs one Fieldlink, an operating mode defined by the radio hardware and the software over it, picked by the admin. A gateway runs one mode at a time. | Every gateway. | [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#fieldlinks-are-the-gateways-operating-modes) |
 | 2026-11-12 | The SiK Fieldlink carries one vehicle, using MAVLink over a SiK telemetry radio; the vehicle runs no Atlas software. First flight's ground Pi is a gateway in SiK mode, not an Asset on IP. | SiK gateways and first flight. | [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/sik/README.md) |
 | 2026-11-12 | The Meshtastic Fieldlink carries Atlas over LoRa radios running Meshtastic. | Meshtastic gateways. | [Meshtastic Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/meshtastic/README.md) |
