@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/plugin_call.json",
+  "title": "Plugin call request",
+  "description": "The body of POST /plugins/{plugin_id}/actions/{action}: the action's input values, at most 16. Core checks them against the action in the Plugin's description, then stamps time, plugin_id, action, and requested_by to make the plugin.call record.",
+  "type": "object",
+  "required": [
+    "inputs"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "../components/input_value.json"
+      },
+      "maxItems": 16
+    }
+  },
+  "examples": [
+    {
+      "inputs": [
+        {
+          "input": "box",
+          "kind": "area",
+          "area": [
+            {
+              "latitude": 42.2761,
+              "longitude": -71.8031
+            },
+            {
+              "latitude": 42.2768,
+              "longitude": -71.8012
+            },
+            {
+              "latitude": 42.2752,
+              "longitude": -71.8004
+            },
+            {
+              "latitude": 42.2747,
+              "longitude": -71.8025
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": []
+    }
+  ]
+}

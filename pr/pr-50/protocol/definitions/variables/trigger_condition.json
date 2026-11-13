@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/trigger_condition.json",
+  "title": "trigger_condition",
+  "description": "The subsystem condition that sets off a failsafe condition: degraded counts degraded or faulted, and faulted counts only faulted.",
+  "$ref": "condition.json",
+  "enum": [
+    "degraded",
+    "faulted"
+  ],
+  "examples": [
+    "faulted"
+  ]
+}

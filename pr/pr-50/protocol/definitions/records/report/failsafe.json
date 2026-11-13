@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/report/failsafe.json",
+  "title": "Failsafe",
+  "description": "The Asset reports its failsafe state: a failsafe Task's state, an operator override, or an independent flight-controller protection taking over. kind says which. The first failsafe report of an operation means the Asset is in failsafe state for the rest of it: ordinary work stays locked. While a response runs, only a higher-priority rule interrupts it; an override with Hold now or pause re-arms every rule, and a critical battery rule always fires. explanation says what set it off or what happened, such as a rule or the operator's Fail-safe command.",
+  "type": "object",
+  "required": [
+    "type",
+    "time",
+    "asset_id",
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "failsafe/response.json"
+    },
+    {
+      "$ref": "failsafe/override.json"
+    },
+    {
+      "$ref": "failsafe/autopilot.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "type": {
+      "$ref": "../../variables/type.json",
+      "const": "report.failsafe"
+    },
+    "time": {
+      "$ref": "../../variables/time.json"
+    },
+    "asset_id": {
+      "$ref": "../../variables/asset_id.json"
+    },
+    "kind": {
+      "$ref": "../../variables/kind.json"
+    },
+    "explanation": {
+      "$ref": "../../variables/explanation.json"
+    }
+  },
+  "examples": [
+    {
+      "type": "report.failsafe",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "response",
+      "rule_id": "LB2",
+      "task_state": "active",
+      "response": {
+        "kind": "return_to_home"
+      },
+      "explanation": "Battery at 24 % while airborne"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "response",
+      "rule_id": "LB1",
+      "task_state": "active",
+      "response": {
+        "kind": "land",
+        "landing_position": {
+          "latitude": 42.2749,
+          "longitude": -71.806
+        }
+      },
+      "explanation": "Battery at 14 %"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "response",
+      "task_state": "active",
+      "response": {
+        "kind": "return_to_home"
+      },
+      "explanation": "Operator sent Fail-safe, Task 8"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667660000,
+      "asset_id": "A1",
+      "kind": "response",
+      "rule_id": "LB2",
+      "task_state": "failed",
+      "explanation": "Home out of reach"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667660000,
+      "asset_id": "A1",
+      "kind": "response",
+      "rule_id": "LB2",
+      "task_state": "cancelled",
+      "explanation": "Replaced by operator override"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667660000,
+      "asset_id": "A1",
+      "kind": "override",
+      "request_id": 140
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "kind": "autopilot",
+      "in_control": true,
+      "explanation": "Flight controller switched to RTL on radio failsafe"
+    },
+    {
+      "type": "report.failsafe",
+      "time": 1793667720000,
+      "asset_id": "A1",
+      "kind": "autopilot",
+      "in_control": false,
+      "explanation": "Pilot switched back to Guided"
+    }
+  ]
+}
