@@ -13,11 +13,11 @@ where it is not. Wi-Fi is a possible addition. FLRC is expected to carry more
 than single-digit kilobits per second. Initial Assets use a single link, so
 multiple-link routing is not a prerequisite for them. The radio project owns the
 detailed design as the hardware evolves.</p>
-<p>Field links carry Atlas through Fieldlinks, the
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#fieldlinks-are-the-gateways-operating-modes">gateway&#39;s operating modes</a>.
+<p>Field links carry Atlas through <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md">Fieldlinks</a>,
+each holding both ends of its link.
 A Fieldlink sends compact frames in a proven existing encoding, not a custom
-one. First flight uses <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/sik/README.md">SiK</a>, the LoRa
-phase builds on <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/meshtastic/README.md">Meshtastic</a>,
+one. First flight uses <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md">SiK</a>, the LoRa
+phase builds on <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md">Meshtastic</a>,
 and FLRC gets its own Fieldlink. Each Fieldlink&#39;s docs own its mechanisms, once
 written.</p>
 <h2 id="ip-mainly-connects-the-supporting-systems">IP mainly connects the supporting systems</h2>

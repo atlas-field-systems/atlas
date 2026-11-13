@@ -23,33 +23,51 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-13</td>
+<td>Fieldlink is its own part of Atlas. Each Fieldlink holds both ends of its link: the side the gateway runs and the side the Asset&#39;s communications module runs. SiK is a Fieldlink with only a gateway side, because the vehicle runs no Atlas software.</td>
+<td>Every Fieldlink.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md">Fieldlink</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>A Fieldlink moves messages and reports facts about its link; the Asset decides what to do. The Fieldlink says when the link is lost and how much it can carry, and the Asset&#39;s rules decide the response and what to send.</td>
+<td>Fieldlinks and Asset behavior.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides">Fieldlink</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>The gateway app gives Fieldlinks a stable interface built on the SDK, so an SDK update does not require updating every Fieldlink.</td>
+<td>Every Fieldlink.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateway-interface">Gateway</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
 <td>Installing or updating a Fieldlink takes a single action on the gateway, from its text screen (TUI) or a command (CLI).</td>
 <td>Every gateway.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#fieldlinks-are-the-gateways-operating-modes">Gateway</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#two-kinds-of-fieldlink">Gateway</a></td>
 </tr>
 <tr>
 <td>2026-11-13</td>
 <td>Fieldlinks are separate packages, released and updated on their own and installed on the gateway app, so updating a Fieldlink never needs new gateway software.</td>
 <td>Every Fieldlink.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#fieldlinks-are-the-gateways-operating-modes">Gateway</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#two-kinds-of-fieldlink">Gateway</a></td>
 </tr>
 <tr>
 <td>2026-11-12</td>
 <td>The gateway app is a framework. It runs one Fieldlink, an operating mode defined by the radio hardware and the software over it, picked by the admin. A gateway runs one mode at a time.</td>
 <td>Every gateway.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#fieldlinks-are-the-gateways-operating-modes">Gateway</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#two-kinds-of-fieldlink">Gateway</a></td>
 </tr>
 <tr>
 <td>2026-11-12</td>
 <td>The SiK Fieldlink carries one vehicle, using MAVLink over a SiK telemetry radio; the vehicle runs no Atlas software. First flight&#39;s ground Pi is a gateway in SiK mode, not an Asset on IP.</td>
 <td>SiK gateways and first flight.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/sik/README.md">SiK Fieldlink</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md">SiK Fieldlink</a></td>
 </tr>
 <tr>
 <td>2026-11-12</td>
 <td>The Meshtastic Fieldlink carries Atlas over LoRa radios running Meshtastic.</td>
 <td>Meshtastic gateways.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/meshtastic/README.md">Meshtastic Fieldlink</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md">Meshtastic Fieldlink</a></td>
 </tr>
 <tr>
 <td>2026-11-12</td>
@@ -151,7 +169,7 @@ back.</p>
 <td>2026-11-11</td>
 <td>Radio identity is dropped from Core. The gateway is an IP bridge; edge identity stays on the gateway side. One gateway per site.</td>
 <td>Core and the records. A Fieldlink still gives each radio its own identity.</td>
-<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides">Gateway</a></td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#what-every-fieldlink-provides">Gateway</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
