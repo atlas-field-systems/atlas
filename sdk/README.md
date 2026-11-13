@@ -28,6 +28,10 @@ of its own. Nothing is generated.
 - **No second validator** and no generated clients.
 - **No live picture on Assets.** It is optional and meant for operator apps.
 
+The SDK takes its clock and its connection to Core from the program that
+creates it, so [Simulations](../simulations/README.md#what-each-part-allows) can
+run it unchanged against a faulty network.
+
 ## Docs
 
 | Doc | What it covers |

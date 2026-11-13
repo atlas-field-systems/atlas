@@ -28,6 +28,7 @@ Propose changes to the owner rather than making them quietly. See
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
 | [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Planning |
 | [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink package, holding both ends of its field link, released on its own | Planning; SiK and Meshtastic are sketched |
+| [simulations/](simulations/) | Atlas Simulations: the real parts run together in a simulated world, as end-to-end tests and evals. Each part's own unit tests stay in its folder | Planning |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
 - Want the exact shape of a record? Go to `protocol/`.
@@ -37,6 +38,7 @@ Propose changes to the owner rather than making them quietly. See
 - Want the client programs use to call the Core API? Go to `sdk/`.
 - Want how a gateway connects to Core and installs Fieldlinks? Go to `gateway/`.
 - Want how a Fieldlink carries Atlas across a field link? Go to `fieldlink/`.
+- Want how the parts are tested together end to end? Go to `simulations/`.
 - Want what the owner decided, or what a run is and how Assets get their IDs? Go
   to the [decision log](atlas/decision-log.md) and
   [runs and identity](atlas/runs-and-identity.md).
@@ -63,6 +65,7 @@ Each topic has one home. Other pages link to it.
 | One Fieldlink's radio, behavior, and security | `fieldlink/<name>/README.md` |
 | Operator screens and workflows | [command-interface/docs/](command-interface/docs/README.md) |
 | The client library | [sdk/](sdk/README.md) |
+| End-to-end simulations, scenarios, fault runs, and what each part takes from outside to be simulated | [simulations/](simulations/README.md) |
 
 Superseded plans live in [atlas/archive/](atlas/archive/README.md). They explain
 history and are never a source for current rules.

@@ -327,5 +327,10 @@
     "phrase": "\\b(every|each) Fieldlink ships with the gateway app\\b|\\bnothing is (downloaded or )?installed separately\\b",
     "why": "Fieldlinks are separate packages, released and installed on their own.",
     "example": "Every Fieldlink ships with the gateway app."
+  },
+  {
+    "phrase": "\\b(implements?|builds?) everything (together|at once)\\b|\\bnot one slice at a time\\b",
+    "why": "The build goes one part at a time: Protocol, then Core, then the SDK. Each part is built whole.",
+    "example": "The build then implements everything together from the finished design, not one slice at a time."
   }
 ]

@@ -59,6 +59,9 @@ definitions. A system and its tests built from the same definitions agree with
 each other even when both are wrong. Protocol's examples test only record shapes
 and the validator. Behavior tests come from the scenarios the owner states in
 each part's docs, from ArduPilot SITL, and from hardware.
+[Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md)
+runs the parts together in a simulated world, and every failure found becomes a
+simulation that reproduces it.
 
 ## A walled city
 
@@ -196,9 +199,19 @@ the calls.
 
 Atlas is designed as the complete product before the real build. That covers
 Assets, Tasks, settings, reports, history, accounts, geo features, Objects,
-Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first. The
-build then implements everything together from the finished design, not one
-slice at a time. First flight is the first field test of that build.
+Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first.
+
+The build then goes one part at a time, in order. The first version is
+Protocol, then Core, then the SDK, with the
+[Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md)
+that test them together. Building one part finds problems that change how the
+next is built, so each part starts from what the last one taught.
+
+Each part is built whole. Core's pillars, for example, are built together, not
+Entities first, then Tasks, then Objects, because they share much of their
+underlying code. Later parts follow the first version. First flight is their
+first field test, once the Asset app, the gateway, and the SiK Fieldlink are
+built.
 
 ## Changes and releases
 

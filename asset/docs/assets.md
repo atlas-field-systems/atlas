@@ -128,7 +128,7 @@ then register again as a new Asset
 
 Installation is repeatable on ordinary Linux, with example configurations for
 the tracker and quadcopter. No custom Raspberry Pi image is planned.
-[Tests and CI evals](testing.md) check these behaviors as the runtime is built.
+[Asset simulations](../../simulations/docs/asset.md) check these behaviors as the runtime is built.
 
 ## Movement module and profiles
 

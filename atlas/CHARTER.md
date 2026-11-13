@@ -77,7 +77,10 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
   [Asset](https://github.com/atlas-field-systems/atlas/tree/main/asset)
   owns how an Asset behaves, and
   [Command Interface](https://github.com/atlas-field-systems/atlas/tree/main/command-interface)
-  owns how the operator application works. Other components own their runtime details.
+  owns how the operator application works.
+  [Simulations](https://github.com/atlas-field-systems/atlas/tree/main/simulations)
+  owns the end-to-end simulations that test the parts together. Other
+  components own their runtime details.
 
 Keep each rule with its owner and link to it from other documents.
 When a subsystem rule conflicts with the operating context, surface the mismatch

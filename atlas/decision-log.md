@@ -111,6 +111,16 @@ Dates are when the owner decided (America/New_York).
 | 2026-11-11 | A crashed Asset is inspected before its next flight. | An Asset after a crash. | [Using Atlas](using-atlas.md#an-operation-runs-without-planned-restarts) |
 | 2026-11-11 | No part of Atlas assumes an Asset joins Wi-Fi during startup or setup. Some Assets may join known Wi-Fi networks; it is a possibility, not a requirement. | Every Asset. | [Asset communications](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#several-links) |
 
+## Build and test
+
+| Date | Decision | Scope | Home |
+| --- | --- | --- | --- |
+| 2026-11-13 | The first version builds Protocol, then Core, then the SDK, one part at a time, with the simulations that test them. Problems found building one part change how the next is built. | The first version. | [Design decisions](https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#design-the-whole-product-then-build-it) |
+| 2026-11-13 | Each part is built whole, not feature by feature: Core's Entities, Tasks, and Objects are built together, because they share much of their underlying code. | Every part. | [Design decisions](https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#design-the-whole-product-then-build-it) |
+| 2026-11-13 | Simulations is its own part of Atlas. It runs Atlas parts together in a simulated world, with simulated links and simulated Assets, to test what they do end to end. | Integration tests and evals. | [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md) |
+| 2026-11-13 | When Atlas fails, a simulation that makes the failure happen is built first. The fix is verified by that simulation passing, and the simulation is kept. | Every failure found. | [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-simulation) |
+| 2026-11-13 | The Asset app's planned test bench, ArduPilot SITL and simulated equipment, is part of Simulations. | Asset testing. | [Asset simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md) |
+
 ## How work lands
 
 | Date | Decision | Scope | Home |

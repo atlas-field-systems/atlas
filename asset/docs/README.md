@@ -228,6 +228,6 @@ left running into Core's next run is not supported.
 ## Open
 
 - Default completion tolerances and timeouts per command, tuned in
-  [SITL](testing.md).
+  [SITL](../../simulations/docs/asset.md).
 - Records this page names that Protocol does not define yet
   ([open questions](../../protocol/docs/open-questions.md)).
