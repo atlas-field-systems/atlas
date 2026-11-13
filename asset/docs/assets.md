@@ -19,9 +19,10 @@ lost fix.
 The first setup runs the Asset app on a Raspberry Pi on the ground. The Pi acts
 as the companion computer, with a SiK radio replacing the cable to the flight
 controller. Operation resembles a ground-control station such as QGroundControl,
-without integrating with it. The Pi is the site's gateway in
-[SiK mode](../../gateway/fieldlinks/sik/README.md): the gateway runs the Asset
-app for the vehicle, and the vehicle runs no Atlas software.
+without integrating with it. The Pi is the site's gateway, running the
+[SiK Fieldlink](../../fieldlink/sik/README.md): the gateway runs the Asset
+app for the vehicle, and the vehicle runs no Atlas software. This driver turns
+the vehicle's MAVLink stream into Atlas reports and Tasks into MAVLink commands.
 
 The vehicle is the Asset represented in Atlas, and the Pi hosts its runtime.
 Position and home come from vehicle measurements. An ArduPilot equipment driver

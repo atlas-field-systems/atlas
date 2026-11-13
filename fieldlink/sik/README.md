@@ -1,10 +1,10 @@
 # SiK Fieldlink
 
 The SiK Fieldlink flies one MAVLink vehicle, such as an ArduPilot quadcopter,
-over a SiK telemetry radio. It is the gateway mode for
-[first flight](../../../atlas/first-flight.md). The
-[gateway app](../../README.md) owns everything every mode shares; this page
-owns only what is particular to SiK.
+over a SiK telemetry radio. It is the Fieldlink for
+[first flight](../../atlas/first-flight.md), and it has only a gateway side.
+[What every Fieldlink is](../README.md) and the [gateway app](../../gateway/README.md)
+are on their own pages; this page owns only what is particular to SiK.
 
 **Planning.** Nothing is built.
 
@@ -16,14 +16,17 @@ owns only what is particular to SiK.
 - **Radio software.** MAVLink 2 over the SiK firmware. The vehicle runs no Atlas
   software; its flight controller speaks only MAVLink.
 
-## The Asset app runs on the gateway
+## Gateway only
 
-This Fieldlink [runs the Asset app on the gateway](../../README.md#fieldlinks-are-the-gateways-operating-modes).
-The app's [ArduPilot equipment driver](../../../asset/docs/assets.md#ardupilot-quadcopter)
-sends commands and reads state over the SiK link, and the app reaches Core
-through the gateway's own connection. The Asset app's
-[configuration](../../../asset/config.md) is part of this mode's configuration
-on the gateway, so every value that shapes the vehicle's behavior is still set
+This is a [gateway-only Fieldlink](../README.md#two-kinds-of-fieldlink). It
+opens the SiK radio, checks MAVLink signing, and hands the MAVLink connection to
+the standard Asset app, which the gateway runs for the vehicle through the
+[gateway interface](../../gateway/README.md#the-gateway-interface). The app's
+[ArduPilot equipment driver](../../asset/docs/assets.md#ardupilot-quadcopter)
+turns the vehicle's MAVLink stream into Atlas reports and Tasks into MAVLink
+commands, so queue, failsafe, and every other behavior stay Asset code. The
+Asset app's [configuration](../../asset/config.md) is part of the gateway's
+configuration for this Fieldlink, so every value that shapes the vehicle's behavior is still set
 for that vehicle.
 
 - **Registration.** The first time the gateway hears the vehicle's MAVLink
@@ -31,15 +34,15 @@ for that vehicle.
   app signs it up with its description.
 - **Contact.** The Asset is online while its app runs and the gateway reaches
   Core. Losing the SiK link is not lost contact with Core: the vehicle link is
-  reported as a [subsystem](../../../asset/docs/status.md) that turns faulted,
+  reported as a [subsystem](../../asset/docs/status.md) that turns faulted,
   and the flight controller's own
-  [ground-station failsafe](../../../asset/docs/failsafes.md#independent-flight-controller-protections)
+  [ground-station failsafe](../../asset/docs/failsafes.md#independent-flight-controller-protections)
   acts on it. The two links fail independently.
 - **Heartbeats.** The Asset app sends the MAVLink heartbeats that flight
-  controller failsafe watches, as [failsafes](../../../asset/docs/failsafes.md#independent-flight-controller-protections)
+  controller failsafe watches, as [failsafes](../../asset/docs/failsafes.md#independent-flight-controller-protections)
   require. Nothing else on the gateway may send heartbeats with that system ID.
 
-## How it meets what every Fieldlink provides
+## How it meets [what every Fieldlink provides](../README.md#what-every-fieldlink-provides)
 
 - **Radio identity and only that radio speaking.** MAVLink 2 message signing.
   The gateway and the flight controller share a signing key, set when the
@@ -51,7 +54,7 @@ for that vehicle.
 
 ## Scenarios
 
-- Power on the gateway in SiK mode and the vehicle. The vehicle appears as a new
+- Power on the gateway with the SiK Fieldlink, and the vehicle. The vehicle appears as a new
   Asset, registered by the gateway.
 - Pull the SiK radio from the gateway in flight. The Asset stays online, its
   vehicle link shows faulted, and the flight controller returns home on its own.
@@ -63,4 +66,4 @@ for that vehicle.
 - The SiK radio settings: air speed, net ID, and power.
 - The exact MAVLink messages the equipment driver uses.
 
-AI agents: read [the gateway's AGENTS.md](../../AGENTS.md).
+AI agents: read [the Fieldlink AGENTS.md](../AGENTS.md).

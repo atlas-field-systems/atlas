@@ -26,7 +26,8 @@ Propose changes to the owner rather than making them quietly. See
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is not built yet | Planning |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
-| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that runs one installed Fieldlink (operating mode) at a time, and the Fieldlink packages under `gateway/fieldlinks/`, each released on its own | Planning; the framework, SiK and Meshtastic modes are designed |
+| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Planning |
+| [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink package, holding both ends of its field link, released on its own | Planning; SiK and Meshtastic are sketched |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
 - Want the exact shape of a record? Go to `protocol/`.
@@ -34,8 +35,8 @@ Propose changes to the owner rather than making them quietly. See
 - Want how an Asset behaves? Go to `asset/`.
 - Want how the command interface works? Go to `command-interface/`.
 - Want the client programs use to call the Core API? Go to `sdk/`.
-- Want how gateways and Fieldlinks carry Atlas across a field link? Go to
-  `gateway/`.
+- Want how a gateway connects to Core and installs Fieldlinks? Go to `gateway/`.
+- Want how a Fieldlink carries Atlas across a field link? Go to `fieldlink/`.
 - Want what the owner decided, or what a run is and how Assets get their IDs? Go
   to the [decision log](atlas/decision-log.md) and
   [runs and identity](atlas/runs-and-identity.md).
@@ -57,8 +58,9 @@ Each topic has one home. Other pages link to it.
 | Failsafes and their overrides | [asset/docs/failsafes.md](asset/docs/failsafes.md) |
 | Settings, intended use | [atlas/settings.md](atlas/settings.md) |
 | Plugins, intended use | [atlas/plugins.md](atlas/plugins.md) |
-| The gateway app, what every Fieldlink provides, the gateway's Reset ZIP | [gateway/README.md](gateway/README.md) |
-| One Fieldlink's radio, behavior, and security | `gateway/fieldlinks/<name>/README.md` |
+| The gateway app, installing Fieldlinks, the gateway interface, the gateway's Reset ZIP | [gateway/README.md](gateway/README.md) |
+| What every Fieldlink is and provides, and where a Fieldlink stops and the Asset starts | [fieldlink/README.md](fieldlink/README.md) |
+| One Fieldlink's radio, behavior, and security | `fieldlink/<name>/README.md` |
 | Operator screens and workflows | [command-interface/docs/](command-interface/docs/README.md) |
 | The client library | [sdk/](sdk/README.md) |
 

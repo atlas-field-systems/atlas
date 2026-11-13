@@ -138,7 +138,7 @@ The Fieldlink adds end-to-end acknowledgement of Tasks and final reports,
 idempotency by `task_id`, and per-Asset contact reports to Core. Protocol defines
 no short keys, so each Fieldlink chooses its own compact encoding. Each Fieldlink
 decides how an Asset authenticates to its gateway, within the rules
-[every Fieldlink provides](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#what-every-fieldlink-provides):
+[every Fieldlink provides](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#what-every-fieldlink-provides):
 a per-radio identity from the link's own cryptography, kept on the gateway side, and replay rejection. The gateway's link to Core is broadband
 IP, so the gateway keeps its Assets' full state and sends over the radio only
 what each Asset does not already have. Each link checks the definitions hash when it opens. FLRC follows with its own Fieldlink. Gateway

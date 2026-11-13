@@ -14,11 +14,21 @@ Asset link:
 ```ts
 interface AssetLink {
   events(after?: number): AsyncIterable<Event>;  // this Asset's requests, in event_id order
-  sendReports(reports: Report[]): Promise<void>; // resolves once the batch is acknowledged
+  sendReports(reports: Report[], priority: 'must_arrive' | 'can_skip'): Promise<void>;
+                                                 // resolves once the batch is acknowledged
   onContact(cb: (contact: Contact) => void): () => void;
-  storeFile(file: AssetFile): Promise<string>;    // resolves with the object_id
+  capacity(): number | undefined;                // bytes per second the link can carry now, if known
+  storeFile(file: AssetFile): Promise<string>;   // resolves with the object_id
 }
 ```
+
+The link carries messages and reports facts about itself; the Asset decides
+everything else ([the boundary](../../fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides)).
+The outbox marks a batch `must_arrive` when it holds a final Task report or
+answers a request, and `can_skip` otherwise, and the link sends must-arrive
+batches first. `capacity` tells the
+[communications module](../../asset/docs/communications.md#report-from-local-state)
+how much to send; on IP it is `undefined`.
 
 `storeFile` [uploads a file the Asset captured](../../core/docs/api.md#objects).
 `AssetFile` holds its `name`, `contentType`, bytes, and an optional `place`, a
@@ -27,8 +37,12 @@ first and attaches the file to it. A link that cannot carry files, such as a
 narrow radio link, rejects the call, and the file stays in the Asset's
 [Reset ZIP](../../asset/docs/logging.md#export-the-assets-reset-zip).
 
-On IP, the SDK client provides it. On a radio Asset, the Fieldlink provides it.
-The Asset app's code is the same on both.
+On IP, the SDK client provides it. On a radio Asset, the Fieldlink's Asset side
+provides it, and on a gateway-only Fieldlink the
+[gateway interface](../../gateway/README.md#the-gateway-interface) does. The
+Asset app's code is the same on all of them. Because Fieldlinks are released on
+their own, this interface changes rarely, and each Fieldlink states which
+versions it works with.
 
 ## Startup on IP
 

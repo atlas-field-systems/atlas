@@ -16,11 +16,11 @@ than single-digit kilobits per second. Initial Assets use a single link, so
 multiple-link routing is not a prerequisite for them. The radio project owns the
 detailed design as the hardware evolves.
 
-Field links carry Atlas through Fieldlinks, the
-[gateway's operating modes](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#fieldlinks-are-the-gateways-operating-modes).
+Field links carry Atlas through [Fieldlinks](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md),
+each holding both ends of its link.
 A Fieldlink sends compact frames in a proven existing encoding, not a custom
-one. First flight uses [SiK](https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/sik/README.md), the LoRa
-phase builds on [Meshtastic](https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/meshtastic/README.md),
+one. First flight uses [SiK](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md), the LoRa
+phase builds on [Meshtastic](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md),
 and FLRC gets its own Fieldlink. Each Fieldlink's docs own its mechanisms, once
 written.
 

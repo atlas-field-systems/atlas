@@ -1,7 +1,7 @@
 # First flight
 
 The first setup uses a Raspberry Pi on the ground as the gateway, running the
-[SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/gateway/fieldlinks/sik/README.md). The gateway runs
+[SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md). The gateway runs
 the Asset app for an ArduPilot quadcopter and talks to it over a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
 such as QGroundControl. The vehicle remains the Asset represented in Atlas.
