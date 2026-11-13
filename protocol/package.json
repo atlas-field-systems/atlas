@@ -26,5 +26,15 @@
   ],
   "devDependencies": {
     "esbuild": "^0.28.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/node.d.ts",
+      "default": "./lib/node.mjs"
+    },
+    "./browser": {
+      "types": "./lib/browser.d.ts",
+      "default": "./lib/browser.mjs"
+    }
   }
 }
