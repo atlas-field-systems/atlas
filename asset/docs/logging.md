@@ -59,6 +59,7 @@ first flight from the ground Raspberry Pi.
 | `manifest.json` | Every file with its size and SHA-256, whether the operation ended normally, and every known gap |
 | `diagnostics/` | The app, equipment, and link diagnostics, as written |
 | `reports/` | Reports the Asset recorded, including those it never sent live |
+| `files/` | Files the Asset [captured](README.md#capture-files), uploaded or not |
 | `config.json` | The configuration, with secrets removed |
 | `versions.json` | App, SDK or Fieldlink, and Protocol package versions, and the definitions hash |
 
@@ -82,8 +83,8 @@ without limit. The app hands each diagnostic record to a writer through a
 fixed-size queue and drops a record the queue cannot take. The queue holds
 diagnostic records only. Reports the Asset keeps so it can send them later
 never pass through it, and logging never drops or overwrites a report that is
-still waiting to be sent. How the Asset catches up is
-[not designed yet](README.md#open). Past `log_total_limit_bytes`,
+still waiting to be sent. How the Asset
+[catches up](../../core/docs/api.md#asset-and-gateway-calls) belongs to the Core API. Past `log_total_limit_bytes`,
 or with the disk full, it stops writing. It counts everything it drops and
 writes one gap record when writing works again and at shutdown: how many
 records, between which times, and why. The ZIP lists every gap. Flight goes on

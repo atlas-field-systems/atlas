@@ -49,6 +49,7 @@ explains why the API is the only way in.
 | `403` | The caller may not do this, such as an Asset reading another Asset |
 | `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
 | `409` | Refused: Asset IDs used up, Asset or Plugin offline, flying Asset with no critical battery rule, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
+| `410 deleted` | The Object was deleted in this run; the body adds its `deletion` record, which says who deleted it and when |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
@@ -280,7 +281,11 @@ starts in this order, and on reconnect within the run repeats it from step 3:
 - `POST /entities/assets/{asset_id}/reports` takes `{"reports": [...]}` in batches. A `200`
   stores and acknowledges the whole batch. The Asset resends a batch with the same
   `Idempotency-Key` until it gets one. Retained reports catching up after a gap use
-  the same call with their original times.
+  the same call with their original times. The Asset sends its current state
+  first, then retained reports oldest first, one batch at a time and only while
+  no live report waits, so catching up never delays live events. History orders
+  reports by their own times. Nothing marks history complete: a report the Asset
+  never delivered stays in its [Reset ZIP](../../asset/docs/logging.md#export-the-assets-reset-zip).
 - A report that answers a request names it with `request_id`, the request's
   `event_id`. Task reports name their `task_id`.
 - The Asset keeps the Tasks of each `tasks.requested` and runs its Tasks in
@@ -488,10 +493,12 @@ and a removal adds `track.removed`.
   kind, except imagery. `DELETE` removes it from the picture. Core never reuses a
   `geofeature_id` in the run, and a deleted one returns `404`.
 - Any admin or operator may create, replace, or delete any geo feature,
-  including one a Plugin made. A Plugin may only create geo features, with its
-  key ([Plugins](#plugins)). Assets and gateways get `403`.
+  including one a Plugin or Asset made. A Plugin may only create geo features,
+  with its key ([Plugins](#plugins)). So may an Asset, to place a file it
+  [uploads](#objects): an Asset on IP with its key, or a gateway for a radio
+  Asset it carries. Any other replace or delete by them gets `403`.
 - The event names who asked with `requested_by`, because the geo feature record
-  names no author. A geo feature a Plugin creates names the Plugin.
+  names no author. A geo feature a Plugin or Asset creates names it.
 - **A Task keeps a copy of its place.** `move_to` and `land` may name a point
   geo feature by `geofeature_id` instead of a position. When it accepts the
   Task, Core refuses a `geofeature_id` that does not exist with `404` and
@@ -529,12 +536,12 @@ and a removal adds `track.removed`.
 
 An Object is a file Core holds, with an `object` record that says what it is:
 `object_id`, `name`, `content_type`, `size_bytes`, and an optional
-`geofeature_id`. Operators and Plugins store Objects. Core never sends them to
-Assets or gateways.
+`geofeature_id`. Operators, Plugins, and Assets store Objects. Core never sends
+them to Assets or gateways.
 
 | Request | Who | Result |
 | --- | --- | --- |
-| `POST /objects?name=<name>&geofeature_id=<id>` | Account or Plugin | Stores the file; `201 {object_id, event_id}` |
+| `POST /objects?name=<name>&geofeature_id=<id>` | Account, Plugin, or Asset | Stores the file; `201 {object_id, event_id}` |
 | `GET /objects?geofeature_id=<id>` | Account or Plugin | Every Object record, or those attached to one geo feature, with `as_of` |
 | `GET /objects/{object_id}` | Account or Plugin | One Object record |
 | `GET /objects/{object_id}/file` | Account or Plugin | The file, with its `content_type` |
@@ -547,6 +554,16 @@ Assets or gateways.
   JSON. The required `Atlas-Definitions` header still keeps other sites from
   sending it. Like every change, it carries an `Idempotency-Key`; a repeat
   stores nothing new.
+- **Assets upload what they capture**, such as a photo or a short clip: an Asset
+  on IP with its key, or a gateway for a radio Asset it carries when its
+  Fieldlink can carry the file. An Asset's file is not put on the map by
+  itself. To show where it belongs, the Asset first
+  [creates a geo feature](#geo-features), such as a point where the photo was
+  taken, then uploads the file naming it. A gateway adds `asset_id=<id>` to
+  both calls to say which Asset it acts for, and Core refuses an Asset it does
+  not carry with `403`; an Asset on IP needs none, because its key names it.
+  `requested_by` is that `asset_id`. An Asset never reads, moves, or deletes an
+  Object.
 - **Core assigns `object_id`** and never reuses it in a run, even after a delete.
 - **Stored whole or not at all.** Core writes the file, then adds the Object's
   row and its `object.stored` event in one transaction. There is no half-stored
@@ -563,14 +580,15 @@ Assets or gateways.
   [Entities](#entities) design must keep.
 - **Delete hides the Object; it destroys nothing.** After a delete, the Object
   and its file are gone from every read: lists leave it out, and its record
-  and file return `404`. Core keeps both until the run ends, and the Reset ZIP
+  and file return `410 deleted` with the `deletion` record, so a link to it can
+  say who deleted it and when. Core keeps both until the run ends, and the Reset ZIP
   holds them, marked deleted. The `object.stored` and `object.deleted` events
   stay in history, so the record of the upload and of who deleted it remains.
   Only an operator deletes an Object. Core refuses to delete an Object that an
   imagery geo feature still shows with `409`; the operator deletes the imagery
   first.
 - **Who stored it** is `requested_by` in the Object record: the account that
-  uploaded it or the Plugin that stored it. Core stamps it, as for Tasks.
+  uploaded it, or the Plugin or Asset that stored it. Core stamps it, as for Tasks.
 - **Objects belong to their run.** When the run ends, their files, deleted
   ones included, go into Core's [Reset ZIP](reset.md#cores-reset-zip) and are
   cleared from Core. The
@@ -671,11 +689,3 @@ not answered and adds `plugin.dropped` for each. Its stream skips dropped calls
 when it returns, so no old call runs late. Geo features and Objects it stored
 before it stopped stay, and still name the Plugin in `requested_by`. The call is
 marked not finished, and an operator who still wants it calls again.
-
-## Not defined yet
-
-- Catch-up reports: how retained reports fill history without delaying live
-  events. This is low priority. How an Asset treats low-priority data depends on
-  the Asset.
-- A read of a deleted Object: who deleted it and when, so a link to it can say
-  what happened ([Command Interface](../../command-interface/docs/plugins-and-objects.md#objects)).

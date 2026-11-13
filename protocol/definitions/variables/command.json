@@ -9,6 +9,7 @@
     "land",
     "return_to_home",
     "hold",
+    "point_at",
     "failsafe"
   ],
   "examples": [

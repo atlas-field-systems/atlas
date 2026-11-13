@@ -44,12 +44,13 @@ flight control and stabilization.
 ### Fixed camera turret
 
 A turret reports Observations produced by its own detection software; Atlas does
-not implement computer vision. Its first pointing behavior slews to a requested
-geographic position, or to a bearing in degrees from true north and an elevation
-in degrees from the local horizontal. Pointing completes when equipment
-measurements confirm the aim, and the turret holds it until the next command.
-The Asset handles installation orientation, calibration, and conversion to
-equipment coordinates. Following a moving target is a later behavior.
+not implement computer vision. An operator aims it with Point At: a latitude
+and longitude, and optionally an altitude, to look at. Atlas says only where to
+look. The turret works out how to aim there from its own position, installation
+orientation, and calibration; how it does that is
+[still open](#open). Pointing completes when equipment measurements confirm the
+aim, and the turret holds it until the next command. Following a moving target
+is a later behavior.
 
 ### ADS-B receiver
 
@@ -139,10 +140,12 @@ controller. [Preparation and arming](README.md#prepare-and-take-off) are part of
 that execution. Configured failsafe responses use the same execution as ordinary
 work.
 
-Copters share one command family. Fixed-wing aircraft need their own, because
-takeoff, travel, and landing mean different things and succeed differently. A
-profile never silently reinterprets copter commands as fixed-wing commands.
-ArduRover ground vehicles, ArduPlane aircraft, and boats are intended extensions.
+Copters share one command family. Fixed-wing aircraft are not part of the
+current design ([decision log](../../atlas/decision-log.md#operations-and-setup)).
+They will need their own family, because takeoff, travel, and landing mean
+different things and succeed differently, and a profile never silently
+reinterprets copter commands. ArduRover ground vehicles, ArduPlane aircraft, and
+boats are intended extensions.
 
 ## Configuration and commitments
 
@@ -158,6 +161,6 @@ meanings. See [configuration](../config.md) and [behavior](README.md).
 - Module and equipment-driver interfaces, the full module catalog, and driver
   connection options.
 - Freshness limits, local storage layout and limits, and overflow behavior.
-- Exact turret-pointing and fixed-wing commands, gimbal control, and camera
-  image transport.
+- How a turret works out its aim from a Point At target, and gimbal control.
+  Camera images reach Core as [uploaded files](README.md#capture-files).
 - Packaging, service configuration, and installation commands.

@@ -96,6 +96,9 @@ An Object is a file Core holds, such as a photo.
 
 An Object's page shows its name, type, size, who stored it, the place it is
 attached to, any imagery that shows it, and a preview or download. A deleted Object's page says it was
-deleted, by whom, and when. Core has [no read for that yet](../../core/docs/api.md#not-defined-yet).
+deleted, by whom, and when, from Core's
+[`410 deleted` answer](../../core/docs/api.md#objects).
 
-Files from Assets, such as drone photos, are not designed yet.
+A file an Asset uploaded, such as a drone photo, appears like any other Object,
+with the Asset as who stored it. It is attached to the place the Asset created
+for it, so it shows on the map through that place.

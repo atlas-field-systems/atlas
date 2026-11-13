@@ -4,6 +4,12 @@ A discussion draft for the Asset app; nothing is implemented. Configuration
 selects the Asset's [modules and equipment drivers](docs/assets.md#modules-and-equipment-drivers)
 and how it reaches Core.
 
+**Every behavior value is configurable per Asset.** Tolerances, timeouts, waits,
+and limits that shape how an Asset behaves are set in that Asset's
+configuration, never fixed in the app, because Assets set up differently respond
+differently ([decision log](../atlas/decision-log.md#operations-and-setup)). A
+default here is only a starting point.
+
 ## Startup configuration and live settings
 
 Startup configuration describes the Asset's modules, equipment access, supported
@@ -31,7 +37,9 @@ Names are proposed keys, not an implemented format.
 | `position` | Own position source, or a configured stationary position | Missing values stay unknown |
 | `initial_settings` | Starting values for supported live settings | An explicit home takes precedence over automatic home. Includes the starting `failsafe_policy` |
 | `startup_behavior` | Acquisition, reporting, and initial equipment behavior | Example setups report at once and wait for movement Tasks |
-| `completion_tolerances`, `command_timeouts` | Evidence and limits for equipment execution | Per command |
+| `completion_tolerances`, `command_timeouts` | How close counts as done, and how long a command may run before its Task fails | Per command; defaults are tuned in SITL |
+| `measurement_stale_after_s` | Age at which a measurement counts as unknown to [failsafe conditions](docs/failsafes.md#configure-conditions-as-well-as-responses) | Proposed default 5 |
+| `final_report_wait_s` | How long the app waits for Core to acknowledge its final reports before it [shuts itself down](docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation) | Proposed default 30 |
 | `reporting` | Which reports to send from local state, and how often | No mandatory periodic health snapshots |
 | `log_level` | Detail of app, SDK client, and Fieldlink diagnostics | Proposed prototype default is `trace` |
 | `log_directory` | Local diagnostic files | Works while Core is unreachable |

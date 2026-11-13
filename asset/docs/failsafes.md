@@ -81,15 +81,10 @@ ArduPilot's own rules still apply: the failsafe stays inactive until the first
 heartbeat arrives, does nothing while disarmed, disarms a copter that has
 landed, and leaves the vehicle in the failsafe mode when heartbeats return.
 
-When the app detects an independent autopilot failsafe taking over, it cancels
-ordinary work and the remaining queue and enters
-[failsafe state](#lock-ordinary-work-for-the-rest-of-the-operation). Its failsafe
-report says the flight controller took over, not an Atlas rule. It never
-overrides that protection with ordinary work. A cancelled Task does not become
-completed because the autopilot performed a similar maneuver. The app records
-the equipment behavior and affected Task outcomes without claiming that Atlas
-started the maneuver. If the app fails, its reports and logs may be missing, and
-a missing report establishes no outcome.
+When the flight controller's own protection takes over while the app runs,
+operators [can only watch](#while-the-flight-controller-is-in-control) until a
+person hands control back. If the app fails, its reports and logs may be
+missing, and a missing report establishes no outcome.
 
 In the [ground-Pi setup](assets.md#ardupilot-quadcopter), losing the link
 to Core and losing the SiK equipment link are independent failures. The
@@ -99,10 +94,39 @@ the vehicle's own response and the operator's intervention path; both must work
 without the ground app.
 
 Before the first copter flight, document the retained autopilot protections and
-how Atlas commands interact with them. Verify the interaction in
+their settings. Verify the interaction in
 [SITL and equipment checks](testing.md), including an Asset-app crash or hang,
 loss of the companion-to-controller link, and an autopilot intervention during
 work or during an Atlas response.
+
+## While the flight controller is in control
+
+Atlas and the flight controller never fight over the vehicle. While the flight
+controller's own protection is in control, operators watch and Atlas acts on
+nothing.
+
+- **Taking over.** The app counts any flight-mode change it did not command as
+  the flight controller taking control: a protection such as ArduPilot's battery
+  or radio failsafe switching to RTL or Land, or a pilot moving a mode switch.
+  The app cancels ordinary work, the remaining queue, and any running Atlas
+  response, and enters
+  [failsafe state](#lock-ordinary-work-for-the-rest-of-the-operation). Its
+  failsafe report says the flight controller took over, not an Atlas rule.
+- **Watch only.** The app refuses every operator request that affects
+  execution, overrides included: a refused Task is reported `failed` with the
+  flight controller in control as its explanation, and a refused cancel or
+  settings change is answered with the current Task state or settings. No Atlas
+  rule fires. The app keeps reporting what the vehicle does, without claiming
+  that Atlas started it. A cancelled Task does not become completed because the
+  flight controller performed a similar maneuver.
+- **Handing back.** A person hands control back by switching the flight
+  controller to the mode the app works in, Guided on ArduPilot. The app reports
+  that it is back in control and holds where it is, as after a
+  [Hold now override](#an-override-with-hold-or-pause-re-arms-protection): every
+  rule is re-armed and operators may override again. The Asset stays in failsafe
+  state.
+- **Landing.** If the flight controller lands and disarms the vehicle, the
+  Asset is safely stopped, and the app sends its final reports and shuts down.
 
 ## Configure conditions as well as responses
 
@@ -135,6 +159,10 @@ Conditions can include:
   beyond the boundary and a duration outside are configured; either may be zero.
   An unknown position is not outside, so the condition does not hold. Altitude
   limits are deferred.
+
+A measurement older than `measurement_stale_after_s` in the Asset's
+[configuration](../config.md) counts as unknown, and an unknown value never makes
+a condition hold.
 
 The Asset reevaluates whenever relevant state or time changes, including when the
 last Task ends while it is already out of contact. Rules apply from startup, as
@@ -194,17 +222,20 @@ other settings changes, and policy replacement. A refused Task is reported
 change is answered with the current Task state or settings, naming the request.
 
 Failsafe state has no exit. When a response or an override ends with the Asset
-safely stopped, such as a completed landing, the app sends its final reports and
-shuts itself down. Core then shows the Asset offline, as it would after lost
-contact, and the other Assets keep working. Atlas has no remote restart and no
+safely stopped, the app sends its final reports and shuts itself down. A flying
+Asset is safely stopped when its flight controller reports it on the ground and
+disarmed; any other Asset, when its equipment reports movement stopped. The app
+waits up to `final_report_wait_s` from its [configuration](../config.md) for Core
+to acknowledge those reports, then shuts down either way; its
+[Reset ZIP](logging.md#export-the-assets-reset-zip) keeps them. Core then shows
+the Asset offline, as it would after lost contact, and the other Assets keep working. Atlas has no remote restart and no
 way to clear the state.
 
 ## An override with Hold or pause re-arms protection
 
 Hold now and pause leave the Asset in the air with no protective maneuver
 running. So when an operator overrides with either, the Asset re-arms every
-rule whose conditions include contact loss or low battery. A re-armed rule
-fires again, whatever its priority, when its conditions start to hold after the
+rule. A re-armed rule fires again, whatever its priority, when its conditions start to hold after the
 override: it starts its response, which replaces the Hold or the paused
 response Task. A condition that already holds at the override, such as a
 battery still below the rule's percentage, fires again only after it stops
@@ -286,13 +317,5 @@ restarting idle or contact timers.
 
 ## Open
 
-- Flight-controller protection settings, triggers, timeouts, and the handover
-  procedure, including behavior after an Atlas response fails.
-- Whether an operator override reaches the vehicle while an independent
-  autopilot protection is in control.
-- How a later, higher-priority rule match interacts with an operator override.
-- Exact detection of an autopilot takeover and its interaction with a running
-  Atlas response.
-- Boundary details and measurement freshness limits.
-- What counts as safely stopped on each platform, and how long the app waits for
-  Core to acknowledge its final reports before it shuts down.
+- Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
+  failsafe levels, are tuned in [SITL](testing.md) before the first flight.

@@ -27,7 +27,7 @@
         "$ref": "../variables/command.json"
       },
       "minItems": 0,
-      "maxItems": 16
+      "maxItems": 7
     },
     "settings": {
       "type": "array",

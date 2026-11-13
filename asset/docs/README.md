@@ -67,7 +67,10 @@ completing it.
 
 The Asset reports each Task `active` when it starts, then one final state:
 `completed`, `failed`, or `cancelled`. Completion follows the observed equipment
-result. If required equipment or position is unavailable when a Task starts, the
+result, within the command's tolerance in the Asset's
+[configuration](../config.md): a copter's Takeoff ends at its altitude, Move To
+at its position, and Land on the ground and disarmed. A Task still running past
+its command's timeout fails. If required equipment or position is unavailable when a Task starts, the
 Task fails with an explanation rather than waiting. Becoming ready later does
 not revive failed work. A failed Task
 [cancels the remaining Tasks](failsafes.md#a-failed-command-cancels-the-remaining-tasks).
@@ -142,8 +145,8 @@ takeoff.
 ### Pause
 
 Pause is a setting, not a Task. It suspends current movement with a
-platform-specific hold: copters stop and loiter in place, fixed-wing aircraft
-loiter, and ground vehicles brake and stop. A paused Asset does not advance its
+platform-specific hold: copters stop and loiter in place, and ground vehicles
+brake and stop. A paused Asset does not advance its
 queue, though a Task sent with `now` still runs.
 
 Pause keeps the active Task; it does not end it. The Task stays `active` and
@@ -192,6 +195,27 @@ An Asset returning after a disconnection catches up the same way.
 These reports fill shared history. They are separate from local diagnostic logs
 and Reset ZIPs.
 
+## Capture files
+
+An Asset with a camera or another sensor can send what it captures, such as a
+photo or a short clip, to Core as an [Object](../../core/docs/api.md#objects).
+The file is not pinned to the map by itself. To show where it belongs, the
+Asset creates a place alongside it, such as a point where the photo was taken,
+and the file is attached to that place. Operators see it like any other file,
+with the Asset as who stored it.
+
+Files reach operators only through Core; an Asset never answers an operator
+directly. Which files to send is the Asset's choice, set in its
+[configuration](../config.md):
+
+- **A file a Task asks for is sent** as part of that Task.
+- **Other files go when the link allows.** Over a fast link such as Wi-Fi the
+  Asset sends them; over a narrow one such as LoRa it does not. The Asset judges
+  by the capacity its link reports.
+- **A file not sent is never asked for later.** No operator request fetches an
+  earlier file. Its [Reset ZIP](logging.md#export-the-assets-reset-zip) keeps
+  every file it captured.
+
 ## Shut down and retain evidence
 
 The app records equipment, module, and link evidence locally for the whole
@@ -203,7 +227,7 @@ left running into Core's next run is not supported.
 
 ## Open
 
-- Equipment-specific completion evidence, tolerances, and timeouts.
-- Recording limits, catch-up pacing, and how a reader knows history is complete.
+- Default completion tolerances and timeouts per command, tuned in
+  [SITL](testing.md).
 - Records this page names that Protocol does not define yet
   ([open questions](../../protocol/docs/open-questions.md)).
