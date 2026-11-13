@@ -35,12 +35,8 @@ owning docs. A prototype proves nothing on its own; the docs stay the source.</p
 <h2 id="no-generated-code">No generated code</h2>
 <p>Atlas code is written by hand and read by people. Do not generate code from
 definitions or docs. Programs load the definitions as data instead.</p>
-<h2 id="tests-come-from-behavior">Tests come from behavior</h2>
-<p>Write tests from what a part must do. Never generate them from Protocol&#39;s
-definitions. A system and its tests built from the same definitions agree with
-each other even when both are wrong. Protocol&#39;s examples test only record shapes
-and the validator. Behavior tests come from the scenarios the owner states in
-each part&#39;s docs, from ArduPilot SITL, and from hardware.</p>
+<h2 id="testing">Testing</h2>
+<p>How Atlas tests lives in the Charter, <a href="CHARTER.html#test-what-matters">Test what matters</a>.</p>
 <h2 id="a-walled-city">A walled city</h2>
 <p>Atlas is laid out in rings, so each can change without breaking the others.</p>
 <ul>
@@ -163,9 +159,17 @@ may run in its own container. Gateways run on their own computers.</li>
 <h2 id="design-the-whole-product-then-build-it">Design the whole product, then build it</h2>
 <p>Atlas is designed as the complete product before the real build. That covers
 Assets, Tasks, settings, reports, history, accounts, geo features, Objects,
-Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first. The
-build then implements everything together from the finished design, not one
-slice at a time. First flight is the first field test of that build.</p>
+Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first.</p>
+<p>The build then goes one part at a time, in order. The first version is
+Protocol, then Core, then the SDK, with the
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md">Simulations</a>
+that test them together. Building one part finds problems that change how the
+next is built, so each part starts from what the last one taught.</p>
+<p>Each part is built whole. Core&#39;s pillars, for example, are built together, not
+Entities first, then Tasks, then Objects, because they share much of their
+underlying code. Later parts follow the first version. First flight is their
+first field test, once the Asset app, the gateway, and the SiK Fieldlink are
+built.</p>
 <h2 id="changes-and-releases">Changes and releases</h2>
 <ul>
 <li>Every program in a deployment uses the same Protocol definitions. A change to

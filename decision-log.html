@@ -504,6 +504,65 @@ back.</p>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#several-links">Asset communications</a></td>
 </tr>
 </tbody></table>
+<h2 id="build-and-test">Build and test</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Decision</th>
+<th>Scope</th>
+<th>Home</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2026-11-13</td>
+<td>Atlas keeps few unit tests. End-to-end simulations are the main tests.</td>
+<td>Every part.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/atlas/CHARTER.md#test-what-matters">Charter, Test what matters</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>Simulations that use scripted Assets are reworked to use the real Asset app once it is built.</td>
+<td>Simulations.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets">Simulations</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>The first version builds Protocol, then Core, then the SDK, one part at a time, with the simulations that test them. Problems found building one part change how the next is built.</td>
+<td>The first version.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#design-the-whole-product-then-build-it">Design decisions</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>Each part is built whole, not feature by feature: Core&#39;s Entities, Tasks, and Objects are built together, because they share much of their underlying code.</td>
+<td>Every part.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#design-the-whole-product-then-build-it">Design decisions</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>Simulations is its own part of Atlas. It runs Atlas parts together in a simulated world, with simulated links and simulated Assets, to test what they do end to end.</td>
+<td>Integration tests and evals.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md">Simulations</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>When Atlas fails, a test that makes the failure happen is built first: a simulation when the failure crosses parts, or a test at one part&#39;s contract when it stays inside it. The fix is verified by that test passing, and the test is kept.</td>
+<td>Every failure found.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-test">Simulations</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>A part taking its clock from outside, as Core and the SDK do, is not a hook added only for tests, because the shipped program passes in the real clock.</td>
+<td>Every part.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/atlas/CHARTER.md#test-what-matters">Charter, Test what matters</a></td>
+</tr>
+<tr>
+<td>2026-11-13</td>
+<td>The Asset app&#39;s planned test bench, ArduPilot SITL and simulated equipment, is part of Simulations.</td>
+<td>Asset testing.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md">Asset simulations</a></td>
+</tr>
+</tbody></table>
 <h2 id="how-work-lands">How work lands</h2>
 <table>
 <thead>
