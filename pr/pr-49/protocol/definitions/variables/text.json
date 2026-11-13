@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/text.json",
+  "title": "text",
+  "description": "Short text a person reads or writes, such as a Plugin input or the value of a fact.",
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 256,
+  "examples": [
+    "12 m/s from the west"
+  ]
+}
