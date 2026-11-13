@@ -6,6 +6,11 @@ over a SiK telemetry radio. It is the Fieldlink for
 [What every Fieldlink is](../README.md) and the [gateway app](../../gateway/README.md)
 are on their own pages; this page owns only what is particular to SiK.
 
+**An experimental Fieldlink.** SiK is for trying out a drone that is not
+traditionally an Atlas Asset, not for a long-term deployment. The gateway runs
+one SiK radio, so a site using SiK flies one drone. Several drones at once
+belong on a Fieldlink built for it, such as [Meshtastic](../meshtastic/README.md).
+
 **Planning.** Nothing is built.
 
 ## Hardware and software

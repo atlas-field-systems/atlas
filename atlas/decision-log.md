@@ -17,6 +17,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-13 | SiK is an experimental Fieldlink for trying out drones that are not traditionally Atlas, not for long-term deployment. The gateway runs one SiK radio, so a SiK site flies one drone. | SiK gateways. | [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md) |
 | 2026-11-13 | Fieldlink is its own part of Atlas. Each Fieldlink holds both ends of its link: the side the gateway runs and the side the Asset's communications module runs. SiK is a Fieldlink with only a gateway side, because the vehicle runs no Atlas software. | Every Fieldlink. | [Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md) |
 | 2026-11-13 | A Fieldlink moves messages and reports facts about its link; the Asset decides what to do. The Fieldlink says when the link is lost and how much it can carry, and the Asset's rules decide the response and what to send. | Fieldlinks and Asset behavior. | [Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides) |
 | 2026-11-13 | The gateway app gives Fieldlinks a stable interface built on the SDK, so an SDK update does not require updating every Fieldlink. | Every Fieldlink. | [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateway-interface) |
