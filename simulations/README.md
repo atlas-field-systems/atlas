@@ -71,15 +71,17 @@ Every run is repeatable. A failure keeps its seed, inputs, expected and
 observed results, and each part's diagnostics, so it reproduces on any
 computer.
 
-## Every failure becomes a simulation
+## Every failure becomes a test
 
 When Atlas fails, in a simulation, a prototype, or the field:
 
-1. Write a simulation that makes the failure happen, and watch it fail.
+1. Write a test that makes the failure happen, and watch it fail. A failure
+   that crosses parts gets a simulation. A failure inside one part's contract,
+   such as the validator accepting a bad record, gets a test at that contract.
 2. If the failure shows a page was wrong or silent, fix the page first. The
-   docs are the source, and the simulation cites them.
-3. Fix the part, and watch the simulation pass.
-4. Keep the simulation. It runs on every change from then on.
+   docs are the source, and the test cites them.
+3. Fix the part, and watch the test pass.
+4. Keep the test. It runs on every change from then on.
 
 ## Rules
 

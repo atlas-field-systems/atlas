@@ -169,11 +169,13 @@ check nothing, so these rules guard against that first.
   deleted. That includes comparing a value with itself, searching source text,
   checking how code is called instead of what it does, expected values copied
   from the code's output, mocks that supply the behavior being checked, and
-  hooks added to a part only so a test can reach inside it.
+  hooks added to a part only so a test can reach inside it. Something the
+  shipped program also passes in, such as its clock, is not such a hook.
 - **The failing test comes first.** Every failure is first reproduced by a
-  [simulation](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-simulation)
-  that fails for the right reason. The fix makes it pass, and it stays. One
-  test per bug, not one at every layer the bug passed through.
+  [test that fails](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-test)
+  for the right reason: a simulation when the failure crosses parts, or a test
+  at one part's contract when it stays inside it. The fix makes it pass, and it
+  stays. One test per bug, not one at every layer the bug passed through.
 - **Protect the check.** A change that fixes code never weakens the test that
   checks it. A test's expected result changes only after its page changes, in a
   change the owner can see. A check that cannot fail protects nothing, so break
