@@ -113,8 +113,15 @@ export async function radioAsset(w: World) {
         params: { asset_id },
         body: { reports: batch },
       });
-      while (!result.ok && result.retry && result.error === "unknown")
+      for (let delay = 10; !result.ok && result.retry; delay *= 2) {
+        if (result.error !== "unknown") {
+          if (result.status === undefined || result.status < 500) break;
+          await new Promise<void>((resolve) =>
+            w.clock.after(Math.min(delay, 1000), resolve),
+          );
+        }
         result = await result.retry();
+      }
       return result.ok
         ? { ok: true }
         : { ok: false, error: "refused", explanation: result.explanation };

@@ -146,7 +146,8 @@ part of the SDK.
 optional queue, and settings dispatch over an Asset link. Its options hold the
 clock, heartbeat interval, current settings function, optional queue host, and
 settings-request handler. It returns the queue, outbox, `rejoin()`, `done`,
-and `stop()`. The IP wrapper is `startAsset(client, options)`.
+and `stop()`. The IP wrapper is `startAsset(client, options)`. It sends the
+Asset helpers' diagnostics to the client's `observer`, so one counter orders them.
 
 `LinkResult` is `{ok: true}` on end-to-end acknowledgement, or
 `{ok: false, error, explanation}`. Errors are `run_ended`,

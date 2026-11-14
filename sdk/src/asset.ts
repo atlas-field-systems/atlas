@@ -219,7 +219,9 @@ async function known<T>(initial: Promise<Result<T>>): Promise<Result<T>> {
 }
 export async function startAsset(
   client: Client<{ kind: "asset"; key: string }>,
-  options: AssetOptions & { description: P["requests.asset"] },
+  options: Omit<AssetOptions, "observer"> & {
+    description: P["requests.asset"];
+  },
 ) {
   const connected = await client.connect();
   if (!connected.ok) return connected;
@@ -367,10 +369,7 @@ export async function startAsset(
   session = runAsset(
     link,
     { asset_id, after: as_of, last_task_id },
-    {
-      ...options,
-      observer: options.observer ?? internal(client).options.observer,
-    },
+    { ...options, observer: internal(client).options.observer },
     internal(client).emit,
   );
   const running = session;
