@@ -3,6 +3,8 @@ import { EVENT_KINDS } from "@atlas/core/event-kinds";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { Client } from "./client.ts";
 import { backoffDelay, type Timer } from "./clock.ts";
+const MAX_SSE_FRAME_BYTES = 16 * 1024 * 1024 + 1024;
+
 export type EventKind = keyof typeof EVENT_KINDS;
 type RecordOf<K extends EventKind> = (typeof EVENT_KINDS)[K] extends {
   many: true;
@@ -52,6 +54,7 @@ export function follow(
     stopped = false,
     controller: AbortController | undefined,
     idle: Timer | undefined,
+    opening: Timer | undefined,
     wake: (() => void) | undefined;
   const boundEpoch = internal(client).epoch;
   const terminal = (): FollowEnd["reason"] | undefined => {
@@ -82,11 +85,16 @@ export function follow(
           try {
             await options.beforeOpen?.();
             if (terminal()) break;
+            opening = clock.after(
+              internal(client).options.requestTimeoutMs ?? 10000,
+              () => controller?.abort(),
+            );
             const response = await internal(client).streamFetch(
               cursor,
               options.asset_id,
               controller.signal,
             );
+            opening.cancel();
             if (!response.ok) {
               await internal(client).streamResponse(response);
             } else if (!response.body)
@@ -99,7 +107,9 @@ export function follow(
               const reader = response.body.getReader(),
                 decoder = new TextDecoder();
               let buffer = "",
-                data: string[] = [];
+                data: string[] = [],
+                frameBytes = 0;
+              const encoder = new TextEncoder();
               const resetIdle = () => {
                 idle?.cancel();
                 idle = clock.after(
@@ -119,8 +129,17 @@ export function follow(
                   buffer += decoder.decode(chunk.value, { stream: true });
                   let index: number;
                   while (!terminal() && (index = buffer.indexOf("\n")) >= 0) {
+                    frameBytes += encoder.encode(
+                      buffer.slice(0, index + 1),
+                    ).byteLength;
+                    if (frameBytes > MAX_SSE_FRAME_BYTES)
+                      return {
+                        reason: "invalid_event",
+                        error: "SSE frame too large",
+                      };
                     const line = buffer.slice(0, index).replace(/\r$/, "");
                     buffer = buffer.slice(index + 1);
+                    if (line === "") frameBytes = 0;
                     if (line.startsWith(":")) {
                       internal(client).emit("stream.alive");
                       options.onContact?.({
@@ -178,6 +197,14 @@ export function follow(
                       internal(client).emit("stream.handled", { cursor });
                     }
                   }
+                  if (
+                    frameBytes + encoder.encode(buffer).byteLength >
+                    MAX_SSE_FRAME_BYTES
+                  )
+                    return {
+                      reason: "invalid_event",
+                      error: "SSE frame too large",
+                    };
                 }
               } finally {
                 idle?.cancel();
@@ -187,6 +214,7 @@ export function follow(
           } catch {
             /* Network loss is recovered from the last handled cursor. */
           } finally {
+            opening?.cancel();
             stale = true;
             controller?.abort();
             options.onContact?.({ open: false, last_heard: null });
@@ -216,6 +244,7 @@ export function follow(
       return { reason: terminal() ?? "stopped" };
     } finally {
       idle?.cancel();
+      opening?.cancel();
       controller?.abort();
       unsubscribe();
     }

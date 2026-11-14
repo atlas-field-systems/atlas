@@ -1,4 +1,6 @@
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
+import { internal } from "./internal.ts";
+import { backoffDelay, type Timer } from "./clock.ts";
 import type { Client } from "./client.ts";
 import { follow, type AtlasEvent, type Follow } from "./stream.ts";
 import type { TaskView } from "./routes.ts";
@@ -20,6 +22,30 @@ export function createLivePicture(
     stream: Follow | undefined,
     stopped = false,
     generation = 0;
+  let retryTimer: Timer | undefined;
+  let attempts = 0;
+  function retry(current: number, result: { error: string; status?: number }) {
+    if (
+      stopped ||
+      current !== generation ||
+      client.status.phase !== "connected"
+    )
+      return;
+    if (
+      result.error !== "unknown" &&
+      result.status !== 404 &&
+      (result.status === undefined || result.status < 500)
+    )
+      return;
+    const { clock, backoff } = internal(client).options;
+    retryTimer = clock.after(
+      backoffDelay(
+        attempts++,
+        backoff ?? { minMs: 500, maxMs: 30000, factor: 2, jitter: 0.2 },
+      ),
+      () => void load(),
+    );
+  }
   const assets = new Map<string, AssetView>(),
     observations = new Map<string, P["report.observation"]>(),
     tracks = new Map<string, P["track"]>(),
@@ -51,10 +77,16 @@ export function createLivePicture(
   }
   async function load() {
     const current = ++generation;
+    retryTimer?.cancel();
     stream?.stop();
+    stream = undefined;
     clear();
     const result = await client.call("entities");
-    if (!result.ok || stopped || current !== generation) return;
+    if (stopped || current !== generation) return;
+    if (!result.ok) {
+      retry(current, result);
+      return;
+    }
     const snapshot = result.value,
       after = [snapshot.as_of];
     marks.set("entities", snapshot.as_of);
@@ -78,7 +110,11 @@ export function createLivePicture(
       const t = await client.call("tasks", {
         params: { asset_id: a.asset_id },
       });
-      if (!t.ok || stopped || current !== generation) return;
+      if (stopped || current !== generation) return;
+      if (!t.ok) {
+        retry(current, t);
+        return;
+      }
       marks.set(a.asset_id, t.value.as_of);
       after.push(t.value.as_of);
       tasks.set(
@@ -96,7 +132,20 @@ export function createLivePicture(
     for (const t of snapshot.tracks) tracks.set(t.track_id, t);
     for (const g of snapshot.geofeatures) geofeatures.set(g.geofeature_id, g);
     ready = true;
-    stream = follow(client, { after: Math.min(...after) }, apply);
+    attempts = 0;
+    let open = false;
+    stream = follow(
+      client,
+      {
+        after: Math.min(...after),
+        onContact(contact) {
+          if (open === contact.open) return;
+          open = contact.open;
+          notify();
+        },
+      },
+      apply,
+    );
     notify();
   }
   function apply(e: AtlasEvent) {
@@ -130,7 +179,19 @@ export function createLivePicture(
           break;
         case "asset.described": {
           const a = assets.get(e.record.asset_id!);
-          if (a) a.description = e.record;
+          if (a) {
+            a.description = e.record;
+            for (const key of Object.keys(a.subsystems))
+              if (!e.record.subsystems?.some((s) => s.subsystem_id === key))
+                delete a.subsystems[key];
+            for (const key of Object.keys(a.gimbals))
+              if (
+                !e.record.cameras?.some(
+                  (c) => c.camera_id === key && c.mount === "gimbal",
+                )
+              )
+                delete a.gimbals[key];
+          }
           break;
         }
         case "asset.contact": {
@@ -181,7 +242,11 @@ export function createLivePicture(
               e.kind === "report.status" &&
               e.record.kind === "subsystem"
             ) {
+              const subsystem_id = e.record.subsystem_id;
               if (
+                a.description?.subsystems?.some(
+                  (s) => s.subsystem_id === subsystem_id,
+                ) &&
                 newer(
                   `subsystem:${a.asset_id}:${e.record.subsystem_id}`,
                   e.record.time,
@@ -190,7 +255,11 @@ export function createLivePicture(
               )
                 a.subsystems[e.record.subsystem_id] = e.record;
             } else if (e.kind === "report.gimbal") {
+              const camera_id = e.record.camera_id;
               if (
+                a.description?.cameras?.some(
+                  (c) => c.camera_id === camera_id && c.mount === "gimbal",
+                ) &&
                 newer(
                   `gimbal:${a.asset_id}:${e.record.camera_id}`,
                   e.record.time,
@@ -279,6 +348,7 @@ export function createLivePicture(
     if (s.phase === "connected") void load();
     else if (s.phase === "run_ended") {
       generation++;
+      retryTimer?.cancel();
       stream?.stop();
       clear();
     } else notify();
@@ -306,6 +376,7 @@ export function createLivePicture(
     stop() {
       stopped = true;
       generation++;
+      retryTimer?.cancel();
       stream?.stop();
       unsubscribe();
     },

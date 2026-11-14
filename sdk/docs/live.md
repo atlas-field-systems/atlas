@@ -31,6 +31,8 @@ subscription.stop();
 The client opens `/events?after=<cursor>` and manages reconnects in both the
 browser and Node.
 
+- Opening the stream uses `requestTimeoutMs`, including the wait for response
+  headers. A timeout aborts the request and reconnects with backoff.
 - When the stream closes or errors, the client reopens it with backoff
   ([configuration](../config.md)). The client uses the same backoff to reopen a
   stream that Core closed because the reader fell behind.
@@ -65,7 +67,8 @@ picture.onChange(cb);
 - **Loading.** It reads `GET /entities` for the shared picture
   ([Entities](../../core/docs/api.md#entities)) and each Asset's
   `GET /tasks/{asset_id}` ([Reads](../../core/docs/api.md#reads)), then follows
-  from the smallest `as_of`.
+  from the smallest `as_of`. Recoverable snapshot failures retry with the configured
+  backoff. If an Asset disappears between reads, loading starts again.
   The follow is unfiltered: `asset_id` narrows only Asset entries and Tasks on
   the client. Places, Tracks, and every Observation stay live.
   For each part, it skips events at or below the `as_of` of the read that loaded it.
@@ -75,7 +78,9 @@ picture.onChange(cb);
   contains. Each setting keeps its own latest value and the report it came from,
   ordered by report time and then `event_id`, so a retained report received
   after a gap never replaces a newer value. A subsystem report works the same
-  way: each declared subsystem keeps its own latest condition.
+  way: each declared subsystem keeps its own latest condition. A new description
+  removes subsystem and gimbal entries it no longer declares; later reports for
+  undeclared equipment do not restore those entries.
 - **Observations, Tracks, and geo features.** Each item is the record the event
   stream carries ([Entities](../../core/docs/api.md#entities)). A
   `report.observation` replaces its Observation only when it is newer by report
@@ -87,7 +92,8 @@ picture.onChange(cb);
   Contact comes from `asset.contact` events. Neither stream state nor picture
   readiness means the equipment is ready.
 - **On disconnect** the picture keeps its data with `stale: true` and resumes from
-  its cursor on reconnect. It keeps nothing on disk.
+  its cursor on reconnect. `onChange` also notifies subscribers when the stream
+  opens or disconnects, even without a domain event. It keeps nothing on disk.
 
 ## Follow completion
 
@@ -96,3 +102,8 @@ picture.onChange(cb);
 `handler_failed`, or `invalid_event`. An invalid record ends this follow.
 It does not claim a definitions mismatch. The host decides whether to start
 another follow.
+
+An SSE frame, including an incomplete line, is limited to 16 MiB plus 1 KiB
+for SSE framing and the event envelope, based on Core's
+[JSON body limit](../../core/docs/api.md#basics). Exceeding it ends the follow
+with `invalid_event`.
