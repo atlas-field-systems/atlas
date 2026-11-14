@@ -1380,3 +1380,33 @@ test("R3-8 default listen starts on loopback without TLS [config.md#defaults]", 
     await h.close();
   }
 });
+
+test("Plugin inline imagery requires GeoTIFF and leaves refused calls open [api.md#objects]", async () => {
+  const c = simulatedClock(), h = await startHarness(c);
+  try {
+    const p = await plugin(h);
+    const called = await h.call("POST", `/plugins/${p.plugin_id}/actions/find`, { cookie: h.admin, body: { inputs: [] } });
+    assert.equal(called.status, 202);
+    const request_id = called.body.event_id;
+    const upload = async (bytes: Buffer<ArrayBuffer>) => {
+      const response = await fetch(h.core.url + `/objects?name=imagery&request_id=${request_id}`, {
+        method: "POST", headers: { authorization: `Bearer ${p.key}`, "Atlas-Definitions": protocol.hash, "Idempotency-Key": crypto.randomUUID(), "Content-Type": "image/tiff" }, body: bytes,
+      });
+      const body = await response.json();
+      assert.equal(response.status, 201, JSON.stringify(body));
+      return body.object_id;
+    };
+    const tagged = Buffer.alloc(26);
+    tagged.write("II"); tagged.writeUInt16LE(42, 2); tagged.writeUInt32LE(8, 4);
+    tagged.writeUInt16LE(1, 8); tagged.writeUInt16LE(34735, 10);
+    const text = await upload(Buffer.from("not a TIFF")), good = await upload(tagged);
+    const answer = (object_id: string) => h.call("POST", `/plugins/${p.plugin_id}/answers`, {
+      key: p.key, body: { type: "plugin.result", time: c.now(), plugin_id: p.plugin_id, request_id, places: [{ kind: "imagery", object_id }] },
+    });
+    const refused = await answer(text);
+    assert.equal(refused.status, 409);
+    assert.equal(refused.body.error, "not_geotiff");
+    assert.equal((await h.call("GET", `/plugins/${p.plugin_id}/calls/${request_id}`, { cookie: h.admin })).body.answer, null);
+    assert.equal((await answer(good)).status, 200);
+  } finally { await h.close(); }
+});
