@@ -1,0 +1,10 @@
+{
+  "name": "@atlas/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "test": "node --test test/*.test.ts", "check:browser": "tsc -p tsconfig.browser.json" },
+  "dependencies": { "@atlas/protocol": "file:../protocol", "@atlas/core": "file:../core" },
+  "devDependencies": { "typescript": "7.0.2", "@types/node": "^24.0.0" }
+}
