@@ -1,12 +1,22 @@
 # Core API
 
-The Command Interface, Assets on IP, gateways, and Plugins use this API to talk to Core
-from outside its inner wall. This design is selected but not implemented.
+**Built.** The Command Interface, Assets on IP, gateways, and Plugins use this API
+to talk to Core from outside its inner wall.
 Record shapes belong to [Protocol](../../protocol/README.md); this page names them and never redefines
 their fields. The [walled city](../../atlas/design-decisions.md#a-walled-city)
 explains why the API is the only way in.
 
 ## Basics
+
+Core serves HTTPS when both TLS files are configured. Without them it serves
+plain HTTP only on loopback. [Configuration](../config.md) owns TLS setup.
+
+A keyed `GET /about` with another definitions hash records at most one
+`definitions.refused` per registered Asset, gateway, or Plugin and hash per run. The gateway itself and its radios count separately. It still counts as contact.
+For an Asset key that has not registered, Core instead records its `key_id` and
+the differing hash on the console and in diagnostics, at most once per key and
+hash per run. It adds no event because the key has no Asset.
+Accounts may call every operator route.
 
 - HTTPS and JSON. Event bodies are Protocol records. Operator request bodies
   are Protocol's [request definitions](../../protocol/README.md#records); Core
@@ -20,16 +30,18 @@ explains why the API is the only way in.
   a missing or different hash with `409 definitions_mismatch`. `GET /about`
   needs no credential and
   returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
-  stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
+  stream alone takes the hash as `?definitions=`, because browsers cannot set headers on it. Other requests require the header, except `/about` and the debug log.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
-  that hash differs, Core adds a `definitions.refused` event, so operators see
-  why it is missing.
+  that hash differs, Core records the mismatch as described above.
 - **Retries are safe.** Every request that changes state carries an
   `Idempotency-Key` of up to 64 characters. Core keeps each key's non-secret
-  response for the run. A repeat returns that response and changes nothing; the
+  response for the run when it succeeds (2xx) or its transaction changed something.
+  A refusal that changed nothing is not kept. A repeat returns that response and changes nothing; the
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
+- **Stopping.** Requests already in preparation may commit during the five-second
+  stop grace. When grace ends, Core refuses their commits with `503 stopping`.
 - **Runs.** Every read, history page, and event stream covers only the current
   run. [Runs and identity](../../atlas/runs-and-identity.md) owns what a run is,
   what carries over, and which IDs start again. `GET /about` names the run with
@@ -45,12 +57,23 @@ explains why the API is the only way in.
 | Status | Meaning |
 | --- | --- |
 | `400 invalid` | The body fails Protocol's validator; `explanation` lists the paths |
-| `401` | No valid session or key |
-| `403` | The caller may not do this, such as an Asset reading another Asset |
-| `404` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
-| `409` | Refused: Asset IDs used up, Asset or Plugin offline, flying Asset with no critical battery rule, queue full, command, setting, or action not supported, unknown Task, call already answered or ended, an imagery change other than its name, an Object imagery still shows, or definitions mismatch |
+| `401 unauthenticated` | No valid session or key |
+| `403 forbidden` | The caller may not do this, such as an Asset reading another Asset |
+| `404 not_found` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
+| `405 method_not_allowed` | The path exists but does not accept this method |
+| `409 asset_ids_exhausted`, `task_ids_exhausted` | No ID remains in the applicable sequence |
+| `409 definitions_mismatch` | Missing or different definitions hash |
+| `409 asset_offline`, `plugin_offline` | Recipient is offline |
+| `409 no_critical_battery_rule` | Flying Asset has no critical battery rule |
+| `409 queue_full` | The request exceeds the reported queue cap |
+| `409 not_supported` | Command, setting, camera, or action is not declared |
+| `409 task_ended`, `call_settled` | Task ended or Plugin call was already answered or dropped |
+| `409 not_a_point`, `not_geotiff` | Place or file cannot serve the requested use |
+| `409 imagery_fixed`, `object_shown` | Imagery change is forbidden or imagery still shows the Object |
+| `409 id_taken`, `idempotency_conflict` | Identity is in use or retry key names another body |
+| `503 stopping` | Core is stopping |
 | `410 deleted` | The Object was deleted in this run; the body adds its `deletion` record, which says who deleted it and when |
-| `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
+| `413 too_large` | The JSON body exceeds 16 MiB, or the file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
 ## Root paths
@@ -102,13 +125,18 @@ and `/debug` belong to no pillar and stay at the top level.
   cookie. A caller that missed the cookie logs in with a new idempotency key to
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
+- Request completion diagnostics identify the caller, concrete route IDs, and
+  whether a response was replayed. Administration completions include only
+  allowlisted non-secret acknowledgment fields.
+- Password-bearing retry fingerprints use salted scrypt for login and account
+  creation; retry state never exposes a fast password verifier.
 - The first admin account comes from [Core configuration](../config.md).
 - A radio Asset holds no Core key and never calls this API
   ([radio Assets](#radio-assets)).
 
 ## The event log and live stream
 
-Core adds one event for every accepted request, stored report, and Fusion
+Core adds one event for every accepted domain request, stored report, and Fusion
 change to a Track, in the same
 transaction as the change it records ([storage](storage.md)). Each event is
 `{event_id, time, kind, record}`: a rising integer, Core's receive time in
@@ -150,6 +178,8 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 message has `id: <event_id>`, `event: <kind>`, and the event as `data`. Both
 parameters are optional. A browser that reconnects sends `Last-Event-ID`, and Core
 resumes after it. Core sends a `: alive` comment every 10 s.
+Core closes streams by terminating their connection; a reader discards any
+incomplete event and resumes after its last fully handled `event_id`.
 
 - **Snapshots resume cleanly.** Every read returns `as_of`, the last `event_id` it
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
@@ -160,6 +190,12 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   resumes after the last one it handled, so nothing is missed or repeated.
 
 ## Operator requests
+
+Within a run, the next Task after 9999 is refused with `409 task_ids_exhausted`.
+Cancel for an unknown Task is `404 not_found`; cancel for an ended Task is
+`409 task_ended`. A cancel to an offline Asset is refused as other requests are.
+A flying Asset without a critical battery rule is refused a Tasks request even
+when it includes a settings Task. Send the rule as a settings change first.
 
 | Request | Body | Result |
 | --- | --- | --- |
@@ -213,6 +249,7 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   it even at the 64 cap.
 - The Asset answers a Task request with a queue report that names the request
   and lists the Tasks the Asset holds.
+- Late reports stay in history without reconciling a dropped Task.
 - **Unanswered requests end when the Asset goes offline.** Core stops delivering
   every request the Asset has not answered: Tasks, settings changes, and cancels.
   Core adds `request.dropped` for each, and `task.dropped` for each Task the
@@ -224,7 +261,7 @@ resumes after it. Core sends a `: alive` comment every 10 s.
 - **A restarted app holds nothing.** An Asset that signs up again while
   already registered has started again and
   [dropped its queued Tasks](../../atlas/runs-and-identity.md#keys-and-registration).
-  Core adds `task.dropped` for each of its Tasks with no final report. A drop
+  Core adds `task.dropped` for each of its Tasks with no final report. It also drops unanswered settings and cancel requests, and adds no new `asset.registered`. A drop
   claims no outcome: operators see the Task as not done and send again what
   still matters. Results the app had not reported before the restart are lost.
   The registration answer's `last_task_id` is the highest `task_id` Core has
@@ -237,6 +274,21 @@ resumes after it. Core sends a `: alive` comment every 10 s.
   To change the order of Tasks already sent, cancel them and send new ones.
 
 ## Reads
+
+Accounts read everything. Plugins read the picture and history. Assets read
+only their own Asset entry; gateways read only the Assets they carry. Tasks
+reads belong to accounts.
+
+`GET /entities/assets` returns `{as_of, items, gateways}`. Each Asset entry
+contains `asset_id`, `gateway_id` (or null), `description` (or null), `contact`,
+`reports` (latest by report kind, excluding Observations and gimbals),
+`settings` (latest report per setting), `subsystems` (latest condition per declared
+subsystem), and `gimbals` (latest report per declared gimbal `camera_id`).
+`GET /entities/assets/{asset_id}` returns `{as_of, item}` with the same entry.
+`GET /tasks/{asset_id}` returns `{as_of, items, held}`. Each Task entry has `task`,
+`state`, `state_time`, and optional `object_ids`. `held` is the latest reported
+list of Task IDs since the Asset app last signed up; signing up again clears
+the earlier queue.
 
 | Request | Returns |
 | --- | --- |
@@ -258,6 +310,10 @@ accounts and Plugins read them. The rest of the picture is under
 
 ## Asset and gateway calls
 
+A clock-ahead report still answers its request and moves Task state forward.
+It never becomes latest, and a clock-ahead queue report does not count toward
+the Task cap.
+
 Core assigns each Asset's `asset_id` when it registers
 ([Runs and identity](../../atlas/runs-and-identity.md#ids)). An Asset on IP
 starts in this order, and on reconnect within the run repeats it from step 3:
@@ -267,7 +323,7 @@ starts in this order, and on reconnect within the run repeats it from step 3:
    without `time` and `asset_id`. Core assigns the next `asset_id`, never one
    used before, stamps `time` and the ID to make the description record, adds
    `asset.registered` and `asset.described`, and answers
-   `201 {asset_id, last_task_id}` ([restarts](#operator-requests)).
+   `201 {asset_id, last_task_id, as_of}` ([restarts](#operator-requests)).
    The Asset uses that ID for the rest of the run. Registering again with the
    same key in the run returns the same `asset_id`, even for an app that
    restarted and forgot its ID, unless an admin removed that Asset; then it
@@ -279,10 +335,10 @@ starts in this order, and on reconnect within the run repeats it from step 3:
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
-4. Open `/events?after=<last handled event_id>`. On first start, it follows from
-   the latest event.
+4. Open `/events?after=<as_of from registration>` on start, so work accepted
+   during startup is delivered. On reconnect, use the last handled `event_id`.
 
-- `POST /entities/assets/{asset_id}/reports` takes `{"reports": [...]}` in batches. A `200`
+- `POST /entities/assets/{asset_id}/reports` takes `requests.reports` in batches of up to 1000 reports. An empty batch is accepted for contact. A `200`
   stores and acknowledges the whole batch. The Asset resends a batch with the same
   `Idempotency-Key` until it gets one. Retained reports catching up after a gap use
   the same call with their original times. The Asset sends its current state
@@ -310,7 +366,9 @@ starts in this order, and on reconnect within the run repeats it from step 3:
   caught up with it.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key, once it has [registered the radio](#radio-assets). It also sends
+key, once it has [registered the radio](#radio-assets). Its first subscription
+uses the registration answer’s `as_of`; an existing subscription stays open
+when another radio registers. It also sends
 `PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
 Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
 it carries, named by the path; any other caller gets `403`. Core
@@ -325,6 +383,9 @@ order, because the Asset orders them by `task_id`.
 
 ### Radio Assets
 
+When a gateway reconnects to Core, it sends contact for every Asset it carries,
+even if its Fieldlink's view did not change.
+
 [Runs and identity](../../atlas/runs-and-identity.md#radio-assets) owns the
 results; these are the calls behind them. The gateway matches each radio to its
 Asset on its own side and speaks to Core only by `asset_id`.
@@ -332,7 +393,7 @@ Asset on its own side and speaks to Core only by `asset_id`.
 - When the gateway hears a radio that has no `asset_id` in this run, it sends
   `POST /entities/assets/radios` with `requests.radio`: the radio's
   definitions hash. Core assigns the next `asset_id`, adds `asset.registered`
-  with the gateway as `requested_by`, and answers `201 {asset_id}`. The gateway
+  with the gateway as `requested_by`, and answers `201 {asset_id, as_of}`. The gateway
   carries that Asset, keeps which radio has which ID, and tells the radio its
   ID through the Fieldlink.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
@@ -357,6 +418,10 @@ Asset on its own side and speaks to Core only by `asset_id`.
 
 ## Contact
 
+Stored contact records describe transitions. An online record keeps the time
+of the online transition, rather than every later heartbeat. Offline records
+keep the last-heard time.
+
 - **Core's view.** An Asset is online while Core has heard from it within
   `offline_after_s` ([configuration](../config.md)). Core hears from an Asset on
   IP each time the Asset calls the API. Through a gateway, Core takes the
@@ -377,6 +442,10 @@ Asset on its own side and speaks to Core only by `asset_id`.
 
 ## Accounts and provisioning
 
+Removing an Asset drops its unfinished Tasks and unanswered requests, with
+their drop events. Removing its key leaves the registered Asset in the picture.
+Login and account creation use `requests.login` and `requests.account`.
+
 Only admins may use these calls, except login, logout, and `GET /administration/me`.
 
 | Request | Purpose |
@@ -393,7 +462,7 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 
 ### Credential retry scenarios
 
-These are requirements to test when Core is built; no credential runtime exists yet.
+These are requirements to test when Core is built; the Administration contract tests exercise them.
 
 - Create an Asset key, or provision a gateway or Plugin, and lose the first response. Retry with the same
   idempotency key and body. Expect the same provisioned ID and an issuance
@@ -540,6 +609,10 @@ and a removal adds `track.removed`.
 
 ## Objects
 
+Core accepts imagery only when the file is a TIFF with GeoKeyDirectory tag
+34735 in its first image directory, regardless of the upload's `Content-Type`. Attach requests use `requests.attach`. Attaching an Object to the same
+end state adds no event and returns its existing latest Object `event_id`.
+
 An Object is a file Core holds, with an `object` record that says what it is:
 `object_id`, `name`, `content_type`, `size_bytes`, and an optional
 `geofeature_id`. Operators, Plugins, and Assets store Objects. Core never sends
@@ -636,7 +709,8 @@ not call Plugins yet.
    [Plugins](../../atlas/plugins.md#actions) describes. Core checks the
    description with Protocol's validator and refuses an invalid one with
    `400 invalid`.
-3. Open `/events?after=<last handled event_id>`. Its stream shows only
+3. On first start, open `/events?after=<event_id from the description answer>`.
+   On reconnect, use the last handled `event_id`. Its stream shows only
    `plugin.called` events addressed to it.
 
 A Plugin is online while Core has heard from it within `offline_after_s`
@@ -673,6 +747,13 @@ they can use.
   data calls again.
 
 ### Plugins answer
+
+Every `geofeature_id` and `object_id` in a Plugin answer must exist and have
+been created by that Plugin's call. Otherwise Core returns `400 invalid`.
+A Plugin supplies `request_id=<call event_id>` on `POST /objects` and
+`POST /entities/geofeatures`. Core requires a still-open call addressed to
+that Plugin and keeps the creation's call identity. Concurrent calls therefore
+cannot claim each other's output.
 
 `POST /plugins/{plugin_id}/answers` takes one answer record, which names its
 call with `request_id`, the call's `event_id`. Every action answers the same

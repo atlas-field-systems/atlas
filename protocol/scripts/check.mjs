@@ -97,9 +97,13 @@ for (const [file, s] of Object.entries(schemas)) {
       }
     }
   }
+  // geofeature_id and object_id can reference existing items; their presence alone is not a Core stamp.
   // Requests are bodies, not records: Core stamps the record fields, so a request carries none of them.
   if (file.startsWith('requests/')) {
-    for (const f of ['type', 'time', 'asset_id', 'task_id', 'send_last', 'requested_by', 'geofeature_id', 'track_id']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
+    for (const f of ['type', 'time', 'asset_id', 'task_id', 'send_last', 'requested_by']) if (props[f]) errors.push(`${file}: law 1: "${f}" is stamped by Core, not sent in a request`);
+    const recordName = base(file);
+    const assignedId = `${recordName}_id`;
+    if (schemas[`records/${recordName}.json`]?.properties?.[assignedId] && props[assignedId]) errors.push(`${file}: law 1: "${assignedId}" is stamped by Core, not sent in a request`);
     if (s.additionalProperties !== false && s.unevaluatedProperties !== false) errors.push(`${file}: law 1: a request sets additionalProperties or unevaluatedProperties to false`);
   }
   if (isKind(file)) {

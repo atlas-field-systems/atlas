@@ -4,8 +4,8 @@ Atlas Core is the server inside the inner wall. It keeps the shared picture and
 the event log, serves the [Core API](docs/api.md), and runs Fusion. Shared record
 formats come from [Protocol](../protocol/README.md).
 
-**Building.** The runtime is being built, all pillars together. The earlier first-flight prototype was
-removed. Git history retains it.
+**Built.** The runtime includes all pillars and the Plugin interface. The earlier
+first-flight prototype was removed. Git history retains it.
 
 - [Core API](docs/api.md): how the Command Interface, Assets, and gateways talk to Core.
 - [Request admission](docs/requests.md): Core's checks before work reaches an Asset.

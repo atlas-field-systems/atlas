@@ -1,6 +1,6 @@
 # Request admission
 
-This behavior is selected but not implemented.
+**Built.** Core implements the admission rules below.
 
 Core rejects requests it knows are invalid before they reach a field link. It
 validates request bodies with Protocol's validator, then checks the
@@ -23,7 +23,7 @@ This follows
 
 ## Scenario: paused work at capacity
 
-These are required outcomes for the future runtime, not implemented tests.
+Core tests check these admission outcomes through HTTP.
 
 1. An online Asset is paused, and its latest queue report lists 63 held Tasks.
    An operator sends one Task. Core accepts it.
@@ -37,6 +37,9 @@ These are required outcomes for the future runtime, not implemented tests.
    lists more than 64.
 
 ## Scenario: now at capacity
+
+[Operator requests](api.md#operator-requests) also owns the critical battery
+rule required before accepting Tasks.
 
 1. The Asset's latest queue report lists 64 held Tasks. An ordinary request for
    one more is refused with `409 queue_full`.

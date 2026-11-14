@@ -39,7 +39,11 @@
         "requests/geofeature.json",
         "requests/plugin_call.json",
         "requests/asset.json",
-        "requests/radio.json"
+        "requests/radio.json",
+        "requests/login.json",
+        "requests/account.json",
+        "requests/reports.json",
+        "requests/attach.json"
       ]
     },
     {
@@ -190,7 +194,11 @@
         "variables/show_on_map.json",
         "variables/radio.json",
         "variables/media.json",
-        "variables/duration_s.json"
+        "variables/duration_s.json",
+        "variables/admin.json",
+        "variables/password.json",
+        "variables/asset_report.json",
+        "variables/attachment.json"
       ]
     }
   ]

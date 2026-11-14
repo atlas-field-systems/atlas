@@ -1,9 +1,17 @@
 # Core storage
 
-This design for Core storage is selected but not implemented. Record shapes
+**Built.** Core stores current state and events in SQLite. Record shapes
 belong to [Protocol](../../protocol/README.md); this page says where Core puts them.
 
 ## Tables hold current state
+
+`fusion_cursor` belongs to Fusion and stores its last processed event ID per
+run. Fusion commits the cursor with its Track changes.
+
+The run row holds the last Track, geo feature, and Object sequence numbers.
+Deleting a current row never makes its ID available again in that run.
+The `queues` table is a deliberate copy of the latest eligible queue report,
+written in the report's transaction for admission.
 
 Core keeps one SQLite database in its `data_directory` ([configuration](../config.md)).
 Core reads and changes current state in ordinary tables with plain SQL.
@@ -18,9 +26,9 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `idempotency_keys` | Shared | Each caller's keys for the run, with a hash of the body and the non-secret response or credential acknowledgment ([retry rules](api.md#callers-and-credentials)) |
 | `accounts` | Administration | Admin and operator accounts and their password hashes |
 | `sessions` | Administration | Each session's token hash and account, for the run |
-| `gateways` | Administration | Provisioned gateways, their key hashes, and contact |
+| `gateways` | Administration | Provisioned gateways, their key hashes, and contact; removed rows remain until their run clears |
 | `asset_keys` | Administration | Each Asset key's `key_id` and hash |
-| `plugins` | Administration | Provisioned Plugins: ID, key hash, latest description, and contact |
+| `plugins` | Administration | Provisioned Plugins: ID, key hash, latest description, and contact; removed rows remain until their run clears |
 | `objects` | Objects | Each Object record, a deleted one marked deleted. The files sit in the `data_directory` beside the database, deleted ones included |
 | `assets` | Entities | Each Asset registered in the run: `asset_id`, the Asset key or gateway that registered it, the gateway carrying a radio Asset, latest description, and contact. A removed Asset keeps its row, marked removed and not listed |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
@@ -36,12 +44,12 @@ indexed query for the latest `report.observation` of its `asset_id` and
 
 A change updates its tables and appends its event in the same transaction. The
 event stream therefore never shows a change that was not stored, and every stored
-change appears in it. Core never rebuilds tables from events.
+domain change appears in it. Credential and account changes use diagnostics only. Core never rebuilds tables from events.
 
 Asset reports, Plugin calls, and Plugin answers are stored only as events.
 History, the latest report of each kind, each setting's latest value, and each
 subsystem's latest condition are indexed queries on `events`, so no report is
-kept twice.
+kept twice, except the queue copy described above.
 
 ## Runs
 
@@ -70,3 +78,20 @@ if its ZIP failed, until the admin removes it.
 - If a change cannot be written, because the disk is full or the database
   fails, Core refuses the request with `507 storage_full` and stores nothing.
   Nothing is accepted without its event.
+
+Diagnostic loss counts are durable run metadata in `data_directory/diagnostic-gaps/`.
+Core coalesces loss counts into one asynchronous, atomic ledger writer, separately
+from the capped diagnostic files. Debug reads and Reset wait for that writer.
+A crash may lose counts still being written; the unexpected stop itself is always
+listed as a gap. Reset includes the counts in its manifest and
+summary and removes the ledger only after checking the ZIP.
+
+Entities keeps each Asset's actual last arrival in `asset_heard`, including empty
+report batches. Contact deadlines restart at resume independently of this evidence;
+Reset uses the stored arrival rather than the later offline transition.
+
+Administration keeps gateway and Plugin arrivals in run-scoped `identity_heard` rows.
+Resumed offline records retain those arrival times while their deadlines restart.
+
+Only one Core may open a `data_directory` at a time; a second startup refuses
+before recovery or upload cleanup can change the active run.

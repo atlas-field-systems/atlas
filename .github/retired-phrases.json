@@ -342,5 +342,25 @@
     "phrase": "\\bNothing is generated\\.",
     "why": "The SDK imports Protocol declarations under the measured TypeScript working choice.",
     "example": "The SDK defines no record of its own. Nothing is generated."
+  },
+  {
+    "phrase": "every accepted request and every Asset report also adds a row",
+    "why": "Credential and account changes use diagnostics; events record domain changes.",
+    "example": "Every accepted request and every Asset report also adds a row to events."
+  },
+  {
+    "phrase": "409 unknown Task",
+    "why": "An unknown Task is 404 not_found.",
+    "example": "Core refuses with 409 unknown Task."
+  },
+  {
+    "phrase": "<data_directory>/archive",
+    "why": "Core archives live outside data_directory so Reset cannot erase its ZIP.",
+    "example": "The archive default is <data_directory>/archive."
+  },
+  {
+    "phrase": "0\\.0\\.0\\.0,\\s*8443\\b",
+    "why": "Core defaults to loopback so startup without TLS succeeds.",
+    "example": "`0.0.0.0`, `8443`; set TLS files for this address"
   }
 ]

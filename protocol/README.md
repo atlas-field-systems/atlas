@@ -44,6 +44,9 @@ Each record has its own definition with a description and examples. Plugins
 describe their own actions from Protocol's common input kinds, so Protocol
 lists no actions.
 
+Login, account creation, report batches, and Object attachments use `requests.login`,
+`requests.account`, `requests.reports`, and `requests.attach`.
+
 Requests are not records. `requests/` defines the bodies callers send to the
 Core API: `tasks` (one or more Task kinds, or one with `now`), `settings`,
 `geofeature`, `plugin_call`, `asset`, with which an Asset on IP registers, and `radio`, with which a gateway registers a radio Asset. Core stamps the record fields, such as `time`, `task_id`,

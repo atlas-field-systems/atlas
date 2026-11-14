@@ -1,8 +1,7 @@
 # Core logging
 
-Core needs detailed diagnostics from startup through Reset so a run can be
-reconstructed from its archive. This is a requirement for the runtime, which is
-not built yet.
+**Built.** Core records diagnostics from startup through Reset so a run can be
+reconstructed from its archive.
 
 ## Keep diagnostics beside the event log
 
@@ -28,6 +27,9 @@ shared domain records.
 - The distinction between request acceptance and an observed Asset result.
 - Storage operations, Fusion and Plugin activity when present, errors, and
   diagnostic records that could not be written.
+
+Contact diagnostics include initial registration and every gateway and Plugin transition.
+Track changes and drop decisions identify their event and subject; completed file downloads identify the Object and route.
 
 Preserve Core's local arrival and send order independently of record times.
 Correlate records with `event_id`, `task_id`, and `asset_id`; do not add
@@ -83,3 +85,7 @@ The event log is never treated this way. A change Core cannot store is refused
 with `507 storage_full` ([storage](storage.md#memory-and-full-disks)). Lost,
 truncated, or filtered evidence is always visible in the archive; Core never
 claims a complete record it does not have.
+
+The total byte limit includes gap records. Once a record would exceed it, Core
+stops diagnostic writes for that run and keeps subsequent loss counts for the ZIP.
+Gap records written before that point contain only losses not previously written.

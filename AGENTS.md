@@ -23,7 +23,7 @@ Propose changes to the owner rather than making them quietly. See
 | [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide design decisions, the [decision log](atlas/decision-log.md), and [runs and identity](atlas/runs-and-identity.md) | Active |
 | [protocol/](protocol/) | The spec: shared domain records as definitions, laws, examples and docs, plus the one validator. Component configuration and diagnostic logs live with their owners. When published, its package version is its only version; definitions and records carry no protocol version | Draft, unpublished |
 | [sdk/](sdk/) | The SDK: the client for the Core API, used by operator applications, Assets on IP, gateways and Plugins. Loads Protocol's definitions; defines no record itself. Runtime code is not built yet | Draft docs, runtime not built |
-| [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is being built | Building |
+| [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is built | Built |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | Planning |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
 | [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Planning |

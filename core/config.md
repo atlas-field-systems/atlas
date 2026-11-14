@@ -1,52 +1,40 @@
 # Core configuration
 
-Discussion draft for the Core runtime. Detailed logging and easy setup are
-selected requirements. The option names, defaults, file format, and loading
-rules below are proposals. None is implemented.
+Run `node src/main.ts <config.json>` with Node 24. Core loads a JSON object,
+then applies `ATLAS_CORE_<KEY>` environment overrides. Values use JSON syntax;
+a plain string is also accepted for string options. Unknown keys and invalid
+values stop startup with the option name and an explanation.
 
-## Configure and inspect one Core
+There is no live configuration reload. Core rereads configured TLS PEM files
+hourly so certificate renewal does not require a Reset. Both files are required
+for HTTPS. Without them Core listens only on loopback.
 
-Proposed setup: load one local configuration file, allow explicit deployment
-overrides, and show the effective configuration with secrets removed before
-accepting requests. Report an invalid option by name and explain what is wrong.
-Field and hosted deployments use the same setup.
+## Defaults
 
-Decide the file format, override precedence, and command-line interface before
-implementation. There is no configuration server or live-reload requirement.
+| Option | Default |
+| --- | --- |
+| `listen_address`, `port` | `127.0.0.1`, `8443`; without TLS, a non-loopback address is refused |
+| `tls_certificate`, `tls_key` | `null`, `null` |
+| `data_directory` | `/var/lib/atlas-core` |
+| `first_admin` | `null`; or `{operator_id, password_file}`, used only if no account exists |
+| `offline_after_s` | `30` |
+| `max_object_bytes` | `100000000` |
+| `clock_ahead_s` | `10` |
+| `log_level` | `trace` |
+| `log_directory` | `<data_directory>/diagnostics` |
+| `log_message_content` | `true`; credentials removed |
+| `log_file_limit_bytes` | `67108864` (64 MiB) |
+| `log_total_limit_bytes` | `2147483648` (2 GiB) |
+| `debug_endpoint` | `false` |
+| `archive_directory` | `<data_directory>-archive`; Core never deletes ZIPs |
 
-## Options to discuss
+`port` accepts 0 to choose a free port. Timeouts and limits must be positive.
+The password file is read once for bootstrap, with a trailing newline removed.
+Accounts and keys are otherwise provisioned through the [Core API](docs/api.md#accounts-and-provisioning).
+[Logging](docs/logging.md) owns diagnostics and [Reset](docs/reset.md) owns archives.
 
-Names in this table are proposed configuration keys.
+Core refuses startup if `archive_directory` is inside `data_directory` or
+`log_directory`, or equals either, after resolving symbolic links.
 
-| Option | Purpose | Starting point or open choice |
-| --- | --- | --- |
-| `listen_address`, `port` | Where the [Core API](docs/api.md) listens | Support hosted and field deployments; defaults are open |
-| `tls_certificate`, `tls_key` | HTTPS for the Core API | Source and renewal are open |
-| `data_directory` | The SQLite database ([storage](docs/storage.md)) and Object files | Directory layout is open |
-| `first_admin` | The first admin account's `operator_id` and password | Used only when no account exists; secret source is open |
-| `offline_after_s` | How long without contact before Core counts an Asset, gateway, or Plugin offline | See [contact](docs/api.md#contact) and [Plugins](docs/api.md#a-plugin-starts); default is open |
-| `max_object_bytes` | The largest file an [Object](docs/api.md#objects) may be | Default 100,000,000 bytes (100 MB); an admin may change it |
-| `clock_ahead_s` | How far ahead of Core's clock a report's time may be before Core [marks it](docs/api.md#asset-and-gateway-calls) | Default is open |
-| `log_level` | Detail of diagnostics | Detailed per-request logging is required; proposed prototype default is `trace` |
-| `log_directory` | Local diagnostic files | Keep apart from the event log; path is open |
-| `log_message_content` | Include request and report content in trace records | Proposed on, with credentials removed |
-| `log_file_limit_bytes`, `log_total_limit_bytes` | Rotation and the most one run's diagnostics may use | Defaults are open. Past the total, records are counted as a [gap](docs/logging.md#when-logging-cannot-keep-up), never silently lost |
-| `debug_endpoint` | Serve the diagnostic log over HTTP with no credential ([logging](docs/logging.md#read-the-log-while-core-runs)) | Off by default. While it is on, anyone who has the URL that Core prints at startup can read the log |
-| `archive_directory` | Where Core writes each run's [Reset ZIP](docs/reset.md) when it stops | Path is open. Core never deletes from it |
-
-Accounts and the keys of Assets on IP, gateways, and Plugins are provisioned
-through the [Core API](docs/api.md#accounts-and-provisioning), not
-configuration. A Plugin's own settings, such as which
-services it uses, belong to the Plugin, not to Core.
-
-## Logging and Reset
-
-[Core logging](docs/logging.md) owns what Core records and how that evidence
-contributes to its Reset ZIP, and [Reset](docs/reset.md) owns the ZIP. Configuration sets the destination and level;
-it does not redefine the logging contract or Protocol's records.
-
-## Decisions still needed
-
-- Required options, defaults, secret loading, and configuration-file format.
-- Whether any configuration can change during an operation.
-- Default rotation and total limits for diagnostics.
+An invalid password in `first_admin.password_file` refuses startup before the
+first account is created; correct the file and start Core again.

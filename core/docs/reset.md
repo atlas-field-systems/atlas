@@ -1,7 +1,7 @@
 # Core Reset
 
-This design is selected but not implemented. It says how Core ends a run, what
-it writes into its Reset ZIP, and what it clears.
+**Built.** Core ends a run by writing and checking its Reset ZIP before clearing
+the run data.
 [Runs and identity](../../atlas/runs-and-identity.md) owns the rules this page
 carries out: what a run is, what carries over, and signing in again.
 [Storage](storage.md#runs) says where a run's data lives. [Logging](logging.md)
@@ -34,6 +34,10 @@ sequenceDiagram
     Note over Core: New empty run, next run_id
 ```
 
+Requests already in progress when deliberate stop begins may finish within a
+five-second grace period. Requests that start after stop begins receive
+`503 stopping`, including on new connections throughout the five seconds. Core then closes the remaining connections before writing the Reset ZIP.
+
 ## Core's Reset ZIP
 
 Core writes one ZIP per run into `archive_directory` ([configuration](../config.md)),
@@ -47,12 +51,15 @@ process.
 | `README.md` | What each file is, so an AI agent or a person can find their way |
 | `summary.md` | The plain readable summary below |
 | `manifest.json` | Every file with its size and SHA-256, each unexpected stop Core resumed from, and every known gap |
-| `events.jsonl` | The run's [event log](api.md#the-event-log-and-live-stream), one event per line in `event_id` order: every accepted request and stored report |
+| `events.jsonl` | The run's [event log](api.md#the-event-log-and-live-stream), one event per line in `event_id` order: every accepted domain request and stored report |
 | `state/` | The run's current-state rows when it ended, one JSON Lines file per table: Tasks, queues, Tracks, geo features, Objects, and the Assets, gateways, and Plugins seen |
 | `objects/` | Each Object's file, named by its `object_id`, including Objects deleted during the run; `state/` marks those deleted |
 | `diagnostics/` | Core's [diagnostic log](logging.md) for the run, as written |
 | `config.json` | The resolved configuration, with secrets removed |
 | `versions.json` | Core's version, the Protocol package version, and the definitions hash |
+
+Removed gateways and Plugins keep their run-state rows marked removed, as Assets do.
+Their credentials stop working immediately; the checked clear removes those rows.
 
 `summary.md` says, in plain words:
 
@@ -61,7 +68,8 @@ process.
 - Each Asset that took part: its ID, its gateway if any, and when Core first
   and last heard it.
 - Each Asset's Tasks in order, with their final reported outcome, or no
-  reported outcome.
+  reported outcome. A dropped Task also names any later reported final outcome,
+  while remaining dropped in Core.
 - Plugin calls and how each ended.
 - Every gap: records lost, truncated, or never written, and when.
 
@@ -96,7 +104,17 @@ Core does not try again. The next start begins a new run as usual, and the old
 run's data stays in the database until the admin removes it
 ([storage](storage.md#runs)).
 
+A failed startup cancels its contact deadlines before closing storage; it leaves
+no contact work running against the stopped Core.
+
 ## When Core stops unexpectedly
+
+If the open run already has a final-named ZIP, Core checks it again and
+finishes the clear before starting a new run. If it fails the check, Core
+resumes the run and refuses to overwrite that ZIP on the next stop.
+The last sign of life is the newer of the last event and diagnostic record;
+the resulting downtime is an estimate. Plugins receive the same fresh contact
+window as Assets and gateways.
 
 A crash, a power loss, or a reboot that was not a deliberate stop does not end
 the run ([Runs and identity](../../atlas/runs-and-identity.md#a-run-and-reset)).
