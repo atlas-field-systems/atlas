@@ -60,21 +60,24 @@ export function runAsset(link: AssetLink, registration: { asset_id: string; afte
   async function rejoin() {
     await outbox.flush();
     const settings: Report = { type: "report.settings", time: options.clock.now(), asset_id, settings: options.settings() };
-    outbox.add([...(Object.keys(settings.settings).length ? [settings] : []), ...(queue && queue.held().length ? queue.snapshot() : queue?.snapshot().filter(r => r.type === "report.status" && r.kind === "task") ?? []), ...outbox.pendingFinals()]);
-    await outbox.flush();
+    const reports = [...(Object.keys(settings.settings).length ? [settings] : []), ...(queue && queue.held().length ? queue.snapshot() : queue?.snapshot().filter(r => r.type === "report.status" && r.kind === "task") ?? []), ...outbox.pendingFinals()];
+    if (reports.length) outbox.add(reports);
+    await outbox.flush(!reports.length);
   }
+  const ready = rejoin().then((): LinkResult => outbox.blocked ?? { ok: true });
   const done = (async (): Promise<FollowEnd> => {
     try {
-      await rejoin();
+      const initial = await ready;
+      if (!initial.ok) return { reason: initial.error === "refused" ? "closed" : initial.error };
       for await (const event of link.events(registration.after)) {
         if (stopped) return { reason: "stopped" };
         if (event.kind === "settings.requested") await options.onSettings?.(event.record, event.event_id);
         else queue?.apply(event);
       }
-      return { reason: "closed" };
+      return { reason: stopped ? "stopped" : "closed" };
     } finally { outbox.stop(); }
   })();
-  return { asset_id, queue, outbox, rejoin, done, stop() { stopped = true; outbox.stop(); } };
+  return { asset_id, queue, outbox, rejoin, ready, done, stop() { stopped = true; outbox.stop(); } };
 }
 async function known<T>(initial: Promise<Result<T>>): Promise<Result<T>> {
   let result = await initial;
@@ -120,5 +123,7 @@ export async function startAsset(client: Client<{ kind: "asset"; key: string }>,
   };
   session = runAsset(link, { asset_id, after: as_of, last_task_id }, options);
   const running = session;
+  const ready = await running.ready;
+  if (!ready.ok) { running.stop(); return ready; }
   return { ok: true as const, value: { ...running, done: running.done.then(() => ending), stop() { stream?.stop(); running.stop(); }, link } };
 }

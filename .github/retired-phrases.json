@@ -362,5 +362,15 @@
     "phrase": "0\\.0\\.0\\.0,\\s*8443\\b",
     "why": "Core defaults to loopback so startup without TLS succeeds.",
     "example": "`0.0.0.0`, `8443`; set TLS files for this address"
+  },
+  {
+    "phrase": "Without after, the stream starts from the latest event",
+    "why": "SDK follows now require an explicit snapshot cursor.",
+    "example": "Without `after`, the stream starts from the latest event."
+  },
+  {
+    "phrase": "Those are test hooks, not settings",
+    "why": "The SDK clock and connection are normal host inputs, per the build-and-test decision.",
+    "example": "Those are test hooks, not settings."
   }
 ]

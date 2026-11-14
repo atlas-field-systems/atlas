@@ -11,6 +11,7 @@ scenario({ name:"lost responses change each domain once",checks:["simulations/do
   const asset = await ipAsset(w);
   const asset_id = asset.session.asset_id;
   await w.settle();
+  assert.ok(w.network.traffic.some(t => t.caller === "asset" && t.path === `/entities/assets/${asset_id}/reports`), "startup step 3 sends an empty report batch even when no state is known");
   w.network.once("admin",`/tasks/${asset_id}`,{kind:"loseResponse"});
   const sent = value(await w.complete(w.admin.call<"sendTasks",{task_ids:number[];event_id:number}>("sendTasks",{params:{asset_id},body:{tasks:[{kind:"hold"}]}})));
   assert.deepEqual(sent.task_ids,[1],"one Task created despite lost acknowledgment");
