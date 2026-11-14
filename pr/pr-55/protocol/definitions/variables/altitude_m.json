@@ -1,8 +1,0 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/altitude_m.json",
-  "title": "altitude_m",
-  "description": "Height in metres, measured from the reference named beside it.",
-  "type": "number",
-  "examples": [30]
-}
