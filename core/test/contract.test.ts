@@ -115,7 +115,7 @@ test("2. login retry omits cookie and verifies password [api.md#credential-retry
           body: { ...body, password: "wrong" },
         })
       ).status,
-      401,
+      409,
     );
     const next = await h.call("POST", "/administration/login", { body });
     assert.notEqual(

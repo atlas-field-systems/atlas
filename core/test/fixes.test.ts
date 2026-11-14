@@ -380,3 +380,29 @@ test("F9 registration announces initial contact [api.md#contact, api.md#reads]",
     await h.close();
   }
 });
+test("F10 login retry keys bind the complete body across accounts [api.md#basics, api.md#callers-and-credentials]", async () => {
+  const h = await startHarness();
+  try {
+    const body = { operator_id: "ADM", password: "contract-password-unique" },
+      idem = "login-retry";
+    assert.equal(
+      (await h.call("POST", "/administration/login", { idem, body })).status,
+      200,
+    );
+    for (const changed of [
+      { ...body, password: body.password + "x" },
+      { operator_id: "OP1", password: body.password },
+    ])
+      assert.equal(
+        (await h.call("POST", "/administration/login", { idem, body: changed }))
+          .body.error,
+        "idempotency_conflict",
+      );
+    assert.equal(
+      (await h.call("POST", "/administration/login", { idem, body })).status,
+      200,
+    );
+  } finally {
+    await h.close();
+  }
+});

@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { match } from "./routes.ts";
 import type { Req } from "./routes.ts";
 import { credentialOf, authorize } from "./auth.ts";
-import { callerFor } from "../pillars/administration.ts";
+import { hashPassword, verifyPassword, callerFor } from "../pillars/administration.ts";
 import { Refusal, refuse, checkOrRefuse } from "./errors.ts";
 import { fingerprint, lookup, retain } from "../store/idempotency.ts";
 import { audienceFor } from "./stream.ts";
@@ -31,10 +31,14 @@ export async function startServer(
   streams: Streams,
 ): Promise<Server> {
   let stopping = false;
+  const loginRetries = new Map<string, Promise<void>>();
   const segment = env.config.debug_endpoint
     ? randomBytes(24).toString("base64url")
     : null;
   const handler: import("node:http").RequestListener = async (req, res) => {
+    let releaseLogin: (() => void) | undefined;
+    let loginKey: string | undefined;
+    let loginGate: Promise<void> | undefined;
     let routePath = req.url?.split("?")[0] ?? "/";
     const send = (
       status: number,
@@ -244,18 +248,26 @@ export async function startServer(
         )
           refuse("invalid", "This route takes no body");
       }
-      const prepared = await route.prepare?.(request, store);
       const login = url.pathname === "/administration/login";
-      const scope = login
-        ? `login:${request.body.operator_id}`
-        : principal.scope;
-      const fp = fingerprint({
-        method: route.method,
-        route: route.path,
-        params,
-        query: url.searchParams.toString(),
-        body: login ? { operator_id: request.body.operator_id } : bytes,
+      const scope = login ? "login" : principal.scope;
+      let fp: string;
+      if (login) {
+        loginKey = key;
+        const previous = loginRetries.get(key);
+        loginGate = new Promise<void>(resolve => { releaseLogin = resolve; });
+        loginRetries.set(key, loginGate);
+        await previous;
+        const prior = store.read(tx => tx.get<{fingerprint: string}>(
+          "SELECT fingerprint FROM idempotency_keys WHERE run_id=? AND scope=? AND key=?", tx.runId, scope, key));
+        const body = JSON.stringify(request.body);
+        if (prior && !await verifyPassword(prior.fingerprint, body))
+          refuse("idempotency_conflict", "This key was used for another request");
+        fp = prior?.fingerprint ?? await hashPassword(body);
+      } else fp = fingerprint({
+        method: route.method, route: route.path, params,
+        query: url.searchParams.toString(), body: bytes,
       });
+      const prepared = await route.prepare?.(request, store);
       let storedUpload = false;
       let reply;
       try {
@@ -332,6 +344,9 @@ export async function startServer(
         });
         send(500, { error: "internal_error" });
       }
+    } finally {
+      releaseLogin?.();
+      if (loginKey && loginRetries.get(loginKey) === loginGate) loginRetries.delete(loginKey);
     }
   };
   const server =
