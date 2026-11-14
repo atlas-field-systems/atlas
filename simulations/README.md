@@ -15,13 +15,13 @@ fault workloads follow. The first version simulates
 A simulation runs each Atlas part as it ships and fakes only what lies around
 it.
 
-| Real | Simulated |
-| --- | --- |
-| Core, with its SQLite storage and event log | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
-| The SDK, used by every simulated caller | Assets, until the Asset app exists ([simulated Assets](#simulated-assets)) |
-| Protocol's definitions and its one validator | Time, so minutes of contact rules run in milliseconds |
-| Later: the Asset app, the gateway app, Fieldlinks | Equipment, radios, and vehicles (later: ArduPilot SITL) |
-| | Faults in the host: a full disk, a Core crash, a deliberate stop |
+| Real                                              | Simulated                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Core, with its SQLite storage and event log       | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
+| The SDK, used by every simulated caller           | Assets, until the Asset app exists ([simulated Assets](#simulated-assets))                              |
+| Protocol's definitions and its one validator      | Time, so minutes of contact rules run in milliseconds                                                   |
+| Later: the Asset app, the gateway app, Fieldlinks | Equipment, radios, and vehicles (later: ArduPilot SITL)                                                 |
+|                                                   | Faults in the host: a full disk, a Core crash, a deliberate stop                                        |
 
 A simulation never runs a special build of a part. If a part has to behave
 differently to be simulated, the simulation proves less, so that need is a
@@ -92,10 +92,10 @@ including that a simulated pass proves nothing about real flight or radios.
 
 ## Docs
 
-| Doc | Covers |
-| --- | --- |
+| Doc                                  | Covers                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | [Core and SDK](docs/core-and-sdk.md) | The first version: Core and the SDK under a faulty network, with simulated Assets, gateways, Plugins, and operators |
-| [Asset](docs/asset.md) | The Asset app against ArduPilot SITL and simulated equipment, once the Asset app is built |
+| [Asset](docs/asset.md)               | The Asset app against ArduPilot SITL and simulated equipment, once the Asset app is built                           |
 
 ## Open
 
@@ -105,7 +105,6 @@ including that a simulated pass proves nothing about real flight or radios.
   once those parts are built.
 
 AI agents: read [AGENTS.md](AGENTS.md).
-
 
 ## Run the Core and SDK scenarios
 
