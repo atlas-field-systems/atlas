@@ -33,9 +33,6 @@ The password file is read once for bootstrap, with a trailing newline removed.
 Accounts and keys are otherwise provisioned through the [Core API](docs/api.md#accounts-and-provisioning).
 [Logging](docs/logging.md) owns diagnostics and [Reset](docs/reset.md) owns archives.
 
-Core refuses startup with the reason if `archive_directory` is inside or equal to
-`data_directory`, after resolving symbolic links, so Reset cannot erase its ZIP.
-
 Core refuses startup if `archive_directory` is inside `data_directory` or
 `log_directory`, or equals either, after resolving symbolic links.
 

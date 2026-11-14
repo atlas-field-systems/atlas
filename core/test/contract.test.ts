@@ -392,6 +392,7 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
   } finally {
     if (running) await running.kill("SIGTERM");
     await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
 
@@ -644,6 +645,7 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
   } finally {
     if (running) await running.kill("SIGKILL");
     await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
 
