@@ -27,7 +27,8 @@ types](../protocol/docs/decisions.md#typescript-types).
 - **No flying.** Helpers carry requests, reports and contact. The Asset app owns
   motion, equipment checks and failsafes.
 - **No second validator** and no generated clients.
-- **No live picture on Assets.** It is optional and meant for operator apps.
+- The [live picture](docs/live.md#live-picture) is optional. Access follows
+  [Core reads](../core/docs/api.md#reads).
 
 The SDK takes its clock and its connection to Core from the program that
 creates it, so [Simulations](../simulations/README.md#what-each-part-allows) can

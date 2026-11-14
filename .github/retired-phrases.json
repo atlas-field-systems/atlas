@@ -402,5 +402,15 @@
     "phrase": "\\bone site per core\\b|\\bone gateway per site\\b|\\ba site (still )?runs one gateway at a time\\b|\\beach site has exactly one gateway\\b|\\bone gateway is deployed per area\\b",
     "why": "One Core may run several gateways when their radio links cannot clash; each radio network has one gateway.",
     "example": "A site runs one gateway at a time."
+  },
+  {
+    "phrase": "\\bassets never read places\\b|\\bread nothing of the picture\\b|\\ban asset reading another asset\\b|\\ban asset never reads, moves, or deletes\\b",
+    "why": "Every caller with a credential reads everything Core holds; write restrictions are unchanged.",
+    "example": "Assets never read places."
+  },
+  {
+    "phrase": "\\bno live picture on assets\\b|\\bcore never sends them to assets or gateways\\b",
+    "why": "Assets and gateways may read Objects and the picture through the Core API.",
+    "example": "No live picture on Assets."
   }
 ]
