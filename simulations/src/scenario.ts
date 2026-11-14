@@ -27,7 +27,19 @@ export function scenario(spec: {
       );
       throw error;
     } finally {
-      await world.close();
+      try {
+        await world.close();
+      } catch (error) {
+        await recordFailure(
+          spec.name,
+          spec.checks,
+          error,
+          world.root,
+          world.trace,
+          spec.seed,
+        );
+        throw error;
+      }
     }
   });
 }
