@@ -328,3 +328,31 @@ test("F6 about records each differing definitions hash once per caller [api.md#b
     await h.close();
   }
 });
+test("F8 diagnostics identify routes, refusals, validation paths and streams [logging.md#record-the-whole-path-through-core]", async () => {
+  const h = await startHarness(undefined, { debug_endpoint: true });
+  try {
+    await h.call("POST", "/entities/geofeatures", {
+      cookie: h.admin,
+      body: { kind: "point", position: { latitude: "bad", longitude: 0 } },
+    });
+    await asset(h);
+    await events(h);
+    const log = await (await fetch(h.core.debugUrl!)).text();
+    const rows = log
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l));
+    assert.ok(
+      rows.some(
+        (r) =>
+          r.route === "/entities/geofeatures" &&
+          r.error === "invalid" &&
+          r.explanation.includes("/position/latitude"),
+      ),
+    );
+    assert.ok(rows.some((r) => r.msg === "event stream connected"));
+    assert.ok(rows.some((r) => r.msg === "event stream disconnected"));
+  } finally {
+    await h.close();
+  }
+});

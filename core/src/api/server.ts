@@ -35,6 +35,7 @@ export async function startServer(
     ? randomBytes(24).toString("base64url")
     : null;
   const handler: import("node:http").RequestListener = async (req, res) => {
+    let routePath = req.url?.split("?")[0] ?? "/";
     const send = (
       status: number,
       body: unknown,
@@ -45,7 +46,9 @@ export async function startServer(
         area: "api",
         msg: "request completed",
         method: req.method,
+        route: routePath,
         status,
+        ...(status >= 400 && body && typeof body === "object" ? body : {}),
       });
       res.writeHead(status, { "content-type": "application/json", ...headers });
       res.end(JSON.stringify(body));
@@ -61,6 +64,7 @@ export async function startServer(
       }
       if (stopping) refuse("stopping", "Core is stopping");
       const { route, params } = selected;
+      routePath = route.path;
       if (route.path === "/debug/:segment/log") {
         if (!segment || params.segment !== segment)
           refuse("not_found", "No such debug endpoint");
@@ -302,13 +306,7 @@ export async function startServer(
         reply.body,
         "headers" in reply ? (reply.headers as Record<string, string>) : {},
       );
-      env.log.record({
-        level: "info",
-        area: "api",
-        msg: "request completed",
-        route: route.path,
-        status: reply.status,
-      });
+
     } catch (e) {
       if (res.headersSent) {
         res.destroy();
