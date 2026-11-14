@@ -8,13 +8,15 @@ type KindSpec = {
   readonly audience: "accounts" | "asset" | "plugin";
   readonly many?: true;
   readonly request?: {
+    readonly recipient: "asset_id" | "plugin_id";
+    readonly answers: readonly string[];
     readonly droppedAs: "request.dropped" | "plugin.dropped";
   };
   readonly stamps?: readonly ("requested_by" | "clock_ahead")[];
 };
 
 const REPORT = { audience: "accounts", stamps: ["clock_ahead"] } as const;
-const TO_ASSET = { droppedAs: "request.dropped" } as const;
+const TO_ASSET = { recipient: "asset_id", droppedAs: "request.dropped" } as const;
 
 export const EVENT_KINDS = {
   "asset.registered": { record: "registration", audience: "accounts" },
@@ -31,7 +33,7 @@ export const EVENT_KINDS = {
   "plugin.called": {
     record: "plugin.call",
     audience: "plugin",
-    request: { droppedAs: "plugin.dropped" },
+    request: { recipient: "plugin_id", answers: ["plugin.result", "plugin.failed"], droppedAs: "plugin.dropped" },
   },
   "plugin.result": { record: "plugin.result", audience: "accounts" },
   "plugin.failed": { record: "plugin.failure", audience: "accounts" },
@@ -44,23 +46,23 @@ export const EVENT_KINDS = {
     record: "task",
     many: true,
     audience: "asset",
-    request: TO_ASSET,
+    request: { ...TO_ASSET, answers: ["report.status"] },
   },
   "tasks.updated": {
     record: "task",
     many: true,
     audience: "asset",
-    request: TO_ASSET,
+    request: { ...TO_ASSET, answers: ["report.status"] },
   },
   "settings.requested": {
     record: "settings_change",
     audience: "asset",
-    request: TO_ASSET,
+    request: { ...TO_ASSET, answers: ["report.settings"] },
   },
   "cancel.requested": {
     record: "cancel",
     audience: "asset",
-    request: TO_ASSET,
+    request: { ...TO_ASSET, answers: ["report.status"] },
   },
   "task.dropped": { record: "drop", audience: "asset" },
   "request.dropped": { record: "drop", audience: "accounts" },
@@ -217,6 +219,14 @@ export function getEvent(tx: ReadTx, eventId: number): AtlasEvent | undefined {
 
 export type Recipient = { asset_id: string } | { plugin_id: string };
 
+const answersRequest = Object.entries(EVENT_KINDS).flatMap(([kind, spec]) => {
+  if (!("request" in spec)) return [];
+  const r = spec.request;
+  const kinds = [...r.answers, r.droppedAs].map(k => `'${k}'`).join(",");
+  return [`(e.kind='${kind}' AND a.${r.recipient}=e.${r.recipient} AND a.kind IN (${kinds}))`];
+}).join(" OR ");
+const settlementMatch = `a.run_id=e.run_id AND a.request_id=e.event_id AND (${answersRequest})`;
+
 export function unsettledRequests(
   tx: ReadTx,
   to: Recipient,
@@ -228,7 +238,7 @@ export function unsettledRequests(
     .map(([k]) => k);
   return tx
     .all<EventRow>(
-      `SELECT e.* FROM events e WHERE e.run_id=? AND e.${column}=? AND e.kind IN (${kinds.map(() => "?").join(",")}) AND NOT EXISTS (SELECT 1 FROM events a WHERE a.run_id=e.run_id AND a.request_id=e.event_id) ORDER BY event_id`,
+      `SELECT e.* FROM events e WHERE e.run_id=? AND e.${column}=? AND e.kind IN (${kinds.map(() => "?").join(",")}) AND NOT EXISTS (SELECT 1 FROM events a WHERE ${settlementMatch}) ORDER BY event_id`,
       tx.runId,
       id,
       ...kinds,
@@ -242,7 +252,7 @@ export type Settlement =
   | { state: "dropped"; by: AtlasEvent };
 export function settlement(tx: ReadTx, requestEventId: number): Settlement {
   const row = tx.get<EventRow>(
-    "SELECT * FROM events WHERE run_id=? AND request_id=? ORDER BY event_id LIMIT 1",
+    `SELECT a.* FROM events e JOIN events a ON ${settlementMatch} WHERE e.run_id=? AND e.event_id=? ORDER BY a.event_id LIMIT 1`,
     tx.runId,
     requestEventId,
   );

@@ -24,8 +24,8 @@ Promises. Slow work such as password hashing happens before the transaction.
 Routes may prepare with the Store to read credential hashes before scrypt.
 
 `EVENT_KINDS` defines each kind's Protocol record, audience, and request status.
-Append validates records with Protocol. Settlement is an indexed lookup for an
-event whose `request_id` names the request. There is no second requests table.
+Append validates records with Protocol. Each request kind names its recipient and answering event kinds; settlement
+requires both to match as well as `request_id`. There is no second requests table.
 Streams read pages from disk and keep only a cursor, never a backlog.
 
 Global short IDs use a persistent sequence that skips account IDs. Per-run
