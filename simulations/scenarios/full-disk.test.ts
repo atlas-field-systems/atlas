@@ -31,13 +31,18 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
     t.skip(`tmpfs unavailable: ${String(error)}`);
     return;
   }
-  const w = await createWorld({ data_directory: join(mount, "data") });
-  const issued = value(await w.complete(w.admin.call("createAssetKey")));
-  assert.ok("key" in issued);
-  const asset = w.client("full-disk-asset", { kind: "asset", key: issued.key });
-  const files = await ipAsset(w, "files");
-  const filler = await open(join(mount, "fill"), "w");
+  let w: Awaited<ReturnType<typeof createWorld>> | undefined;
+  let filler: Awaited<ReturnType<typeof open>> | undefined;
   try {
+    w = await createWorld({ data_directory: join(mount, "data") });
+    const issued = value(await w.complete(w.admin.call("createAssetKey")));
+    assert.ok("key" in issued);
+    const asset = w.client("full-disk-asset", {
+      kind: "asset",
+      key: issued.key,
+    });
+    const files = await ipAsset(w, "files");
+    filler = await open(join(mount, "fill"), "w");
     try {
       while (true) await filler.write(new Uint8Array(65536));
     } catch (error) {
@@ -110,13 +115,22 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
       0,
     );
   } catch (error) {
-    await recordFailure("full-disk", checks, error, w.root, w.trace);
+    if (w) await recordFailure("full-disk", checks, error, w.root, w.trace);
     throw error;
   } finally {
-    await filler.close();
-    await rm(join(mount, "fill"));
-    await w.close();
-    await execute("sudo", ["-n", "umount", mount]);
-    await rm(mount, { recursive: true });
+    try {
+      try {
+        await filler?.close();
+      } finally {
+        try {
+          await rm(join(mount, "fill"), { force: true });
+        } finally {
+          await w?.close();
+        }
+      }
+    } finally {
+      await execute("sudo", ["-n", "umount", mount]);
+      await rm(mount, { recursive: true });
+    }
   }
 });
