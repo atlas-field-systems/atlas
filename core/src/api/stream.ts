@@ -68,7 +68,7 @@ export function startStreams(store: Store, clock: Clock): Streams {
             route: "/events",
           }),
         );
-        res.end();
+        res.destroy();
       };
       const pump = () => {
         if (closed) return;

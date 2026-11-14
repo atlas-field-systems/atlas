@@ -127,7 +127,7 @@ export function registerAsset(
   tx: Tx,
   key_id: string,
   body: ProtocolTypes["requests.asset"],
-): { asset_id: string; last_task_id: number } {
+): { asset_id: string; last_task_id: number; as_of: number } {
   let asset_id = assetForKey(tx, key_id);
   if (asset_id) restart(tx, asset_id);
   else {
@@ -152,7 +152,11 @@ export function registerAsset(
   );
   tx.append("asset.described", description);
   applyContact(tx, asset_id, { time: tx.now, asset_id, contact: "online" });
-  return { asset_id, last_task_id: tasks.lastTaskId(tx, asset_id) };
+  return {
+    asset_id,
+    last_task_id: tasks.lastTaskId(tx, asset_id),
+    as_of: tx.asOf(),
+  };
 }
 
 export function registerRadio(

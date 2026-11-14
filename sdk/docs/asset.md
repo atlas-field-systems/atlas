@@ -52,12 +52,12 @@ start, and from step 3 on reconnect:
 
 1. `connect()`, which compares the definitions hash.
 2. Register with the description, as `requests.asset`, which returns the
-   `asset_id`. Only a start registers.
+   `asset_id` and startup cursor `as_of`. Only a start registers.
 3. Send one report batch with the known settings, the queue report if the queue
    helper holds Tasks, the active Task's report, and every final Task report not
    yet acknowledged.
-4. Follow `/events` after the last handled `event_id`, or from the latest event on
-   first start.
+4. Follow `/events` after registration’s `as_of` on start. On reconnect, use
+   the last handled `event_id`.
 
 A refused step stops startup and returns that result. If a step gets no response,
 the SDK retries it with the same key until Core answers. Later steps wait for it.

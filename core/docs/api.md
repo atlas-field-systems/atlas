@@ -35,10 +35,13 @@ Accounts may call every operator route.
   that hash differs, Core records the mismatch as described above.
 - **Retries are safe.** Every request that changes state carries an
   `Idempotency-Key` of up to 64 characters. Core keeps each key's non-secret
-  response for the run when its transaction changed something. A refusal that changed nothing is not kept. A repeat returns that response and changes nothing; the
+  response for the run when it succeeds (2xx) or its transaction changed something.
+  A refusal that changed nothing is not kept. A repeat returns that response and changes nothing; the
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
+- **Stopping.** Requests already in preparation may commit during the five-second
+  stop grace. When grace ends, Core refuses their commits with `503 stopping`.
 - **Runs.** Every read, history page, and event stream covers only the current
   run. [Runs and identity](../../atlas/runs-and-identity.md) owns what a run is,
   what carries over, and which IDs start again. `GET /about` names the run with
@@ -70,7 +73,7 @@ Accounts may call every operator route.
 | `409 id_taken`, `idempotency_conflict` | Identity is in use or retry key names another body |
 | `503 stopping` | Core is stopping |
 | `410 deleted` | The Object was deleted in this run; the body adds its `deletion` record, which says who deleted it and when |
-| `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
+| `413 too_large` | The JSON body exceeds 16 MiB, or the file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
 ## Root paths
@@ -122,6 +125,11 @@ and `/debug` belong to no pillar and stay at the top level.
   cookie. A caller that missed the cookie logs in with a new idempotency key to
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
+- Request completion diagnostics identify the caller, concrete route IDs, and
+  whether a response was replayed. Administration completions include only
+  allowlisted non-secret acknowledgment fields.
+- Password-bearing retry fingerprints use salted scrypt for login and account
+  creation; retry state never exposes a fast password verifier.
 - The first admin account comes from [Core configuration](../config.md).
 - A radio Asset holds no Core key and never calls this API
   ([radio Assets](#radio-assets)).
@@ -170,6 +178,8 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 message has `id: <event_id>`, `event: <kind>`, and the event as `data`. Both
 parameters are optional. A browser that reconnects sends `Last-Event-ID`, and Core
 resumes after it. Core sends a `: alive` comment every 10 s.
+Core closes streams by terminating their connection; a reader discards any
+incomplete event and resumes after its last fully handled `event_id`.
 
 - **Snapshots resume cleanly.** Every read returns `as_of`, the last `event_id` it
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
@@ -313,7 +323,7 @@ starts in this order, and on reconnect within the run repeats it from step 3:
    without `time` and `asset_id`. Core assigns the next `asset_id`, never one
    used before, stamps `time` and the ID to make the description record, adds
    `asset.registered` and `asset.described`, and answers
-   `201 {asset_id, last_task_id}` ([restarts](#operator-requests)).
+   `201 {asset_id, last_task_id, as_of}` ([restarts](#operator-requests)).
    The Asset uses that ID for the rest of the run. Registering again with the
    same key in the run returns the same `asset_id`, even for an app that
    restarted and forgot its ID, unless an admin removed that Asset; then it
@@ -325,8 +335,8 @@ starts in this order, and on reconnect within the run repeats it from step 3:
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
-4. Open `/events?after=<last handled event_id>`. On first start, it follows from
-   the latest event.
+4. Open `/events?after=<as_of from registration>` on start, so work accepted
+   during startup is delivered. On reconnect, use the last handled `event_id`.
 
 - `POST /entities/assets/{asset_id}/reports` takes `requests.reports` in batches of up to 1000 reports. An empty batch is accepted for contact. A `200`
   stores and acknowledges the whole batch. The Asset resends a batch with the same
@@ -356,7 +366,9 @@ starts in this order, and on reconnect within the run repeats it from step 3:
   caught up with it.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key, once it has [registered the radio](#radio-assets). It also sends
+key, once it has [registered the radio](#radio-assets). Its first subscription
+uses the registration answer’s `as_of`; an existing subscription stays open
+when another radio registers. It also sends
 `PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
 Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
 it carries, named by the path; any other caller gets `403`. Core
@@ -381,7 +393,7 @@ Asset on its own side and speaks to Core only by `asset_id`.
 - When the gateway hears a radio that has no `asset_id` in this run, it sends
   `POST /entities/assets/radios` with `requests.radio`: the radio's
   definitions hash. Core assigns the next `asset_id`, adds `asset.registered`
-  with the gateway as `requested_by`, and answers `201 {asset_id}`. The gateway
+  with the gateway as `requested_by`, and answers `201 {asset_id, as_of}`. The gateway
   carries that Asset, keeps which radio has which ID, and tells the radio its
   ID through the Fieldlink.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
@@ -697,7 +709,8 @@ not call Plugins yet.
    [Plugins](../../atlas/plugins.md#actions) describes. Core checks the
    description with Protocol's validator and refuses an invalid one with
    `400 invalid`.
-3. Open `/events?after=<last handled event_id>`. Its stream shows only
+3. On first start, open `/events?after=<event_id from the description answer>`.
+   On reconnect, use the last handled `event_id`. Its stream shows only
    `plugin.called` events addressed to it.
 
 A Plugin is online while Core has heard from it within `offline_after_s`

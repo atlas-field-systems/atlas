@@ -320,7 +320,7 @@ export const ROUTES: readonly Route[] = [
     commit: (tx, r) => {
       const out = entities.registerRadio(tx, r.who.by, r.body);
       return out.registered
-        ? created({ asset_id: out.asset_id })
+        ? created({ asset_id: out.asset_id, as_of: tx.asOf() })
         : {
             status: 409,
             body: {
