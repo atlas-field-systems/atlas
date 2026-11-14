@@ -114,9 +114,21 @@ export class Network {
           throw new TypeError("Simulated request loss");
         if (fault?.kind === "delay") {
           this.pending.delete(id);
-          await new Promise<void>((resolve) =>
-            this.clock.after(fault.ms, resolve),
-          );
+          await new Promise<void>((resolve, reject) => {
+            const signal = controller.signal;
+            const abortDelay = () => {
+              timer.cancel();
+              reject(
+                new DOMException("The operation was aborted", "AbortError"),
+              );
+            };
+            const timer = this.clock.after(fault.ms, () => {
+              signal.removeEventListener("abort", abortDelay);
+              resolve();
+            });
+            signal.addEventListener("abort", abortDelay, { once: true });
+            if (signal.aborted) abortDelay();
+          });
           this.pending.set(id, `${caller} delayed ${path}`);
         }
         if (fault?.kind === "refuse") {

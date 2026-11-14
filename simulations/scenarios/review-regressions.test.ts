@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createLivePicture, follow } from "@atlas/sdk";
+import { createClient, createLivePicture, follow } from "@atlas/sdk";
 import { scenario } from "../src/scenario.ts";
 import { ipAsset, radioAsset, plugin } from "../src/actors.ts";
 import { value } from "../src/world.ts";
@@ -375,14 +375,22 @@ scenario({
         .status,
       503,
     );
-    const mismatch = w.client("mismatch", { kind: "account" }, async () =>
-      Response.json({ run_id: 1, definitions_hash: "other" }),
-    );
+    const mismatch = createClient({
+      baseUrl: w.core.url,
+      protocol: { ...w.protocol, hash: "sha256:other" },
+      credential: { kind: "account" },
+      clock: w.clock,
+      fetch: w.network.fetchFor("mismatch"),
+      observer: (event) => {
+        w.diagnostics.push(event);
+      },
+    });
+    w.onClose(() => mismatch.close());
     await w.complete(mismatch.connect());
     await w.settle();
     assert.deepEqual(
       w.diagnostics.find((e) => e.name === "definitions.mismatch")?.detail,
-      { ours: w.protocol.hash, core: "other" },
+      { ours: "sha256:other", core: w.protocol.hash },
     );
     const bytes = JSON.stringify(w.diagnostics);
     for (const secret of w.network.secrets) assert.ok(!bytes.includes(secret));
@@ -492,5 +500,19 @@ scenario({
     value(await w.complete(w.admin.connect()));
     await w.advance(100);
     assert.equal(stream.stale, false);
+  },
+});
+scenario({
+  name: "a delayed transport ends at the SDK timeout",
+  checks: ["sdk/docs/client.md#retries-and-idempotency"],
+  async run(w) {
+    w.network.once("admin", "/entities/geofeatures", {
+      kind: "delay",
+      ms: 60000,
+    });
+    const before = w.clock.now();
+    const result = await w.complete(w.admin.call("geofeatures"));
+    assert.ok(!result.ok && result.error === "unknown");
+    assert.equal(w.clock.now() - before, 10000);
   },
 });
