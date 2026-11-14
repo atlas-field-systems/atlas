@@ -201,10 +201,10 @@ test("3. stored state and diagnostics contain no credentials [api.md#credential-
   }
 });
 
-async function child(configPath: string) {
+async function child(configPath: string, traceSync = false) {
   const process = spawn(
     globalThis.process.execPath,
-    ["src/main.ts", configPath],
+    [...(traceSync ? ["--trace-sync-io"] : []), "src/main.ts", configPath],
     { cwd: new URL("..", import.meta.url), stdio: ["ignore", "pipe", "pipe"] },
   );
   let output = "";
@@ -228,6 +228,7 @@ async function child(configPath: string) {
   return {
     url,
     process,
+    diagnostics: () => error,
     async kill(signal: "SIGKILL" | "SIGTERM") {
       const exited = once(process, "exit");
       process.kill(signal);
@@ -817,5 +818,28 @@ test("full SQLite disk returns 507 and leaves no accepted change [storage.md#mem
   } finally {
     db.exec("PRAGMA max_page_count=1073741823");
     await h.close();
+  }
+});
+
+
+test("counting capped diagnostic losses uses asynchronous I/O [logging.md#when-logging-cannot-keep-up]", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-log-async-"));
+  let running: Awaited<ReturnType<typeof child>> | undefined;
+  try {
+    const cfg = join(dir, "config.json");
+    await writeFile(cfg, JSON.stringify({ data_directory: dir, port: 0, log_total_limit_bytes: 1 }));
+    running = await child(cfg, true);
+    for (let i = 0; i < 5; i++) {
+      const response: Response = await fetch(running.url + "/about");
+      assert.equal(response.status, 200);
+      await response.text();
+    }
+    assert.equal((await running.kill("SIGTERM"))[0], 0);
+    assert.doesNotMatch(running.diagnostics(), /at gap /, "loss accounting must not perform synchronous filesystem calls");
+    running = undefined;
+  } finally {
+    if (running?.process.exitCode === null) await running.kill("SIGKILL");
+    await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
