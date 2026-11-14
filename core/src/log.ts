@@ -1,6 +1,8 @@
 import { createInterface } from "node:readline";
 import {
   mkdirSync,
+  writeFileSync,
+  renameSync,
   readdirSync,
   readFileSync,
   createReadStream,
@@ -35,12 +37,14 @@ export function startLog(
   clock: Clock,
   options: {
     directory: string;
+    gapDirectory: string;
     level: Level;
     content: boolean;
     fileLimit: number;
     totalLimit: number;
   },
 ): DiagnosticLog {
+  let gapFile = "";
   let directory = "",
     n = 0,
     file = 0,
@@ -90,6 +94,14 @@ export function startLog(
         at: clock.now(),
         why,
       });
+    if (gapFile) {
+      try {
+        writeFileSync(gapFile + ".partial", JSON.stringify(gaps), {flush: true});
+        renameSync(gapFile + ".partial", gapFile);
+      } catch (error) {
+        process.stderr.write(`Diagnostic loss accounting failed: ${String(error)}\n`);
+      }
+    }
   };
   const drain = () => {
     if (writing) return writing;
@@ -183,6 +195,16 @@ export function startLog(
           }
         } catch {}
       }
+      mkdirSync(options.gapDirectory, {recursive: true});
+      gapFile = join(options.gapDirectory, `run-${id}.json`);
+      try {
+        const saved = JSON.parse(readFileSync(gapFile, "utf8"));
+        gaps.splice(0, gaps.length, ...saved);
+      } catch (error) {
+        if (!(error instanceof Error && Reflect.get(error, "code") === "ENOENT")) throw error;
+      }
+      n = Math.max(n, ...gaps.map(g => g.to_n));
+      atLimit = gaps.some(g => g.why === "total limit");
       const names = files(directory);
       total = names.reduce(
         (sum, name) => sum + statSync(join(directory, name)).size,

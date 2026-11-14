@@ -51,6 +51,8 @@ export function clearRun(
 async function clearFiles(env: Env, runId: number) {
   await rm(env.paths.objectsDir(runId), { recursive: true, force: true });
   await rm(env.paths.logDir(runId), { recursive: true, force: true });
+  await rm(join(env.config.data_directory, "diagnostic-gaps", `run-${runId}.json`), {force: true});
+  await rm(join(env.config.data_directory, "diagnostic-gaps", `run-${runId}.json.partial`), {force: true});
 }
 
 export async function recoverReset(

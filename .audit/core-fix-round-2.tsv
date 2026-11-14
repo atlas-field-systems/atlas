@@ -7,3 +7,4 @@ finding	choice	evidence	result
 8	Ended sessions identify only logout retries; scope retry by session hash	F13 retry returned 401 instead of 200	Full suite green; deslop reviewed
 9	Stop admission is checked once when request starts; document grace	R2-9 upload completed with 503 before fix	Full suite green; deslop reviewed
 10	Run-scoped key/hash diagnostic deduplication with console record; clarify API	R2-10 diagnostic records were absent	Full suite green; deslop reviewed
+1	Atomically persist loss ranges outside capped diagnostic files; restore numbering and cap state	R2-1 pre-crash losses absent; log-crash now reports 23 lost	Full suite green; deslop reviewed; metadata ledger is a documented sketch deviation

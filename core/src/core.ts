@@ -1,4 +1,4 @@
-import { relative, isAbsolute } from "node:path";
+import { relative, isAbsolute, join } from "node:path";
 import { mkdir, readFile, realpath } from "node:fs/promises";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import { resolveConfig, pathsFor, redactConfig } from "./config.ts";
@@ -89,6 +89,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
   };
   const log = startLog(options.clock, {
     directory: config.log_directory,
+    gapDirectory: join(config.data_directory, "diagnostic-gaps"),
     level: config.log_level,
     content: config.log_message_content,
     fileLimit: config.log_file_limit_bytes,

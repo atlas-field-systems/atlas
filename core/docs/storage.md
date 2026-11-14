@@ -78,3 +78,8 @@ if its ZIP failed, until the admin removes it.
 - If a change cannot be written, because the disk is full or the database
   fails, Core refuses the request with `507 storage_full` and stores nothing.
   Nothing is accepted without its event.
+
+Diagnostic loss counts are durable run metadata in `data_directory/diagnostic-gaps/`.
+Core replaces the run's loss ledger atomically after each counted loss, separately
+from the capped diagnostic files. Reset includes the counts in its manifest and
+summary and removes the ledger only after checking the ZIP.

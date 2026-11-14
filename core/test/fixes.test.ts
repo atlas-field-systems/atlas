@@ -1,3 +1,4 @@
+import { once } from "node:events";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { startHarness, protocol } from "./harness.ts";
@@ -795,5 +796,63 @@ test("R2-10 unregistered key mismatches are diagnostics once per hash [api.md#ba
     assert.deepEqual(rows.filter(r => r.msg === "Unregistered Asset definitions mismatch").map(r => [r.key_id, r.definitions_hash]), [[issued.key_id, "sha256:ab"], [issued.key_id, "sha256:cd"]]);
     const snapshot = await h.call("GET", "/entities", {cookie: h.admin});
     assert.equal(snapshot.body.as_of, 0);
+  } finally { await h.close(); }
+});
+
+async function crashCore(config: Record<string, unknown>) {
+  const {mkdtemp, writeFile, rm, readdir} = await import("node:fs/promises");
+  const {tmpdir} = await import("node:os");
+  const {join} = await import("node:path");
+  const {spawn, execFileSync} = await import("node:child_process");
+  const dir = await mkdtemp(join(tmpdir(), "atlas-round2-crash-"));
+  await writeFile(join(dir, "pw"), "crash-contract-password");
+  await writeFile(join(dir, "config.json"), JSON.stringify({data_directory: dir, listen_address: "127.0.0.1", port: 0, first_admin: {operator_id: "ADM", password_file: join(dir, "pw")}, ...config}));
+  let url = "", debugUrl = "";
+  let child: ReturnType<typeof spawn>;
+  async function start() {
+    child = spawn(process.execPath, ["src/main.ts", join(dir, "config.json")], {stdio: ["ignore", "pipe", "pipe"]});
+    let output = "", errors = "";
+    child.stderr!.on("data", chunk => errors += chunk);
+    await new Promise<void>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("exit", code => reject(new Error(`Core exited ${code}: ${errors}`)));
+      child.stdout!.on("data", chunk => {
+        output += chunk;
+        if (output.includes("\n")) { const ready = JSON.parse(output.split("\n")[0]); url = ready.url; debugUrl = ready.debug_url; resolve(); }
+      });
+    });
+  }
+  async function kill(signal: "SIGTERM" | "SIGKILL") {
+    const exited = once(child, "exit"); child.kill(signal); await exited;
+  }
+  await start();
+  const call = async (path: string, body?: unknown, key?: string, cookie?: string) => {
+    const response = await fetch(url + path, {method: body === undefined ? "GET" : "POST", headers: {"atlas-definitions": protocol.hash, "idempotency-key": crypto.randomUUID(), "content-type": "application/json", ...(key ? {authorization: `Bearer ${key}`} : {}), ...(cookie ? {cookie} : {})}, ...(body === undefined ? {} : {body: JSON.stringify(body)})});
+    assert.ok(response.ok, await response.clone().text());
+    return {body: await response.json(), headers: response.headers};
+  };
+  const login = await call("/administration/login", {operator_id: "ADM", password: "crash-contract-password"});
+  const cookie = login.headers.get("set-cookie")!.split(";")[0];
+  return {call, cookie,
+    async flush() { await (await fetch(debugUrl)).text(); },
+    async crash() { await kill("SIGKILL"); await start(); },
+    async archive() {
+      await kill("SIGTERM");
+      const [file] = await readdir(dir + "-archive");
+      return (name: string) => execFileSync("unzip", ["-p", join(dir + "-archive", file), name], {encoding: "utf8"});
+    },
+    async close() { if (child!.exitCode === null && child!.signalCode === null) await kill("SIGKILL"); await rm(dir, {recursive: true, force: true}); await rm(dir + "-archive", {recursive: true, force: true}); },
+  };
+}
+
+test("R2-1 diagnostic losses survive SIGKILL at total limit [logging.md#when-logging-cannot-keep-up]", async () => {
+  const h = await crashCore({log_total_limit_bytes: 2048, log_file_limit_bytes: 2048, debug_endpoint: true});
+  try {
+    for (let i = 0; i < 60; i++) await h.call("/about");
+    await h.flush();
+    await h.crash();
+    const zip = await h.archive(), manifest = JSON.parse(zip("manifest.json"));
+    const written = Object.keys(manifest.files).filter(name => name.startsWith("diagnostics/")).reduce((n, name) => n + zip(name).trim().split("\n").length, 0);
+    assert.ok(manifest.gaps.reduce((n: number, gap: {lost: number}) => n + (gap.lost ?? 0), 0) >= 60 - written, "pre-crash losses must survive");
   } finally { await h.close(); }
 });
