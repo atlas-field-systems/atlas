@@ -80,8 +80,10 @@ if its ZIP failed, until the admin removes it.
   Nothing is accepted without its event.
 
 Diagnostic loss counts are durable run metadata in `data_directory/diagnostic-gaps/`.
-Core replaces the run's loss ledger atomically after each counted loss, separately
-from the capped diagnostic files. Reset includes the counts in its manifest and
+Core coalesces loss counts into one asynchronous, atomic ledger writer, separately
+from the capped diagnostic files. Debug reads and Reset wait for that writer.
+A crash may lose counts still being written; the unexpected stop itself is always
+listed as a gap. Reset includes the counts in its manifest and
 summary and removes the ledger only after checking the ZIP.
 
 Entities keeps each Asset's actual last arrival in `asset_heard`, including empty
@@ -90,3 +92,6 @@ Reset uses the stored arrival rather than the later offline transition.
 
 Administration keeps gateway and Plugin arrivals in run-scoped `identity_heard` rows.
 Resumed offline records retain those arrival times while their deadlines restart.
+
+Only one Core may open a `data_directory` at a time; a second startup refuses
+before recovery or upload cleanup can change the active run.

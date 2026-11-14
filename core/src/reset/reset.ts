@@ -384,10 +384,20 @@ export function writeSummary(
       runId,
     ),
   );
-  for (const task of tasks)
-    lines.push(
-      `Asset ${task.asset_id} Task ${task.task_id}: ${["completed", "failed", "cancelled"].includes(task.state) ? task.state : `${task.state}; no reported outcome`} (${task.state_time}).`,
-    );
+  for (const task of tasks) {
+    const late = task.state === "dropped" ? store.read((tx) =>
+      tx.get<{ record: string }>(
+        "SELECT record FROM events WHERE run_id=? AND asset_id=? AND kind='report.status' AND json_extract(record,'$.kind')='task' AND json_extract(record,'$.task_id')=? AND json_extract(record,'$.task_state') IN ('completed','failed','cancelled') AND time>=? ORDER BY event_id DESC LIMIT 1",
+        runId, task.asset_id, task.task_id, task.state_time,
+      ),
+    ) : undefined;
+    const outcome = late
+      ? `dropped; later reported ${JSON.parse(late.record).task_state}`
+      : ["completed", "failed", "cancelled"].includes(task.state)
+        ? task.state
+        : `${task.state}; no reported outcome`;
+    lines.push(`Asset ${task.asset_id} Task ${task.task_id}: ${outcome} (${task.state_time}).`);
+  }
   const calls = store.read((tx) =>
     tx.all<{ event_id: number; record: string }>(
       "SELECT event_id,record FROM events WHERE run_id=? AND kind='plugin.called' ORDER BY event_id",

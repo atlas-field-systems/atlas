@@ -9,11 +9,15 @@ import {
   chmod,
   stat,
   copyFile,
+  mkdir,
+  symlink,
 } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
+import { DatabaseSync } from "node:sqlite";
+import { createServer } from "node:net";
 import { startCore } from "../src/core.ts";
 import { readZip } from "../src/reset/zip.ts";
 import { checkZip } from "../src/reset/reset.ts";
@@ -197,10 +201,10 @@ test("3. stored state and diagnostics contain no credentials [api.md#credential-
   }
 });
 
-async function child(configPath: string) {
+async function child(configPath: string, traceSync = false) {
   const process = spawn(
     globalThis.process.execPath,
-    ["src/main.ts", configPath],
+    [...(traceSync ? ["--trace-sync-io"] : []), "src/main.ts", configPath],
     { cwd: new URL("..", import.meta.url), stdio: ["ignore", "pipe", "pipe"] },
   );
   let output = "";
@@ -224,6 +228,7 @@ async function child(configPath: string) {
   return {
     url,
     process,
+    diagnostics: () => error,
     async kill(signal: "SIGKILL" | "SIGTERM") {
       const exited = once(process, "exit");
       process.kill(signal);
@@ -313,6 +318,16 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
     ).json();
     assert.equal(tracksBefore.items.length, 1);
     await running.kill("SIGKILL");
+    running = undefined;
+    const blocker = createServer();
+    blocker.listen(0, "127.0.0.1");
+    await once(blocker, "listening");
+    try {
+      const address = blocker.address();
+      assert.ok(address && typeof address === "object");
+      await assert.rejects(startCore({ clock, config: { ...JSON.parse(await readFile(cfg, "utf8")), port: address.port } }), { code: "EADDRINUSE" });
+      assert.doesNotThrow(() => clock.advance(30000), "failed startup must cancel contact deadlines before closing storage");
+    } finally { await new Promise<void>((resolve) => blocker.close(() => resolve())); }
     running = await child(cfg);
     assert.equal(
       (await (await fetch(running.url + "/about")).json()).run_id,
@@ -377,6 +392,7 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
   } finally {
     if (running) await running.kill("SIGTERM");
     await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
 
@@ -629,6 +645,7 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
   } finally {
     if (running) await running.kill("SIGKILL");
     await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
 
@@ -638,7 +655,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
     let resumed: Awaited<ReturnType<typeof startCore>> | undefined;
     const snapshot = await mkdtemp(join(tmpdir(), "atlas-reset-snapshot-"));
     try {
-      for (const name of ["core.sqlite", "core.sqlite-wal", "core.sqlite-shm"])
+      for (const name of ["core.sqlite", "core.sqlite-wal"])
         await copyFile(join(h.dataDir, name), join(snapshot, name));
       const stopped = await h.stop();
       assert.equal(stopped.archived, true);
@@ -654,7 +671,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
         assert.equal((await checkZip(zip)).ok, false);
       }
       const zipBytes = await readFile(zip);
-      for (const name of ["core.sqlite", "core.sqlite-wal", "core.sqlite-shm"])
+      for (const name of ["core.sqlite", "core.sqlite-wal"])
         await copyFile(join(snapshot, name), join(h.dataDir, name));
       resumed = await startCore({ clock, config: h.config });
       assert.equal(resumed.runId, h.core.runId + (corrupt ? 0 : 1));
@@ -671,4 +688,211 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
       await rm(snapshot, { recursive: true, force: true });
     }
   }
+});
+
+
+test("archive stays outside data and diagnostics, including aliases [config.md]", async () => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-archive-path-"));
+  try {
+    const data = join(root, "data");
+    const logs = join(root, "logs");
+    await mkdir(logs);
+    await symlink(logs, join(root, "alias"));
+    for (const archive of [logs, join(logs, "run-1", "archive"), join(root, "alias", "archives"), data]) {
+      await assert.rejects(async () => {
+        const core = await startCore({ clock, config: { data_directory: data, log_directory: logs, archive_directory: archive, port: 0 } });
+        await stopCore(core);
+      }, /archive_directory must be outside (data_directory|log_directory)/);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+
+test("one Core owns a data directory [storage.md]", async () => {
+  const h = await startHarness();
+  try {
+    await assert.rejects(async () => {
+      const duplicate = await startCore({ clock, config: h.config });
+      await stopCore(duplicate);
+    }, /data_directory.*already in use/);
+    assert.equal((await h.call("GET", "/administration/me", { cookie: h.admin })).status, 200);
+  } finally {
+    await h.close();
+  }
+});
+
+
+test("Reset shows a late reported outcome beside a dropped Task [reset.md#cores-reset-zip]", async () => {
+  const h = await startHarness();
+  try {
+    const key = await h.call("POST", "/administration/asset-keys", { cookie: h.admin });
+    const registered = await h.call("POST", "/entities/assets", { key: key.body.key, body: { reports: ["status"], commands: ["hold"] } });
+    const id = registered.body.asset_id;
+    assert.equal((await h.call("POST", `/tasks/${id}`, { cookie: h.admin, body: { tasks: [{ kind: "hold" }] } })).status, 202);
+    clock.advance(30000);
+    assert.equal((await h.call("POST", `/entities/assets/${id}/reports`, { key: key.body.key, body: { reports: [{ type: "report.status", kind: "task", time: clock.now(), asset_id: id, task_id: 1, task_state: "completed" }] } })).status, 200);
+    assert.equal((await h.call("GET", `/tasks/${id}`, { cookie: h.admin })).body.items[0].state, "dropped");
+    const stopped = await h.stop();
+    assert.ok(stopped.archived);
+    const summary = (await readZip(stopped.zip)).find((e) => e.name === "summary.md")!;
+    const chunks: Buffer[] = [];
+    for await (const chunk of summary.open()) chunks.push(chunk);
+    assert.match(Buffer.concat(chunks).toString(), /Task 1: dropped; later reported completed/);
+  } finally {
+    await h.close();
+  }
+});
+
+
+test("bootstrap refuses unusable passwords before creating an account [config.md]", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-bootstrap-"));
+  const pw = join(dir, "pw");
+  const config = { data_directory: dir, port: 0, first_admin: { operator_id: "ADM", password_file: pw } };
+  try {
+    for (const invalid of ["\n", "x".repeat(1025)]) {
+      await writeFile(pw, invalid);
+      await assert.rejects(async () => {
+        const core = await startCore({ clock, config });
+        await stopCore(core);
+      }, /first_admin.password_file/);
+    }
+    await writeFile(pw, password);
+    const core = await startCore({ clock, config });
+    try {
+      const login = await fetch(core.url + "/administration/login", { method: "POST", headers: { "content-type": "application/json", "atlas-definitions": protocol.hash, "idempotency-key": "login" }, body: JSON.stringify({ operator_id: "ADM", password }) });
+      assert.equal(login.status, 200);
+      await login.text();
+    } finally { await stopCore(core); }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
+  }
+});
+
+
+test("invalid config names the option and exits 2 [config.md]", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-config-"));
+  const path = join(dir, "config.json");
+  try {
+    for (const [key, value] of [["data_directory", 42], ["first_admin", { operator_id: ["ADM"], password_file: "pw" }], ["first_admin", { operator_id: { toString: null }, password_file: "pw" }], ["toString", "bad"], ["__proto__", {}]]) {
+      await writeFile(path, JSON.stringify({ [String(key)]: value }));
+      const run = spawnSync(process.execPath, ["src/main.ts", path], { cwd: new URL("..", import.meta.url), encoding: "utf8", env: Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ATLAS_CORE_"))) });
+      assert.equal(run.status, 2, run.stderr);
+      assert.ok(run.stderr.includes(`config ${key}:`), run.stderr);
+    }
+    await writeFile(path, "{}");
+    const run = spawnSync(process.execPath, ["src/main.ts", path], { cwd: new URL("..", import.meta.url), encoding: "utf8", env: { ...process.env, ATLAS_CORE___PROTO__: '{"data_directory":42}' } });
+    assert.equal(run.status, 2, run.stderr);
+    assert.match(run.stderr, /config __proto__:/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+
+test("full SQLite disk returns 507 and leaves no accepted change [storage.md#memory-and-full-disks]", async () => {
+  let connection: DatabaseSync | undefined;
+  const exec = DatabaseSync.prototype.exec;
+  DatabaseSync.prototype.exec = function(sql) {
+    connection = this;
+    return exec.call(this, sql);
+  };
+  let h: Awaited<ReturnType<typeof startHarness>>;
+  try { h = await startHarness(); }
+  finally { DatabaseSync.prototype.exec = exec; }
+  assert.ok(connection);
+  const db = connection;
+  try {
+    const pages = db.prepare("PRAGMA page_count").get()!.page_count;
+    db.exec(`PRAGMA max_page_count=${pages}`);
+    let refused = false;
+    for (let i = 0; i < 100; i++) {
+      const before = await h.call("GET", "/entities/geofeatures", { cookie: h.admin });
+      const response = await h.call("POST", "/entities/geofeatures", { cookie: h.admin, body: { kind: "line", name: "x".repeat(64), line: Array.from({ length: 32 }, () => ({ latitude: 1, longitude: 2 })) } });
+      if (response.status === 200) continue;
+      assert.equal(response.status, 507, JSON.stringify(response.body));
+      assert.equal(response.body.error, "storage_full");
+      assert.deepEqual((await h.call("GET", "/entities/geofeatures", { cookie: h.admin })).body, before.body);
+      refused = true;
+      break;
+    }
+    assert.ok(refused, "SQLite must reach its real page limit");
+  } finally {
+    db.exec("PRAGMA max_page_count=1073741823");
+    await h.close();
+  }
+});
+
+
+test("counting capped diagnostic losses uses asynchronous I/O [logging.md#when-logging-cannot-keep-up]", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-log-async-"));
+  let running: Awaited<ReturnType<typeof child>> | undefined;
+  try {
+    const cfg = join(dir, "config.json");
+    await writeFile(cfg, JSON.stringify({ data_directory: dir, port: 0, log_total_limit_bytes: 1 }));
+    running = await child(cfg, true);
+    for (let i = 0; i < 5; i++) {
+      const response: Response = await fetch(running.url + "/about");
+      assert.equal(response.status, 200);
+      await response.text();
+    }
+    assert.equal((await running.kill("SIGTERM"))[0], 0);
+    assert.doesNotMatch(running.diagnostics(), /at gap /, "loss accounting must not perform synchronous filesystem calls");
+    running = undefined;
+  } finally {
+    if (running?.process.exitCode === null) await running.kill("SIGKILL");
+    await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
+  }
+});
+
+
+test("debug flush includes records queued during a gap write [logging.md#read-the-log-while-core-runs]", () => {
+  const script = `
+    import { mock } from 'node:test';
+    import assert from 'node:assert/strict';
+    import * as fs from 'node:fs/promises';
+    import { join } from 'node:path';
+    import { tmpdir } from 'node:os';
+    const entered = Promise.withResolvers(), release = Promise.withResolvers();
+    let first = true;
+    mock.module('node:fs/promises', { namedExports: {
+      ...fs,
+      async appendFile(path, data, ...args) {
+        if (first) {
+          first = false;
+          await fs.mkdir(path);
+          try { return await fs.appendFile(path, data, ...args); }
+          finally { await fs.rm(path, { recursive: true }); }
+        }
+        await fs.appendFile(path, data, ...args);
+        if (JSON.parse(data).msg === 'diagnostic gaps') {
+          entered.resolve();
+          await release.promise;
+        }
+      }
+    } });
+    const real = await import('./src/log.ts');
+    mock.module('./src/log.ts', { namedExports: { ...real, startLog(...args) {
+      const log = real.startLog(...args);
+      return { ...log, readAfter(...args) { release.resolve(); return log.readAfter(...args); } };
+    } } });
+    const { startCore } = await import('./src/core.ts');
+    const { systemClock } = await import('./src/clock.ts');
+    const root = await fs.mkdtemp(join(tmpdir(), 'atlas-log-gap-'));
+    let core;
+    try {
+      core = await startCore({ clock: systemClock, config: { data_directory: join(root, 'data'), archive_directory: join(root, 'archive'), port: 0, debug_endpoint: true } });
+      await entered.promise;
+      await (await fetch(core.url + '/about')).text();
+      const records = await (await fetch(core.debugUrl)).text();
+      assert.ok(records.includes('/about'), 'debug flush must include the request queued during the gap append');
+    } finally {
+      release.resolve();
+      if (core) await core.stop();
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  `;
+  const run = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--input-type=module", "-e", script], { cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 20000 });
+  assert.equal(run.status, 0, run.stderr);
 });

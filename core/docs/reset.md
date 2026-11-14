@@ -68,7 +68,8 @@ Their credentials stop working immediately; the checked clear removes those rows
 - Each Asset that took part: its ID, its gateway if any, and when Core first
   and last heard it.
 - Each Asset's Tasks in order, with their final reported outcome, or no
-  reported outcome.
+  reported outcome. A dropped Task also names any later reported final outcome,
+  while remaining dropped in Core.
 - Plugin calls and how each ended.
 - Every gap: records lost, truncated, or never written, and when.
 
@@ -102,6 +103,9 @@ never looks like a finished ZIP.
 Core does not try again. The next start begins a new run as usual, and the old
 run's data stays in the database until the admin removes it
 ([storage](storage.md#runs)).
+
+A failed startup cancels its contact deadlines before closing storage; it leaves
+no contact work running against the stopped Core.
 
 ## When Core stops unexpectedly
 

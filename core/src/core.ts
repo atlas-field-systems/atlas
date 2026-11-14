@@ -61,20 +61,23 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
   for (const dir of [
     config.data_directory,
     config.archive_directory,
+    config.log_directory,
     paths.uploadsDir,
   ])
     await mkdir(dir, { recursive: true });
-  const archiveRelative = relative(
-    await realpath(config.data_directory),
-    await realpath(config.archive_directory),
-  );
-  if (
-    !archiveRelative ||
-    (!isAbsolute(archiveRelative) &&
-      archiveRelative !== ".." &&
-      !archiveRelative.startsWith("../"))
-  )
-    throw new Error("archive_directory must be outside data_directory");
+  for (const key of ["data_directory", "log_directory"] as const) {
+    const archiveRelative = relative(
+      await realpath(config[key]),
+      await realpath(config.archive_directory),
+    );
+    if (
+      !archiveRelative ||
+      (!isAbsolute(archiveRelative) &&
+        archiveRelative !== ".." &&
+        !archiveRelative.startsWith("../"))
+    )
+      throw new Error(`archive_directory must be outside ${key}`);
+  }
   const protocol = await loadPackagedProtocol();
   events.assertKindsMatchProtocol(protocol.names);
   const protocolPackage = JSON.parse(
@@ -115,6 +118,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     ...fusion.TABLES,
   ];
   const store = openStore(env, tables);
+  let stopContact: (() => void) | undefined;
   try {
     await recoverReset(env, store, tables);
     const run = runs.beginOrResume(env, store);
@@ -127,6 +131,11 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       const password = (
         await readFile(config.first_admin.password_file, "utf8")
       ).replace(/\r?\n$/, "");
+      const checked = protocol.check("requests.account", {
+        operator_id: config.first_admin.operator_id, password, admin: true,
+      });
+      if (!checked.ok)
+        throw new Error(`first_admin.password_file: invalid account: ${JSON.stringify(checked.problems)}`);
       const hash = await admin.hashPassword(password);
       store.write((tx) =>
         admin.ensureFirstAdmin(tx, config.first_admin!.operator_id, hash),
@@ -145,6 +154,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       options.clock,
       config.offline_after_s * 1000,
     );
+    stopContact = () => contact.stop();
     contact.resume();
     const follower = fusion.startFusion(store, fusion.onePerObservation);
     const streams = startStreams(store, options.clock);
@@ -174,6 +184,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       },
     };
   } catch (error) {
+    stopContact?.();
     store.close();
     await log.flush();
     throw error;

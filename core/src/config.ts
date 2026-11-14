@@ -44,42 +44,28 @@ export type ConfigProblem = { key: string; explanation: string };
 export function resolveConfig(
   partial: Partial<CoreConfig>,
 ): { ok: true; config: CoreConfig } | { ok: false; problems: ConfigProblem[] } {
-  const dataDirectory = resolve(
-    partial.data_directory ?? CONFIG_DEFAULTS.data_directory,
-  );
+  const problems: ConfigProblem[] = [];
+  const fail = (key: string, explanation: string) =>
+    problems.push({ key, explanation });
+  const defaults = { ...CONFIG_DEFAULTS, log_directory: "", archive_directory: "" };
+  for (const [key, value] of Object.entries(partial)) {
+    if (!Object.hasOwn(defaults, key)) fail(key, "unknown option");
+    else if (key === "first_admin") {
+      if (value !== null && (typeof value !== "object" || Array.isArray(value)))
+        fail(key, "requires operator_id and password_file");
+    } else if (key === "tls_certificate" || key === "tls_key") {
+      if (value !== null && typeof value !== "string") fail(key, "must be a PEM path or null");
+    } else if (typeof value !== typeof Reflect.get(defaults, key))
+      fail(key, "wrong type");
+  }
+  if (problems.length) return { ok: false, problems };
+  const dataDirectory = resolve(partial.data_directory ?? CONFIG_DEFAULTS.data_directory);
   const config = {
     ...CONFIG_DEFAULTS,
     log_directory: join(dataDirectory, "diagnostics"),
     archive_directory: `${dataDirectory}-archive`,
     ...partial,
   };
-  const problems: ConfigProblem[] = [];
-  const fail = (key: string, explanation: string) =>
-    problems.push({ key, explanation });
-  for (const [key, value] of Object.entries(partial)) {
-    if (
-      !(key in config) ||
-      !(
-        key in CONFIG_DEFAULTS ||
-        key === "log_directory" ||
-        key === "archive_directory"
-      )
-    )
-      fail(key, "unknown option");
-    else if (
-      key !== "first_admin" &&
-      key !== "tls_certificate" &&
-      key !== "tls_key" &&
-      typeof value !== typeof configDefault(key)
-    )
-      fail(key, "wrong type");
-  }
-  function configDefault(key: string): unknown {
-    return Reflect.get(
-      { ...CONFIG_DEFAULTS, log_directory: "", archive_directory: "" },
-      key,
-    );
-  }
   if (!Number.isInteger(config.port) || config.port < 0 || config.port > 65535)
     fail("port", "must be an integer from 0 to 65535");
   for (const key of [
@@ -117,6 +103,7 @@ export function resolveConfig(
   if (
     config.first_admin !== null &&
     (typeof config.first_admin !== "object" ||
+      typeof config.first_admin.operator_id !== "string" ||
       !/^[a-zA-Z0-9]{1,4}$/.test(config.first_admin.operator_id) ||
       typeof config.first_admin.password_file !== "string")
   )
@@ -131,7 +118,7 @@ export async function readConfigFile(
   const input: unknown = JSON.parse(await readFile(path, "utf8"));
   if (!input || typeof input !== "object" || Array.isArray(input))
     throw new Error("config must be an object");
-  const config = { ...input };
+  let config = { ...input };
   for (const [key, value] of Object.entries(env))
     if (key.startsWith("ATLAS_CORE_") && value !== undefined) {
       const name = key.slice(11).toLowerCase();
@@ -139,7 +126,7 @@ export async function readConfigFile(
       try {
         parsed = JSON.parse(value);
       } catch {}
-      Object.assign(config, { [name]: parsed });
+      config = { ...config, [name]: parsed };
     }
   return config;
 }

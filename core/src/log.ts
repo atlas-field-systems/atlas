@@ -1,14 +1,12 @@
 import { createInterface } from "node:readline";
 import {
   mkdirSync,
-  writeFileSync,
-  renameSync,
   readdirSync,
   readFileSync,
   createReadStream,
   statSync,
 } from "node:fs";
-import { appendFile } from "node:fs/promises";
+import { appendFile, writeFile, rename } from "node:fs/promises";
 import { join } from "node:path";
 import type { Clock } from "./clock.ts";
 
@@ -94,18 +92,23 @@ export function startLog(
         at: clock.now(),
         why,
       });
-    if (gapFile) {
-      try {
-        writeFileSync(gapFile + ".partial", JSON.stringify(gaps), {
-          flush: true,
-        });
-        renameSync(gapFile + ".partial", gapFile);
-      } catch (error) {
-        process.stderr.write(
-          `Diagnostic loss accounting failed: ${String(error)}\n`,
-        );
+    if (gapFile) void persistGaps();
+  };
+  let savingGaps: Promise<void> | null = null;
+  let savedGapVersion = 0;
+  const persistGaps = (): Promise<void> => {
+    if (savingGaps) return savingGaps;
+    savingGaps = (async () => {
+      while (savedGapVersion !== gapVersion) {
+        const version = gapVersion;
+        await writeFile(gapFile + ".partial", JSON.stringify(gaps), { flush: true });
+        await rename(gapFile + ".partial", gapFile);
+        savedGapVersion = version;
       }
-    }
+    })().catch((error) => {
+      process.stderr.write(`Diagnostic loss accounting failed: ${String(error)}\n`);
+    }).finally(() => { savingGaps = null; });
+    return savingGaps;
   };
   const drain = () => {
     if (writing) return writing;
@@ -166,6 +169,7 @@ export function startLog(
       }
     })().finally(() => {
       writing = null;
+      if (queue.length) return drain();
     });
     return writing;
   };
@@ -224,6 +228,7 @@ export function startLog(
     },
     async readAfter(after, limit) {
       await drain();
+      await persistGaps();
       const result: string[] = [];
       for (const name of files(directory)) {
         const input = createReadStream(join(directory, name));
@@ -247,6 +252,7 @@ export function startLog(
     },
     async flush() {
       await drain();
+      await persistGaps();
     },
     lastRecordTime(id) {
       let at: number | null = null;
