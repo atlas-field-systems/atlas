@@ -51,6 +51,7 @@ Each topic has one home. Other pages link to it.
 | --- | --- |
 | The owner's decisions, dated and scoped | [atlas/decision-log.md](atlas/decision-log.md) |
 | Runs, Reset, what carries over, registration, IDs, keys, gateway changes | [atlas/runs-and-identity.md](atlas/runs-and-identity.md) |
+| Who Atlas is for, what it is not, and how to tell it works | [atlas/goal.md](atlas/goal.md) |
 | Project-wide principles and architecture | [atlas/CHARTER.md](atlas/CHARTER.md), [atlas/design-decisions.md](atlas/design-decisions.md) |
 | Terms | [GLOSSARY.md](GLOSSARY.md), one line each |
 | Record shapes and the working choices behind them | [protocol/definitions/](protocol/definitions/), [protocol/docs/decisions.md](protocol/docs/decisions.md) |

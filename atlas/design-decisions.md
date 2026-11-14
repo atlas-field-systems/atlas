@@ -210,6 +210,9 @@ underlying code. Later parts follow the first version. First flight is their
 first field test, once the Asset app, the gateway, and the SiK Fieldlink are
 built.
 
+A [proposed build order](build-order.md) for the parts after the first version
+awaits the owner's decision.
+
 ## Changes and releases
 
 - Every program in a deployment uses the same Protocol definitions. A change to
