@@ -1,3 +1,4 @@
+import { checkAnchors, recordFailure } from "../src/scenario.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
@@ -8,6 +9,8 @@ import { join } from "node:path";
 import { createWorld } from "../src/world.ts";
 const execute = promisify(execFile);
 test("full disk refuses a change without a partial event [core/docs/storage.md#memory-and-full-disks]", async (t) => {
+  const checks = ["core/docs/storage.md#memory-and-full-disks"];
+  await checkAnchors(checks);
   const mount = await mkdtemp(join(tmpdir(), "atlas-full-"));
   try {
     await execute("sudo", [
@@ -46,6 +49,9 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
       w.events.filter((e) => e.kind === "geofeature.created").length,
       0,
     );
+  } catch (error) {
+    await recordFailure("full-disk", checks, error, w.root, w.trace);
+    throw error;
   } finally {
     await filler.close();
     await rm(join(mount, "fill"));

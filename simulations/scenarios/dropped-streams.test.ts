@@ -52,6 +52,7 @@ scenario({
         }),
       ),
     );
+    await w.until(() => !stream.stale && stream.cursor >= replacement.event_id);
     w.network.dropStreams("reader");
     const deletion = value(
       await w.complete(
@@ -61,6 +62,14 @@ scenario({
       ),
     );
     await w.until(() => stream.cursor >= deletion.event_id);
+    assert.equal(
+      w.network.traffic.filter(
+        (t) =>
+          t.caller === "reader" && t.path === "/events" && t.status === 200,
+      ).length,
+      3,
+      "two stream reopens",
+    );
     const ids = all.map((e) => e.event_id);
     assert.deepEqual(
       ids,

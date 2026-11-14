@@ -12,6 +12,7 @@ export type Traffic = {
   key: string | null;
   status?: number;
   fault?: Fault;
+  streamCuts?: number;
   body?: unknown;
   response?: unknown;
 };
@@ -20,6 +21,7 @@ export class Network {
   private cutCallers = new Set<string>();
   private pending = new Map<number, string>();
   private sequence = 0;
+  private streamTraffic = new WeakMap<AbortController, Traffic>();
   private streams = new Map<string, Set<AbortController>>();
   readonly traffic: Traffic[] = [];
   activity = 0;
@@ -48,7 +50,11 @@ export class Network {
     this.cutCallers.delete(caller);
   }
   dropStreams(caller: string) {
-    for (const c of this.streams.get(caller) ?? []) c.abort();
+    for (const c of this.streams.get(caller) ?? []) {
+      const t = this.streamTraffic.get(c);
+      if (!c.signal.aborted && t) t.streamCuts = (t.streamCuts ?? 0) + 1;
+      c.abort();
+    }
   }
   close() {
     for (const name of this.streams.keys()) this.dropStreams(name);
@@ -111,11 +117,13 @@ export class Network {
           );
           this.pending.set(id, `${caller} delayed ${path}`);
         }
-        if (fault?.kind === "refuse")
+        if (fault?.kind === "refuse") {
+          traffic.status = fault.status;
           return Response.json(
             { error: "simulated_refusal", explanation: "Host refusal" },
             { status: fault.status },
           );
+        }
         const send = () =>
           fetch(input, { ...init, headers, signal: controller.signal });
         let response = await send();
@@ -136,10 +144,10 @@ export class Network {
           } else traffic.response = received;
         }
         const setCookie = response.headers.get("set-cookie");
-        if (setCookie)
-          this.secrets.add(
-            setCookie.split(";")[0].split("=").slice(1).join("="),
-          );
+        if (setCookie) {
+          const token = setCookie.split(";")[0].split("=").slice(1).join("=");
+          if (token) this.secrets.add(token);
+        }
         if (fault?.kind === "repeat") {
           await response.arrayBuffer();
           response = await send();
@@ -163,6 +171,7 @@ export class Network {
           this.streams.set(caller, set);
         }
         set.add(controller);
+        this.streamTraffic.set(controller, traffic);
         const reader = response.body.getReader();
         const network = this;
         const body = new ReadableStream<Uint8Array>({
@@ -175,6 +184,7 @@ export class Network {
                 network.activity++;
                 target.enqueue(chunk.value);
                 if (fault?.kind === "cutStream") {
+                  traffic.streamCuts = (traffic.streamCuts ?? 0) + 1;
                   controller.abort();
                   break;
                 }
@@ -215,5 +225,10 @@ export function faultChoice(
   let hash = 2166136261;
   for (const c of `${seed}:${caller}:${route}:${n}`)
     hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x85ebca6b);
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 0xc2b2ae35);
+  hash ^= hash >>> 16;
   return (hash >>> 0) / 2 ** 32;
 }

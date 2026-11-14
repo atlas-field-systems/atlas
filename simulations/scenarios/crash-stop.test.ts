@@ -1,3 +1,4 @@
+import { checkAnchors, recordFailure } from "../src/scenario.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { test } from "node:test";
@@ -13,6 +14,8 @@ import { SimClock } from "../src/clock.ts";
 import { value } from "../src/world.ts";
 
 test("crash resumes and deliberate stop archives then starts an empty run [core/docs/reset.md#when-core-stops-unexpectedly]", async () => {
+  const checks = ["core/docs/reset.md#when-core-stops-unexpectedly"];
+  await checkAnchors(checks);
   const root = await mkdtemp(join(tmpdir(), "atlas-process-"));
   const core = await spawnCore(root);
   const protocol = await loadPackagedProtocol();
@@ -91,6 +94,12 @@ test("crash resumes and deliberate stop archives then starts an empty run [core/
     value(await admin.login("ADM", "simulation-password"));
     assert.deepEqual(value(await admin.call("entities")).geofeatures, []);
     assert.deepEqual(value(await admin.call("objects")).items, []);
+  } catch (error) {
+    await recordFailure("crash-stop", checks, error, root, {
+      traffic: network.traffic,
+      diagnostics: core.diagnostics,
+    });
+    throw error;
   } finally {
     admin.close();
     network.close();

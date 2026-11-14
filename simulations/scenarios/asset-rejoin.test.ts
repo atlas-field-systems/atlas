@@ -43,6 +43,14 @@ scenario({
         t.path === path &&
         JSON.stringify(t.body).includes('"task_state":"completed"'),
     );
+    assert.ok(finals.length >= 2, "final requires a retry");
+    assert.ok(
+      finals.every(
+        (t) => JSON.stringify(t.body) === JSON.stringify(finals[0].body),
+      ),
+      "final bytes never change",
+    );
+    assert.equal(finals.at(-1)?.status, 200, "final acknowledged");
     assert.equal(
       new Set(finals.map((t) => t.key)).size,
       1,

@@ -112,12 +112,15 @@ cannot mount it, the test reports a skip with the mount error. The crash and sto
 scenario uses a separate Core process and the real clock. ZIP checks require `unzip`.
 
 Scenarios check their documentation anchors before running. A failed run writes
-its trace, seed, and assertion error under `.runs/`. Node's test runner runs TypeScript directly. Each scenario supplies a name,
+its trace, seed, assertion error, and Core `logs/` under `.runs/`. Node's test runner runs TypeScript directly. Each scenario supplies a name,
 documentation anchors, and an asynchronous script. Seeded workloads run seeds
 7, 42, and 2026. `ATLAS_SEED=42 npm test` replays that fault seed alongside the
 scenarios. Each network decision hashes the seed, caller, path, and that caller's
 request count on the route. Workload choices use one seeded generator. Faults
 therefore do not move between callers when I/O order changes.
+Every fault seed checks that both readers had a stream cut and that responses
+were lost on at least two routes. Reader event IDs are compared with Core's
+`events.jsonl` from the Reset ZIP after the run stops, using each reader's audience.
 
 The clock fires timers in deadline order and preserves insertion order on ties.
 World waits fail after ten wall-clock seconds with the in-flight request list.

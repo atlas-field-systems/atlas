@@ -1,3 +1,4 @@
+import { bytesUnder } from "../src/stored.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
@@ -8,26 +9,6 @@ import { faultRun } from "../src/scenario.ts";
 import { ipAsset, radioAsset, plugin } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 import { rules, type RunTrace } from "../src/rules.ts";
-async function bytesUnder(path: string): Promise<Uint8Array[]> {
-  const entries = await readdir(path, { withFileTypes: true }).catch(() => []);
-  const result: Uint8Array[] = [];
-  for (const e of entries)
-    result.push(
-      ...(e.isDirectory()
-        ? await bytesUnder(join(path, e.name))
-        : e.name.endsWith(".zip")
-          ? [
-              (
-                await promisify(execFile)("unzip", ["-p", join(path, e.name)], {
-                  encoding: "buffer",
-                  maxBuffer: 16 * 1024 * 1024,
-                })
-              ).stdout,
-            ]
-          : [await readFile(join(path, e.name))]),
-    );
-  return result;
-}
 faultRun({
   name: "core-and-sdk",
   seeds: [7, 42, 2026],
@@ -63,6 +44,12 @@ faultRun({
       }),
     );
     for (const reader of readers) w.onClose(() => reader.stop());
+    await w.settle();
+    for (const caller of ["admin", "operator-two"])
+      w.network.dropStreams(caller);
+    w.network.once("admin", `/tasks/${assets[0].session.asset_id}`, {
+      kind: "loseResponse",
+    });
     w.network.seed = seed;
     const accepted: number[] = [];
     const starts: RunTrace["starts"] = [];
@@ -162,11 +149,43 @@ faultRun({
         })),
       );
     }
+    for (const caller of ["admin", "operator-two"])
+      assert.ok(
+        w.network.traffic.some(
+          (t) => t.caller === caller && (t.streamCuts ?? 0) > 0,
+        ),
+        `${caller} stream was cut`,
+      );
+    assert.ok(
+      new Set(
+        w.network.traffic
+          .filter(
+            (t) =>
+              t.fault?.kind === "loseResponse" && t.status && t.status < 300,
+          )
+          .map((t) => t.path),
+      ).size >= 2,
+      "responses lost on two routes",
+    );
+    for (const reader of readers) reader.stop();
     await w.restartCore();
+    const zip = (await readdir(join(w.root, "archive"))).find((n) =>
+      n.endsWith(".zip"),
+    );
+    assert.ok(zip);
+    const { stdout } = await promisify(execFile)("unzip", [
+      "-p",
+      join(w.root, "archive", zip),
+      "events.jsonl",
+    ]);
+    const archivedEvents: AtlasEvent[] = stdout
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
     const trace: RunTrace = {
       reportIds,
       tasks,
-      events: w.events,
+      events: archivedEvents,
       starts,
       accepted,
       handled,

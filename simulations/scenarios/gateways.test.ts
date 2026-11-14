@@ -26,6 +26,12 @@ scenario({
       ).item.contact.contact,
       "online",
     );
+    const gateway_id = value(
+      await w.complete(
+        w.admin.call("asset", { params: { asset_id: radio.asset_id } }),
+      ),
+    ).item.gateway_id;
+    assert.ok(gateway_id);
     radio.close();
     radio.client.close();
     await w.advance(31000);
@@ -35,5 +41,10 @@ scenario({
       ),
     );
     assert.equal(picture.item.contact.contact, "offline");
+    const gateways = value(await w.complete(w.admin.call("assets")));
+    assert.equal(
+      gateways.gateways.find((g) => g.gateway_id === gateway_id)?.contact,
+      "offline",
+    );
   },
 });

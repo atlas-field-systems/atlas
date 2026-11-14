@@ -1,3 +1,5 @@
+import { bytesUnder } from "../src/stored.ts";
+import { join } from "node:path";
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
 import { value } from "../src/world.ts";
@@ -141,6 +143,19 @@ scenario({
     value(await w.complete(account.call("logout")));
     const loggedOut = await w.complete(account.call("me"));
     assert.ok(!loggedOut.ok && loggedOut.status === 401);
+    await w.restartCore();
+    const stored = (
+      await Promise.all(
+        ["data", "archive", "logs"].map((dir) => bytesUnder(join(w.root, dir))),
+      )
+    ).flat();
+    assert.ok(stored.length > 0);
+    for (const secret of [...w.network.secrets, "simulation-password"])
+      for (const bytes of stored)
+        assert.ok(
+          !new TextDecoder().decode(bytes).includes(secret),
+          "stored credentials cannot be recovered",
+        );
   },
 });
 

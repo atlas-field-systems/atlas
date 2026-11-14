@@ -1,3 +1,4 @@
+import { createLivePicture } from "@atlas/sdk";
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
 import { ipAsset } from "../src/actors.ts";
@@ -9,7 +10,11 @@ scenario({
     "core/docs/api.md#reads",
   ],
   async run(w) {
-    const asset = await ipAsset(w);
+    const shifted = w.clock.shifted(60000);
+    const asset = await ipAsset(w, "asset", shifted);
+    const live = createLivePicture(w.admin);
+    w.onClose(() => live.stop());
+    await w.until(() => live.assets().ready);
     const asset_id = asset.session.asset_id;
     const params = { asset_id };
     const now = w.clock.now();
@@ -27,7 +32,7 @@ scenario({
               },
               {
                 type: "report.settings",
-                time: w.clock.shifted(60000).now(),
+                time: shifted.now(),
                 asset_id,
                 settings: { lights: "on" },
               },
@@ -43,6 +48,11 @@ scenario({
     );
     const picture = value(await w.complete(w.admin.call("asset", { params })));
     assert.equal(picture.item.settings.lights.value, "off");
+    assert.equal(
+      live.assets().items.find((a) => a.asset_id === asset_id)?.settings.lights
+        .value,
+      "off",
+    );
     const history = [];
     const pages = w.admin
       .history({ asset_id, report: "settings" })
