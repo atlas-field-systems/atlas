@@ -50,8 +50,8 @@ export function createOutbox(
   clock: Clock,
   heartbeatMs = 10000,
   observer?: Observer,
+  emit = diagnostics(clock, observer),
 ) {
-  const emit = diagnostics(clock, observer);
   const live: Report[] = [],
     retained: Report[] = [];
   let stopped = false,
@@ -135,6 +135,7 @@ export function runAsset(
   link: AssetLink,
   registration: { asset_id: string; after: number; last_task_id: number },
   options: AssetOptions,
+  emit = diagnostics(options.clock, options.observer),
 ) {
   const { asset_id } = registration;
   const outbox = createOutbox(
@@ -142,16 +143,20 @@ export function runAsset(
     options.clock,
     options.heartbeatMs,
     options.observer,
+    emit,
   );
   const queue = options.queue
-    ? createQueue({
-        asset_id,
-        observer: options.observer,
-        last_task_id: registration.last_task_id,
-        clock: options.clock,
-        host: options.queue,
-        emit: (r) => outbox.add([r]),
-      })
+    ? createQueue(
+        {
+          asset_id,
+          observer: options.observer,
+          last_task_id: registration.last_task_id,
+          clock: options.clock,
+          host: options.queue,
+          emit: (r) => outbox.add([r]),
+        },
+        emit,
+      )
     : undefined;
   let stopped = false;
   async function rejoin() {
@@ -282,10 +287,6 @@ export async function startAsset(
         result.retry &&
         (result.error === "unknown" || (result.status ?? 0) >= 500)
       ) {
-        internal(client).emit("batch.resent", {
-          count: reports.length,
-          status: result.status ?? 0,
-        });
         await new Promise<void>((resolve) => options.clock.after(500, resolve));
         result = await result.retry();
       }
@@ -338,6 +339,7 @@ export async function startAsset(
       ...options,
       observer: options.observer ?? internal(client).options.observer,
     },
+    internal(client).emit,
   );
   const running = session;
   const ready = await running.ready;

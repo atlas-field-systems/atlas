@@ -283,15 +283,17 @@ function reduce(
   if (available(s)) effects.push({ kind: "ready" });
   return { state: s, effects };
 }
-export function createQueue(o: {
-  last_task_id: number;
-  host: QueueHost;
-  emit(report: Report): void;
-  clock: Clock;
-  asset_id: string;
-  observer?: Observer;
-}): Queue {
-  const emit = diagnostics(o.clock, o.observer);
+export function createQueue(
+  o: {
+    last_task_id: number;
+    host: QueueHost;
+    emit(report: Report): void;
+    clock: Clock;
+    asset_id: string;
+    observer?: Observer;
+  },
+  emit = diagnostics(o.clock, o.observer),
+): Queue {
   let state: State = {
     floor: o.last_task_id,
     supersededBelow: 0,

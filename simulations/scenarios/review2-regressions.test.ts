@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { follow, createClient } from "@atlas/sdk";
+import { follow, createClient, startAsset } from "@atlas/sdk";
 import { scenario } from "../src/scenario.ts";
+import { description } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 
 scenario({
@@ -117,5 +118,69 @@ scenario({
     const wrong = await w.complete(unconfirmed.login("ADM", "wrong-password"));
     assert.ok(!wrong.ok);
     assert.equal(wrong.error, "unauthenticated");
+  },
+});
+
+scenario({
+  name: "one client orders diagnostics across startup queue outbox and report retries",
+  checks: ["sdk/docs/logging.md#what-it-reports"],
+  async run(w) {
+    const issued = value(await w.complete(w.admin.call("createAssetKey")));
+    assert.ok("key" in issued);
+    const diagnostics: import("@atlas/sdk").Diagnostic[] = [];
+    const client = createClient({
+      credential: { kind: "asset", key: issued.key },
+      protocol: w.protocol,
+      clock: w.clock,
+      baseUrl: w.core.url,
+      fetch: w.network.fetchFor("ordered"),
+      observer: (event) => {
+        diagnostics.push(event);
+      },
+      backoff: { minMs: 10, maxMs: 100, factor: 2, jitter: 0 },
+    });
+    w.onClose(() => client.close());
+    const session = value(
+      await w.complete(
+        startAsset(client, {
+          clock: w.clock,
+          description,
+          settings: () => ({}),
+          queue: { runNow() {}, stop() {}, update() {} },
+        }),
+      ),
+    );
+    w.onClose(() => session.stop());
+    const asset_id = session.asset_id;
+    value(
+      await w.complete(
+        w.admin.call("sendTasks", {
+          params: { asset_id },
+          body: { tasks: [{ kind: "hold" }] },
+        }),
+      ),
+    );
+    await w.until(() => session.queue!.held().length === 1);
+    await w.complete(session.outbox.flush());
+    w.network.once("ordered", `/entities/assets/${asset_id}/reports`, {
+      kind: "refuse",
+      status: 507,
+    });
+    session.queue!.next();
+    session.queue!.finish(1, "completed");
+    await w.complete(session.outbox.flush());
+    await w.settle();
+    assert.ok(diagnostics.some((e) => e.name === "task.finished"));
+    assert.ok(diagnostics.some((e) => e.name === "batch.sent"));
+    assert.ok(
+      diagnostics.every(
+        (event, i) => i === 0 || event.counter > diagnostics[i - 1].counter,
+      ),
+      "all emitters for this client share a monotonically rising counter",
+    );
+    assert.equal(
+      diagnostics.filter((e) => e.name === "batch.resent").length,
+      1,
+    );
   },
 });

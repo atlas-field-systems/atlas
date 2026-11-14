@@ -279,6 +279,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
           ? undefined
           : JSON.stringify(body);
     let flight: Promise<Result<T>> | undefined;
+    let reportAttempts = 0;
     const send = (): Promise<Result<T>> =>
       (flight ??= (async () => {
         const deadline = clock.now() + timeout;
@@ -319,7 +320,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
               if (key) h.set("Idempotency-Key", key);
               if (method !== "GET")
                 h.set("Content-Type", contentType ?? "application/json");
-              if (attempt > 0 && path.endsWith("/reports"))
+              if (path.endsWith("/reports") && reportAttempts++ > 0)
                 emit("batch.resent", { key: key ?? "" });
               const response = await raw(
                 path,
