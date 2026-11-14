@@ -1,12 +1,9 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Build order after the first version</title>
 <link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="build-order-after-the-first-version">Build order after the first version</h1>
-<blockquote>
-<p><strong>Partly decided.</strong> On 2026-11-14 the owner decided which parts come before
-the Command Interface (<a href="decision-log.html#build-and-test">decision log</a>). The
-steps under <a href="#proposed-steps">Proposed steps</a> and the
-<a href="#questions-for-the-owner">questions</a> await the owner.</p>
-</blockquote>
+<p>The owner decided this order on 2026-11-14
+(<a href="decision-log.html#build-and-test">decision log</a>). The numbered steps are the
+working plan for carrying it out.</p>
 <p>The first version is Protocol, Core, and the SDK, with their simulations
 (<a href="design-decisions.html#design-the-whole-product-then-build-it">Design decisions</a>).
 This page orders the parts that follow.</p>
@@ -40,21 +37,32 @@ acknowledgement, or relayed frame. A faster setting carries more over a
 shorter range. The estimate is not a measurement, and only a measurement
 settles the question.</li>
 </ol>
-<h2 id="proposed-steps">Proposed steps</h2>
+<h2 id="the-meshtastic-fieldlink-comes-first">The Meshtastic Fieldlink comes first</h2>
+<p>Meshtastic is the first Fieldlink, and SiK is built on what it establishes.
+Meshtastic is the fuller Fieldlink and is closer to the Fieldlinks Atlas will
+see later, so the gateway app and the simulated radio link are shaped by it.
+Building for SiK first would shape them around SiK&#39;s one-drone,
+point-to-point link.</p>
+<h2 id="the-radio-is-measured-during-the-build">The radio is measured during the build</h2>
+<p>While the Meshtastic Fieldlink is built, two Meshtastic radios are connected
+to the build computer and send messages to each other. Their measured numbers
+go into <a href="scale.html">Scale</a> and the Meshtastic page, and the simulated radio
+link uses them. The measurement answers the second risk.</p>
+<h2 id="new-failsafe-and-radio-decisions-wait">New failsafe and radio decisions wait</h2>
+<p>No new failsafe or radio decision is made until the Asset app has run against
+simulated ArduPilot and the radio is measured. The decisions already in the
+log stay in force. After the results, they are reviewed against what was
+found.</p>
+<h2 id="the-steps">The steps</h2>
 <ol>
 <li><strong>The Asset app, built whole.</strong> Simulations run it against simulated
 ArduPilot over IP
 (<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md">Asset simulations</a>).
 The first scenarios are first flight&#39;s Takeoff, Move To, and Land, then a
 low battery and a lost link. They answer the first risk.</li>
-<li><strong>A bench measurement of the radio.</strong> With two or three Meshtastic radios,
-measure how many 200-byte frames arrive per minute at each radio setting,
-and write the numbers into <a href="scale.html">Scale</a> and the Meshtastic page. The
-measurement answers the second risk, and it gives the simulated radio link
-real numbers. It needs hardware and a person, and it can run beside step 1.</li>
-<li><strong>The gateway app and one Fieldlink</strong>, over a simulated radio link. Which
-Fieldlink comes first is a question for the owner.</li>
-<li><strong>The second Fieldlink.</strong></li>
+<li><strong>The gateway app and the Meshtastic Fieldlink</strong>, over a simulated radio
+link, with the two radios on the bench.</li>
+<li><strong>The SiK Fieldlink.</strong></li>
 <li><strong>Simulation tools and the full simulation.</strong> Tools make a whole operation
 quick to write as a scenario. The full simulation then runs: Assets take
 off and make Observations, other Assets are tasked onto them, Fusion makes
@@ -63,18 +71,5 @@ Tracks, a radio link fails, and hardware faults.</li>
 <li><strong>First flight in the field</strong> (<a href="first-flight.html">First flight</a>).</li>
 </ol>
 <p>Each part is still built whole, as the design decisions say.</p>
-<p>One more proposal: hold new failsafe and Fieldlink decisions until step 1 and
-step 2 report. The decisions already in the log stay in force. After the
-reports, review them against what was found.</p>
-<h2 id="questions-for-the-owner">Questions for the owner</h2>
-<ol>
-<li>Which Fieldlink comes first? SiK is small and matches first flight, but it
-carries one drone. Meshtastic carries many Assets, which the full
-simulation needs, but it is larger and depends on the bench numbers.</li>
-<li>Do you have Meshtastic radios to bench-test, and can you or someone else
-run the measurement?</li>
-<li>Do you agree to make no new failsafe or radio decisions until the Asset
-app has run against simulated ArduPilot and the radio is measured?</li>
-</ol>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
