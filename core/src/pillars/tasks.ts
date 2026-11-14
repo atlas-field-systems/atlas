@@ -185,7 +185,17 @@ export function applyQueueReport(
   asset_id: string,
   report: StatusQueue,
   event_id: number,
+  ahead = false,
 ): void {
+  for (const id of report.task_ids)
+    tx.run(
+      "UPDATE tasks SET state='queued',state_time=? WHERE run_id=? AND asset_id=? AND task_id=? AND state='sent'",
+      report.time,
+      tx.runId,
+      asset_id,
+      id,
+    );
+  if (ahead) return;
   const prior = tx.get<{ report_time: number; event_id: number }>(
     "SELECT report_time,event_id FROM queues WHERE run_id=? AND asset_id=?",
     tx.runId,
@@ -205,14 +215,7 @@ export function applyQueueReport(
     report.time,
     event_id,
   );
-  for (const id of report.task_ids)
-    tx.run(
-      "UPDATE tasks SET state='queued',state_time=? WHERE run_id=? AND asset_id=? AND task_id=? AND state='sent'",
-      report.time,
-      tx.runId,
-      asset_id,
-      id,
-    );
+
 }
 
 export function dropUnconfirmed(tx: Tx, asset_id: string): number[] {

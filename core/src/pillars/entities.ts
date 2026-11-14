@@ -249,8 +249,8 @@ export function storeReports(
     });
     if (report.type === "report.status" && report.kind === "task")
       tasks.applyTaskReport(tx, asset_id, report);
-    if (!ahead && report.type === "report.status" && report.kind === "queue")
-      tasks.applyQueueReport(tx, asset_id, report, event_id);
+    if (report.type === "report.status" && report.kind === "queue")
+      tasks.applyQueueReport(tx, asset_id, report, event_id, ahead);
   }
   return { stored: reports.length };
 }

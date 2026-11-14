@@ -164,3 +164,24 @@ test("F1 only recipient and answering kind settle requests [api.md#operator-requ
     await h.close();
   }
 });
+test("F2 ahead queues confirm Tasks without affecting cap [api.md#asset-and-gateway-calls]", async () => {
+  const c = simulatedClock(),
+    h = await startHarness(c);
+  try {
+    const a = await asset(h),
+      sent = await task(h, a.id);
+    await report(h, a, [queue(a.id, c.now() + 11000, 1, sent.body.event_id)]);
+    assert.equal(
+      (await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin })).body.items[0]
+        .state,
+      "queued",
+    );
+    c.advance(31000);
+    const read = (await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin }))
+      .body;
+    assert.equal(read.items[0].state, "queued");
+    assert.deepEqual(read.held, []);
+  } finally {
+    await h.close();
+  }
+});
