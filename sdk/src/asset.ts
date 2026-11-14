@@ -60,7 +60,7 @@ export function runAsset(link: AssetLink, registration: { asset_id: string; afte
   async function rejoin() {
     await outbox.flush();
     const settings: Report = { type: "report.settings", time: options.clock.now(), asset_id, settings: options.settings() };
-    outbox.add([settings, ...(queue?.snapshot() ?? []), ...outbox.pendingFinals()]);
+    outbox.add([...(Object.keys(settings.settings).length ? [settings] : []), ...(queue && queue.held().length ? queue.snapshot() : queue?.snapshot().filter(r => r.type === "report.status" && r.kind === "task") ?? []), ...outbox.pendingFinals()]);
     await outbox.flush();
   }
   const done = (async (): Promise<FollowEnd> => {

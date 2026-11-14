@@ -9,6 +9,7 @@ export async function ipAsset(w: World, name = "asset") {
   const result = await w.complete(startAsset(client,{ clock:w.clock,description,settings:() => ({}),queue:{ runNow:t => starts.push(t.task_id),stop:id => stops.push(id),update(){} } }));
   if (!result.ok) throw new Error(result.explanation);
   const session = result.value;
+  w.onClose(() => session.stop());
   return { client, session, starts, stops };
 }
 export async function radioAsset(w: World) {
@@ -18,6 +19,7 @@ export async function radioAsset(w: World) {
   const radio = value(await w.complete(client.call<"registerRadio", { asset_id:string; as_of:number }>("registerRadio",{body:{definitions_hash:w.protocol.hash}})));
   const asset_id = radio.asset_id;
   value(await w.complete(client.call("describeAsset",{params:{asset_id},body:{...description,time:w.clock.now(),asset_id}})));
+  value(await w.complete(client.call("putContact",{params:{asset_id},body:{time:w.clock.now(),asset_id,contact:"online"}})));
   const pending: AssetEvent[] = [], reports: Report[] = [], starts: number[] = [];
   let wake: (() => void) | undefined, closed = false;
   const link: AssetLink = {
@@ -32,6 +34,7 @@ export async function radioAsset(w: World) {
     storeFile: async () => ({ok:false,error:"unsupported",explanation:"This simulated radio cannot carry files"}),
   };
   const session = runAsset(link,{asset_id,after:radio.as_of,last_task_id:0},{clock:w.clock,settings:() => ({}),queue:{runNow:t => starts.push(t.task_id),stop(){},update(){}}});
+  w.onClose(() => { closed = true; wake?.(); session.stop(); });
   return { client, asset_id, session, reports, starts,
     deliver(event: AssetEvent) { pending.push(structuredClone(event)); wake?.(); },
     close() { closed = true; wake?.(); session.stop(); },
@@ -42,6 +45,7 @@ export async function plugin(w: World, onCall: Parameters<typeof startPlugin>[1]
   const client = w.client("plugin",{kind:"plugin",key:issued.key,plugin_id:issued.plugin_id});
   const description: P["plugin.description"] = { type:"plugin.description", time:w.clock.now(), plugin_id:issued.plugin_id, name:"Survey", actions:[{action:"scan",label:"Scan",inputs:[]}] };
   const session = startPlugin(client,{description,onCall});
+  w.onClose(() => session.stop());
   await w.settle();
   return {client,session,plugin_id:issued.plugin_id};
 }

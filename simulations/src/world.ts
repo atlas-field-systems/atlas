@@ -15,6 +15,7 @@ export async function createWorld() {
   const clock = new SimClock(), network = new Network(clock), protocol = await loadPackagedProtocol(), diagnostics: Diagnostic[] = [];
   const core = await startCore({ clock, config: { listen_address: "127.0.0.1", port: 0, data_directory: join(root,"data"), archive_directory: join(root,"archive"), log_directory: join(root,"logs"), first_admin: { operator_id:"ADM",password_file:join(root,"password") } } });
   const clients: Client[] = [];
+  const cleanup = new Set<() => void>();
   function client<C extends Credential>(caller: string, credential: C) {
     const c = createClient({ protocol, credential, clock, fetch:network.fetchFor(caller), baseUrl:core.url, backoff:{ minMs:10,maxMs:100,factor:2,jitter:0 }, observer: e => { diagnostics.push(e); network.activity++; } });
     clients.push(c as Client); return c;
@@ -49,9 +50,10 @@ export async function createWorld() {
   value(await complete(admin.connect())); value(await complete(admin.login("ADM",password)));
   return {
     clock, network, protocol, core, root, admin, client, settle, advance, complete, until, diagnostics,
+    onClose(fn: () => void) { cleanup.add(fn); },
     trace: { traffic: network.traffic, diagnostics },
     drain: settle,
-    async close() { for (const c of clients) c.close(); network.close(); await settle(); await complete(core.stop()); await rm(root,{recursive:true,force:true}); },
+    async close() { for (const fn of cleanup) fn(); for (const c of clients) c.close(); network.close(); await settle(); await complete(core.stop()); await rm(root,{recursive:true,force:true}); },
   };
 }
 export type World = Awaited<ReturnType<typeof createWorld>>;

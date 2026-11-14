@@ -118,7 +118,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
             if (needsVerify) throw new Error("Core unavailable");
             const h = new Headers();
             if (key) h.set("Idempotency-Key", key);
-            if (bytes !== undefined) h.set("Content-Type", contentType ?? "application/json");
+            if (method !== "GET") h.set("Content-Type", contentType ?? "application/json");
             const response = await raw(path, { method, headers: h, body: bytes }, query);
             if (response.status < 500) return await parse<T>(response, path, file);
             await response.arrayBuffer();
