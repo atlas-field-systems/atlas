@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/in_control.json",
+  "title": "in_control",
+  "description": "Whether the flight controller's own protection holds control of the vehicle: true when it took over, false when a person handed control back to the Asset app.",
+  "type": "boolean",
+  "examples": [
+    true,
+    false
+  ]
+}
