@@ -35,8 +35,10 @@ browser and Node.
   ([configuration](../config.md)). The client uses the same backoff to reopen a
   stream that Core closed because the reader fell behind.
 - With neither data nor a `: alive` comment for the idle timeout, the client
-  treats the stream as dead and reopens it. Byte arrival resets this timer even
-  while a handler is pending.
+  treats the stream as dead and reopens it. Byte arrival resets this timer. The timer
+  pauses while a handler is pending and restarts when it returns. The follow
+  reads the next chunk only after the handler returns, so a slow handler
+  preserves backpressure to Core.
 - `stale` is true from the moment the stream drops until it reopens. Reads of
   local state stay available and say they are stale.
 - A `401` stops reconnecting, as in [Credentials](client.md#credentials). A

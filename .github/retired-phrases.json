@@ -377,5 +377,10 @@
     "phrase": "Request answers and final Task reports go first within a lane",
     "why": "Emission order must survive batching so equal-time queue reports keep their order.",
     "example": "Request answers and final Task reports go first within a lane."
+  },
+  {
+    "phrase": "Byte arrival resets this timer even",
+    "why": "Follow pauses its idle timer while handling an event and preserves source backpressure.",
+    "example": "Byte arrival resets this timer even while a handler is pending."
   }
 ]
