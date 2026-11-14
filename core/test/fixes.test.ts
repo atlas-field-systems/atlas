@@ -609,9 +609,16 @@ test("F17 failsafe responses must name supported commands [api.md#operator-reque
       [patch.body.error, queued.body.error],
       ["not_supported", "not_supported"],
     );
+    const captureSettings = {failsafe_policy: [{rule_id: "R2", priority: 1, conditions: [{kind: "commanded"}], response: {kind: "capture", camera_id: "NOPE", media: "photo"}}]};
+    const cameraAsset = await asset(h);
+    for (const result of [
+      await h.call("PATCH", `/entities/assets/${cameraAsset.id}/settings`, {cookie: h.admin, body: {settings: captureSettings}}),
+      await task(h, cameraAsset.id, {tasks: [{kind: "settings", settings: captureSettings}]}),
+    ]) assert.equal(result.body.error, "not_supported");
   } finally {
     await h.close();
   }
+
 });
 test("F18 Reset summary uses contact with no domain event [reset.md#cores-reset-zip]", async () => {
   const { readZip } = await import("../src/reset/zip.ts");

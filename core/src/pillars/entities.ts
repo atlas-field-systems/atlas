@@ -738,8 +738,7 @@ function restart(tx: Tx, asset_id: string): void {
 }
 export function checkSettings(v: AdmissionView, settings: Settings): void {
   for (const rule of settings.failsafe_policy ?? [])
-    if (!v.description.commands.includes(rule.response.kind))
-      refuse("not_supported", "Failsafe response command is not declared");
+    checkCommand(v.description, rule.response);
   for (const key of Object.keys(settings))
     if (!v.description.settings?.some((s) => s === key))
       refuse("not_supported", "Setting is not declared");
@@ -811,4 +810,11 @@ export function createdFor(tx: ReadTx, id: string, call: number): boolean {
     id,
     call,
   );
+}
+
+export function checkCommand(description: Description, command: {kind: string; camera_id?: string}): void {
+  if (!description.commands.includes(command.kind as Description["commands"][number]))
+    refuse("not_supported", "Command is not declared");
+  if (command.kind === "capture" && !description.cameras?.some(c => c.camera_id === command.camera_id))
+    refuse("not_supported", "Camera is not declared");
 }

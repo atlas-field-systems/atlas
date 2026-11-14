@@ -79,13 +79,7 @@ export function requestTasks(
     );
   for (const t of body.tasks) {
     if (t.kind === "settings") entities.checkSettings(v, t.settings);
-    else if (!v.description.commands.includes(t.kind))
-      refuse("not_supported", "Command is not declared");
-    if (
-      t.kind === "capture" &&
-      !v.description.cameras?.some((c) => c.camera_id === t.camera_id)
-    )
-      refuse("not_supported", "Camera is not declared");
+    else entities.checkCommand(v.description, t);
   }
   if (!body.now && latestQueue(tx, asset_id).length + body.tasks.length > CAP)
     refuse("queue_full", "Reported queue is full");

@@ -1,2 +1,3 @@
 finding	choice	evidence	result
 3	Use shared settlement in summary	R2-3 failed on foreign queue answer	Full suite green; deslop reviewed
+4	Share command admission between Tasks and failsafes	F17 failed on undeclared capture camera	Full suite green; deslop reviewed
