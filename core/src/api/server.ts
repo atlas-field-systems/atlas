@@ -200,7 +200,16 @@ export async function startServer(
           "content-length": file.size_bytes,
         });
         await pipeline(createReadStream(file.path), res);
-        env.log.record({level: "info", area: "api", msg: "file downloaded", method: req.method, route: routePath, object_id: params.object_id, status: 200, size_bytes: file.size_bytes});
+        env.log.record({
+          level: "info",
+          area: "api",
+          msg: "file downloaded",
+          method: req.method,
+          route: routePath,
+          object_id: params.object_id,
+          status: 200,
+          size_bytes: file.size_bytes,
+        });
         return;
       }
       const key = req.headers["idempotency-key"];
@@ -446,11 +455,12 @@ export async function startServer(
       renewal?.cancel();
       streams.closeAll();
       return new Promise<void>((resolve, reject) => {
-        const grace = env.clock.after(5000, () => server.closeAllConnections());
-        server.close((e) => {
-          grace.cancel();
-          if (e) reject(e);
-          else resolve();
+        env.clock.after(5000, () => {
+          server.close((e) => {
+            if (e) reject(e);
+            else resolve();
+          });
+          server.closeAllConnections();
         });
       });
     },

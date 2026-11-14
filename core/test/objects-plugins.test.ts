@@ -137,7 +137,7 @@ test("19. Object size boundary, attachments, imagery deletion and archived delet
       ).status,
       410,
     );
-    const stopped = await h.core.stop();
+    const stopped = await h.stop();
     assert.equal(stopped.archived, true);
     if (!stopped.archived) return;
     const entries = await readZip(stopped.zip);
@@ -159,6 +159,12 @@ test("20. Plugin answers once, validates call ownership, and drops offline calls
   let timer: (() => void) | undefined;
   const c = {
     now: () => now,
+    advance(ms: number) {
+      now += ms;
+      const fn = timer;
+      timer = undefined;
+      fn?.();
+    },
     after(_ms: number, fn: () => void) {
       timer = fn;
       return {

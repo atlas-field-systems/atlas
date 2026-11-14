@@ -17,7 +17,7 @@ import { once } from "node:events";
 import { startCore } from "../src/core.ts";
 import { readZip } from "../src/reset/zip.ts";
 import { checkZip } from "../src/reset/reset.ts";
-import { clock } from "./harness.ts";
+import { clock, stopCore } from "./harness.ts";
 import { startHarness, password, protocol } from "./harness.ts";
 
 test("1. issuance retry acknowledges; replacement rejects old keys [api.md#credential-retry-scenarios]", async () => {
@@ -157,7 +157,7 @@ test("3. stored state and diagnostics contain no credentials [api.md#credential-
       `/administration/gateways/${issued.body.gateway_id}/key`,
       { cookie: h.admin },
     );
-    await h.core.stop();
+    await h.stop();
     const secrets = [
       password,
       h.admin.slice("atlas_session=".length),
@@ -470,7 +470,7 @@ test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and gl
       body: description,
     });
     assert.equal(firstAsset.status, 201);
-    const stopped = await h.core.stop();
+    const stopped = await h.stop();
     assert.equal(stopped.archived, true);
     assert.deepEqual(await checkZip(stopped.zip, h.core.runId), { ok: true });
     const entries = await readZip(stopped.zip);
@@ -548,7 +548,7 @@ test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and gl
       200,
     );
   } finally {
-    await next?.stop();
+    next && (await stopCore(next));
     await h.close();
   }
 });
@@ -559,7 +559,7 @@ test("12. an unwritable archive clears nothing and next start is new [reset.md#w
   try {
     await h.call("POST", "/administration/gateways", { cookie: h.admin });
     await chmod(h.dataDir + "-archive", 0o500);
-    const result = await h.core.stop();
+    const result = await h.stop();
     assert.equal(result.archived, false);
     assert.deepEqual(await readdir(h.dataDir + "-archive"), []);
     assert.ok(
@@ -571,7 +571,7 @@ test("12. an unwritable archive clears nothing and next start is new [reset.md#w
     assert.equal(next.runId, h.core.runId + 1);
   } finally {
     await chmod(h.dataDir + "-archive", 0o700);
-    await next?.stop();
+    next && (await stopCore(next));
     await h.close();
   }
 });
@@ -640,7 +640,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
     try {
       for (const name of ["core.sqlite", "core.sqlite-wal", "core.sqlite-shm"])
         await copyFile(join(h.dataDir, name), join(snapshot, name));
-      const stopped = await h.core.stop();
+      const stopped = await h.stop();
       assert.equal(stopped.archived, true);
       const zip = stopped.zip;
       if (corrupt) {
@@ -663,10 +663,10 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
       });
       assert.equal(response.status, corrupt ? 200 : 401);
       await response.text();
-      assert.equal((await resumed.stop()).archived, !corrupt);
+      assert.equal((await stopCore(resumed)).archived, !corrupt);
       assert.deepEqual(await readFile(zip), zipBytes);
     } finally {
-      await resumed?.stop();
+      resumed && (await stopCore(resumed));
       await h.close();
       await rm(snapshot, { recursive: true, force: true });
     }

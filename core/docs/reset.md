@@ -36,7 +36,7 @@ sequenceDiagram
 
 Requests already in progress when deliberate stop begins may finish within a
 five-second grace period. Requests that start after stop begins receive
-`503 stopping`. Core then closes the remaining connections before writing the Reset ZIP.
+`503 stopping`, including on new connections throughout the five seconds. Core then closes the remaining connections before writing the Reset ZIP.
 
 ## Core's Reset ZIP
 

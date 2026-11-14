@@ -6,12 +6,35 @@ import { startCore } from "../src/core.ts";
 import type { Clock } from "../src/clock.ts";
 import { loadPackagedProtocol } from "@atlas/protocol";
 
-export const clock: Clock = {
-  now: () => 1794560400000,
-  after() {
-    return { cancel() {} };
+const timers = new Set<{ at: number; fn: () => void }>();
+let time = 1794560400000;
+export const clock = {
+  now: () => time,
+  after(ms: number, fn: () => void) {
+    const timer = { at: time + ms, fn };
+    timers.add(timer);
+    return {
+      cancel() {
+        timers.delete(timer);
+      },
+    };
   },
-};
+  advance(ms: number) {
+    time += ms;
+    for (const timer of [...timers])
+      if (timer.at <= time && timers.delete(timer)) timer.fn();
+  },
+} satisfies Clock & { advance(ms: number): void };
+
+export async function stopCore(
+  core: Awaited<ReturnType<typeof startCore>>,
+  testClock: Clock = clock,
+) {
+  const stopping = core.stop();
+  if ("advance" in testClock && typeof testClock.advance === "function")
+    testClock.advance(5000);
+  return stopping;
+}
 export const protocol = await loadPackagedProtocol();
 export const password = "contract-password-unique";
 export async function startHarness(
@@ -59,11 +82,12 @@ export async function startHarness(
   return {
     core,
     config,
+    stop: () => stopCore(core, testClock),
     dataDir,
     call,
     admin,
     async close() {
-      await core.stop();
+      await stopCore(core, testClock);
       await rm(dataDir + "-archive", { recursive: true, force: true });
       await rm(dataDir, { recursive: true, force: true });
     },
