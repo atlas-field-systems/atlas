@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Operating environment</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html" class="on">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="operating-environment">Operating environment</h1>
+<p>Atlas connects operators to physical and digital Assets. Its normal field path
+crosses a gateway and a radio link.</p>
+<h2 id="connectivity-evolves">Connectivity evolves</h2>
+<p>Radio technology, IP connectivity, and edge networks will keep changing.
+Atlas is designed around constrained links with different capabilities.
+A LoRa-scale data rate is not a ceiling for the whole system.</p>
+<p>The field radio starts as pure LoRa. The next step is a multi-layer
+mesh: 2.4 GHz FLRC between Assets wherever FLRC is viable, and 915 MHz LoRa
+where it is not. Wi-Fi is a possible addition. FLRC is expected to carry more
+than single-digit kilobits per second. Initial Assets use a single link, so
+multiple-link routing is not a prerequisite for them. The radio project owns the
+detailed design as the hardware evolves.</p>
+<p>Field links carry Atlas through <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md">Fieldlinks</a>,
+each holding both ends of its link.
+A Fieldlink sends compact frames in a proven existing encoding, not a custom
+one. First flight uses <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md">SiK</a>, the LoRa
+phase builds on <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md">Meshtastic</a>,
+and FLRC gets its own Fieldlink. Each Fieldlink&#39;s docs own its mechanisms, once
+written.</p>
+<h2 id="ip-mainly-connects-the-supporting-systems">IP mainly connects the supporting systems</h2>
+<p>IP primarily connects Core, gateways, and the Command Interface, through the
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md">Core API</a>.
+Most physical Assets use the available field radios beyond the gateway.
+Direct-IP Assets are possible, especially purely digital Assets.</p>
+<p>Field links can disappear and return. Atlas cannot assume continuous IP
+connectivity to every Asset.</p>
+<h2 id="gateway-designs-change-over-time">Gateway designs change over time</h2>
+<p>Different radio systems can have different gateways. For example, the initial
+LoRa link could have a dedicated LoRa gateway, and a later FLRC mesh a new one,
+while the older design is still maintained for sites that use it. Several gateway
+designs can be maintained at once because each reaches Core only through the
+Core API. A site still runs one gateway at a time (<a href="scale.html#setup">Scale</a>).
+Atlas does not assume one permanent gateway design.</p>
+<h2 id="core-is-a-deliberate-dependency">Core is a deliberate dependency</h2>
+<p>Atlas communications depend on Core to keep the system simpler.
+Offline authorization of new work is not a current requirement.
+Core dependence does not imply that Core or every field link is always reachable.
+Component docs own outage behavior.</p>
+<p>Atlas assumes clocks are synchronized well enough for normal use. Exact agreement
+is not required. Large clock errors are outside the current design.</p>
+<h2 id="hosting-is-flexible">Hosting is flexible</h2>
+<p>Core usually runs on an internet-hosted server. It can also run on a computer with
+the field team, alongside a gateway. Nearby operators need local access when that
+field computer loses internet.</p>
+<p>The deployment chooses how to expose Core. Cloudflare Tunnel is one example used
+by the owner. It is not a built-in requirement for Atlas.</p>
+<h2 id="current-use-keeps-some-demands-modest">Current use keeps some demands modest</h2>
+<p>The immediate use is trusted testing and flights lasting a few hours.
+Keeping a run&#39;s records until Reset is therefore acceptable. That duration describes
+current use, not a permanent limit on Atlas.</p>
+<p>Edge Assets normally need current information. Interfaces and fusion may need
+history. Historical transfers must respect the live field traffic.
+Observations can come from radios, cameras, radar, and external data services.
+Accepting that variety of evidence is a separate problem from processing it.</p>
+<p><a href="using-atlas.html">Using Atlas</a> shows the responsibilities around these links.</p>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

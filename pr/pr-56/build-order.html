@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Build order after the first version</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="build-order-after-the-first-version">Build order after the first version</h1>
+<blockquote>
+<p><strong>Proposal.</strong> The owner has not decided this page. It proposes what to build
+after the <a href="design-decisions.html#design-the-whole-product-then-build-it">first version</a>,
+and it ends with the questions only the owner can answer. Decided answers go
+in the <a href="decision-log.html">decision log</a>, and this page is folded into
+<a href="design-decisions.html">Design decisions</a>.</p>
+</blockquote>
+<p>The first version is Protocol, Core, and the SDK, with their simulations. No
+page yet orders the parts that follow. This page proposes an order that
+answers the riskiest questions first.</p>
+<h2 id="three-questions-can-still-overturn-the-design">Three questions can still overturn the design</h2>
+<p>Core is the part least likely to surprise anyone, and Core is built. The
+questions below are open, and each one could force a redesign of pages that
+are already detailed.</p>
+<ol>
+<li><strong>Can one operator do the job from the screen?</strong> The Command Interface is
+the only part the owner can judge by using it, and it has no code. Until a
+screen exists, the owner approves descriptions of a product, not the
+product.</li>
+<li><strong>Do Atlas Tasks and failsafes fit a real autopilot?</strong> The decision log
+holds 19 failsafe decisions, made between 2026-11-10 and 2026-11-13. None
+has run against ArduPilot, real or simulated. One was reversed two days
+after it was made: a failsafe response went from always protective to any
+command.</li>
+<li><strong>Can the radio carry the fleet?</strong> The design sizes are
+<a href="scale.html">about 20 Assets, a report about every 15 seconds, and frames of about 200
+bytes</a>. The Meshtastic page lists how many Assets the link
+carries as
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet">not designed yet</a>.
+A rough estimate says the sizes may not fit. Meshtastic&#39;s default
+long-range setting carries about 1 kilobit per second, so one 200-byte
+frame takes about 1.5 seconds of air time. Twenty of those frames need
+about 30 seconds of air time in every 15-second window, before any Task,
+acknowledgement, or relayed frame. A faster setting carries more over a
+shorter range. The estimate is not a measurement, and only a measurement
+settles the question.</li>
+</ol>
+<h2 id="the-proposed-order">The proposed order</h2>
+<ol>
+<li><strong>Finish the first version as decided.</strong> No change. Protocol and Core are
+built, and the SDK and its simulations are in review.</li>
+<li><strong>Fly first flight in simulation, as a throwaway.</strong> Put a rough map screen
+and a simulated ArduPilot quadcopter on the built Core and SDK. The owner
+drafts Takeoff, Move To, and Land, sends them, and watches the reports
+come back. The owner also triggers a low battery and a lost link. The run
+answers questions 1 and 2. No code from it is kept, and the findings go
+back into the docs, as <a href="design-decisions.html#rapid-prototyping">Rapid prototyping</a>
+says. The owner chooses who builds it.</li>
+<li><strong>Measure the radio on a bench.</strong> With two or three Meshtastic radios,
+measure how many 200-byte frames arrive per minute at each radio setting,
+and write the numbers into <a href="scale.html">Scale</a> and the Meshtastic page. The
+measurement answers question 3. It needs hardware and a person, and it can
+run at the same time as step 2.</li>
+<li><strong>Hold new failsafe and Fieldlink decisions until steps 2 and 3 report.</strong>
+The decisions already in the log stay in force. After the reports, review
+them against what was found and reverse those that the findings contradict.</li>
+<li><strong>Build the remaining parts whole, in this order.</strong><ol>
+<li>The Asset app, tested against simulated ArduPilot over IP.</li>
+<li>The Command Interface. With the Asset app it gives a complete first
+flight in simulation, with no radio.</li>
+<li>The gateway app and the SiK Fieldlink, which add the radio hop. First
+flight in the field follows.</li>
+<li>The Meshtastic Fieldlink, designed from the bench numbers. The
+<a href="goal.html#how-to-tell-it-works">first shared picture</a> follows.</li>
+</ol>
+</li>
+</ol>
+<h2 id="what-this-changes">What this changes</h2>
+<p>The proposal reverses no decision. The first version keeps its order, and each
+part is still built whole. Step 2 is a throwaway prototype, which the design
+decisions already allow.</p>
+<p>The proposal adds three things for the owner to decide: an order for the parts
+after the first version, a pause on new decisions in two areas, and a bench
+measurement that Atlas does not have today.</p>
+<h2 id="questions-for-the-owner">Questions for the owner</h2>
+<ol>
+<li>May a rough, throwaway version of first flight in simulation be built next,
+so that you can use Atlas before the Asset app and Command Interface are
+built properly?</li>
+<li>Do you have Meshtastic radios to bench-test, and can you or someone else
+run the measurement?</li>
+<li>Do you agree to make no new failsafe or radio decisions until those two
+results are in?</li>
+<li>After that, is the order Asset app, Command Interface, gateway with SiK,
+then Meshtastic the order you want?</li>
+</ol>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

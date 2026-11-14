@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>The goal</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="the-goal">The goal</h1>
+<blockquote>
+<p><strong>Proposal.</strong> The owner has not decided this page. It is written from the
+stories and numbers already in this folder, and it ends with the questions
+only the owner can answer. Decided answers go in the
+<a href="decision-log.html">decision log</a>, and this banner is removed.</p>
+</blockquote>
+<p>The Charter says what Atlas does: it helps operators understand field systems,
+request work, and retain evidence. This page says who that is for, why other
+tools do not already do it, what Atlas leaves out, and how to tell it works.</p>
+<h2 id="one-operator-many-mixed-assets-a-slow-link">One operator, many mixed Assets, a slow link</h2>
+<p>Atlas is for a small field team, in practice
+<a href="scale.html#setup">one operator at a time</a>, running up to
+<a href="scale.html#fleet">about 20 Assets</a> for <a href="scale.html#runs-and-storage">a few hours</a>.</p>
+<p>The Assets are of different kinds: a quadcopter, a position tracker, an ADS-B
+receiver, a fixed camera turret
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#initial-assets">initial Assets</a>).
+Most of them sit beyond a radio link that carries one report
+<a href="scale.html#radio">about every 15 seconds</a> and can drop out.</p>
+<p>With Atlas, that operator:</p>
+<ul>
+<li>sees every Asset, and what the Assets observe, in one picture</li>
+<li>sends work to any Asset and sees what the Asset reports it did</li>
+<li>keeps a complete record of the run to study afterwards</li>
+</ul>
+<h2 id="what-other-tools-leave-out">What other tools leave out</h2>
+<p>A ground-control station such as QGroundControl flies vehicles that speak
+MAVLink. It does not show a tracker, an ADS-B receiver, and a camera turret
+beside those vehicles, it does not combine their reports into
+<a href="design-decisions.html#evidence-and-conclusions-stay-apart">Tracks</a>, and it
+expects a link that carries a steady stream from each vehicle.</p>
+<p>Atlas is worth building only where it does what such a station does not. Three
+things set it apart:</p>
+<ul>
+<li><strong>Mixed Assets in one picture.</strong> A drone and a sensor that never moves are
+both Assets, with the same reports and the same Tasks.</li>
+<li><strong>Work that survives a poor link.</strong> An Asset holds its Tasks and its
+failsafe rules, so it keeps working and stays protected without contact.</li>
+<li><strong>An honest record.</strong> Atlas keeps &quot;the operator asked&quot; apart from &quot;the Asset
+reported it happened&quot;, and each run leaves a ZIP that explains it.</li>
+</ul>
+<h2 id="what-atlas-is-not">What Atlas is not</h2>
+<p>Each line links to the page that owns the rule.</p>
+<ul>
+<li>Not a flight controller. The Asset app decides motion and the autopilot
+flies (<a href="CHARTER.html#keep-judgment-sharp">Charter</a>).</li>
+<li>Not a radio. Atlas rides on existing radios through
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md">Fieldlinks</a>.</li>
+<li>Not for several sites or several gateways at once (<a href="scale.html#setup">Scale</a>).</li>
+<li>Not a long-term archive. A run&#39;s data leaves Core at
+<a href="runs-and-identity.html#a-run-and-reset">Reset</a>.</li>
+<li>Not a way to approve new work while Core is unreachable
+(<a href="environment.html#core-is-a-deliberate-dependency">Environment</a>).</li>
+<li>Not a mission planner. Work is single Tasks, with no multi-step Plans
+(<a href="design-decisions.html#work-is-always-a-task">Design decisions</a>).</li>
+</ul>
+<h2 id="how-to-tell-it-works">How to tell it works</h2>
+<p>Three milestones, each one a run a person can watch.</p>
+<ol>
+<li><strong>First flight.</strong> One quadcopter takes off, moves, and lands from the
+Command Interface (<a href="first-flight.html">First flight</a>). First flight proves
+the parts connect. A ground-control station can already do the same, so
+first flight does not prove Atlas&#39;s own value.</li>
+<li><strong>First shared picture.</strong> One operator runs a quadcopter, a tracker, and an
+ADS-B receiver in one run, with at least one of them over the slow radio.
+The operator sends the quadcopter to a place while following a Track of a
+passing aircraft. One link drops and returns during the run. Afterwards the
+Reset ZIPs alone explain what happened. This milestone is new in this
+proposal.</li>
+<li><strong>Full scale.</strong> About 20 Assets for about 2 hours, at the
+<a href="scale.html">design sizes</a>.</li>
+</ol>
+<h2 id="judge-a-change-against-the-goal">Judge a change against the goal</h2>
+<p>Ask one question of any new rule, record, or feature: does it help one
+operator run many mixed Assets over a slow link, and trust the record
+afterwards? A change that does not is out of scope until the goal changes.</p>
+<h2 id="questions-for-the-owner">Questions for the owner</h2>
+<ol>
+<li>Is &quot;one operator, about 20 mixed Assets, a slow radio link, a few hours&quot; the
+right one-line picture of who Atlas is for?</li>
+<li>Are the three points under <a href="#what-other-tools-leave-out">What other tools leave out</a>
+the reasons you are building Atlas, or is another reason more important?</li>
+<li>Is &quot;first shared picture&quot; the right second milestone? If not, what would you
+want to watch Atlas do that would convince you it is worth more than a
+ground-control station?</li>
+<li>Does anything under <a href="#what-atlas-is-not">What Atlas is not</a> belong in Atlas
+after all?</li>
+</ol>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

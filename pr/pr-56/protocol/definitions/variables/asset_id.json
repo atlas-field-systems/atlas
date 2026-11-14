@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/asset_id.json",
+  "title": "asset_id",
+  "description": "Which Asset a record is about. Core assigns it when the Asset registers, a new one every run that was never used before, and its acknowledgement tells the registrant: the Asset on IP, or the gateway for a radio Asset. Nothing picks its own asset_id. It stays the same for the rest of the run. Up to 4 letters or digits, such as \"A1\".",
+  "type": "string",
+  "examples": [
+    "A1"
+  ],
+  "pattern": "^[A-Za-z0-9]{1,4}$",
+  "minLength": 1,
+  "maxLength": 4
+}
