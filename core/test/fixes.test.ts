@@ -1385,13 +1385,26 @@ test("PR53-3 startup cursor includes work accepted before subscribing [api.md#as
   const h = await startHarness();
   const abort = new AbortController();
   try {
-    const issued = (await h.call("POST", "/administration/asset-keys", { cookie: h.admin })).body;
-    const registered = (await h.call("POST", "/entities/assets", { key: issued.key, body: description })).body;
-    assert.ok(Number.isSafeInteger(registered.as_of), "registration returns a stream cursor");
+    const issued = (
+      await h.call("POST", "/administration/asset-keys", { cookie: h.admin })
+    ).body;
+    const registered = (
+      await h.call("POST", "/entities/assets", {
+        key: issued.key,
+        body: description,
+      })
+    ).body;
+    assert.ok(
+      Number.isSafeInteger(registered.as_of),
+      "registration returns a stream cursor",
+    );
     const sent = await task(h, registered.asset_id);
     assert.equal(sent.status, 202, JSON.stringify(sent.body));
     const r = await fetch(h.core.url + "/events?after=" + registered.as_of, {
-      headers: { authorization: `Bearer ${issued.key}`, "atlas-definitions": protocol.hash },
+      headers: {
+        authorization: `Bearer ${issued.key}`,
+        "atlas-definitions": protocol.hash,
+      },
       signal: abort.signal,
     });
     assert.equal(r.status, 200);
@@ -1414,21 +1427,98 @@ test("PR53-8 successful no-op retries preserve a later attachment [api.md#basics
   try {
     const upload = await fetch(h.core.url + "/objects?name=retry", {
       method: "POST",
-      headers: { cookie: h.admin, "atlas-definitions": protocol.hash, "idempotency-key": "upload", "content-type": "application/octet-stream" },
+      headers: {
+        cookie: h.admin,
+        "atlas-definitions": protocol.hash,
+        "idempotency-key": "upload",
+        "content-type": "application/octet-stream",
+      },
       body: "file",
     });
     assert.equal(upload.status, 201);
     const path = "/objects/" + (await upload.json()).object_id;
-    const opts = { cookie: h.admin, idem: "detach", body: { geofeature_id: null } };
+    const opts = {
+      cookie: h.admin,
+      idem: "detach",
+      body: { geofeature_id: null },
+    };
     const first = await h.call("PATCH", path, opts);
     assert.equal(first.status, 200);
     const place = await h.call("POST", "/entities/geofeatures", {
-      cookie: h.admin, body: { kind: "point", position: { latitude: 0, longitude: 0 } },
+      cookie: h.admin,
+      body: { kind: "point", position: { latitude: 0, longitude: 0 } },
     });
     const id = place.body.geofeature.geofeature_id;
-    assert.equal((await h.call("PATCH", path, { cookie: h.admin, body: { geofeature_id: id } })).status, 200);
+    assert.equal(
+      (
+        await h.call("PATCH", path, {
+          cookie: h.admin,
+          body: { geofeature_id: id },
+        })
+      ).status,
+      200,
+    );
     assert.deepEqual((await h.call("PATCH", path, opts)).body, first.body);
-    assert.equal((await h.call("GET", path, { cookie: h.admin })).body.geofeature_id, id);
+    assert.equal(
+      (await h.call("GET", path, { cookie: h.admin })).body.geofeature_id,
+      id,
+    );
+  } finally {
+    await h.close();
+  }
+});
+
+test("PR53-11 administration diagnostics name actor, target and retries without secrets [api.md#callers-and-credentials]", async () => {
+  const h = await startHarness(undefined, { debug_endpoint: true });
+  try {
+    const created = await h.call("POST", "/administration/accounts", {
+      cookie: h.admin,
+      body: {
+        operator_id: "AD2",
+        admin: true,
+        password: "second-admin-password",
+      },
+    });
+    assert.equal(created.status, 201);
+    const login = await h.call("POST", "/administration/login", {
+      body: { operator_id: "AD2", password: "second-admin-password" },
+    });
+    const cookie = login.headers.get("set-cookie")!.split(";")[0];
+    const issued = await h.call("POST", "/administration/asset-keys", {
+      cookie: h.admin,
+    });
+    const route = `/administration/asset-keys/${issued.body.key_id}/key`;
+    const opts = { cookie, idem: "rotate" };
+    const rotated = await h.call("POST", route, opts);
+    await h.call("POST", route, opts);
+    const text = await (await fetch(h.core.debugUrl!)).text();
+    const rows = text
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line))
+      .filter(
+        (r) =>
+          r.msg === "request completed" &&
+          r.route === "/administration/asset-keys/:key_id/key",
+      );
+    assert.equal(rows.length, 2);
+    for (const row of rows) {
+      assert.deepEqual(row.actor, { kind: "account", operator_id: "AD2" });
+      assert.deepEqual(row.params, { key_id: issued.body.key_id });
+      assert.equal(row.acknowledgment.key_id, issued.body.key_id);
+      assert.equal(row.acknowledgment.replaced, true);
+    }
+    assert.deepEqual(
+      rows.map((r) => r.replayed),
+      [false, true],
+    );
+    for (const secret of [
+      issued.body.key,
+      rotated.body.key,
+      cookie.slice(14),
+      "second-admin-password",
+    ])
+      assert.equal(text.includes(secret), false);
   } finally {
     await h.close();
   }

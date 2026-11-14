@@ -124,6 +124,9 @@ and `/debug` belong to no pillar and stay at the top level.
   cookie. A caller that missed the cookie logs in with a new idempotency key to
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
+- Request completion diagnostics identify the caller, concrete route IDs, and
+  whether a response was replayed. Administration completions include only
+  allowlisted non-secret acknowledgment fields.
 - Password-bearing retry fingerprints use salted scrypt for login and account
   creation; retry state never exposes a fast password verifier.
 - The first admin account comes from [Core configuration](../config.md).

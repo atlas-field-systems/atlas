@@ -44,6 +44,10 @@ export async function startServer(
     let releaseLogin: (() => void) | undefined;
     let loginKey: string | undefined;
     let loginGate: Promise<void> | undefined;
+    let actor: Record<string, string> = { kind: "anonymous" };
+    let routeParams: Record<string, string> = {};
+    let replayed = false;
+    let acknowledgment: Record<string, unknown> | undefined;
     let routePath = req.url?.split("?")[0] ?? "/";
     const send = (
       status: number,
@@ -57,6 +61,10 @@ export async function startServer(
         method: req.method,
         route: routePath,
         status,
+        actor,
+        params: routeParams,
+        replayed,
+        ...(acknowledgment ? { acknowledgment } : {}),
         ...(status >= 400 && body && typeof body === "object" ? body : {}),
       });
       res.writeHead(status, { "content-type": "application/json", ...headers });
@@ -74,6 +82,23 @@ export async function startServer(
       }
       const { route, params } = selected;
       routePath = route.path;
+      routeParams = Object.fromEntries(
+        Object.entries(params).filter(([name]) =>
+          [
+            "asset_id",
+            "operator_id",
+            "key_id",
+            "gateway_id",
+            "plugin_id",
+            "object_id",
+            "geofeature_id",
+            "track_id",
+            "task_id",
+            "event_id",
+            "action",
+          ].includes(name),
+        ),
+      );
       if (route.path === "/debug/:segment/log") {
         if (!segment || params.segment !== segment)
           refuse("not_found", "No such debug endpoint");
@@ -93,6 +118,16 @@ export async function startServer(
           : null);
       const caller = store.read(resolveCaller);
       if (!caller) refuse("unauthenticated", "Invalid credential");
+      actor =
+        caller.kind === "account"
+          ? { kind: caller.kind, operator_id: caller.operator_id }
+          : caller.kind === "asset"
+            ? { kind: caller.kind, key_id: caller.key_id }
+            : caller.kind === "gateway"
+              ? { kind: caller.kind, gateway_id: caller.gateway_id }
+              : caller.kind === "plugin"
+                ? { kind: caller.kind, plugin_id: caller.plugin_id }
+                : { kind: caller.kind };
       if (
         url.pathname === "/about" &&
         (caller.kind === "gateway" ||
@@ -285,7 +320,8 @@ export async function startServer(
       }
       const login = url.pathname === "/administration/login";
       const scope = login ? "login" : principal.scope;
-      const passwordRequest = login || route.path === "/administration/accounts";
+      const passwordRequest =
+        login || route.path === "/administration/accounts";
       let fp: string;
       if (passwordRequest) {
         loginKey = JSON.stringify([scope, key]);
@@ -321,6 +357,7 @@ export async function startServer(
       const prepared = await route.prepare?.(request, store);
       let storedUpload = false;
       let reply;
+      let acknowledgmentBody: unknown;
       try {
         reply = store.write((tx) => {
           const current = resolveCaller(tx);
@@ -340,6 +377,8 @@ export async function startServer(
                 "idempotency_conflict",
                 "This key was used for another request",
               );
+            replayed = true;
+            acknowledgmentBody = prior.retained.body;
             return prior.retained;
           }
           if (logout && !callerFor(tx, credential))
@@ -348,8 +387,11 @@ export async function startServer(
           const result = route.commit(tx, request, prepared);
           const first = "first" in result ? result.first : result;
           const keep = "ack" in result ? result.ack : result;
-          if ((keep.status >= 200 && keep.status < 300) ||
-            tx.get<{ n: number }>("SELECT total_changes() n")!.n > before)
+          acknowledgmentBody = keep.body;
+          if (
+            (keep.status >= 200 && keep.status < 300) ||
+            tx.get<{ n: number }>("SELECT total_changes() n")!.n > before
+          )
             retain(tx, scope, key, fp, keep);
           storedUpload = true;
           return first;
@@ -366,6 +408,26 @@ export async function startServer(
         );
         if (asset_id) contact.heard({ asset_id });
       }
+      if (
+        route.path.startsWith("/administration/") &&
+        acknowledgmentBody &&
+        typeof acknowledgmentBody === "object"
+      )
+        acknowledgment = Object.fromEntries(
+          Object.entries(acknowledgmentBody).filter(([name]) =>
+            [
+              "operator_id",
+              "key_id",
+              "gateway_id",
+              "plugin_id",
+              "asset_id",
+              "event_id",
+              "issued",
+              "replaced",
+              "logged_in",
+            ].includes(name),
+          ),
+        );
       send(reply.status, reply.body, {
         ...("headers" in reply
           ? (reply.headers as Record<string, string>)
