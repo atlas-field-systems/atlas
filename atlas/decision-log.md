@@ -13,6 +13,18 @@ back.
 
 Dates are when the owner decided (America/New_York).
 
+## The goal
+
+| Date | Decision | Scope | Home |
+| --- | --- | --- | --- |
+| 2026-11-14 | Atlas is for one person in a field testing drones and sensors, today the owner. Usually one operator controls several Assets; sometimes there is more than one operator. | The whole project. | [The goal](goal.md#who-it-is-for) |
+| 2026-11-14 | Atlas is a platform for experiments, not yet a product that has to work every time. The owner will say when that changes. | The whole project. | [The goal](goal.md#who-it-is-for) |
+| 2026-11-14 | The point of Atlas is to receive data from Assets about themselves, receive the Observations they make, and send them commands. Every other part serves those three. | The whole project. | [The goal](goal.md#what-atlas-does) |
+| 2026-11-14 | Atlas is not a joystick, not a swarm brain, not for separate teams, not a phone app for people in the field, not for every vehicle, and not usable without Core. | The whole project. | [The goal](goal.md#what-atlas-is-not) |
+| 2026-11-14 | In-depth simulations of whole operations are how Atlas is shown to work, and for now they are the whole answer; proof from real flights comes later. A simulation runs the real code of every part with no real hardware, and simulates only the equipment and the links. | Verification. | [The goal](goal.md#how-we-know-it-works) |
+| 2026-11-14 | Every new idea is held against one question: is this overcomplicated? Complexity is accepted only when a hard problem needs it, after looking for a simpler solution. | Every design choice. | [The goal](goal.md#the-test-question) |
+| 2026-11-14 | Kept in mind and not built now: a live video feed as an Object that plays only while open and is linked to an Asset by hand; a gateway for standard FPV drones; a command that makes an Asset follow a Track; drops of packages; and Assets on a mesh link listening in to build a local picture. | Later work. Today no command sends an Asset to follow a Track. | [The goal](goal.md#kept-in-mind-for-later) |
+
 ## Runs and identity
 
 | Date | Decision | Scope | Home |
@@ -94,6 +106,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-14 | Everything connected to Atlas can read everything Core holds, whether it is an operator, an Asset, a gateway, or a Plugin. Nothing restricts what a connected program may ask about other Assets or any other data. | Reading. Who may send work or manage accounts and keys is unchanged. | [Core API, Reads](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#reads) |
 | 2026-11-13 | All files, photos and clips included, are stored as Objects. | Every file in Atlas. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
 | 2026-11-13 | An Asset with a gimbal camera reports which way it points, so operators see where each camera is looking. | Gimbal cameras. | [Protocol records](https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md#records) |
 | 2026-11-13 | Each Asset decides which files it sends, by its configuration and link. A file a Task asks for is sent with that Task; other files are sent when the link allows, such as over Wi-Fi but not LoRa. Operators never fetch an earlier file from an Asset, and Assets never answer operators directly: everything goes through Core. | Files from Assets. | [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#capture-files) |

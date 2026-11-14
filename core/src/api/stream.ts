@@ -11,7 +11,7 @@ export function audienceFor(
   query: URLSearchParams,
 ): Audience {
   const caller = principal.caller;
-  if (caller.kind === "account")
+  if (caller.kind === "account" || query.get("everything") === "true")
     return {
       kind: "everything",
       ...(query.has("asset_id") ? { asset_id: query.get("asset_id")! } : {}),
