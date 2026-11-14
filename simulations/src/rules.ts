@@ -102,6 +102,15 @@ export const rules = [
           ),
         ) &&
         t.tasks.length > 0 &&
+        t.events
+          .flatMap((e) => (e.kind === "tasks.requested" ? e.record : []))
+          .every((requested) =>
+            t.tasks.some(
+              (task) =>
+                task.asset_id === requested.asset_id &&
+                task.task_id === requested.task_id,
+            ),
+          ) &&
         t.tasks.every((task) => {
           const requested = t.events.some(
             (e) =>
