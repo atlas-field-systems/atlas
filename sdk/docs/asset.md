@@ -113,11 +113,16 @@ it. The helper holds the Asset's Tasks and hands them to the app.
 - **The app pulls work.** The app calls `next()` when it is ready to run a Task,
   so pause, equipment checks and failsafes stay in the app. With `now`, the helper
   cancels every lower `task_id` and tells the app to end the running Task and run
-  the new one at once, even while paused.
+  the new one at once, even while paused. Lower updates awaiting delivery are
+  retired too, and later updates cannot recreate them. Pending cancels keep their
+  request IDs so delivery still answers each cancel.
 - **Cancel names one Task.** A queued Task is removed and reported `cancelled`. A
   running Task is handed to the app to stop; the app reports it. A cancel for a
   Task that has not arrived is kept, and the Task is reported `cancelled` without
   running. Each report carries the cancel's `request_id`.
+- **Synchronous callbacks.** Reports for a transition are emitted before host
+  callbacks. A host may finish work or pull the next Task synchronously; its
+  newer queue report remains the latest evidence.
 - **Finishing.** The app calls `finish(task_id, state, fields)`. The helper builds
   the final `report.status` Task report and hands it to the outbox.
 - **Clearing.** `clear()` reports every held Task `cancelled`. The app calls it when a command fails or a failsafe starts, as

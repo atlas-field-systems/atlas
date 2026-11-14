@@ -180,3 +180,84 @@ test("drop ends running slot but preserves late evidence [sdk/docs/asset.md#the-
     ),
   );
 });
+
+test("now retires early updates and preserves cancel evidence [sdk/docs/asset.md#the-queue-helper]", () => {
+  const f = fixture();
+  f.q.apply({ kind: "tasks.updated", event_id: 50, record: [f.task(1)] });
+  f.cancel(4, 51);
+  f.deliver([2], { now: true });
+  f.q.finish(2, "completed");
+  f.q.apply({ kind: "tasks.updated", event_id: 52, record: [f.task(1)] });
+  f.deliver([3]);
+  assert.equal(f.q.next()?.task_id, 3);
+  f.q.finish(3, "completed");
+  f.deliver([5], { now: true });
+  f.deliver([4]);
+  assert.ok(
+    f.reports.some(
+      (r) =>
+        r.type === "report.status" &&
+        r.kind === "task" &&
+        r.task_id === 4 &&
+        r.request_id === 51 &&
+        r.task_state === "cancelled",
+    ),
+  );
+  f.q.finish(5, "completed");
+  f.deliver([7], { now: true });
+  f.q.finish(7, "completed");
+  f.q.apply({ kind: "tasks.updated", event_id: 53, record: [f.task(6)] });
+  f.deliver([8]);
+  assert.equal(
+    f.q.next()?.task_id,
+    8,
+    "late unseen updates cannot recreate superseded slots",
+  );
+});
+
+for (const mode of ["stop", "runNow"] as const) {
+  test(`synchronous ${mode} finish leaves latest queue evidence current [sdk/docs/asset.md#the-queue-helper]`, () => {
+    const f = fixture();
+    const reports: Report[] = [];
+    const q = createQueue({
+      last_task_id: 0,
+      asset_id: "A",
+      clock: { now: () => 1000, after: () => ({ cancel() {} }) },
+      emit: (r) => reports.push(r),
+      host: {
+        ready() {
+          q.next();
+        },
+        stop(id) {
+          q.finish(id, "cancelled");
+        },
+        runNow(t) {
+          if (mode === "runNow") q.finish(t.task_id, "completed");
+        },
+        update() {},
+      },
+    });
+    q.apply({
+      kind: "tasks.requested",
+      event_id: 60,
+      record: [f.task(1), f.task(2)],
+    });
+    if (mode === "stop")
+      q.apply({
+        kind: "task.dropped",
+        event_id: 61,
+        record: { time: 1000, asset_id: "A", task_id: 1 },
+      });
+    else
+      q.apply({
+        kind: "tasks.requested",
+        event_id: 62,
+        record: [f.task(3, { now: true }), f.task(4)],
+      });
+    const last = reports
+      .filter((r) => r.type === "report.status" && r.kind === "queue")
+      .at(-1);
+    assert.ok(last && last.type === "report.status" && last.kind === "queue");
+    assert.deepEqual(last.task_ids, q.held());
+  });
+}

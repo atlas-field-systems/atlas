@@ -157,7 +157,8 @@ function reduce(
           s.supersededBelow = Math.max(s.supersededBelow, id);
           for (const [lower, v] of slots) {
             if (lower >= id) continue;
-            if (v.at === "held") final(lower, "cancelled");
+            if (v.at === "held" || v.at === "pending_update")
+              final(lower, "cancelled");
             if (v.at === "running") {
               slots.set(lower, { at: "stopping", task: v.task, requests: [] });
               effects.push({ kind: "stop", id: lower, because: "now" });
@@ -188,6 +189,7 @@ function reduce(
           slot?.at === "cancel_first"
         )
           continue;
+        if (task.task_id < s.supersededBelow && !slot) continue;
         if (!slot || slot.at === "pending_update")
           slots.set(task.task_id, { at: "pending_update", task });
         else {
@@ -314,7 +316,10 @@ export function createQueue(
     if (input.kind === "clear") emit("queue.cleared");
     state = result.state;
     let started: Task | undefined;
-    for (const e of result.effects) {
+    for (const e of [
+      ...result.effects.filter((e) => e.kind === "report"),
+      ...result.effects.filter((e) => e.kind !== "report"),
+    ]) {
       switch (e.kind) {
         case "report":
           o.emit(e.body);
