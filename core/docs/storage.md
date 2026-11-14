@@ -87,3 +87,6 @@ summary and removes the ledger only after checking the ZIP.
 Entities keeps each Asset's actual last arrival in `asset_heard`, including empty
 report batches. Contact deadlines restart at resume independently of this evidence;
 Reset uses the stored arrival rather than the later offline transition.
+
+Administration keeps gateway and Plugin arrivals in run-scoped `identity_heard` rows.
+Resumed offline records retain those arrival times while their deadlines restart.

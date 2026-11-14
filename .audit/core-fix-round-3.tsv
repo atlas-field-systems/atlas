@@ -1,0 +1,2 @@
+finding	choice	evidence	result
+1	Persist gateway and Plugin arrivals; resume deadlines independently	Expanded R2-2 failed on restart time; now all three contacts retain arrival bounds	Core 44/44; typecheck passes; deslop reviewed

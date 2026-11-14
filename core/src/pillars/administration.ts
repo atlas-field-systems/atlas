@@ -11,6 +11,13 @@ type PluginDescription = ProtocolTypes["plugin.description"];
 
 export const TABLES: TableDef[] = [
   {
+    owner: "administration", name: "identity_heard", runScoped: true,
+    ddl: `CREATE TABLE IF NOT EXISTS identity_heard (
+      run_id INTEGER NOT NULL, kind TEXT NOT NULL, id TEXT NOT NULL,
+      time INTEGER NOT NULL, PRIMARY KEY(run_id,kind,id)
+    );`,
+  },
+  {
     owner: "administration",
     name: "asset_key_mismatches",
     runScoped: true,
@@ -379,6 +386,7 @@ export function setGatewayContact(
   state: ContactState,
   lastHeard: number,
 ): boolean {
+  if (state === "online") noteIdentityHeard(tx, "gateway", gateway_id);
   if (gatewayContact(tx, gateway_id).contact === state) return false;
   const record = { time: lastHeard, gateway_id, contact: state };
   tx.run(
@@ -396,6 +404,7 @@ export function setPluginContact(
   state: ContactState,
   lastHeard: number,
 ): boolean {
+  if (state === "online") noteIdentityHeard(tx, "plugin", plugin_id);
   if (pluginContact(tx, plugin_id).contact === state) return false;
   const record = { time: lastHeard, plugin_id, contact: state };
   tx.run(
@@ -547,4 +556,11 @@ export function unregisteredMismatch(
   process.stderr.write(
     `Unregistered Asset key ${key_id} uses definitions ${definitions_hash}\n`,
   );
+}
+
+function noteIdentityHeard(tx: Tx, kind: "gateway" | "plugin", id: string): void {
+  tx.run("INSERT INTO identity_heard VALUES (?,?,?,?) ON CONFLICT(run_id,kind,id) DO UPDATE SET time=excluded.time", tx.runId, kind, id, tx.now);
+}
+export function lastIdentityHeard(tx: ReadTx, kind: "gateway" | "plugin", id: string): number | undefined {
+  return tx.get<{time: number}>("SELECT time FROM identity_heard WHERE run_id=? AND kind=? AND id=?", tx.runId, kind, id)?.time;
 }

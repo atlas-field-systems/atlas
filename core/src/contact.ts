@@ -9,8 +9,8 @@ import { Refusal } from "./api/errors.ts";
  * Entities.applyContact, Administration.setGatewayContact, and
  * Administration.setPluginContact, each in a transaction with its event.
  *
- * Deadlines restart on resume. Actual Asset arrival times are persisted by
- * Entities separately so Reset can report them after a crash.
+ * Deadlines restart on resume. Actual arrival times are persisted by
+ * The owning pillars separately so Reset can report them after a crash.
  *
  * One timer, on the injected clock, set for the earliest deadline
  * (lastHeard + offline_after_s). When it fires, every subject past its
@@ -40,7 +40,7 @@ export interface Contact {
    * request's own change, so its event comes first.
    */
   heard(who: Subject): void;
-  /** At start: every subject the current run shows online gets lastHeard = now. */
+  /** Restart deadlines without changing stored last-heard evidence. */
   resume(): void;
   stop(): void;
   lastHeard(asset_id: string): number | undefined;
@@ -140,7 +140,14 @@ export function startContact(
           ...ids.plugin_ids.map((plugin_id) => ({ plugin_id })),
         ];
       });
-      for (const who of subjects) heard.set(key(who), { who, at: clock.now() });
+      for (const who of subjects) {
+        const at = store.read(tx => "asset_id" in who
+          ? entities.lastHeard(tx, who.asset_id)
+          : "gateway_id" in who
+            ? admin.lastIdentityHeard(tx, "gateway", who.gateway_id)
+            : admin.lastIdentityHeard(tx, "plugin", who.plugin_id));
+        heard.set(key(who), { who, at: at ?? clock.now(), retryAt: clock.now() + offlineAfterMs });
+      }
       schedule();
     },
     lastHeard(asset_id) {

@@ -1041,12 +1041,16 @@ test("R2-2 Reset preserves actual last heard across SIGKILL [reset.md#cores-rese
     const registered = (
       await h.call("/entities/assets", description, issued.key)
     ).body;
+    const gateway = (await h.call("/administration/gateways", {}, undefined, h.cookie)).body;
+    const plugin = (await h.call("/administration/plugins", {}, undefined, h.cookie)).body;
     const before = Date.now();
     await h.call(
       `/entities/assets/${registered.asset_id}/reports`,
       { reports: [] },
       issued.key,
     );
+    await h.call("/about", undefined, gateway.key);
+    await h.call("/about", undefined, plugin.key);
     const after = Date.now();
     await h.crash();
     await new Promise((resolve) => setTimeout(resolve, 1100));
@@ -1057,6 +1061,13 @@ test("R2-2 Reset preserves actual last heard across SIGKILL [reset.md#cores-rese
       h.cookie,
     );
     assert.equal(snapshot.body.item.contact.contact, "offline");
+    const contacts = [snapshot.body.item.contact,
+      (await h.call("/entities/assets", undefined, undefined, h.cookie)).body.gateways.find((g: {gateway_id: string}) => g.gateway_id === gateway.gateway_id),
+      (await h.call("/plugins", undefined, undefined, h.cookie)).body.items.find((p: {plugin_id: string}) => p.plugin_id === plugin.plugin_id).contact];
+    for (const contact of contacts) {
+      assert.equal(contact.contact, "offline");
+      assert.ok(contact.time >= before && contact.time <= after, `${contact.time} outside last arrival bounds ${before}..${after}`);
+    }
     const zip = await h.archive();
     const line = zip("summary.md")
       .split("\n")
