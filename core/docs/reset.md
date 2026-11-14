@@ -34,6 +34,9 @@ sequenceDiagram
     Note over Core: New empty run, next run_id
 ```
 
+Requests in progress have five seconds to finish during deliberate stop. Core then
+closes the remaining connections before writing the Reset ZIP.
+
 ## Core's Reset ZIP
 
 Core writes one ZIP per run into `archive_directory` ([configuration](../config.md)),

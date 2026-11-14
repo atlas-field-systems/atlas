@@ -383,9 +383,14 @@ export async function startServer(
       stopping = true;
       renewal?.cancel();
       streams.closeAll();
-      return new Promise<void>((resolve, reject) =>
-        server.close((e) => (e ? reject(e) : resolve())),
-      );
+      return new Promise<void>((resolve, reject) => {
+        const grace = env.clock.after(5000, () => server.closeAllConnections());
+        server.close((e) => {
+          grace.cancel();
+          if (e) reject(e);
+          else resolve();
+        });
+      });
     },
   };
 }

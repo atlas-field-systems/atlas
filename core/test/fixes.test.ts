@@ -185,3 +185,27 @@ test("F2 ahead queues confirm Tasks without affecting cap [api.md#asset-and-gate
     await h.close();
   }
 });
+test(
+  "F3 stop bounds stalled HTTP requests [reset.md#stopping-core-ends-the-run]",
+  { timeout: 10000 },
+  async () => {
+    const { connect } = await import("node:net");
+    const c = simulatedClock(),
+      h = await startHarness(c),
+      socket = connect(Number(new URL(h.core.url).port), "127.0.0.1");
+    socket.on("error", () => {});
+    try {
+      await new Promise<void>((r) => socket.once("connect", r));
+      socket.write(
+        `POST /objects?name=slow HTTP/1.1\r\nHost: localhost\r\nCookie: ${h.admin}\r\nAtlas-Definitions: ${protocol.hash}\r\nIdempotency-Key: slow\r\nContent-Type: application/octet-stream\r\nContent-Length: 1000\r\n\r\nx`,
+      );
+      await h.call("GET", "/about");
+      const stopping = h.core.stop();
+      c.advance(5000);
+      assert.equal((await stopping).archived, true);
+    } finally {
+      socket.destroy();
+      await h.close();
+    }
+  },
+);

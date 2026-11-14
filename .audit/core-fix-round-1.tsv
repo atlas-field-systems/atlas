@@ -1,3 +1,4 @@
 finding	choice	evidence	result
 1	Request-kind registry defines recipient and answering kinds; shared settlement query	F1 failed 409 before fix	Full suite green
 2	Queue evidence advances Tasks independently of latest cap	F2 failed sent versus queued	Full suite green
+3	Five-second grace via injected clock, then close remaining HTTP connections	F3 failed bounded-stop assertion	Full suite green
