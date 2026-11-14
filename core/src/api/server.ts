@@ -77,23 +77,26 @@ export async function startServer(
       if (!caller) refuse("unauthenticated", "Invalid credential");
       if (
         url.pathname === "/about" &&
-        (caller.kind === "gateway" || caller.kind === "plugin")
+        (caller.kind === "gateway" || caller.kind === "plugin" || caller.kind === "asset")
       ) {
         const hash = req.headers["atlas-definitions"];
         if (
           typeof hash === "string" &&
           hash !== env.protocol.hash &&
-          /^sha256:[a-f0-9]{64}$/.test(hash)
+          env.protocol.check("refusal", {time: env.clock.now(), gateway_id: "G", definitions_hash: hash}).ok
         )
           store.write((tx) => {
             const id =
               caller.kind === "gateway"
                 ? { gateway_id: caller.gateway_id }
-                : { plugin_id: caller.plugin_id };
+                : caller.kind === "plugin"
+                  ? { plugin_id: caller.plugin_id }
+                  : { asset_id: entities.assetForKey(tx, caller.key_id) ?? undefined };
             const column =
-              caller.kind === "gateway" ? "gateway_id" : "plugin_id";
+              caller.kind === "gateway" ? "gateway_id" : caller.kind === "plugin" ? "plugin_id" : "asset_id";
             const value =
-              caller.kind === "gateway" ? caller.gateway_id : caller.plugin_id;
+              caller.kind === "gateway" ? caller.gateway_id : caller.kind === "plugin" ? caller.plugin_id : entities.assetForKey(tx, caller.key_id);
+            if (!value) return;
             if (
               !tx.get(
                 `SELECT 1 FROM events WHERE run_id=? AND kind='definitions.refused' AND json_extract(record,'$.${column}')=? AND json_extract(record,'$.definitions_hash')=?`,

@@ -293,3 +293,38 @@ test("F5 only registered Assets create places and Objects [api.md#geo-features, 
     await h.close();
   }
 });
+test("F6 about records each differing definitions hash once per caller [api.md#basics]", async () => {
+  const h = await startHarness();
+  try {
+    const a = await asset(h),
+      g = (
+        await h.call("POST", "/administration/gateways", { cookie: h.admin })
+      ).body,
+      p = await plugin(h);
+    for (const key of [a.key, g.key, p.key])
+      for (const hash of [
+        "sha256:ab",
+        "sha256:ab",
+        "sha256:" + "0".repeat(64),
+      ]) {
+        const r = await fetch(h.core.url + "/about", {
+          headers: {
+            authorization: `Bearer ${key}`,
+            "atlas-definitions": hash,
+          },
+        });
+        await r.text();
+        assert.equal(r.status, 200);
+      }
+    const refusals = (await events(h)).filter(
+      (e) => e.kind === "definitions.refused",
+    );
+    assert.equal(refusals.length, 6);
+    assert.equal(
+      refusals.filter((e) => e.record.definitions_hash === "sha256:ab").length,
+      3,
+    );
+  } finally {
+    await h.close();
+  }
+});
