@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/duration_s.json",
+  "title": "duration_s",
+  "description": "Capture duration in seconds, greater than zero and at most 60.",
+  "type": "number",
+  "exclusiveMinimum": 0,
+  "maximum": 60,
+  "examples": [
+    10,
+    60
+  ]
+}
