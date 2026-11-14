@@ -1,3 +1,4 @@
+import { internal } from "./internal.ts";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import type { Client, Result } from "./client.ts";
 import { follow, type FollowEnd } from "./stream.ts";
@@ -30,7 +31,9 @@ export function startPlugin(
   let stopped = false,
     stream: ReturnType<typeof follow> | undefined,
     contact: ReturnType<typeof client.holdContact> | undefined;
-  const plugin_id = client.options.credential.plugin_id;
+  const credential = internal(client).options.credential;
+  if (credential.kind !== "plugin") throw new Error("Expected Plugin credential");
+  const plugin_id = credential.plugin_id;
   const done = (async (): Promise<FollowEnd> => {
     while (!stopped) {
       const connected = await client.connect();

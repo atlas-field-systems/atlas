@@ -1,3 +1,4 @@
+import { internal } from "./internal.ts";
 import { EVENT_KINDS } from "@atlas/core/event-kinds";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { Client } from "./client.ts";
@@ -45,17 +46,17 @@ export function follow(
   },
   handler: (event: AtlasEvent) => void | Promise<void>,
 ): Follow {
-  const { clock, protocol } = client.options;
+  const { clock, protocol } = internal(client).options;
   let cursor = options.after,
     stale = true,
     stopped = false,
     controller: AbortController | undefined,
     idle: Timer | undefined,
     wake: (() => void) | undefined;
-  const boundEpoch = client.epoch;
+  const boundEpoch = internal(client).epoch;
   const terminal = (): FollowEnd["reason"] | undefined => {
     if (stopped) return "stopped";
-    if (client.epoch !== boundEpoch) return "run_ended";
+    if (internal(client).epoch !== boundEpoch) return "run_ended";
     switch (client.status.phase) {
       case "closed":
       case "unauthenticated":
@@ -74,26 +75,26 @@ export function follow(
     let attempts = 0;
     try {
       while (!terminal()) {
-        const checked = await client.verifyRun();
+        const checked = await internal(client).verifyRun();
         if (terminal()) break;
         if (checked.ok) {
           controller = new AbortController();
           try {
             await options.beforeOpen?.();
             if (terminal()) break;
-            const response = await client.streamFetch(
+            const response = await internal(client).streamFetch(
               cursor,
               options.asset_id,
               controller.signal,
             );
             if (!response.ok) {
-              await client.streamResponse(response);
+              await internal(client).streamResponse(response);
             } else if (!response.body)
               return { reason: "invalid_event", error: "Missing stream body" };
             else {
               stale = false;
               attempts = 0;
-              client.emit("stream.open");
+              internal(client).emit("stream.open");
               options.onContact?.({ open: true, last_heard: clock.now() });
               const reader = response.body.getReader(),
                 decoder = new TextDecoder();
@@ -101,8 +102,8 @@ export function follow(
                 data: string[] = [];
               const resetIdle = () => {
                 idle?.cancel();
-                idle = clock.after(client.options.streamIdleMs ?? 30000, () => {
-                  client.emit("stream.idle");
+                idle = clock.after(internal(client).options.streamIdleMs ?? 30000, () => {
+                  internal(client).emit("stream.idle");
                   controller?.abort();
                 });
               };
@@ -118,7 +119,7 @@ export function follow(
                     const line = buffer.slice(0, index).replace(/\r$/, "");
                     buffer = buffer.slice(index + 1);
                     if (line.startsWith(":")) {
-                      client.emit("stream.alive");
+                      internal(client).emit("stream.alive");
                       options.onContact?.({
                         open: true,
                         last_heard: clock.now(),
@@ -164,7 +165,7 @@ export function follow(
                         return { reason: "handler_failed", error };
                       }
                       cursor = event.event_id;
-                      client.emit("stream.handled", { cursor });
+                      internal(client).emit("stream.handled", { cursor });
                     }
                   }
                 }
@@ -179,20 +180,20 @@ export function follow(
             stale = true;
             controller?.abort();
             options.onContact?.({ open: false, last_heard: null });
-            client.emit("stream.close", { cursor });
+            internal(client).emit("stream.close", { cursor });
           }
         }
         if (terminal()) break;
         const delay = backoffDelay(
           attempts++,
-          client.options.backoff ?? {
+          internal(client).options.backoff ?? {
             minMs: 500,
             maxMs: 30000,
             factor: 2,
             jitter: 0.2,
           },
         );
-        client.emit("stream.reconnect", { delay });
+        internal(client).emit("stream.reconnect", { delay });
         await new Promise<void>((resolve) => {
           const t = clock.after(delay, resolve);
           wake = () => {

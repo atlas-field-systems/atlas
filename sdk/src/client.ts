@@ -1,3 +1,4 @@
+import { internals } from "./internal.ts";
 import type { Protocol } from "@atlas/protocol/browser";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import {
@@ -431,41 +432,15 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     if (!kinds.includes(credential.kind))
       throw new Error("Credential cannot call this route");
   }
-  return {
-    options,
-    emit,
-    get status() {
-      return status;
-    },
-    get epoch() {
-      return epoch;
-    },
-    connect,
-    verifyRun,
-    call,
-    login,
+  const client = {
+    get status() { return status; },
+    connect, call, login,
     validate: (name: string, value: unknown) => protocol.check(name, value),
     holdContact,
     onStatus(cb: (s: Status) => void) {
       listeners.add(cb);
-      return () => {
-        listeners.delete(cb);
-      };
+      return () => { listeners.delete(cb); };
     },
-    streamFetch: (
-      after: number,
-      asset_id: string | undefined,
-      signal: AbortSignal,
-    ) =>
-      options.fetch(
-        url("/events", { after, asset_id, definitions: protocol.hash }),
-        {
-          signal,
-          headers: headers(),
-          credentials: credential.kind === "account" ? "include" : "omit",
-        },
-      ),
-    streamResponse: (r: Response) => parse<Json>(r, "/events"),
     history: <T = Json>(q?: Query) => pages<T>("/history", q),
     trackHistory: <T = Json>(q?: Query) => pages<T>("/history/tracks", q),
     geofeatureHistory: <T = Json>(q?: Query) =>
@@ -496,6 +471,25 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       for (const c of controllers) c.abort();
     },
   };
+  internals.set(client, {
+    options, emit, verifyRun,
+    get epoch() { return epoch; },
+    streamFetch: (
+      after: number,
+      asset_id: string | undefined,
+      signal: AbortSignal,
+    ) =>
+      options.fetch(
+        url("/events", { after, asset_id, definitions: protocol.hash }),
+        {
+          signal,
+          headers: headers(),
+          credentials: credential.kind === "account" ? "include" : "omit",
+        },
+      ),
+    streamResponse: (r: Response) => parse<Json>(r, "/events"),
+  });
+  return client;
 }
 export type Client<C extends Credential = Credential> = ReturnType<
   typeof createClient<C>

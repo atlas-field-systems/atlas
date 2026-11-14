@@ -232,21 +232,15 @@ scenario({
     );
     assert.equal(attempts.length, 2);
     assert.equal(attempts[0].key, attempts[1].key, "retry preserves key");
-    const conflictClient = w.client("conflict-account", { kind: "account" });
-    value(await w.complete(conflictClient.connect()));
-    value(await w.complete(conflictClient.login("ADM", "simulation-password")));
-    const savedFetch = conflictClient.options.fetch;
-    const changed = w.client("conflict-replay", { kind: "account" });
-    changed.options.fetch = (input, init) => {
+    const savedFetch = w.network.fetchFor("conflict-account");
+    const changed = w.client("conflict-replay", { kind: "account" }, (input, init) => {
       const headers = new Headers(init?.headers);
-      if (
-        init?.method === "POST" &&
-        String(input).endsWith("/entities/geofeatures")
-      )
+      if (init?.method === "POST" && String(input).endsWith("/entities/geofeatures"))
         headers.set("Idempotency-Key", "fixed-conflict");
       return savedFetch(input, { ...init, headers });
-    };
+    });
     value(await w.complete(changed.connect()));
+    value(await w.complete(changed.login("ADM", "simulation-password")));
     value(
       await w.complete(
         changed.call("createGeofeature", {

@@ -41,12 +41,12 @@ export async function createWorld() {
   });
   const clients: Client[] = [];
   const cleanup = new Set<() => void>();
-  function client<C extends Credential>(caller: string, credential: C) {
+  function client<C extends Credential>(caller: string, credential: C, fetch = network.fetchFor(caller)) {
     const c = createClient({
       protocol,
       credential,
       clock,
-      fetch: network.fetchFor(caller),
+      fetch,
       baseUrl: core.url,
       backoff: { minMs: 10, maxMs: 100, factor: 2, jitter: 0 },
       observer: (e) => {
