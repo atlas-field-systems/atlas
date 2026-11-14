@@ -247,15 +247,18 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       }
     })());
   }
-  function assertValid(name: string, value: unknown) {
+  function validate(name: string, value: unknown) {
     const checked = protocol.check(name, value);
-    if (!checked.ok) {
+    if (!checked.ok)
       emit("validation.failed", {
         name,
         problems: JSON.stringify(checked.problems),
       });
-      throw new Error(JSON.stringify(checked.problems));
-    }
+    return checked;
+  }
+  function assertValid(name: string, value: unknown) {
+    const checked = validate(name, value);
+    if (!checked.ok) throw new Error(JSON.stringify(checked.problems));
   }
   function request<T>(
     method: string,
@@ -316,6 +319,8 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
               if (key) h.set("Idempotency-Key", key);
               if (method !== "GET")
                 h.set("Content-Type", contentType ?? "application/json");
+              if (attempt > 0 && path.endsWith("/reports"))
+                emit("batch.resent", { key: key ?? "" });
               const response = await raw(
                 path,
                 { method, headers: h, body: bytes },
@@ -407,14 +412,19 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     const body = { operator_id, password };
     assertValid("requests.login", body);
     const deadline = clock.now() + timeout;
+    let recovery = 0;
     let result = await request<Json>("POST", "/administration/login", body);
     while (result.ok || result.error === "unknown") {
       const me = await request<Json>("GET", "/administration/me");
       result = me;
       if (me.ok || me.status !== 401 || clock.now() >= deadline) break;
       await new Promise<void>((resolve) =>
-        clock.after(Math.min(10, deadline - clock.now()), resolve),
+        clock.after(
+          Math.min(backoffDelay(recovery++, backoff), deadline - clock.now()),
+          resolve,
+        ),
       );
+      if (clock.now() >= deadline) break;
       result = await request<Json>("POST", "/administration/login", body);
     }
     if (result.ok && status.phase === "unauthenticated")
@@ -473,7 +483,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     connect,
     call,
     login,
-    validate: (name: string, value: unknown) => protocol.check(name, value),
+    validate,
     holdContact,
     onStatus(cb: (s: Status) => void) {
       listeners.add(cb);

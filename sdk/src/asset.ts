@@ -56,6 +56,7 @@ export function createOutbox(
     retained: Report[] = [];
   let stopped = false,
     blocked: LinkResult | undefined,
+    blockedBatch: Report[] | undefined,
     flight: Promise<void> | undefined;
   const listeners = new Set<(result: LinkResult) => void>();
   let timer = clock.after(heartbeatMs, beat);
@@ -77,6 +78,7 @@ export function createOutbox(
         );
         if (!result.ok) {
           blocked = result;
+          blockedBatch = batch;
           for (const cb of listeners) cb(result);
           break;
         }
@@ -102,6 +104,9 @@ export function createOutbox(
     flush,
     get blocked() {
       return blocked;
+    },
+    get blockedBatch() {
+      return blockedBatch && structuredClone(blockedBatch);
     },
     onBlocked(cb: (r: LinkResult) => void) {
       listeners.add(cb);

@@ -1,7 +1,7 @@
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import type { Client } from "./client.ts";
 import { follow, type AtlasEvent, type Follow } from "./stream.ts";
-import type { Task } from "./queue.ts";
+import type { TaskView } from "./routes.ts";
 export type AssetView = {
   asset_id: string;
   gateway_id: string | null;
@@ -11,12 +11,6 @@ export type AssetView = {
   settings: Record<string, { value: unknown; time: number }>;
   subsystems: Record<string, P["report.status"]>;
   gimbals: Record<string, P["report.gimbal"]>;
-};
-type TaskView = {
-  task: Task;
-  state: string;
-  state_time: number;
-  object_ids?: string[];
 };
 export function createLivePicture(
   client: Client,
@@ -234,11 +228,21 @@ export function createLivePicture(
       }
     } else if (
       e.kind === "report.status" &&
+      e.record.kind === "queue" &&
+      e.event_id > (marks.get(e.record.asset_id) ?? 0)
+    ) {
+      for (const id of e.record.task_ids) {
+        const task = tasks.get(e.record.asset_id)?.get(id);
+        if (task?.state === "sent")
+          Object.assign(task, { state: "queued", state_time: e.record.time });
+      }
+    } else if (
+      e.kind === "report.status" &&
       e.record.kind === "task" &&
       e.event_id > (marks.get(e.record.asset_id) ?? 0)
     ) {
       const task = tasks.get(e.record.asset_id)?.get(e.record.task_id);
-      const rank: Record<string, number> = {
+      const rank: Record<TaskView["state"], number> = {
         sent: 0,
         queued: 1,
         active: 2,
@@ -255,7 +259,10 @@ export function createLivePicture(
         Object.assign(task, {
           state: e.record.task_state,
           state_time: e.record.time,
-          object_ids: e.record.object_ids,
+          object_ids:
+            e.record.task_state === "completed"
+              ? e.record.object_ids
+              : undefined,
         });
     } else if (
       e.kind === "task.dropped" &&

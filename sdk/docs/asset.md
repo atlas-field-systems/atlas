@@ -155,7 +155,7 @@ On IP, a `507` or other `5xx` is transient: the link resends the immutable batch
 with its key after backoff. A direct client call can return `507` without retrying.
 Only `400`, `403`, `404`, and `409` other than `definitions_mismatch` permanently
 refuse a batch. A permanent refusal keeps the batch, blocks the outbox, and remains visible through
-`outbox.blocked` and `onBlocked`. It is never retried.
+`outbox.blocked` and `onBlocked`. `outbox.blockedBatch` exposes the retained batch. It is never retried.
 
 Rejoin omits a settings report when no setting is known, because Protocol
 requires at least one setting. It reports a queue on rejoin only when Tasks are

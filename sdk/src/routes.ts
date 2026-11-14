@@ -208,7 +208,13 @@ export type Query = Record<string, string | number | boolean | undefined>;
 export type TaskView = {
   task: P["task"];
   state:
-    "requested" | "active" | "completed" | "failed" | "cancelled" | "dropped";
+    | "sent"
+    | "queued"
+    | "active"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "dropped";
   state_time: number;
   object_ids?: string[];
 };
@@ -234,7 +240,7 @@ type Responses = {
     tracks: P["track"][];
     geofeatures: P["geofeature"][];
   };
-  assets: Cut<AssetView>;
+  assets: Cut<AssetView> & { gateways: P["contact"][] };
   asset: { as_of: number; item: AssetView };
   tasks: Cut<TaskView> & { held: number[] };
   sendTasks: EventAck & { task_ids: number[] };

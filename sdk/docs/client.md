@@ -52,7 +52,10 @@ with the same key and the same body, with backoff, until the request timeout.
 Core returns the retained non-secret response for a repeated key, so a retry
 never repeats an effect. Credential and login retries follow the
 [Core API's acknowledgment and recovery rules](../../core/docs/api.md#callers-and-credentials).
-The client never retries a `4xx` or a definitive
+After recovery login, it confirms the session with `GET /administration/me`.
+While that returns `401`, it uses a fresh login key and confirms again, up to
+the request timeout. It returns success only for a confirmed session.
+The direct client never retries a `4xx` or a definitive
 [storage refusal](../../core/docs/storage.md#memory-and-full-disks).
 
 If no response arrives before the timeout, the result is `unknown`. Core may or
@@ -68,8 +71,13 @@ program throw.
 ```ts
 type Result<T> =
   | { ok: true; value: T }
-  | { ok: false; error: string; status?: number; explanation: string;
-      retry?: () => Promise<Result<T>> };
+  | {
+      ok: false;
+      error: string;
+      status?: number;
+      explanation: string;
+      retry?: () => Promise<Result<T>>;
+    };
 ```
 
 - `error` is Core's code (`invalid`, `definitions_mismatch` and the others in
@@ -102,13 +110,20 @@ and Protocol types describe bodies. Each call maps to one endpoint in
 [Accounts and provisioning](../../core/docs/api.md#accounts-and-provisioning).
 
 ```ts
-const atlas = createClient({ baseUrl, protocol, credential: { kind: 'account' },
-  clock: systemClock, fetch, observer });
+const atlas = createClient({
+  baseUrl,
+  protocol,
+  credential: { kind: "account" },
+  clock: systemClock,
+  fetch,
+  observer,
+});
 const ready = await atlas.connect();
 if (!ready.ok) return show(ready.explanation);
 await atlas.login(operator_id, password);
-const sent = await atlas.call('sendTasks', {
-  params: { asset_id }, body: { tasks }
+const sent = await atlas.call("sendTasks", {
+  params: { asset_id },
+  body: { tasks },
 });
 const stream = follow(atlas, { after, asset_id }, onEvent);
 atlas.close();
@@ -135,7 +150,6 @@ A Plugin uses one client with its own key and makes the
 [Plugin calls](../../core/docs/api.md#plugins): it describes itself, follows its
 event stream for the calls addressed to it, stores what it creates, and posts one
 answer per call. The SDK keeps the Plugin in contact while it is idle.
-
 
 ## Run changes and idle contact
 

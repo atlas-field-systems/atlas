@@ -5,6 +5,7 @@ import {
   type AssetLink,
   type AssetEvent,
   type Report,
+  type Clock,
 } from "@atlas/sdk";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import { type World, value } from "./world.ts";
@@ -14,23 +15,33 @@ export const description: P["requests.asset"] = {
   reports: ["status", "settings"],
   settings: ["lights"],
 };
-export async function ipAsset(w: World, name = "asset") {
+export async function ipAsset(
+  w: World,
+  name = "asset",
+  clock: Clock = w.clock,
+  assetDescription: P["requests.asset"] = description,
+) {
   const issued = value(await w.complete(w.admin.call("createAssetKey")));
-  const client = w.client(name, {
-    kind: "asset",
-    key:
-      "key" in issued
-        ? issued.key
-        : (() => {
-            throw new Error("Issuance returned no key");
-          })(),
-  });
+  const client = w.client(
+    name,
+    {
+      kind: "asset",
+      key:
+        "key" in issued
+          ? issued.key
+          : (() => {
+              throw new Error("Issuance returned no key");
+            })(),
+    },
+    undefined,
+    clock,
+  );
   const starts: number[] = [],
     stops: number[] = [];
   const result = await w.complete(
     startAsset(client, {
-      clock: w.clock,
-      description,
+      clock,
+      description: assetDescription,
       settings: () => ({}),
       queue: {
         runNow: (t) => starts.push(t.task_id),

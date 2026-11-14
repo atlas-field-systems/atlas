@@ -231,7 +231,9 @@ function reduce(
         const running = slot?.at === "running" || slot?.at === "stopping";
         slots.set(id, {
           at: "ended",
-          ...(running ? { lateFinish: true as const } : {}),
+          ...(running || (slot?.at === "ended" && slot.lateFinish)
+            ? { lateFinish: true as const }
+            : {}),
         });
         if (running) effects.push({ kind: "stop", id, because: "dropped" });
         queue();

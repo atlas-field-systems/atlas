@@ -179,8 +179,13 @@ export function follow(
                           throw new Error("Expected record array");
                         for (const record of records) {
                           const valid = protocol.check(spec.record, record);
-                          if (!valid.ok)
+                          if (!valid.ok) {
+                            internal(client).emit("validation.failed", {
+                              name: spec.record,
+                              problems: JSON.stringify(valid.problems),
+                            });
                             throw new Error(JSON.stringify(valid.problems));
+                          }
                         }
                         event = input as AtlasEvent;
                       } catch (error) {
