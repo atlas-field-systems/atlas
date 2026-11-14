@@ -16,7 +16,8 @@ The caller's kind decides its credential, as in
   The SDK sends it as `Authorization: Bearer <key>` on every request and the event
   stream.
 
-A `401` means the session or key is no longer valid. The client stops
+A `401` from the current session means the session or key is no longer valid.
+A late response from an earlier session does not change authentication status. The client stops
 reconnecting the event stream until the program logs in again or supplies a new
 key. The SDK never puts a credential in a record, a URL, or a
 [diagnostic event](logging.md).
@@ -34,7 +35,8 @@ sends its key and hash on `GET /about`, so Core
 
 Every request carries `Atlas-Definitions: <hash>`, and the event stream carries
 `?definitions=<hash>` ([Basics](../../core/docs/api.md#basics)). A
-`409 definitions_mismatch` from Core at any time stops the client the same way.
+`409 definitions_mismatch` for the client's own definitions stops the client the same way.
+A refused radio registration concerns that radio only; the gateway client stays usable.
 The client never reinterprets records it cannot validate.
 
 ## Validation
@@ -48,15 +50,18 @@ before the operator submits.
 ## Retries and idempotency
 
 Each state-changing call gets a fresh random `Idempotency-Key`. The client retries a network failure or a `5xx`
-with the same key and the same body, with backoff, until the request timeout.
+with the same key, copied body bytes, and snapshotted URL, with backoff, until the request timeout.
+Backoff, run verification, and every attempt share that deadline. No new send
+starts after it expires.
 Core returns the retained non-secret response for a repeated key, so a retry
 never repeats an effect. Credential and login retries follow the
 [Core API's acknowledgment and recovery rules](../../core/docs/api.md#callers-and-credentials).
 After recovery login, it confirms the session with `GET /administration/me`.
-While that returns `401`, it uses a fresh login key and confirms again, up to
+It confirms the requested `operator_id`. If the session is absent or belongs to
+another account, it uses a fresh login key and confirms again, up to
 a separate request timeout starting after the initial login attempt. Each
 recovery login has its own request timeout. It returns success only for a
-confirmed session. If Core answered logins but no session could be confirmed,
+session for the requested account. If Core answered logins but no session could be confirmed,
 it returns `session_not_confirmed`. A wrong password returns Core's
 `unauthenticated` refusal.
 The direct client never retries a `4xx` or a definitive
@@ -66,6 +71,12 @@ If no response arrives before the timeout, the result is `unknown`. Core may or
 may not have accepted the request. `unknown` is not failure. It carries `retry()`,
 which sends again with the same key and body. Reads retry the same way without a
 key.
+
+Starting login or logout on this client fences outstanding requests from the
+previous session. They return `session_changed` without resending, including
+through a retained `retry()` handle. A request may already have committed under
+its original session. This fence covers changes made through this client; the
+host handles session changes made in other tabs or outside the SDK.
 
 ## Results and errors
 
@@ -88,7 +99,7 @@ type Result<T> =
   [Basics](../../core/docs/api.md#basics)), or `unknown` when no response arrived.
 - The client throws for a body that fails validation, a call before `connect()`
   or after `close()`, and a call the credential cannot make, such as `login` on a
-  keyed client.
+  keyed client. `close()` is terminal, including while `connect()` is pending.
 
 ## Accepted is not done
 

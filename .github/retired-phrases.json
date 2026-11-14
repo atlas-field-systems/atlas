@@ -382,5 +382,10 @@
     "phrase": "Byte arrival resets this timer even",
     "why": "Follow pauses its idle timer while handling an event and preserves source backpressure.",
     "example": "Byte arrival resets this timer even while a handler is pending."
+  },
+  {
+    "phrase": "definitions_mismatch from Core at any time stops the client",
+    "why": "A radio definitions refusal affects only that radio, not the gateway client.",
+    "example": "A `409 definitions_mismatch` from Core at any time stops the client the same way."
   }
 ]
