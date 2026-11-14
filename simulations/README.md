@@ -4,7 +4,9 @@ Atlas Simulations runs the real Atlas parts together in a simulated world and
 checks that they work end to end. It is where Atlas's integration tests and
 evals live. It is a test harness, not a product: nothing in it ships to a field.
 
-**Planning.** Nothing is built. The first version simulates
+**In progress.** The world, lost responses, dropped streams, Tasks across a
+radio link, and a settle self-check are built. Remaining scenarios and seeded
+fault workloads follow. The first version simulates
 [Protocol, Core, and the SDK](../atlas/decision-log.md#build-and-test) together
 ([Core and SDK simulations](docs/core-and-sdk.md)).
 
@@ -97,9 +99,27 @@ including that a simulated pass proves nothing about real flight or radios.
 
 ## Open
 
-- Test tools, the scenario format, and how fault runs pick their faults.
-- Which simulations run on every pull request and which run on a schedule.
+- Remaining scenarios and seeded fault workloads.
+- Which expensive host-fault scenarios run on a schedule.
 - Gateway and Fieldlink simulations: simulated radios, frame loss, and capacity,
   once those parts are built.
 
 AI agents: read [AGENTS.md](AGENTS.md).
+
+
+## Run the Core and SDK scenarios
+
+Use Node 24. Run `npm ci` in Protocol, Core, the SDK, and this folder, in that
+order. Then run `npx tsc --noEmit` and `npm test` here. CI runs the built
+scenarios on each affected pull request.
+
+Scenarios check their documentation anchors before running. A failed run writes
+its trace, seed, and assertion error under `.runs/`. Seeded workloads use
+`ATLAS_SEED` to select a seed. Per-caller fault choices keep concurrent callers
+from exchanging faults.
+
+The clock fires timers in deadline order and preserves insertion order on ties.
+World waits fail after ten wall-clock seconds with the in-flight request list.
+A run cannot advance more than 24 simulated hours. `settle()` waits for eight
+quiet event-loop turns with no request in flight. Open stream reads are excluded.
+Arriving chunks and SDK diagnostics count as activity.

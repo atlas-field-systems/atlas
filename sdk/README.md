@@ -45,6 +45,11 @@ run it unchanged against a faulty network.
 
 ## Status
 
-These docs are a draft; no runtime code is built. The SDK uses TypeScript
+**Built.** The owner requested implementation on 2026-11-14. The SDK uses TypeScript
 throughout. Node 24 runs the `.ts` sources directly, and browser builds may be
 bundled.
+
+
+Run `npm ci`, `npx tsc --noEmit`, `npm run check:browser`, and `npm test`
+in this folder after installing Protocol and Core. The queue is the SDK contract
+test. [Simulations](../simulations/README.md) checks the parts together.

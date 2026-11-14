@@ -19,5 +19,9 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
   ([simulated Assets](README.md#simulated-assets)).
 - Never generate scenarios or expected results from Protocol's definitions
   ([test what matters](../atlas/CHARTER.md#test-what-matters)).
-- Planning only: no code until the owner asks. Do not merge without the
-  developer's approval.
+- In progress: the Core and SDK world and first scenarios are built.
+  Remaining scenarios and seeded fault workloads follow.
+- Do not merge without the developer's approval.
+
+
+Run `npx tsc --noEmit` and `npm test`.

@@ -6,15 +6,15 @@ are in [The event log and live stream](../../core/docs/api.md#the-event-log-and-
 ## Following the stream
 
 ```ts
-const follow = atlas.follow({ after, asset_id }, async (event) => { /* ... */ });
-follow.cursor;   // last handled event_id
-follow.stale;    // true while disconnected
-follow.stop();
+const subscription = follow(atlas, { after, asset_id }, async (event) => { /* ... */ });
+subscription.cursor;   // last handled event_id
+subscription.stale;    // true while disconnected
+subscription.stop();
 ```
 
 - **Start from a snapshot.** A program loads a read, then follows with `after`
   set to that read's `as_of`. That is how a page load, a refresh, or a new tab
-  recovers everything. Without `after`, the stream starts from the latest event.
+  recovers everything. `after` is required, so every follow starts from an explicit cursor.
 - **One event at a time, in order.** The handler gets each event once, in
   `event_id` order. The cursor advances only when the handler returns or its
   promise resolves. If the handler throws, the follow stops at the last handled
@@ -81,3 +81,12 @@ picture.onChange(cb);
   readiness means the equipment is ready.
 - **On disconnect** the picture keeps its data with `stale: true` and resumes from
   its cursor on reconnect. It keeps nothing on disk.
+
+
+## Follow completion
+
+`subscription.done` resolves with `{reason, error?}`. The reason is `stopped`,
+`closed`, `unauthenticated`, `definitions_mismatch`, `run_ended`,
+`handler_failed`, or `invalid_event`. An invalid record ends this follow.
+It does not claim a definitions mismatch. The host decides whether to start
+another follow.

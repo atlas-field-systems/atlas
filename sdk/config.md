@@ -1,26 +1,34 @@
 # SDK configuration
 
-The SDK is a library. Its host passes these options when it creates the client;
-there is no SDK configuration file. Values are proposed defaults for discussion.
+The host passes these options to `createClient`. There is no SDK configuration
+file. The private package is `@atlas/sdk`.
 
-| Option | Purpose | Proposed default |
+| Option | Purpose | Default |
 | --- | --- | --- |
-| `baseUrl` | Core's HTTPS address | Required, except same-origin in a browser |
-| `key` | Bearer key for an Asset or gateway; leave out for browser accounts | None |
-| `requestTimeoutMs` | How long a call retries before it returns `unknown` | 10000 |
-| `backoff` | Retry and reconnect delays: minimum, maximum, factor, jitter | 500 ms, 30 s, 2, 0.2 |
-| `streamIdleMs` | No data or keepalive for this long and the stream is reopened | 30000 |
-| `maxBatch` | Most reports in one Asset batch | Open |
-| `heartbeatMs` | How often an idle Asset posts an empty batch | Open; shorter than Core's `offline_after_s` |
-| `observer` | Receives [diagnostic events](docs/logging.md) | None |
+| `baseUrl` | Core's address | Required except same-origin browser |
+| `protocol` | Protocol's loaded definitions and `hash` | Required |
+| `credential` | Account, Asset, gateway, or Plugin identity | Required |
+| `clock` | All SDK time and timers | Required; use `systemClock` in a host |
+| `fetch` | Connection to Core | Required; pass the host's fetch |
+| `requestTimeoutMs` | Retry deadline before `unknown` | 10000 |
+| `backoff` | `minMs`, `maxMs`, `factor`, `jitter` | 500, 30000, 2, 0.2 |
+| `streamIdleMs` | Idle stream deadline | 30000 |
+| `heartbeatMs` | Gateway and Plugin contact interval | 10000 |
+| `observer` | Receives [diagnostics](docs/logging.md) | None |
 
-Tests may also swap the clock and `fetch`. Those are test hooks, not settings.
+Asset helpers also take a clock and `heartbeatMs`, defaulting to 10000.
+Keep that interval shorter than Core's
+[`offline_after_s`](../core/config.md).
+The outbox caps a batch at 1000, the [Core cap](../core/docs/api.md#asset-and-gateway-calls).
+Helper state and cursors stay in memory for the run.
+
+Clock and fetch are normal host inputs, as
+[Simulations](../simulations/README.md#what-each-part-allows) explains.
+In Node, load Protocol with `loadPackagedProtocol()`. In a browser, use
+`loadProtocol(files)` from `@atlas/protocol/browser`.
+Both expose `protocol.hash`.
 
 ## Open items
 
-- The package name and how the SDK is released.
-- How Protocol computes the definitions hash and exposes it to the SDK.
-- `maxBatch`, and whether Core caps batch size.
-- Whether the queue helper or the cursor survive a process restart.
-- Which of these options a host shows to its operator.
-- Event filtering before the observer, and the dropped-event policy.
+- Package release and tagging.
+- Which options a host shows to its operator.

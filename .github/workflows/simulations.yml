@@ -1,0 +1,37 @@
+name: simulations
+on:
+  push:
+    branches: [main]
+    paths: ['simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/simulations.yml']
+  pull_request:
+    paths: ['simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/simulations.yml']
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+        working-directory: protocol
+      - run: npm ci
+        working-directory: core
+      - run: npm ci
+        working-directory: sdk
+      - run: npm ci
+        working-directory: simulations
+      - run: npx tsc --noEmit
+        working-directory: simulations
+      - run: npm test
+        working-directory: simulations
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: simulation-failures
+          path: simulations/.runs
+          include-hidden-files: true

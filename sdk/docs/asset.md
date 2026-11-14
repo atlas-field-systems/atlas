@@ -13,12 +13,12 @@ Asset link:
 
 ```ts
 interface AssetLink {
-  events(after?: number): AsyncIterable<Event>;  // this Asset's requests, in event_id order
-  sendReports(reports: Report[], priority: 'must_arrive' | 'can_skip'): Promise<void>;
+  events(after: number): AsyncIterable<Event>;  // this Asset's requests, in event_id order
+  sendReports(reports: Report[], priority: 'must_arrive' | 'can_skip'): Promise<LinkResult>;
                                                  // resolves once the batch is acknowledged
   onContact(cb: (contact: Contact) => void): () => void;
   capacity(): number | undefined;                // bytes per second the link can carry now, if known
-  storeFile(file: AssetFile): Promise<string>;   // resolves with the object_id
+  storeFile(file: AssetFile): Promise<Result<{ object_id: string }>>;
 }
 ```
 
@@ -67,8 +67,8 @@ the SDK retries it with the same key until Core answers. Later steps wait for it
 The app hands reports to the outbox, which sends them in batches with
 `POST /entities/assets/{asset_id}/reports`.
 
-- Each batch gets one `Idempotency-Key` when it is formed. The outbox resends that
-  same batch with the same key until it gets a `200`, then drops it.
+- The outbox gives one immutable batch to the link. The link owns resending it
+  with the same key until it gets a `200`, then the outbox drops it.
 - Reports added while a batch is in flight go into the next batch, so a resent
   batch never changes.
 - Final Task reports (`completed`, `failed`, `cancelled`) stay in the outbox until
@@ -133,3 +133,23 @@ because the queue helper orders them by `task_id`.
 It resolves `sendReports` on end-to-end acknowledgement and supplies contact. The
 Fieldlink owns its own startup and the hash check on its link. Fieldlinks are not
 part of the SDK.
+
+
+## Running over any link
+
+`runAsset(link, {asset_id, after, last_task_id}, options)` runs the outbox,
+optional queue, and settings dispatch over an Asset link. Its options hold the
+clock, heartbeat interval, current settings function, optional queue host, and
+settings-request handler. It returns the queue, outbox, `rejoin()`, `done`,
+and `stop()`. The IP wrapper is `startAsset(client, options)`.
+
+`LinkResult` is `{ok: true}` on end-to-end acknowledgement, or
+`{ok: false, error, explanation}`. Errors are `run_ended`,
+`unauthenticated`, `definitions_mismatch`, `closed`, or `refused`.
+A permanent refusal blocks the outbox and remains visible through
+`outbox.blocked` and `onBlocked`. It is never retried.
+
+Rejoin omits a settings report when no setting is known, because Protocol
+requires at least one setting. It reports a queue on rejoin only when Tasks are
+held. Live and retained reports use separate lanes. Live reports go first.
+Request answers and final Task reports go first within a lane.
