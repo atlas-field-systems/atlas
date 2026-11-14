@@ -32,7 +32,7 @@ export function audienceFor(
 }
 
 export interface Streams {
-  open(res: ServerResponse, audience: Audience, after: number | "latest"): void;
+  open(res: ServerResponse, audience: Audience, after: number | "latest", valid: () => boolean): void;
   closeAll(): void;
 }
 
@@ -42,7 +42,7 @@ export function startStreams(store: Store, clock: Clock): Streams {
     closeAll() {
       for (const close of closers) close();
     },
-    open(res, audience, after) {
+    open(res, audience, after, valid) {
       let cursor = after === "latest" ? store.read((tx) => tx.asOf()) : after,
         closed = false,
         blocked = false;
@@ -59,7 +59,9 @@ export function startStreams(store: Store, clock: Clock): Streams {
         res.end();
       };
       const pump = () => {
-        if (closed || blocked) return;
+        if (closed) return;
+        if (!valid()) { close(); return; }
+        if (blocked) return;
         try {
           while (!blocked) {
             const page = store.read((tx) =>

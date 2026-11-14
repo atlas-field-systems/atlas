@@ -161,7 +161,7 @@ export async function startServer(
           raw === null || raw === undefined ? "latest" : Number(raw);
         if (after !== "latest" && (!Number.isSafeInteger(after) || after < 0))
           refuse("invalid", "after must be a nonnegative event ID");
-        streams.open(res, audienceFor(principal, url.searchParams), after);
+        streams.open(res, audienceFor(principal, url.searchParams), after, () => store.read(tx => !!callerFor(tx, credential)));
         return;
       }
       if (route.kind === "read") {

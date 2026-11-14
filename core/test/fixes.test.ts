@@ -504,3 +504,38 @@ test("F14 startup refuses archives within data including symlink aliases [config
     await rm(dir + "-alias", { force: true });
   }
 });
+test("F15 streams end when their credential is revoked [api.md#callers-and-credentials]", async () => {
+  const h = await startHarness();
+  const readers: ReadableStreamDefaultReader<Uint8Array>[] = [];
+  try {
+    const issued = (
+      await h.call("POST", "/administration/asset-keys", { cookie: h.admin })
+    ).body;
+    const open = async (headers: Record<string, string>) => {
+      const r = await fetch(h.core.url + "/events", {
+        headers: { ...headers, "atlas-definitions": protocol.hash },
+      });
+      const reader = r.body!.getReader();
+      readers.push(reader);
+      return reader;
+    };
+    const id = (
+      await h.call("POST", "/entities/assets", {
+        key: issued.key,
+        body: description,
+      })
+    ).body.asset_id;
+    const assetReader = await open({ authorization: `Bearer ${issued.key}` });
+    await h.call("POST", `/administration/asset-keys/${issued.key_id}/key`, {
+      cookie: h.admin,
+    });
+    await task(h, id);
+    assert.equal((await assetReader.read()).done, true);
+    const accountReader = await open({ cookie: h.admin });
+    await h.call("POST", "/administration/logout", { cookie: h.admin });
+    assert.equal((await accountReader.read()).done, true);
+  } finally {
+    for (const reader of readers) await reader.cancel().catch(() => {});
+    await h.close();
+  }
+});
