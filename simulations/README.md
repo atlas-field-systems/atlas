@@ -4,11 +4,9 @@ Atlas Simulations runs the real Atlas parts together in a simulated world and
 checks that they work end to end. It is where Atlas's integration tests and
 evals live. It is a test harness, not a product: nothing in it ships to a field.
 
-**In progress.** The world, lost responses, dropped streams, Tasks across a
-radio link, and a settle self-check are built. Remaining scenarios and seeded
-fault workloads follow. The first version simulates
-[Protocol, Core, and the SDK](../atlas/decision-log.md#build-and-test) together
-([Core and SDK simulations](docs/core-and-sdk.md)).
+**Built for Core and the SDK.** The first version runs
+[Protocol, Core, and the SDK](../atlas/decision-log.md#build-and-test) together.
+[Core and SDK simulations](docs/core-and-sdk.md) lists its scenarios and fault rules.
 
 ## Real parts, simulated world
 
@@ -99,8 +97,6 @@ including that a simulated pass proves nothing about real flight or radios.
 
 ## Open
 
-- Remaining scenarios and seeded fault workloads.
-- Which expensive host-fault scenarios run on a schedule.
 - Gateway and Fieldlink simulations: simulated radios, frame loss, and capacity,
   once those parts are built.
 
@@ -110,12 +106,18 @@ AI agents: read [AGENTS.md](AGENTS.md).
 
 Use Node 24. Run `npm ci` in Protocol, Core, the SDK, and this folder, in that
 order. Then run `npx tsc --noEmit` and `npm test` here. CI runs the built
-scenarios on each affected pull request.
+scenarios and fixed fault seeds on each affected pull request.
+The full-disk scenario mounts an 8 MiB tmpfs with passwordless sudo. If the host
+cannot mount it, the test reports a skip with the mount error. The crash and stop
+scenario uses a separate Core process and the real clock. ZIP checks require `unzip`.
 
 Scenarios check their documentation anchors before running. A failed run writes
-its trace, seed, and assertion error under `.runs/`. Seeded workloads use
-`ATLAS_SEED` to select a seed. Per-caller fault choices keep concurrent callers
-from exchanging faults.
+its trace, seed, and assertion error under `.runs/`. Node's test runner runs TypeScript directly. Each scenario supplies a name,
+documentation anchors, and an asynchronous script. Seeded workloads run seeds
+7, 42, and 2026. `ATLAS_SEED=42 npm test` replays that fault seed alongside the
+scenarios. Each network decision hashes the seed, caller, path, and that caller's
+request count on the route. Workload choices use one seeded generator. Faults
+therefore do not move between callers when I/O order changes.
 
 The clock fires timers in deadline order and preserves insertion order on ties.
 World waits fail after ten wall-clock seconds with the in-flight request list.

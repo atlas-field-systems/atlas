@@ -27,6 +27,8 @@ jobs:
         working-directory: simulations
       - run: npx tsc --noEmit
         working-directory: simulations
+      - name: Check tmpfs mount permission
+        run: sudo -n true
       - run: npm test
         working-directory: simulations
       - uses: actions/upload-artifact@v4
