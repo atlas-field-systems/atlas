@@ -56,7 +56,9 @@ export function startLog(
     why: string;
   }[] = [];
   let gapVersion = 0,
-    writtenGapVersion = 0;
+    writtenGapVersion = 0,
+    writtenThrough = 0,
+    atLimit = false;
   const levels: Level[] = ["error", "warn", "info", "debug", "trace"];
   const files = (dir: string) =>
     readdirSync(dir)
@@ -95,7 +97,8 @@ export function startLog(
       while (queue.length) {
         const line = queue.shift()!;
         const bytes = Buffer.byteLength(line);
-        if (total + bytes > options.totalLimit) {
+        if (atLimit || total + bytes > options.totalLimit) {
+          atLimit = true;
           gap(JSON.parse(line).n, "total limit");
           continue;
         }
@@ -111,22 +114,39 @@ export function startLog(
           gap(JSON.parse(line).n, "write failure");
         }
       }
-      if (gapVersion !== writtenGapVersion) {
+      if (!atLimit && gapVersion !== writtenGapVersion) {
         const version = gapVersion;
-        try {
-          await appendFile(
-            join(directory, `core-${file}.jsonl`),
-            JSON.stringify({
-              n: ++n,
-              at: clock.now(),
-              level: "warn",
-              area: "log",
-              msg: "diagnostic gaps",
-              gaps,
-            }) + "\n",
-          );
-          writtenGapVersion = version;
-        } catch {}
+        const pending = gaps
+          .filter((g) => g.to_n > writtenThrough)
+          .map((g) => ({
+            ...g,
+            from_n: Math.max(g.from_n, writtenThrough + 1),
+            lost: g.to_n - Math.max(g.from_n, writtenThrough + 1) + 1,
+          }));
+        const line =
+          JSON.stringify({
+            n: n + 1,
+            at: clock.now(),
+            level: "warn",
+            area: "log",
+            msg: "diagnostic gaps",
+            gaps: pending,
+          }) + "\n";
+        const bytes = Buffer.byteLength(line);
+        if (total + bytes <= options.totalLimit) {
+          if (fileBytes + bytes > options.fileLimit) {
+            file++;
+            fileBytes = 0;
+          }
+          n++;
+          try {
+            await appendFile(join(directory, `core-${file}.jsonl`), line);
+            total += bytes;
+            fileBytes += bytes;
+            writtenGapVersion = version;
+            writtenThrough = pending.at(-1)?.to_n ?? writtenThrough;
+          } catch {}
+        }
       }
     })().finally(() => {
       writing = null;
@@ -158,7 +178,8 @@ export function startLog(
           const record = JSON.parse(line);
           n = Math.max(n, record.n);
           if (record.area === "log" && Array.isArray(record.gaps)) {
-            gaps.splice(0, gaps.length, ...record.gaps);
+            gaps.push(...record.gaps);
+            writtenThrough = record.gaps.at(-1)?.to_n ?? writtenThrough;
           }
         } catch {}
       }

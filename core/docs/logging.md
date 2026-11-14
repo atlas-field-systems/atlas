@@ -83,3 +83,7 @@ The event log is never treated this way. A change Core cannot store is refused
 with `507 storage_full` ([storage](storage.md#memory-and-full-disks)). Lost,
 truncated, or filtered evidence is always visible in the archive; Core never
 claims a complete record it does not have.
+
+The total byte limit includes gap records. Once a record would exceed it, Core
+stops diagnostic writes for that run and keeps subsequent loss counts for the ZIP.
+Gap records written before that point contain only losses not previously written.

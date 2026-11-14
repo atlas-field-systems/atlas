@@ -209,3 +209,37 @@ test(
     }
   },
 );
+test("F4 diagnostics obey total limit including gaps [logging.md#when-logging-cannot-keep-up]", async () => {
+  const { readdir, readFile } = await import("node:fs/promises"),
+    { join } = await import("node:path");
+  const h = await startHarness(undefined, {
+    log_total_limit_bytes: 2048,
+    log_file_limit_bytes: 2048,
+    debug_endpoint: true,
+  });
+  try {
+    for (let i = 0; i < 25; i++) {
+      await h.call("GET", "/about");
+      await (await fetch(h.core.debugUrl!)).text();
+    }
+    const dir = join(h.dataDir, "diagnostics/run-1");
+    const bytes = (
+      await Promise.all((await readdir(dir)).map((n) => readFile(join(dir, n))))
+    ).reduce((n, b) => n + b.length, 0);
+    assert.ok(bytes <= 2048, `${bytes} bytes exceeds 2048`);
+    const result = await h.core.stop();
+    assert.equal(result.archived, true);
+    if (result.archived) {
+      const { readZip } = await import("../src/reset/zip.ts");
+      const entry = (await readZip(result.zip)).find(
+        (e) => e.name === "manifest.json",
+      )!;
+      const chunks: Buffer[] = [];
+      for await (const chunk of entry.open()) chunks.push(Buffer.from(chunk));
+      const manifest = JSON.parse(Buffer.concat(chunks).toString());
+      assert.ok(manifest.gaps.some((g: { lost: number }) => g.lost > 0));
+    }
+  } finally {
+    await h.close();
+  }
+});
