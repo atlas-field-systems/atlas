@@ -63,6 +63,13 @@ export type Page<T> = { as_of: number; items: T[]; next_cursor: string | null };
 export function createClient<C extends Credential>(options: ClientOptions<C>) {
   const { protocol, credential, clock } = options;
   const baseUrl = new URL(options.baseUrl ?? globalThis.location?.href);
+  if (
+    baseUrl.protocol === "http:" &&
+    baseUrl.hostname !== "localhost" &&
+    baseUrl.hostname !== "[::1]" &&
+    !/^127\.\d+\.\d+\.\d+$/.test(baseUrl.hostname)
+  )
+    throw new Error("HTTP Core baseUrl must use loopback");
   const emit = diagnostics(clock, options.observer);
   const timeout = options.requestTimeoutMs ?? 10000;
   const backoff = options.backoff ?? {
