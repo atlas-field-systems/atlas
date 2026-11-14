@@ -640,7 +640,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
     let resumed: Awaited<ReturnType<typeof startCore>> | undefined;
     const snapshot = await mkdtemp(join(tmpdir(), "atlas-reset-snapshot-"));
     try {
-      for (const name of ["core.sqlite", "core.sqlite-wal", "core.sqlite-shm"])
+      for (const name of ["core.sqlite", "core.sqlite-wal"])
         await copyFile(join(h.dataDir, name), join(snapshot, name));
       const stopped = await h.stop();
       assert.equal(stopped.archived, true);
@@ -656,7 +656,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
         assert.equal((await checkZip(zip)).ok, false);
       }
       const zipBytes = await readFile(zip);
-      for (const name of ["core.sqlite", "core.sqlite-wal", "core.sqlite-shm"])
+      for (const name of ["core.sqlite", "core.sqlite-wal"])
         await copyFile(join(snapshot, name), join(h.dataDir, name));
       resumed = await startCore({ clock, config: h.config });
       assert.equal(resumed.runId, h.core.runId + (corrupt ? 0 : 1));
@@ -676,7 +676,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
 });
 
 
-test("archive stays outside data and diagnostics, including aliases [config.md#paths]", async () => {
+test("archive stays outside data and diagnostics, including aliases [config.md]", async () => {
   const root = await mkdtemp(join(tmpdir(), "atlas-archive-path-"));
   try {
     const data = join(root, "data");
@@ -691,5 +691,19 @@ test("archive stays outside data and diagnostics, including aliases [config.md#p
     }
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+
+test("one Core owns a data directory [storage.md]", async () => {
+  const h = await startHarness();
+  try {
+    await assert.rejects(async () => {
+      const duplicate = await startCore({ clock, config: h.config });
+      await stopCore(duplicate);
+    }, /data_directory.*already in use/);
+    assert.equal((await h.call("GET", "/administration/me", { cookie: h.admin })).status, 200);
+  } finally {
+    await h.close();
   }
 });

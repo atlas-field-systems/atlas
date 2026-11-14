@@ -50,11 +50,16 @@ export interface TableDef {
 
 export function openStore(env: Env, tables: readonly TableDef[]): Store {
   const db = new DatabaseSync(env.paths.database);
-  db.exec(
-    "PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;",
-  );
+  try {
+    db.exec("PRAGMA locking_mode=EXCLUSIVE; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;");
+    db.exec("BEGIN IMMEDIATE");
+  } catch (error) {
+    db.close();
+    if (error instanceof Error && (Number(Reflect.get(error, "errcode")) & 255) === 5)
+      throw new Error("data_directory is already in use by another Core", { cause: error });
+    throw error;
+  }
   const names = new Set<string>();
-  db.exec("BEGIN IMMEDIATE");
   try {
     for (const table of tables) {
       if (names.has(table.name))

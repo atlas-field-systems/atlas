@@ -90,3 +90,6 @@ Reset uses the stored arrival rather than the later offline transition.
 
 Administration keeps gateway and Plugin arrivals in run-scoped `identity_heard` rows.
 Resumed offline records retain those arrival times while their deadlines restart.
+
+Only one Core may open a `data_directory` at a time; a second startup refuses
+before recovery or upload cleanup can change the active run.
