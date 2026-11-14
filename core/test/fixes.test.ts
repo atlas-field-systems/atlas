@@ -564,6 +564,9 @@ test("F16 equal-time later Observations update Tracks and bearings clear positio
           position,
         },
       ]);
+    const beforeRepeat = (await events(h)).filter(e => e.kind === "track.updated").length;
+    await report(h, a, [{type: "report.observation", kind: "coordinates", time: c.now(), asset_id: a.id, observation_id: "O1", position: {latitude: 2, longitude: 0}}]);
+    assert.equal((await events(h)).filter(e => e.kind === "track.updated").length, beforeRepeat);
     let tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin }))
       .body.items;
     assert.equal(tracks[0].position.latitude, 2);

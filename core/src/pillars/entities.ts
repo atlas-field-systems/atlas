@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import * as objects from "./objects.ts";
 import { refuse, checkOrRefuse } from "../api/errors.ts";
 import { nextGlobalId, nextRunSeq } from "../store/runs.ts";
@@ -664,6 +665,8 @@ export function putTrack(
     ...track,
     track_id: track.track_id ?? encodeShortId(nextRunSeq(tx, "track")),
   };
+  const old = tx.get<{record: string}>("SELECT record FROM tracks WHERE run_id=? AND track_id=?", tx.runId, record.track_id);
+  if (old && isDeepStrictEqual(JSON.parse(old.record), record)) return record.track_id;
   tx.run(
     "INSERT INTO tracks VALUES (?,?,?) ON CONFLICT(run_id,track_id) DO UPDATE SET record=excluded.record",
     tx.runId,
