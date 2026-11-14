@@ -11,7 +11,7 @@ import { value } from "../src/world.ts";
 import { rules, type RunTrace } from "../src/rules.ts";
 faultRun({
   name: "core-and-sdk",
-  seeds: [7, 42, 2026],
+  seeds: [64, 100, 121],
   checks: rules.map((r) => r.checks),
   async run(w, seed) {
     let state = seed >>> 0;
@@ -37,6 +37,7 @@ faultRun({
     const operators = [w.admin, w.client("operator-two", { kind: "account" })];
     value(await w.complete(operators[1].connect()));
     value(await w.complete(operators[1].login("ADM", "simulation-password")));
+    w.network.seed = seed;
     const handled: Record<string, number[]> = { one: [], two: [] };
     const readers = operators.map((c, i) =>
       follow(c, { after: 0 }, (e) => {
@@ -45,12 +46,6 @@ faultRun({
     );
     for (const reader of readers) w.onClose(() => reader.stop());
     await w.settle();
-    for (const caller of ["admin", "operator-two"])
-      w.network.dropStreams(caller);
-    w.network.once("admin", `/tasks/${assets[0].session.asset_id}`, {
-      kind: "loseResponse",
-    });
-    w.network.seed = seed;
     const accepted: number[] = [];
     const starts: RunTrace["starts"] = [];
     for (let step = 0; step < 6; step++) {
@@ -76,10 +71,6 @@ faultRun({
       const task = asset.session.queue!.next()!;
       starts.push({ asset_id: task.asset_id, task_id: task.task_id });
       asset.session.queue!.finish(task.task_id, "completed");
-      if (step === 0)
-        w.network.once("admin", "/entities/geofeatures", {
-          kind: "loseResponse",
-        });
       await known(
         operator.call("createGeofeature", {
           body: {
@@ -152,7 +143,10 @@ faultRun({
     for (const caller of ["admin", "operator-two"])
       assert.ok(
         w.network.traffic.some(
-          (t) => t.caller === caller && (t.streamCuts ?? 0) > 0,
+          (t) =>
+            t.caller === caller &&
+            t.faultOrigin === "seed" &&
+            (t.streamCuts ?? 0) > 0,
         ),
         `${caller} stream was cut`,
       );
@@ -161,7 +155,10 @@ faultRun({
         w.network.traffic
           .filter(
             (t) =>
-              t.fault?.kind === "loseResponse" && t.status && t.status < 300,
+              t.faultOrigin === "seed" &&
+              t.fault?.kind === "loseResponse" &&
+              t.status &&
+              t.status < 300,
           )
           .map((t) => t.path),
       ).size >= 2,

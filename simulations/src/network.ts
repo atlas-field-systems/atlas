@@ -12,6 +12,7 @@ export type Traffic = {
   key: string | null;
   status?: number;
   fault?: Fault;
+  faultOrigin?: "seed" | "rule";
   streamCuts?: number;
   body?: unknown;
   response?: unknown;
@@ -97,6 +98,7 @@ export class Network {
         path,
         key: headers.get("Idempotency-Key"),
         fault,
+        faultOrigin: rule ? "rule" : seeded ? "seed" : undefined,
       };
       if (!path.startsWith("/administration") && typeof init.body === "string")
         traffic.body = JSON.parse(init.body);
