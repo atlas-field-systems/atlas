@@ -7,7 +7,7 @@ import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startAsset } from "@atlas/sdk";
-import { description } from "../src/actors.ts";
+import { description, ipAsset } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 import { createWorld } from "../src/world.ts";
 const execute = promisify(execFile);
@@ -35,6 +35,7 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
   const issued = value(await w.complete(w.admin.call("createAssetKey")));
   assert.ok("key" in issued);
   const asset = w.client("full-disk-asset", { kind: "asset", key: issued.key });
+  const files = await ipAsset(w, "files");
   const filler = await open(join(mount, "fill"), "w");
   try {
     try {
@@ -72,6 +73,34 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
     assert.equal(
       w.network.traffic.filter(
         (t) => t.caller === "full-disk-asset" && t.path === "/entities/assets",
+      ).length,
+      1,
+    );
+    for (const place of [
+      undefined,
+      { kind: "point" as const, position: { latitude: 1, longitude: 2 } },
+    ]) {
+      const stored = await w.complete(
+        files.session.link.storeFile({
+          name: "capture.txt",
+          contentType: "text/plain",
+          bytes: new TextEncoder().encode("field evidence"),
+          place,
+        }),
+      );
+      assert.ok(
+        !stored.ok && stored.status === 507 && stored.error === "storage_full",
+      );
+    }
+    assert.equal(
+      w.network.traffic.filter(
+        (t) => t.caller === "files" && t.path === "/objects",
+      ).length,
+      1,
+    );
+    assert.equal(
+      w.network.traffic.filter(
+        (t) => t.caller === "files" && t.path === "/entities/geofeatures",
       ).length,
       1,
     );

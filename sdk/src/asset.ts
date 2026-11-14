@@ -351,6 +351,7 @@ export async function startAsset(
           return {
             ok: false,
             error: result.error,
+            status: result.status,
             explanation: result.explanation,
           };
         geofeature_id = result.value.geofeature.geofeature_id;
