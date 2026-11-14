@@ -200,6 +200,7 @@ export async function startServer(
           "content-length": file.size_bytes,
         });
         await pipeline(createReadStream(file.path), res);
+        env.log.record({level: "info", area: "api", msg: "file downloaded", method: req.method, route: routePath, object_id: params.object_id, status: 200, size_bytes: file.size_bytes});
         return;
       }
       const key = req.headers["idempotency-key"];

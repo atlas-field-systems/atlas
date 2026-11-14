@@ -138,6 +138,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       msg: run.kind === "resumed" ? "run resumed" : "run started",
       run_id: run.runId,
       config: redactConfig(config),
+      versions,
     });
     const contact = startContact(
       store,

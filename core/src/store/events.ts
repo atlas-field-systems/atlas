@@ -203,7 +203,7 @@ export function appendEvent<K extends EventKind>(
     typeof first.asset_id === "string"
       ? first.asset_id
       : null;
-  return tx.get<{ id: number }>(
+  const event_id = tx.get<{ id: number }>(
     "INSERT INTO events(run_id,time,kind,asset_id,record,requested_by,clock_ahead) VALUES (?,?,?,?,?,?,?) RETURNING event_id id",
     tx.runId,
     tx.now,
@@ -213,6 +213,20 @@ export function appendEvent<K extends EventKind>(
     extra?.requested_by ?? null,
     extra?.clock_ahead ? 1 : 0,
   )!.id;
+  if (kind.endsWith(".contact") || kind.startsWith("track.") || kind.endsWith(".dropped")) {
+    const subject = kind === "asset.contact" ? "Asset" : kind === "gateway.contact" ? "Gateway" : "Plugin";
+    const details: Record<string, unknown> = {};
+    for (const field of ["asset_id", "gateway_id", "plugin_id", "track_id", "task_id", "request_id", "contact"])
+      if (field in record) details[field] = Reflect.get(record, field);
+    tx.env.log.record({
+      ...details,
+      level: "info",
+      area: kind.startsWith("track.") ? "fusion" : kind.endsWith(".contact") ? "contact" : "requests",
+      msg: kind.endsWith(".contact") ? `${subject} contact changed` : kind,
+      kind, event_id,
+    });
+  }
+  return event_id;
 }
 
 export function getEvent(tx: ReadTx, eventId: number): AtlasEvent | undefined {

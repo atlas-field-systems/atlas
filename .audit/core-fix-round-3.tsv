@@ -1,3 +1,4 @@
 finding	choice	evidence	result
 1	Persist gateway and Plugin arrivals; resume deadlines independently	Expanded R2-2 failed on restart time; now all three contacts retain arrival bounds	Core 44/44; typecheck passes; deslop reviewed
 2	Exclude radio refusals from gateway own-hash lookup	R3-2 failed one versus two refusals	Core 45/45; deslop reviewed
+3	Log contact, Track and drop decisions at event boundary; versions at boot; completed downloads at HTTP boundary	R3-3 listed every missing record before fix	Core 46/46; typecheck; deslop removed duplicate contact logging and full record copies

@@ -1097,3 +1097,30 @@ test("R3-2 gateway and radio refusals count separately [api.md#basics]", async (
     assert.deepEqual(refusals.map(e => e.record.radio ?? false), [true, false]);
   } finally { await h.close(); }
 });
+
+test("R3-3 diagnostics cover versions, contact, downloads, Tracks and drops [logging.md#record-the-whole-path-through-core]", async () => {
+  const c = simulatedClock(), h = await startHarness(c, {debug_endpoint: true});
+  try {
+    const g = (await h.call("POST", "/administration/gateways", {cookie: h.admin})).body;
+    await h.call("GET", "/about", {key: g.key});
+    const p = await plugin(h), a = await asset(h);
+    await task(h, a.id);
+    await h.call("POST", `/plugins/${p.plugin_id}/actions/find`, {cookie: h.admin, body: {inputs: []}});
+    await report(h, a, [{type: "report.observation", kind: "coordinates", time: c.now(), asset_id: a.id, observation_id: "O1", position: {latitude: 1, longitude: 2}}]);
+    const uploaded = await fetch(h.core.url + "/objects?name=diagnostic", {method: "POST", headers: {cookie: h.admin, "atlas-definitions": protocol.hash, "idempotency-key": "diagnostic", "content-type": "application/octet-stream"}, body: "file"});
+    const object = await uploaded.json();
+    const download = await fetch(h.core.url + `/objects/${object.object_id}/file`, {headers: {cookie: h.admin, "atlas-definitions": protocol.hash}});
+    await download.arrayBuffer();
+    c.advance(31000);
+    const rows = (await (await fetch(h.core.debugUrl!)).text()).trim().split("\n").map(line => JSON.parse(line));
+    const missing: string[] = [];
+    if (!rows.some(r => r.versions?.definitions_hash === protocol.hash && r.versions.core_version && r.versions.protocol_version)) missing.push("versions");
+    for (const [kind, id, column] of [["Asset", a.id, "asset_id"], ["Gateway", g.gateway_id, "gateway_id"], ["Plugin", p.plugin_id, "plugin_id"]])
+      for (const contact of ["online", "offline"])
+        if (!rows.some(r => r.msg === `${kind} contact changed` && r[column] === id && r.contact === contact)) missing.push(`${kind} ${contact}`);
+    if (!rows.some(r => r.msg === "file downloaded" && r.route === "/objects/:object_id/file" && r.object_id === object.object_id)) missing.push("download");
+    for (const kind of ["track.updated", "task.dropped", "request.dropped", "plugin.dropped"])
+      if (!rows.some(r => r.kind === kind && r.event_id)) missing.push(kind);
+    assert.deepEqual(missing, []);
+  } finally { await h.close(); }
+});

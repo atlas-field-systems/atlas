@@ -289,16 +289,7 @@ export function applyContact(
     tx.runId,
     asset_id,
   );
-  const event_id = tx.append("asset.contact", record);
-  tx.env.log.record({
-    level: "trace",
-    area: "contact",
-    msg: "Asset contact changed",
-    asset_id,
-    event_id,
-    contact: record.contact,
-    last_heard: record.time,
-  });
+  tx.append("asset.contact", record);
   if (record.contact === "offline") {
     dropUnsettled(tx, { asset_id });
     tasks.dropUnconfirmed(tx, asset_id);

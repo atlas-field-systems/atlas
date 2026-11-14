@@ -29,6 +29,9 @@ shared domain records.
 - Storage operations, Fusion and Plugin activity when present, errors, and
   diagnostic records that could not be written.
 
+Contact diagnostics include initial registration and every gateway and Plugin transition.
+Track changes and drop decisions identify their event and subject; completed file downloads identify the Object and route.
+
 Preserve Core's local arrival and send order independently of record times.
 Correlate records with `event_id`, `task_id`, and `asset_id`; do not add
 correlation fields to Protocol. Detail and destination controls are proposed in
