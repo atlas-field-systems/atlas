@@ -564,10 +564,10 @@ test("F15 streams end when their credential is revoked [api.md#callers-and-crede
       cookie: h.admin,
     });
     await task(h, id);
-    assert.equal((await assetReader.read()).done, true);
+    await assert.rejects(assetReader.read(), { message: "terminated" });
     const accountReader = await open({ cookie: h.admin });
     await h.call("POST", "/administration/logout", { cookie: h.admin });
-    assert.equal((await accountReader.read()).done, true);
+    await assert.rejects(accountReader.read(), { message: "terminated" });
   } finally {
     for (const reader of readers) await reader.cancel().catch(() => {});
     await h.close();
@@ -1520,6 +1520,73 @@ test("PR53-11 administration diagnostics name actor, target and retries without 
     ])
       assert.equal(text.includes(secret), false);
   } finally {
+    await h.close();
+  }
+});
+
+test("PR53-16 slow stream deadline destroys its socket [api.md#the-event-log-and-live-stream]", async () => {
+  const { channel } = await import("node:diagnostics_channel");
+  const { connect } = await import("node:net");
+  const c = simulatedClock();
+  const h = await startHarness(c);
+  const opened = Promise.withResolvers<import("node:http").ServerResponse>();
+  const requests = channel("http.server.request.start");
+  const observe = (message: unknown) => {
+    const event = message as {
+      request: import("node:http").IncomingMessage;
+      response: import("node:http").ServerResponse;
+    };
+    if (event.request.url?.startsWith("/events"))
+      opened.resolve(event.response);
+  };
+  let socket: ReturnType<typeof connect> | undefined;
+  requests.subscribe(observe);
+  try {
+    const body = {
+      kind: "line",
+      line: Array.from({ length: 32 }, () => ({
+        latitude: 42.2746123456789,
+        longitude: -71.8063123456789,
+      })),
+    };
+    const first = await h.call("POST", "/entities/geofeatures", {
+      cookie: h.admin,
+      body,
+    });
+    const id = first.body.geofeature.geofeature_id;
+    for (let i = 0; i < 125; i++)
+      for (const result of await Promise.all(
+        Array.from({ length: 32 }, () =>
+          h.call("PUT", "/entities/geofeatures/" + id, {
+            cookie: h.admin,
+            body,
+          }),
+        ),
+      ))
+        assert.equal(result.status, 200);
+    socket = connect(Number(new URL(h.core.url).port), "127.0.0.1");
+    await once(socket, "connect");
+    socket.pause();
+    socket.write(
+      `GET /events?after=0 HTTP/1.1\r\nHost: localhost\r\nCookie: ${h.admin}\r\nAtlas-Definitions: ${protocol.hash}\r\n\r\n`,
+    );
+    const response = await opened.promise;
+    const transport = response.socket!;
+    await h.call("GET", "/about");
+    assert.equal(
+      response.writableNeedDrain,
+      true,
+      "stream reached backpressure",
+    );
+    c.advance(30000);
+    assert.equal(
+      transport.destroyed,
+      true,
+      "deadline releases queued output and transport",
+    );
+  } finally {
+    socket?.destroy();
+    requests.unsubscribe(observe);
     await h.close();
   }
 });

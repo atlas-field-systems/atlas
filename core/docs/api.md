@@ -179,6 +179,8 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 message has `id: <event_id>`, `event: <kind>`, and the event as `data`. Both
 parameters are optional. A browser that reconnects sends `Last-Event-ID`, and Core
 resumes after it. Core sends a `: alive` comment every 10 s.
+Core closes streams by terminating their connection; a reader discards any
+incomplete event and resumes after its last fully handled `event_id`.
 
 - **Snapshots resume cleanly.** Every read returns `as_of`, the last `event_id` it
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
