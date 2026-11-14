@@ -271,11 +271,14 @@ reads belong to accounts.
 
 `GET /entities/assets` returns `{as_of, items, gateways}`. Each Asset entry
 contains `asset_id`, `gateway_id` (or null), `description` (or null), `contact`,
-`reports` (latest by report kind), `settings` (latest report per setting), and
-`subsystems` (latest condition per declared subsystem). `GET /entities/assets/{asset_id}`
-returns `{as_of, item}` with the same entry. `GET /tasks/{asset_id}` returns
-`{as_of, items, held}`. Each Task entry has `task`, `state`, `state_time`, and optional `object_ids`;
-`held` is the latest reported list of Task IDs since the Asset app last signed up; signing up again clears the earlier queue.
+`reports` (latest by report kind, excluding Observations and gimbals),
+`settings` (latest report per setting), `subsystems` (latest condition per declared
+subsystem), and `gimbals` (latest report per declared gimbal `camera_id`).
+`GET /entities/assets/{asset_id}` returns `{as_of, item}` with the same entry.
+`GET /tasks/{asset_id}` returns `{as_of, items, held}`. Each Task entry has `task`,
+`state`, `state_time`, and optional `object_ids`. `held` is the latest reported
+list of Task IDs since the Asset app last signed up; signing up again clears
+the earlier queue.
 
 | Request | Returns |
 | --- | --- |

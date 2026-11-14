@@ -372,6 +372,7 @@ export function pageAfter(
 }
 
 export type LatestWhere =
+  | { asset_id: string; kind: "report.gimbal"; camera_id: string }
   | { asset_id: string; kind: ReportKind; sub_kind?: string }
   | {
       asset_id: string;
@@ -393,6 +394,10 @@ export function latestReport(
   if ("subsystem_id" in where) {
     filter += " AND subsystem_id=?";
     args.push(where.subsystem_id);
+  }
+  if ("camera_id" in where) {
+    filter += " AND json_extract(record,'$.camera_id')=?";
+    args.push(where.camera_id);
   }
   if ("setting" in where) {
     filter += " AND json_extract(record,?) IS NOT NULL";

@@ -586,3 +586,22 @@ test("restart forgets held Tasks before admitting new work [api.md#reads, runs-a
     assert.deepEqual((await task(h, a.id)).body.task_ids, [65]);
   } finally { await h.close(); }
 });
+
+test("snapshot keeps each camera's latest gimbal report [api.md#reads]", async () => {
+  const c = simulatedClock(), h = await startHarness(c);
+  try {
+    const a = await asset(h, {
+      reports: ["gimbal"], commands: [],
+      cameras: ["C1", "C2"].map(camera_id => ({ camera_id, mount: "gimbal", yaw_deg: 0, pitch_deg: -45, horizontal_fov_deg: 80, vertical_fov_deg: 60 })),
+    });
+    const gimbal = (camera_id: string, time: number, yaw_deg: number) => ({ type: "report.gimbal", asset_id: a.id, camera_id, time, yaw_deg, pitch_deg: -20 });
+    const first = gimbal("C1", c.now(), 10), second = gimbal("C2", c.now(), 90);
+    await report(h, a, [first, second, gimbal("C1", c.now() - 1, 0), gimbal("C2", c.now() + 1000000, 170)]);
+    for (const path of [`/entities/assets/${a.id}`, "/entities/assets", "/entities"]) {
+      const read = await h.call("GET", path, { cookie: h.admin });
+      const item = read.body.item ?? read.body.items?.[0] ?? read.body.assets[0];
+      assert.deepEqual(item.gimbals, { C1: first, C2: second });
+      assert.equal(item.reports["report.gimbal"], undefined);
+    }
+  } finally { await h.close(); }
+});
