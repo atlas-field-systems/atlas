@@ -15,3 +15,4 @@ finding	choice	evidence	result
 13	Ignore invalid session cookies only on public routes; every logout response expires browser cookie	F13 missing clearing cookie	Full suite green
 14	Resolve real directory paths at start; refuse archive under data; default sibling data_directory-archive	F14 startup accepted unsafe path before fix	Updated existing archive-path assertions for new default; symlink contract included
 15	Streams check credential validity on every commit before reading or waiting for drain	F15 old credential received new Task	Full suite green
+16	Follower processes event order; equal report times accept later event instead of skipping it	F16 Track latitude stayed one instead of two	Full suite green

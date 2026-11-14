@@ -39,7 +39,7 @@ export const onePerObservation: FusionModule = {
       observation.asset_id,
       observation.observation_id,
     )[0];
-    if (old && old.time >= observation.time) return [];
+    if (old && old.time > observation.time) return [];
     return [
       {
         put: {

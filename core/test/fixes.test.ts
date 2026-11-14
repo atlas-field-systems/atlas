@@ -539,3 +539,44 @@ test("F15 streams end when their credential is revoked [api.md#callers-and-crede
     await h.close();
   }
 });
+test("F16 equal-time later Observations update Tracks and bearings clear positions [api.md#reads, fusion.md#temporary-first-iteration]", async () => {
+  const c = simulatedClock(),
+    h = await startHarness(c);
+  try {
+    const a = await asset(h);
+    for (const position of [
+      { latitude: 1, longitude: 0 },
+      { latitude: 2, longitude: 0 },
+    ])
+      await report(h, a, [
+        {
+          type: "report.observation",
+          kind: "coordinates",
+          time: c.now(),
+          asset_id: a.id,
+          observation_id: "O1",
+          position,
+        },
+      ]);
+    let tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin }))
+      .body.items;
+    assert.equal(tracks[0].position.latitude, 2);
+    await report(h, a, [
+      {
+        type: "report.observation",
+        kind: "bearing",
+        time: c.now(),
+        asset_id: a.id,
+        observation_id: "O1",
+        origin: { latitude: 0, longitude: 0 },
+        bearing_deg: 90,
+      },
+    ]);
+    tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin })).body
+      .items;
+    assert.equal(tracks.length, 1);
+    assert.equal(tracks[0].position, undefined);
+  } finally {
+    await h.close();
+  }
+});
