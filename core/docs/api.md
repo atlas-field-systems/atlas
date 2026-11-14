@@ -275,7 +275,7 @@ contains `asset_id`, `gateway_id` (or null), `description` (or null), `contact`,
 `subsystems` (latest condition per declared subsystem). `GET /entities/assets/{asset_id}`
 returns `{as_of, item}` with the same entry. `GET /tasks/{asset_id}` returns
 `{as_of, items, held}`. Each Task entry has `task`, `state`, `state_time`, and optional `object_ids`;
-`held` is the latest reported list of Task IDs.
+`held` is the latest reported list of Task IDs since the Asset app last signed up; signing up again clears the earlier queue.
 
 | Request | Returns |
 | --- | --- |

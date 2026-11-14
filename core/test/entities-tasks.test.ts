@@ -570,3 +570,19 @@ test("place copies, optional updates, imagery kind rules and Fusion freshness [a
     await h.close();
   }
 });
+
+test("restart forgets held Tasks before admitting new work [api.md#reads, runs-and-identity.md#keys-and-registration]", async () => {
+  const c = simulatedClock(), h = await startHarness(c);
+  try {
+    const a = await asset(h);
+    const accepted = await task(h, a.id, { tasks: Array.from({ length: 64 }, () => ({ kind: "hold" })) });
+    assert.equal(accepted.status, 202);
+    await report(h, a, [queue(a.id, c.now(), 64, accepted.body.event_id)]);
+    assert.equal((await task(h, a.id)).body.error, "queue_full");
+    assert.equal((await h.call("POST", "/entities/assets", { key: a.key, body: description })).status, 201);
+    const read = await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin });
+    assert.equal(read.body.items.filter((t: { state: string }) => t.state === "dropped").length, 64);
+    assert.deepEqual(read.body.held, []);
+    assert.deepEqual((await task(h, a.id)).body.task_ids, [65]);
+  } finally { await h.close(); }
+});
