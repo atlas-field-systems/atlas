@@ -1081,3 +1081,19 @@ test("R2-2 Reset preserves actual last heard across SIGKILL [reset.md#cores-rese
     await h.close();
   }
 });
+
+test("R3-2 gateway and radio refusals count separately [api.md#basics]", async () => {
+  const h = await startHarness();
+  try {
+    const g = (await h.call("POST", "/administration/gateways", {cookie: h.admin})).body;
+    const hash = "sha256:" + "0".repeat(64);
+    await h.call("POST", "/entities/assets/radios", {key: g.key, body: {definitions_hash: hash}});
+    for (let i = 0; i < 2; i++) {
+      const r = await fetch(h.core.url + "/about", {headers: {authorization: `Bearer ${g.key}`, "atlas-definitions": hash}});
+      await r.text();
+    }
+    const refusals = (await events(h)).filter(e => e.kind === "definitions.refused");
+    assert.equal(refusals.length, 2);
+    assert.deepEqual(refusals.map(e => e.record.radio ?? false), [true, false]);
+  } finally { await h.close(); }
+});

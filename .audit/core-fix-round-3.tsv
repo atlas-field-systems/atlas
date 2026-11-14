@@ -1,2 +1,3 @@
 finding	choice	evidence	result
 1	Persist gateway and Plugin arrivals; resume deadlines independently	Expanded R2-2 failed on restart time; now all three contacts retain arrival bounds	Core 44/44; typecheck passes; deslop reviewed
+2	Exclude radio refusals from gateway own-hash lookup	R3-2 failed one versus two refusals	Core 45/45; deslop reviewed

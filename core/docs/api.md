@@ -12,7 +12,7 @@ Core serves HTTPS when both TLS files are configured. Without them it serves
 plain HTTP only on loopback. [Configuration](../config.md) owns TLS setup.
 
 A keyed `GET /about` with another definitions hash records at most one
-`definitions.refused` per registered Asset, gateway, or Plugin and hash per run. It still counts as contact.
+`definitions.refused` per registered Asset, gateway, or Plugin and hash per run. The gateway itself and its radios count separately. It still counts as contact.
 For an Asset key that has not registered, Core instead records its `key_id` and
 the differing hash on the console and in diagnostics, at most once per key and
 hash per run. It adds no event because the key has no Asset.

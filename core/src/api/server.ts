@@ -132,7 +132,7 @@ export async function startServer(
             if (!env.protocol.check("refusal", record).ok) return;
             if (
               !tx.get(
-                `SELECT 1 FROM events WHERE run_id=? AND kind='definitions.refused' AND json_extract(record,'$.${column}')=? AND json_extract(record,'$.definitions_hash')=?`,
+                `SELECT 1 FROM events WHERE run_id=? AND kind='definitions.refused' AND json_extract(record,'$.${column}')=? AND json_extract(record,'$.definitions_hash')=? AND COALESCE(json_extract(record,'$.radio'),0)=0`,
                 tx.runId,
                 value,
                 hash,
