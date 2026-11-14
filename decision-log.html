@@ -75,8 +75,14 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-14</td>
+<td>One Core may run several gateways at once when their radio links cannot clash: gateways in different areas, such as two gateways 20 miles apart, or gateways in one area on different bands, such as an FLRC gateway beside a Meshtastic gateway. An Asset always uses exactly one gateway.</td>
+<td>Gateways on one Core. Two gateways in one radio network stay out of scope.</td>
+<td><a href="scale.html#setup">Scale</a></td>
+</tr>
+<tr>
 <td>2026-11-13</td>
-<td>SiK is an experimental Fieldlink for trying out drones that are not traditionally Atlas, not for long-term deployment. The gateway runs one SiK radio, so a SiK site flies one drone.</td>
+<td>SiK is an experimental Fieldlink for trying out drones that are not traditionally Atlas, not for long-term deployment. The gateway runs one SiK radio, so a SiK gateway flies one drone.</td>
 <td>SiK gateways.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md">SiK Fieldlink</a></td>
 </tr>
@@ -178,7 +184,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>One gateway is deployed per area, for the whole radio network. The network is a mesh: Assets talk to each other and to that one gateway, and many Assets ride on it. No Asset uses two gateways; several gateways in one network are out of scope.</td>
+<td>One gateway serves each radio network. The network is a mesh: Assets talk to each other and to that one gateway, and many Assets ride on it. No Asset uses two gateways; two gateways in one network are out of scope. Several networks on one Core is the 2026-11-14 entry.</td>
 <td>Radio Assets and gateways.</td>
 <td><a href="runs-and-identity.html#radio-assets">Runs and identity</a></td>
 </tr>
@@ -226,7 +232,7 @@ back.</p>
 </tr>
 <tr>
 <td>2026-11-11</td>
-<td>Radio identity is dropped from Core. The gateway is an IP bridge; edge identity stays on the gateway side. One gateway per site.</td>
+<td>Radio identity is dropped from Core. The gateway is an IP bridge; edge identity stays on the gateway side.</td>
 <td>Core and the records. A Fieldlink still gives each radio its own identity.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#what-every-fieldlink-provides">Gateway</a></td>
 </tr>
@@ -573,12 +579,6 @@ back.</p>
 <td>Fixed-wing aircraft are not part of the current design. They come later as a new kind of Asset with its own commands.</td>
 <td>Asset kinds.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#movement-module-and-profiles">Assets and their equipment</a></td>
-</tr>
-<tr>
-<td>2026-11-11</td>
-<td>One site per Core.</td>
-<td>A Core, at a time.</td>
-<td><a href="scale.html#setup">Scale</a></td>
 </tr>
 <tr>
 <td>2026-11-11</td>
