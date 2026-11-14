@@ -9,7 +9,32 @@
  */
 import { systemClock } from "./clock.ts";
 import { readConfigFile, resolveConfig } from "./config.ts";
-import { startCore } from "./core.ts";
+import { startCore, type RunningCore } from "./core.ts";
+
+let core: RunningCore | undefined;
+let stopRequested = false;
+let stopping = false;
+const stop = async (running: RunningCore) => {
+  if (stopping) return; // a second signal does not start a second Reset
+  stopping = true;
+  try {
+    const result = await running.stop();
+    if (!result.archived) process.stderr.write(result.explanation + "\n");
+    process.exit(result.archived ? 0 : 1);
+  } catch (error) {
+    process.stderr.write(
+      `Reset failed: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    process.exit(1);
+  }
+};
+// Installed before startup so a stop that arrives while Core starts is still a Reset, not a kill.
+const requestStop = () => {
+  stopRequested = true;
+  if (core) void stop(core);
+};
+process.on("SIGTERM", requestStop);
+process.on("SIGINT", requestStop);
 
 const resolved = resolveConfig(
   await readConfigFile(
@@ -23,22 +48,5 @@ if (!resolved.ok) {
   process.exit(2);
 }
 
-const core = await startCore({ clock: systemClock, config: resolved.config });
-
-let stopping = false;
-const stop = async () => {
-  if (stopping) return; // a second signal does not start a second Reset
-  stopping = true;
-  try {
-    const result = await core.stop();
-    if (!result.archived) process.stderr.write(result.explanation + "\n");
-    process.exit(result.archived ? 0 : 1);
-  } catch (error) {
-    process.stderr.write(
-      `Reset failed: ${error instanceof Error ? error.message : String(error)}\n`,
-    );
-    process.exit(1);
-  }
-};
-process.on("SIGTERM", stop);
-process.on("SIGINT", stop);
+core = await startCore({ clock: systemClock, config: resolved.config });
+if (stopRequested) void stop(core);
