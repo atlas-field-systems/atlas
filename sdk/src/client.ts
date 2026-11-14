@@ -570,7 +570,6 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     path: string,
     query: Query = {},
   ): AsyncIterable<Result<Page<T>>> {
-    requireCaller(["account", "plugin"]);
     let cursor: string | undefined;
     do {
       const result = await request<Page<T>>("GET", path, undefined, {
@@ -606,10 +605,6 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
         timer.cancel();
       },
     };
-  }
-  function requireCaller(kinds: readonly CallerKind[]) {
-    if (!kinds.includes(credential.kind))
-      throw new Error("Credential cannot call this route");
   }
   const client = {
     get status() {
@@ -651,7 +646,6 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
         contentType,
       ),
     objectFile: (object_id: string) => {
-      requireCaller(["account", "plugin"]);
       return request<Blob>(
         "GET",
         `/objects/${encodeURIComponent(object_id)}/file`,
