@@ -10,7 +10,8 @@ run ID, debug URL, and `stop`. Outside programs use HTTP.
 | `main.ts`, `core.ts` | Configuration, boot order, composition, signals |
 | `clock.ts`, `config.ts`, `ids.ts`, `log.ts` | Injected time, local configuration, short ID encoding, diagnostics |
 | `store/db.ts` | SQLite connection, synchronous transactions, commit notifications |
-| `store/events.ts` | Event kinds, append validation, settlement, audience filtering, pages |
+| `api/event-kinds.ts` | Public event kind-to-record data |
+| `store/events.ts` | Event audience and request rules, append validation, settlement, filtering, pages |
 | `store/idempotency.ts`, `store/runs.ts` | Retry responses, recovery, counters |
 | `api/routes.ts`, `server.ts`, `auth.ts`, `errors.ts`, `stream.ts` | Route table, pipeline, authorization, refusals, SSE |
 | `pillars/` | Entities, Tasks, Objects, Administration, Fusion |
@@ -23,7 +24,8 @@ per change keeps admission and effects indivisible. The callback type rejects
 Promises. Slow work such as password hashing happens before the transaction.
 Routes may prepare with the Store to read credential hashes before scrypt.
 
-`EVENT_KINDS` defines each kind's Protocol record, audience, and request status.
+`api/event-kinds.ts` owns each kind's Protocol record and array flag.
+`store/events.ts` adds audience and request rules.
 Append validates records with Protocol. Each request kind names its recipient and answering event kinds; settlement
 requires both to match as well as `request_id`. There is no second requests table.
 Streams read pages from disk and keep only a cursor, never a backlog.

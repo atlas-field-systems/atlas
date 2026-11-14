@@ -4,22 +4,22 @@ Atlas Simulations runs the real Atlas parts together in a simulated world and
 checks that they work end to end. It is where Atlas's integration tests and
 evals live. It is a test harness, not a product: nothing in it ships to a field.
 
-**Planning.** Nothing is built. The first version simulates
-[Protocol, Core, and the SDK](../atlas/decision-log.md#build-and-test) together
-([Core and SDK simulations](docs/core-and-sdk.md)).
+**Built for Core and the SDK.** The first version runs
+[Protocol, Core, and the SDK](../atlas/decision-log.md#build-and-test) together.
+[Core and SDK simulations](docs/core-and-sdk.md) lists its scenarios and fault rules.
 
 ## Real parts, simulated world
 
 A simulation runs each Atlas part as it ships and fakes only what lies around
 it.
 
-| Real | Simulated |
-| --- | --- |
-| Core, with its SQLite storage and event log | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
-| The SDK, used by every simulated caller | Assets, until the Asset app exists ([simulated Assets](#simulated-assets)) |
-| Protocol's definitions and its one validator | Time, so minutes of contact rules run in milliseconds |
-| Later: the Asset app, the gateway app, Fieldlinks | Equipment, radios, and vehicles (later: ArduPilot SITL) |
-| | Faults in the host: a full disk, a Core crash, a deliberate stop |
+| Real                                              | Simulated                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Core, with its SQLite storage and event log       | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
+| The SDK, used by every simulated caller           | Assets, until the Asset app exists ([simulated Assets](#simulated-assets))                              |
+| Protocol's definitions and its one validator      | Time, so minutes of contact rules run in milliseconds                                                   |
+| Later: the Asset app, the gateway app, Fieldlinks | Equipment, radios, and vehicles (later: ArduPilot SITL)                                                 |
+|                                                   | Faults in the host: a full disk, a Core crash, a deliberate stop                                        |
 
 A simulation never runs a special build of a part. If a part has to behave
 differently to be simulated, the simulation proves less, so that need is a
@@ -90,16 +90,41 @@ including that a simulated pass proves nothing about real flight or radios.
 
 ## Docs
 
-| Doc | Covers |
-| --- | --- |
+| Doc                                  | Covers                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | [Core and SDK](docs/core-and-sdk.md) | The first version: Core and the SDK under a faulty network, with simulated Assets, gateways, Plugins, and operators |
-| [Asset](docs/asset.md) | The Asset app against ArduPilot SITL and simulated equipment, once the Asset app is built |
+| [Asset](docs/asset.md)               | The Asset app against ArduPilot SITL and simulated equipment, once the Asset app is built                           |
 
 ## Open
 
-- Test tools, the scenario format, and how fault runs pick their faults.
-- Which simulations run on every pull request and which run on a schedule.
 - Gateway and Fieldlink simulations: simulated radios, frame loss, and capacity,
   once those parts are built.
 
 AI agents: read [AGENTS.md](AGENTS.md).
+
+## Run the Core and SDK scenarios
+
+Use Node 24. Run `npm ci` in Protocol, Core, the SDK, and this folder, in that
+order. Then run `npx tsc --noEmit` and `npm test` here. CI runs the built
+scenarios and fixed fault seeds on each affected pull request.
+The full-disk scenario mounts an 8 MiB tmpfs with passwordless sudo. If the host
+cannot mount it, the test reports a skip with the mount error. The crash and stop
+scenario uses a separate Core process and the real clock. ZIP checks require `unzip`.
+
+Scenarios check their documentation anchors before running. A failed run writes
+its trace, seed, assertion error, and Core `logs/` under `.runs/`. Node's test runner runs TypeScript directly. Each scenario supplies a name,
+documentation anchors, and an asynchronous script. Seeded workloads run seeds
+64, 100, and 121. `ATLAS_SEED=64 npm test` replays that fault seed alongside the
+scenarios. Each network decision hashes the seed, caller, path, and that caller's
+request count on the route. Workload choices use one seeded generator. Faults
+therefore do not move between callers when I/O order changes.
+Every fault seed checks that seeded decisions cut both readers and lost
+responses on at least two routes. The traffic log records whether each fault
+came from a seed or an explicit scenario rule. Seeded runs place no faults by hand. Reader event IDs are compared with Core's
+`events.jsonl` from the Reset ZIP after the run stops, using each reader's audience.
+
+The clock fires timers in deadline order and preserves insertion order on ties.
+World waits fail after ten wall-clock seconds with the in-flight request list.
+A run cannot advance more than 24 simulated hours. `settle()` waits for eight
+quiet event-loop turns with no request in flight. Open stream reads are excluded.
+Arriving chunks and SDK diagnostics count as activity.

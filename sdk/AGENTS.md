@@ -12,6 +12,10 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 - Fieldlinks and gateway design are not part of the SDK.
 - [README](README.md) is the overview and doc map. Each part of the SDK has one doc
   in `docs/`. Put a new rule in the doc for its part and link to it from elsewhere.
-- Planning only until the owner requests implementation. Runtime code is not built.
+- Runtime is built. The owner requested implementation on 2026-11-14.
 - The SDK is not released yet. How it is tagged is decided when it has code.
 - Do not merge without the developer's approval.
+
+
+Run `npx tsc --noEmit`, `npm run check:browser`, and `npm test`.
+Keep the queue contract test here. Integration scenarios belong in Simulations.

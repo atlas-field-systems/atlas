@@ -6,15 +6,17 @@ are in [The event log and live stream](../../core/docs/api.md#the-event-log-and-
 ## Following the stream
 
 ```ts
-const follow = atlas.follow({ after, asset_id }, async (event) => { /* ... */ });
-follow.cursor;   // last handled event_id
-follow.stale;    // true while disconnected
-follow.stop();
+const subscription = follow(atlas, { after, asset_id }, async (event) => {
+  /* ... */
+});
+subscription.cursor; // last handled event_id
+subscription.stale; // true while disconnected
+subscription.stop();
 ```
 
 - **Start from a snapshot.** A program loads a read, then follows with `after`
   set to that read's `as_of`. That is how a page load, a refresh, or a new tab
-  recovers everything. Without `after`, the stream starts from the latest event.
+  recovers everything. `after` is required, so every follow starts from an explicit cursor.
 - **One event at a time, in order.** The handler gets each event once, in
   `event_id` order. The cursor advances only when the handler returns or its
   promise resolves. If the handler throws, the follow stops at the last handled
@@ -33,7 +35,10 @@ browser and Node.
   ([configuration](../config.md)). The client uses the same backoff to reopen a
   stream that Core closed because the reader fell behind.
 - With neither data nor a `: alive` comment for the idle timeout, the client
-  treats the stream as dead and reopens it.
+  treats the stream as dead and reopens it. Byte arrival resets this timer. The timer
+  pauses while a handler is pending and restarts when it returns. The follow
+  reads the next chunk only after the handler returns, so a slow handler
+  preserves backpressure to Core.
 - `stale` is true from the moment the stream drops until it reopens. Reads of
   local state stay available and say they are stale.
 - A `401` stops reconnecting, as in [Credentials](client.md#credentials). A
@@ -48,11 +53,11 @@ The live picture is an optional in-memory view of Entities and Tasks for operato
 apps. Assets do not use it.
 
 ```ts
-const picture = createLivePicture(atlas, { asset_id });   // asset_id optional
-picture.assets();        // { ready, stale, items }
-picture.observations();  // { ready, stale, items }
-picture.tracks();        // { ready, stale, items }
-picture.geofeatures();   // { ready, stale, items }
+const picture = createLivePicture(atlas, { asset_id }); // asset_id optional
+picture.assets(); // { ready, stale, items }
+picture.observations(); // { ready, stale, items }
+picture.tracks(); // { ready, stale, items }
+picture.geofeatures(); // { ready, stale, items }
 picture.tasks(asset_id); // { ready, stale, items }
 picture.onChange(cb);
 ```
@@ -61,6 +66,8 @@ picture.onChange(cb);
   ([Entities](../../core/docs/api.md#entities)) and each Asset's
   `GET /tasks/{asset_id}` ([Reads](../../core/docs/api.md#reads)), then follows
   from the smallest `as_of`.
+  The follow is unfiltered: `asset_id` narrows only Asset entries and Tasks on
+  the client. Places, Tracks, and every Observation stay live.
   For each part, it skips events at or below the `as_of` of the read that loaded it.
 - **Readiness is explicit.** Reads return `{ready, stale, items}`. Until loading
   finishes, `ready` is false; a read never returns an empty list as if it were true.
@@ -81,3 +88,11 @@ picture.onChange(cb);
   readiness means the equipment is ready.
 - **On disconnect** the picture keeps its data with `stale: true` and resumes from
   its cursor on reconnect. It keeps nothing on disk.
+
+## Follow completion
+
+`subscription.done` resolves with `{reason, error?}`. The reason is `stopped`,
+`closed`, `unauthenticated`, `definitions_mismatch`, `run_ended`,
+`handler_failed`, or `invalid_event`. An invalid record ends this follow.
+It does not claim a definitions mismatch. The host decides whether to start
+another follow.

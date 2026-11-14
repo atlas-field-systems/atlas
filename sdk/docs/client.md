@@ -23,8 +23,7 @@ key. The SDK never puts a credential in a record, a URL, or a
 
 ## Definitions check
 
-The client loads Protocol's definitions and their hash from its Protocol package
-dependency. The hash follows Protocol's
+The host passes loaded Protocol definitions to the client. The hash follows Protocol's
 [recipe](../../protocol/docs/decisions.md#definitions-hash), so every program
 that loads the same definition files gets the same hash. `connect()` calls
 `GET /about` and compares `definitions_hash` with its
@@ -43,7 +42,7 @@ The client never reinterprets records it cannot validate.
 Before sending, the client checks every body record (a Task, a settings
 change, a description, reports) with Protocol's validator. A body that fails is a
 programmer error. The call throws with the failing paths and sends nothing.
-`validate(record)` returns the same check as a value, so a form can show errors
+`validate(name, record)` returns the same check as a value, so a form can show errors
 before the operator submits.
 
 ## Retries and idempotency
@@ -53,7 +52,15 @@ with the same key and the same body, with backoff, until the request timeout.
 Core returns the retained non-secret response for a repeated key, so a retry
 never repeats an effect. Credential and login retries follow the
 [Core API's acknowledgment and recovery rules](../../core/docs/api.md#callers-and-credentials).
-The client never retries a `4xx`.
+After recovery login, it confirms the session with `GET /administration/me`.
+While that returns `401`, it uses a fresh login key and confirms again, up to
+a separate request timeout starting after the initial login attempt. Each
+recovery login has its own request timeout. It returns success only for a
+confirmed session. If Core answered logins but no session could be confirmed,
+it returns `session_not_confirmed`. A wrong password returns Core's
+`unauthenticated` refusal.
+The direct client never retries a `4xx` or a definitive
+[storage refusal](../../core/docs/storage.md#memory-and-full-disks).
 
 If no response arrives before the timeout, the result is `unknown`. Core may or
 may not have accepted the request. `unknown` is not failure. It carries `retry()`,
@@ -68,8 +75,13 @@ program throw.
 ```ts
 type Result<T> =
   | { ok: true; value: T }
-  | { ok: false; error: string; status?: number; explanation: string;
-      retry?: () => Promise<Result<T>> };
+  | {
+      ok: false;
+      error: string;
+      status?: number;
+      explanation: string;
+      retry?: () => Promise<Result<T>>;
+    };
 ```
 
 - `error` is Core's code (`invalid`, `definitions_mismatch` and the others in
@@ -91,28 +103,33 @@ does not mean the Asset did anything. The outcome arrives later on the
 The client offers no "wait until done" call. A program that needs the outcome
 follows the stream and matches these fields.
 
-## Surface sketch
+## Calls
 
-Names are a planning sketch. Each call maps to one endpoint in
+The typed `call(name, {params, query, body})` uses the route table in
+[src/routes.ts](../src/routes.ts). Credential types limit route names,
+and Protocol types describe bodies. Each call maps to one endpoint in
 [Operator requests](../../core/docs/api.md#operator-requests),
 [Reads](../../core/docs/api.md#reads),
 [Asset and gateway calls](../../core/docs/api.md#asset-and-gateway-calls), or
 [Accounts and provisioning](../../core/docs/api.md#accounts-and-provisioning).
 
 ```ts
-const atlas = createClient({ baseUrl, key, observer });  // key: Assets, gateways, and Plugins only
-const ready = await atlas.connect();                     // GET /about, hash check
+const atlas = createClient({
+  baseUrl,
+  protocol,
+  credential: { kind: "account" },
+  clock: systemClock,
+  fetch,
+  observer,
+});
+const ready = await atlas.connect();
 if (!ready.ok) return show(ready.explanation);
-
-await atlas.login(operator_id, password);                // browser accounts
-const sent = await atlas.sendTasks(asset_id, { tasks }); // { task_ids, event_id }
-await atlas.changeSettings(asset_id, settings);
-await atlas.cancel(asset_id, task_id);
-
-await atlas.assets();  await atlas.asset(asset_id);  await atlas.tasks(asset_id);
-for await (const page of atlas.history({ asset_id, report, since, until })) { /* ... */ }
-
-atlas.follow({ after, asset_id }, onEvent);              // see live.md
+await atlas.login(operator_id, password);
+const sent = await atlas.call("sendTasks", {
+  params: { asset_id },
+  body: { tasks },
+});
+const stream = follow(atlas, { after, asset_id }, onEvent);
 atlas.close();
 ```
 
@@ -137,3 +154,14 @@ A Plugin uses one client with its own key and makes the
 [Plugin calls](../../core/docs/api.md#plugins): it describes itself, follows its
 event stream for the calls addressed to it, stores what it creates, and posts one
 answer per call. The SDK keeps the Plugin in contact while it is idle.
+
+## Run changes and idle contact
+
+A connection binds one run. After a transport failure, the client checks
+`/about` before resending. A new run fences every old retry and returns
+`run_ended` without sending. Call `connect()` to bind the new run after
+discarding the old state. An invalid response returns `invalid_response`.
+
+Gateway and Plugin clients use `holdContact()` while idle. It checks `/about`
+after `heartbeatMs` without a request. Stop its handle when the host ends.
+It stops on lost authentication, a mismatch, a new run, or client close.
