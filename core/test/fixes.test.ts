@@ -1410,3 +1410,28 @@ test("Plugin inline imagery requires GeoTIFF and leaves refused calls open [api.
     assert.equal((await answer(good)).status, 200);
   } finally { await h.close(); }
 });
+
+test("imagery requires GeoKeyDirectory in the first image directory [api.md#objects]", async () => {
+  const h = await startHarness();
+  try {
+    for (const little of [true, false]) {
+      for (const first of [true, false]) {
+        const bytes = Buffer.alloc(32);
+        bytes.write(little ? "II" : "MM");
+        const u16 = (v: number, at: number) => little ? bytes.writeUInt16LE(v, at) : bytes.writeUInt16BE(v, at);
+        const u32 = (v: number, at: number) => little ? bytes.writeUInt32LE(v, at) : bytes.writeUInt32BE(v, at);
+        u16(42, 2); u32(8, 4);
+        if (first) { u16(1, 8); u16(34735, 10); }
+        else { u32(14, 10); u16(1, 14); u16(34735, 16); }
+        const response = await fetch(h.core.url + "/objects?name=directory", {
+          method: "POST", headers: { cookie: h.admin, "Atlas-Definitions": protocol.hash, "Idempotency-Key": crypto.randomUUID() }, body: bytes,
+        });
+        assert.equal(response.status, 201);
+        const object = await response.json();
+        const imagery = await h.call("POST", "/entities/geofeatures", { cookie: h.admin, body: { kind: "imagery", object_id: object.object_id } });
+        assert.equal(imagery.status, first ? 200 : 409);
+        if (!first) assert.equal(imagery.body.error, "not_geotiff");
+      }
+    }
+  } finally { await h.close(); }
+});

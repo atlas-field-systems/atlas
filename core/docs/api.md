@@ -598,7 +598,7 @@ and a removal adds `track.removed`.
 ## Objects
 
 Core accepts imagery only when the file is a TIFF with GeoKeyDirectory tag
-34735, regardless of the upload's `Content-Type`. Attach requests use `requests.attach`. Attaching an Object to the same
+34735 in its first image directory, regardless of the upload's `Content-Type`. Attach requests use `requests.attach`. Attaching an Object to the same
 end state adds no event and returns its existing latest Object `event_id`.
 
 An Object is a file Core holds, with an `object` record that says what it is:
