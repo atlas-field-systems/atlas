@@ -176,7 +176,8 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
       for (const c of clients) c.close();
       network.close();
       await settle();
-      await complete(core.stop());
+      const stopped = await complete(core.stop());
+      if (!stopped.archived) throw new Error(stopped.explanation);
       await rm(root, { recursive: true, force: true });
     },
   };

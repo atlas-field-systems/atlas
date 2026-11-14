@@ -47,7 +47,6 @@ faultRun({
     for (const reader of readers) w.onClose(() => reader.stop());
     await w.settle();
     const accepted: number[] = [];
-    const starts: RunTrace["starts"] = [];
     for (let step = 0; step < 6; step++) {
       const asset = assets[Math.floor(random() * assets.length)];
       const operator = operators[step % 2];
@@ -68,8 +67,7 @@ faultRun({
       await w.until(() =>
         asset.session.queue!.held().includes(sent.task_ids[0]),
       );
-      const task = asset.session.queue!.next()!;
-      starts.push({ asset_id: task.asset_id, task_id: task.task_id });
+      const task = asset.next()!;
       asset.session.queue!.finish(task.task_id, "completed");
       await known(
         operator.call("createGeofeature", {
@@ -84,7 +82,7 @@ faultRun({
     const sent = await known(
       w.admin.call("sendTasks", {
         params: { asset_id: radio.asset_id },
-        body: { tasks: [{ kind: "hold" }] },
+        body: { tasks: [{ kind: "hold" }], now: true },
       }),
     );
     accepted.push(sent.event_id);
@@ -95,10 +93,8 @@ faultRun({
     )!;
     radio.deliver(request);
     radio.deliver(request);
-    await w.until(() => radio.session.queue!.held().length === 1);
-    const task = radio.session.queue!.next()!;
-    starts.push({ asset_id: task.asset_id, task_id: task.task_id });
-    radio.session.queue!.finish(task.task_id, "completed");
+    await w.until(() => radio.starts.length > 0);
+    radio.session.queue!.finish(sent.task_ids[0], "completed");
     await known(
       w.admin.call("callPlugin", {
         params: { plugin_id: p.plugin_id, action: "scan" },
@@ -183,7 +179,18 @@ faultRun({
       reportIds,
       tasks,
       events: archivedEvents,
-      starts,
+      starts: [
+        ...assets.flatMap((a) =>
+          a.starts.map((task_id) => ({
+            asset_id: a.session.asset_id,
+            task_id,
+          })),
+        ),
+        ...radio.starts.map((task_id) => ({
+          asset_id: radio.asset_id,
+          task_id,
+        })),
+      ],
       accepted,
       handled,
       network: w.network.traffic,

@@ -54,7 +54,17 @@ export async function ipAsset(
   if (!result.ok) throw new Error(result.explanation);
   const session = result.value;
   w.onClose(() => session.stop());
-  return { client, session, starts, stops };
+  return {
+    client,
+    session,
+    starts,
+    stops,
+    next() {
+      const task = session.queue!.next();
+      if (task) starts.push(task.task_id);
+      return task;
+    },
+  };
 }
 export async function radioAsset(w: World) {
   const issued = value(await w.complete(w.admin.call("provisionGateway")));

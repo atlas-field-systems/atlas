@@ -83,9 +83,21 @@ test("crash resumes and deliberate stop archives then starts an empty run [core/
       archive.includes(Buffer.from("Before crash")),
       "ZIP holds old run evidence",
     );
-    assert.ok(
-      archive.includes(Buffer.from("evidence")),
-      "ZIP holds Object file",
+    const archivedObject = (
+      await promisify(execFile)(
+        "unzip",
+        [
+          "-p",
+          join(root, "archive", stopped.zips[0]),
+          `objects/${object.object_id}`,
+        ],
+        { encoding: "buffer" },
+      )
+    ).stdout;
+    assert.deepEqual(
+      [...archivedObject],
+      [1, 2, 3],
+      "ZIP holds Object file bytes",
     );
     await core.start();
     admin.close();
