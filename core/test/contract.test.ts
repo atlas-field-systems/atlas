@@ -14,7 +14,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import { startCore } from "../src/core.ts";
 import { readZip } from "../src/reset/zip.ts";
@@ -754,4 +754,22 @@ test("bootstrap refuses unusable passwords before creating an account [config.md
     await rm(dir, { recursive: true, force: true });
     await rm(dir + "-archive", { recursive: true, force: true });
   }
+});
+
+
+test("invalid config names the option and exits 2 [config.md]", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-config-"));
+  const path = join(dir, "config.json");
+  try {
+    for (const [key, value] of [["data_directory", 42], ["first_admin", { operator_id: ["ADM"], password_file: "pw" }], ["first_admin", { operator_id: { toString: null }, password_file: "pw" }], ["toString", "bad"], ["__proto__", {}]]) {
+      await writeFile(path, JSON.stringify({ [String(key)]: value }));
+      const run = spawnSync(process.execPath, ["src/main.ts", path], { cwd: new URL("..", import.meta.url), encoding: "utf8", env: Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ATLAS_CORE_"))) });
+      assert.equal(run.status, 2, run.stderr);
+      assert.ok(run.stderr.includes(`config ${key}:`), run.stderr);
+    }
+    await writeFile(path, "{}");
+    const run = spawnSync(process.execPath, ["src/main.ts", path], { cwd: new URL("..", import.meta.url), encoding: "utf8", env: { ...process.env, ATLAS_CORE___PROTO__: '{"data_directory":42}' } });
+    assert.equal(run.status, 2, run.stderr);
+    assert.match(run.stderr, /config __proto__:/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
