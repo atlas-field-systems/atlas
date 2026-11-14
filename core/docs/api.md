@@ -30,7 +30,7 @@ Accounts may call every operator route.
   a missing or different hash with `409 definitions_mismatch`. `GET /about`
   needs no credential and
   returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
-  stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
+  stream alone takes the hash as `?definitions=`, because browsers cannot set headers on it. Other requests require the header, except `/about` and the debug log.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
   that hash differs, Core records the mismatch as described above.
 - **Retries are safe.** Every request that changes state carries an

@@ -1255,3 +1255,51 @@ test("R3-4 fresh connections get stopping throughout grace [reset.md#stopping-co
     await h.close();
   }
 });
+
+test("R3-6 only event streams accept query definitions [api.md#basics, api.md#objects]", async () => {
+  const h = await startHarness();
+  try {
+    for (const [method, path, body] of [
+      ["GET", "/entities", undefined],
+      ["POST", "/objects?name=query", "file"],
+      [
+        "POST",
+        "/administration/login",
+        JSON.stringify({
+          operator_id: "ADM",
+          password: "contract-password-unique",
+        }),
+      ],
+    ] as const) {
+      const r = await fetch(
+        h.core.url +
+          path +
+          (path.includes("?") ? "&" : "?") +
+          `definitions=${protocol.hash}`,
+        {
+          method,
+          headers: {
+            cookie: h.admin,
+            "idempotency-key": crypto.randomUUID(),
+            "content-type": path.startsWith("/objects")
+              ? "application/octet-stream"
+              : "application/json",
+          },
+          body,
+        },
+      );
+      assert.equal(r.status, 409, path);
+      assert.equal((await r.json()).error, "definitions_mismatch");
+    }
+    const ac = new AbortController();
+    const stream = await fetch(
+      h.core.url + `/events?definitions=${protocol.hash}`,
+      { headers: { cookie: h.admin }, signal: ac.signal },
+    );
+    assert.equal(stream.status, 200);
+    ac.abort();
+    await stream.body?.cancel().catch(() => {});
+  } finally {
+    await h.close();
+  }
+});

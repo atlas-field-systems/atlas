@@ -155,7 +155,9 @@ export async function startServer(
         url.pathname !== "/about" &&
         !url.pathname.startsWith("/debug/") &&
         (req.headers["atlas-definitions"] ??
-          url.searchParams.get("definitions")) !== env.protocol.hash
+          (route.kind === "stream"
+            ? url.searchParams.get("definitions")
+            : null)) !== env.protocol.hash
       )
         refuse(
           "definitions_mismatch",

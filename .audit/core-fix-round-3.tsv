@@ -4,3 +4,4 @@ finding	choice	evidence	result
 3	Log contact, Track and drop decisions at event boundary; versions at boot; completed downloads at HTTP boundary	R3-3 listed every missing record before fix	Core 46/46; typecheck; deslop removed duplicate contact logging and full record copies
 4	Keep listener through full grace, then close; advance injected test clocks for cleanup	R3-4 failed ECONNREFUSED; existing stalled-stop and admitted-upload assertions preserved	Core 47/47; typecheck; deslop reviewed
 5	Classify GeoTIFF from bytes independently of upload media type	Contract 19 failed 409 versus 200 for octet-stream; image/tiff assertions retained	Core 47/47; typecheck; deslop reviewed
+6	Allow definitions query fallback only for stream routes	R3-6 read returned 200 versus required 409; reads, upload, login and stream now checked	Core 48/48; typecheck; deslop reviewed
