@@ -411,12 +411,14 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       throw new Error("Only account clients log in");
     const body = { operator_id, password };
     assertValid("requests.login", body);
-    const deadline = clock.now() + timeout;
     let recovery = 0;
     let result = await request<Json>("POST", "/administration/login", body);
+    const deadline = clock.now() + timeout;
+    let unconfirmed = false;
     while (result.ok || result.error === "unknown") {
       const me = await request<Json>("GET", "/administration/me");
       result = me;
+      unconfirmed = !me.ok && me.status === 401;
       if (me.ok || me.status !== 401 || clock.now() >= deadline) break;
       await new Promise<void>((resolve) =>
         clock.after(
@@ -426,9 +428,17 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       );
       if (clock.now() >= deadline) break;
       result = await request<Json>("POST", "/administration/login", body);
+      unconfirmed = false;
     }
     if (result.ok && status.phase === "unauthenticated")
       setStatus({ phase: "connected", run_id: status.run_id });
+    if (unconfirmed)
+      return {
+        ok: false,
+        error: "session_not_confirmed",
+        explanation:
+          "Login recovery could not confirm a session before its timeout.",
+      };
     return result;
   }
   async function* pages<T>(

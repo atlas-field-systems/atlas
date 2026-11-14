@@ -54,7 +54,11 @@ never repeats an effect. Credential and login retries follow the
 [Core API's acknowledgment and recovery rules](../../core/docs/api.md#callers-and-credentials).
 After recovery login, it confirms the session with `GET /administration/me`.
 While that returns `401`, it uses a fresh login key and confirms again, up to
-the request timeout. It returns success only for a confirmed session.
+a separate request timeout starting after the initial login attempt. Each
+recovery login has its own request timeout. It returns success only for a
+confirmed session. If Core answered logins but no session could be confirmed,
+it returns `session_not_confirmed`. A wrong password returns Core's
+`unauthenticated` refusal.
 The direct client never retries a `4xx` or a definitive
 [storage refusal](../../core/docs/storage.md#memory-and-full-disks).
 
