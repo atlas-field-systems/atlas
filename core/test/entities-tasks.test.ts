@@ -1,29 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { startHarness, protocol } from "./harness.ts";
-import type { Clock } from "../src/clock.ts";
-
-function simulatedClock() {
-  let time = 1794560400000;
-  const timers = new Set<{ at: number; fn: () => void }>();
-  return {
-    now: () => time,
-    after(ms: number, fn: () => void) {
-      const t = { at: time + ms, fn };
-      timers.add(t);
-      return {
-        cancel() {
-          timers.delete(t);
-        },
-      };
-    },
-    advance(ms: number) {
-      time += ms;
-      for (const t of [...timers].sort((a, b) => a.at - b.at))
-        if (t.at <= time && timers.delete(t)) t.fn();
-    },
-  } satisfies Clock & { advance(ms: number): void };
-}
+import { startHarness, protocol, simulatedClock } from "./harness.ts";
 type Harness = Awaited<ReturnType<typeof startHarness>>;
 const description = {
   reports: ["status", "settings", "telemetry", "observation"],
@@ -572,36 +549,100 @@ test("place copies, optional updates, imagery kind rules and Fusion freshness [a
 });
 
 test("restart forgets held Tasks before admitting new work [api.md#reads, runs-and-identity.md#keys-and-registration]", async () => {
-  const c = simulatedClock(), h = await startHarness(c);
+  const c = simulatedClock(),
+    h = await startHarness(c);
   try {
     const a = await asset(h);
-    const accepted = await task(h, a.id, { tasks: Array.from({ length: 64 }, () => ({ kind: "hold" })) });
+    const accepted = await task(h, a.id, {
+      tasks: Array.from({ length: 64 }, () => ({ kind: "hold" })),
+    });
     assert.equal(accepted.status, 202);
     await report(h, a, [queue(a.id, c.now(), 64, accepted.body.event_id)]);
     assert.equal((await task(h, a.id)).body.error, "queue_full");
-    assert.equal((await h.call("POST", "/entities/assets", { key: a.key, body: description })).status, 201);
+    assert.equal(
+      (
+        await h.call("POST", "/entities/assets", {
+          key: a.key,
+          body: description,
+        })
+      ).status,
+      201,
+    );
     const read = await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin });
-    assert.equal(read.body.items.filter((t: { state: string }) => t.state === "dropped").length, 64);
+    assert.equal(
+      read.body.items.filter((t: { state: string }) => t.state === "dropped")
+        .length,
+      64,
+    );
     assert.deepEqual(read.body.held, []);
     assert.deepEqual((await task(h, a.id)).body.task_ids, [65]);
-  } finally { await h.close(); }
+  } finally {
+    await h.close();
+  }
 });
 
 test("snapshot keeps each camera's latest gimbal report [api.md#reads]", async () => {
-  const c = simulatedClock(), h = await startHarness(c);
+  const c = simulatedClock(),
+    h = await startHarness(c);
   try {
     const a = await asset(h, {
-      reports: ["gimbal"], commands: [],
-      cameras: ["C1", "C2"].map(camera_id => ({ camera_id, mount: "gimbal", yaw_deg: 0, pitch_deg: -45, horizontal_fov_deg: 80, vertical_fov_deg: 60 })),
+      reports: ["gimbal"],
+      commands: [],
+      cameras: ["C1", "C2"].map((camera_id) => ({
+        camera_id,
+        mount: "gimbal",
+        yaw_deg: 0,
+        pitch_deg: -45,
+        horizontal_fov_deg: 80,
+        vertical_fov_deg: 60,
+      })),
     });
-    const gimbal = (camera_id: string, time: number, yaw_deg: number) => ({ type: "report.gimbal", asset_id: a.id, camera_id, time, yaw_deg, pitch_deg: -20 });
-    const first = gimbal("C1", c.now(), 10), second = gimbal("C2", c.now(), 90);
-    await report(h, a, [first, second, gimbal("C1", c.now() - 1, 0), gimbal("C2", c.now() + 1000000, 170)]);
-    for (const path of [`/entities/assets/${a.id}`, "/entities/assets", "/entities"]) {
+    const gimbal = (camera_id: string, time: number, yaw_deg: number) => ({
+      type: "report.gimbal",
+      asset_id: a.id,
+      camera_id,
+      time,
+      yaw_deg,
+      pitch_deg: -20,
+    });
+    const first = gimbal("C1", c.now(), 10),
+      second = gimbal("C2", c.now(), 90);
+    await report(h, a, [
+      first,
+      second,
+      gimbal("C1", c.now() - 1, 0),
+      gimbal("C2", c.now() + 1000000, 170),
+    ]);
+    for (const path of [
+      `/entities/assets/${a.id}`,
+      "/entities/assets",
+      "/entities",
+    ]) {
       const read = await h.call("GET", path, { cookie: h.admin });
-      const item = read.body.item ?? read.body.items?.[0] ?? read.body.assets[0];
+      const item =
+        read.body.item ?? read.body.items?.[0] ?? read.body.assets[0];
       assert.deepEqual(item.gimbals, { C1: first, C2: second });
       assert.equal(item.reports["report.gimbal"], undefined);
     }
-  } finally { await h.close(); }
+  } finally {
+    await h.close();
+  }
+});
+
+test("simulated clock runs deadlines chronologically, including nested timers [CHARTER.md#test-what-matters]", () => {
+  const clock = simulatedClock();
+  const order: number[] = [];
+  const start = clock.now();
+  clock.after(20, () => order.push(20));
+  clock.after(10, () => {
+    order.push(clock.now() - start);
+    clock.after(5, () => order.push(clock.now() - start));
+    cancelled.cancel();
+  });
+  const cancelled = clock.after(12, () => order.push(12));
+  clock.advance(20);
+  assert.deepEqual(order, [10, 15, 20]);
+  assert.equal(clock.now(), start + 20);
+  clock.advance(20);
+  assert.deepEqual(order, [10, 15, 20]);
 });
