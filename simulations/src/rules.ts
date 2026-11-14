@@ -159,15 +159,36 @@ export const rules = [
         retried.every((entries) => {
           const first = entries.find((n) => n.response)?.response;
           if (!first) return false;
-          if (typeof first === "object" && "event_id" in first)
+          if (typeof first === "object" && "event_id" in first) {
+            const effect = t.events.find((e) => e.event_id === first.event_id);
+            if (!effect) return false;
+            const sameEffect = (e: AtlasEvent) =>
+              e.kind === effect.kind &&
+              JSON.stringify(e.record) === JSON.stringify(effect.record);
+            const expected = [...keyed.values()].filter((group) => {
+              const response = group.find(
+                (n) => n.status && n.status < 300 && n.response,
+              )?.response;
+              return (
+                response &&
+                typeof response === "object" &&
+                "event_id" in response &&
+                t.events.some(
+                  (e) => e.event_id === response.event_id && sameEffect(e),
+                )
+              );
+            }).length;
             return (
               entries.every(
                 (n) =>
                   !n.response ||
                   JSON.stringify(n.response) === JSON.stringify(first),
               ) &&
-              t.events.filter((e) => e.event_id === first.event_id).length === 1
+              t.events.filter((e) => e.event_id === first.event_id).length ===
+                1 &&
+              t.events.filter(sameEffect).length === expected
             );
+          }
           const body = entries[0].body;
           if (
             body &&
