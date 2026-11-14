@@ -50,8 +50,7 @@ export function createOutbox(
 ) {
   const live: Report[] = [],
     retained: Report[] = [];
-  let active: readonly Report[] = [],
-    stopped = false,
+  let stopped = false,
     blocked: LinkResult | undefined,
     flight: Promise<void> | undefined;
   const listeners = new Set<(result: LinkResult) => void>();
@@ -76,7 +75,6 @@ export function createOutbox(
         const chosen = new Set(sorted.slice(0, 1000).map((v) => v.i));
         const rest = lane.filter((_, i) => !chosen.has(i));
         lane.splice(0, lane.length, ...rest);
-        active = batch;
         const result = await link.sendReports(
           batch,
           batch.some(mustArrive) ? "must_arrive" : "can_skip",
@@ -86,7 +84,6 @@ export function createOutbox(
           for (const cb of listeners) cb(result);
           break;
         }
-        active = [];
         heartbeat = false;
       } while (!stopped && (live.length || retained.length));
     })().finally(() => {
@@ -102,7 +99,6 @@ export function createOutbox(
       void flush();
     },
     flush,
-    pendingFinals: () => [...active, ...live, ...retained].filter(mustArrive),
     get blocked() {
       return blocked;
     },
@@ -161,7 +157,6 @@ export function runAsset(
             ?.snapshot()
             .filter((r) => r.type === "report.status" && r.kind === "task") ??
           [])),
-      ...outbox.pendingFinals(),
     ];
     if (reports.length) outbox.add(reports);
     await outbox.flush(!reports.length);
@@ -226,12 +221,14 @@ export async function startAsset(
       const events: AssetEvent[] = [];
       let wake: (() => void) | undefined,
         ended = false;
+      let firstOpen = true;
       stream = follow(
         client as Client,
         {
           after,
           beforeOpen: async () => {
-            await session?.rejoin();
+            if (firstOpen) firstOpen = false;
+            else await session?.rejoin();
           },
           onContact: (c) => {
             for (const cb of contacts) cb(c);
