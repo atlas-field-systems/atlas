@@ -5,9 +5,13 @@ on:
     paths: ['core/**', 'protocol/**', '.github/workflows/core.yml']
   pull_request:
     paths: ['core/**', 'protocol/**', '.github/workflows/core.yml']
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

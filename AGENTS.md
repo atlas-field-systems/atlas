@@ -140,7 +140,9 @@ just changed.
 - Merge only after the developer approves: a local `git merge --no-ff` with that
   same identity as author and committer, then a normal push of `main`.
   `gh pr merge` rejects the noreply address, and without it GitHub would use a
-  personal address.
+  personal address. Merge with `node .github/scripts/merge-pr.mjs <number> --push`:
+  it refuses unless every CI check on the PR head passed and `main` would get
+  exactly the tree those checks tested.
 - CI must be green before any merge. Each part's checks run in `.github/workflows/` when that folder changes.
   Docs changes run `node .github/scripts/check-links.mjs` and
   `node .github/scripts/check-retired.mjs` from the repository root.
