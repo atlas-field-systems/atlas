@@ -5,7 +5,7 @@ import { join, basename } from "node:path";
 import { createZip, readZip } from "./zip.ts";
 import { redactConfig } from "../config.ts";
 import { redact } from "../log.ts";
-import { pageAfter } from "../store/events.ts";
+import { pageAfter, settlement } from "../store/events.ts";
 import type { Env, StopResult } from "../core.ts";
 import type { Store, TableDef } from "../store/db.ts";
 
@@ -378,15 +378,9 @@ export function writeSummary(
     ),
   );
   for (const call of calls) {
-    const end = store.read((tx) =>
-      tx.get<{ kind: string }>(
-        "SELECT kind FROM events WHERE run_id=? AND request_id=? ORDER BY event_id LIMIT 1",
-        runId,
-        call.event_id,
-      ),
-    );
+    const end = store.read((tx) => settlement(tx, call.event_id));
     lines.push(
-      `Plugin call ${call.event_id}: ${end?.kind ?? "no reported outcome"}.`,
+      `Plugin call ${call.event_id}: ${end.state === "unsettled" ? "no reported outcome" : end.by.kind}.`,
     );
   }
   const gaps = store.read((tx) => tx.env.log.gaps());

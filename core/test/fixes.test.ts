@@ -727,3 +727,17 @@ test("F20 event streams never renew Asset or Plugin contact [api.md#contact, api
     await h.close();
   }
 });
+
+test("R2-3 summary uses recipient and answer-kind settlement [reset.md#cores-reset-zip]", async () => {
+  const h = await startHarness();
+  try {
+    const p = await plugin(h), a = await asset(h);
+    const call = await h.call("POST", `/plugins/${p.plugin_id}/actions/find`, {cookie: h.admin, body: {inputs: []}});
+    await report(h, a, [queue(a.id, 1794560400000, 0, call.body.event_id)]);
+    assert.equal((await h.call("POST", `/plugins/${p.plugin_id}/answers`, {key: p.key, body: {type: "plugin.result", time: 1794560400000, plugin_id: p.plugin_id, request_id: call.body.event_id}})).status, 200);
+    const stopped = await h.core.stop();
+    assert.ok(stopped.archived);
+    const {execFileSync} = await import("node:child_process");
+    assert.ok(execFileSync("unzip", ["-p", stopped.zip, "summary.md"], {encoding: "utf8"}).includes(`Plugin call ${call.body.event_id}: plugin.result.`));
+  } finally { await h.close(); }
+});
