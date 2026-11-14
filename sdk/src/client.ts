@@ -53,10 +53,23 @@ export type About = {
   protocol_version: string;
 };
 export type Json =
-  null | boolean | number | string | Json[] | { [key: string]: Json };
+  | null
+  | boolean
+  | number
+  | string
+  | Json[]
+  | { [key: string]: Json };
 export type Page<T> = { as_of: number; items: T[]; next_cursor: string | null };
 export function createClient<C extends Credential>(options: ClientOptions<C>) {
   const { protocol, credential, clock } = options;
+  const baseUrl = new URL(options.baseUrl ?? globalThis.location?.href);
+  if (
+    baseUrl.protocol === "http:" &&
+    baseUrl.hostname !== "localhost" &&
+    baseUrl.hostname !== "[::1]" &&
+    !/^127\.\d+\.\d+\.\d+$/.test(baseUrl.hostname)
+  )
+    throw new Error("HTTP Core baseUrl must use loopback");
   const emit = diagnostics(clock, options.observer);
   const timeout = options.requestTimeoutMs ?? 10000;
   const backoff = options.backoff ?? {
@@ -67,12 +80,18 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   };
   let status: Status = { phase: "new" },
     epoch = 0,
+    session = 0,
     lastSent = clock.now();
   let needsVerify = false,
     verification: Promise<Result<About>> | undefined;
   const listeners = new Set<(s: Status) => void>();
   const controllers = new Set<AbortController>();
+  const responseSessions = new WeakMap<
+    Response,
+    { session: number; epoch: number }
+  >();
   function setStatus(next: Status) {
+    if (status.phase === "closed") return;
     status = next;
     if (next.phase === "definitions_mismatch")
       emit("definitions.mismatch", { ours: next.ours, core: next.core });
@@ -100,7 +119,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     return h;
   }
   function url(path: string, query: Query = {}) {
-    const u = new URL(path, options.baseUrl ?? globalThis.location?.href);
+    const u = new URL(path, baseUrl);
     for (const [k, v] of Object.entries(query))
       if (v !== undefined) u.searchParams.set(k, String(v));
     return u.toString();
@@ -109,31 +128,49 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     path: string,
     init: RequestInit,
     query?: Query,
+    budget = timeout,
   ): Promise<Response> {
+    const sentSession = { session, epoch };
     const controller = new AbortController();
     controllers.add(controller);
     const external = init.signal;
     const abort = () => controller.abort();
     external?.addEventListener("abort", abort, { once: true });
     if (external?.aborted) controller.abort();
-    const timer = clock.after(timeout, abort);
+    const timer = clock.after(Math.min(timeout, budget), abort);
     lastSent = clock.now();
     emit("request.attempt", {
       method: init.method ?? "GET",
-      path: path.startsWith("/administration") ? "/administration" : path,
+      path: new URL(path, baseUrl).pathname.startsWith("/administration")
+        ? "/administration"
+        : new URL(path, baseUrl).pathname,
     });
     try {
-      const response = await options.fetch(url(path, query), {
-        ...init,
-        headers: headers(init.headers),
-        credentials: credential.kind === "account" ? "include" : "omit",
-        signal: controller.signal,
+      if (controller.signal.aborted || isClosed())
+        throw new Error("Client closed");
+      const aborted = new Promise<never>((_, reject) => {
+        controller.signal.addEventListener(
+          "abort",
+          () => reject(new Error("Request aborted")),
+          { once: true },
+        );
       });
-      const bytes = await response.arrayBuffer();
-      return new Response(response.status === 204 ? null : bytes, {
+      const response = await Promise.race([
+        options.fetch(url(path, query), {
+          ...init,
+          headers: headers(init.headers),
+          credentials: credential.kind === "account" ? "include" : "omit",
+          signal: controller.signal,
+        }),
+        aborted,
+      ]);
+      const bytes = await Promise.race([response.arrayBuffer(), aborted]);
+      const buffered = new Response(response.status === 204 ? null : bytes, {
         status: response.status,
         headers: response.headers,
       });
+      responseSessions.set(buffered, sentSession);
+      return buffered;
     } finally {
       timer.cancel();
       controllers.delete(controller);
@@ -173,7 +210,16 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
         status: response.status,
         explanation: "Core returned an invalid error response",
       };
-    if (body.error === "definitions_mismatch")
+    const sent = responseSessions.get(response);
+    const current = !sent || (sent.session === session && sent.epoch === epoch);
+    if (
+      current &&
+      body.error === "definitions_mismatch" &&
+      !(
+        path === "/entities/assets/radios" &&
+        body.explanation === "The radio uses different Protocol definitions."
+      )
+    )
       setStatus({
         phase: "definitions_mismatch",
         ours: protocol.hash,
@@ -185,6 +231,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       });
     if (
       response.status === 401 &&
+      current &&
       path !== "/administration/login" &&
       (status.phase === "connected" || status.phase === "unauthenticated")
     )
@@ -196,9 +243,21 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       explanation: String(body.explanation ?? "Invalid response"),
     };
   }
-  async function about(): Promise<Result<About>> {
+  async function about(budget = timeout): Promise<Result<About>> {
+    const boundEpoch = epoch;
     try {
-      const result = await parse<About>(await raw("/about", {}), "/about");
+      const result = await parse<About>(
+        await raw("/about", {}, undefined, budget),
+        "/about",
+      );
+      if (boundEpoch !== epoch)
+        return {
+          ok: false,
+          error: "run_ended",
+          explanation: "Connection changed during handshake",
+        };
+      if (isClosed())
+        return { ok: false, error: "closed", explanation: "Client closed" };
       if (result.ok)
         emit("definitions.checked", {
           ours: protocol.hash,
@@ -221,12 +280,21 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       };
     }
   }
-  async function verifyRun(): Promise<Result<About>> {
+  async function verifyRun(budget = timeout): Promise<Result<About>> {
     const stop = blocked<About>();
     if (stop) return stop;
-    return (verification ??= (async () => {
+    const boundEpoch = epoch;
+    const pending = (verification ??= (async () => {
       try {
-        const result = await about();
+        const result = await about(budget);
+        if (boundEpoch !== epoch)
+          return {
+            ok: false,
+            error: "run_ended",
+            explanation: "Connection changed during verification",
+          };
+        if (status.phase === "closed")
+          return { ok: false, error: "closed", explanation: "Client closed" };
         if (
           result.ok &&
           (status.phase === "connected" ||
@@ -246,6 +314,23 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
         verification = undefined;
       }
     })());
+    let timer: ReturnType<Clock["after"]> | undefined;
+    try {
+      return await Promise.race([
+        pending,
+        new Promise<Result<About>>((resolve) => {
+          timer = clock.after(budget, () =>
+            resolve({
+              ok: false,
+              error: "unknown",
+              explanation: "Run verification timed out",
+            }),
+          );
+        }),
+      ]);
+    } finally {
+      timer?.cancel();
+    }
   }
   function validate(name: string, value: unknown) {
     const checked = protocol.check(name, value);
@@ -270,38 +355,59 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   ): Promise<Result<T>> {
     if (status.phase === "new" || status.phase === "closed")
       throw new Error("Client must be connected");
+    const boundSession = session;
     const boundEpoch = epoch,
       key = method === "GET" ? undefined : crypto.randomUUID();
     const bytes =
       body instanceof Uint8Array
-        ? body.slice()
+        ? new Uint8Array(body)
         : body === undefined
           ? undefined
           : JSON.stringify(body);
+    const target = url(path, query);
     let flight: Promise<Result<T>> | undefined;
     let reportAttempts = 0;
+    function fence(): Result<T> | undefined {
+      if (boundEpoch !== epoch)
+        return {
+          ok: false,
+          error: "run_ended",
+          explanation: "Attempt belongs to another connection",
+        };
+      if (status.phase === "closed")
+        return { ok: false, error: "closed", explanation: "Client closed" };
+      const stop = blocked<T>();
+      if (stop) return stop;
+      if (boundSession !== session)
+        return {
+          ok: false,
+          error: "session_changed",
+          explanation: "Attempt belongs to another session",
+        };
+    }
+    function unknown(): Result<T> {
+      emit("request.unknown", { key: key ?? "" });
+      return {
+        ok: false,
+        error: "unknown",
+        explanation: "Core may have accepted the request",
+        retry: send,
+      };
+    }
     const send = (): Promise<Result<T>> =>
       (flight ??= (async () => {
         const deadline = clock.now() + timeout;
         let attempt = 0;
         try {
           while (true) {
-            if (boundEpoch !== epoch)
-              return {
-                ok: false,
-                error: "run_ended",
-                explanation: "Attempt belongs to another connection",
-              };
-            if (status.phase === "closed")
-              return {
-                ok: false,
-                error: "closed",
-                explanation: "Client closed",
-              };
-            const stop = blocked<T>();
+            const stop = fence();
             if (stop) return stop;
+            if (clock.now() >= deadline) return unknown();
             if (needsVerify) {
-              const verified = await verifyRun();
+              const verified = await verifyRun(deadline - clock.now());
+              const stopped = fence();
+              if (stopped) return stopped;
+              if (clock.now() >= deadline) return unknown();
               if (
                 !verified.ok &&
                 verified.error !== "unknown" &&
@@ -322,13 +428,21 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
                 h.set("Content-Type", contentType ?? "application/json");
               if (path.endsWith("/reports") && reportAttempts++ > 0)
                 emit("batch.resent", { key: key ?? "" });
+              const stopped = fence();
+              if (stopped) return stopped;
+              if (clock.now() >= deadline) return unknown();
               const response = await raw(
-                path,
+                target,
                 { method, headers: h, body: bytes },
-                query,
+                undefined,
+                deadline - clock.now(),
               );
+              const afterSend = fence();
+              if (afterSend) return afterSend;
               if (response.status < 500 || response.status === 507) {
                 const result = await parse<T>(response, path, file);
+                const afterParse = fence();
+                if (afterParse) return afterParse;
                 return !result.ok && response.status === 507
                   ? { ...result, retry: send }
                   : result;
@@ -339,16 +453,10 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
             } catch {
               needsVerify = true;
             }
+            const stopped = fence();
+            if (stopped) return stopped;
             const remaining = deadline - clock.now();
-            if (remaining <= 0) {
-              emit("request.unknown", { key: key ?? "" });
-              return {
-                ok: false,
-                error: "unknown",
-                explanation: "Core may have accepted the request",
-                retry: send,
-              };
-            }
+            if (remaining <= 0) return unknown();
             const delay = Math.min(remaining, backoffDelay(attempt++, backoff));
             emit("request.retry", { key: key ?? "", delay });
             await new Promise<void>((resolve) => clock.after(delay, resolve));
@@ -385,12 +493,22 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       if (value === undefined) throw new Error(`Missing ${k}`);
       return encodeURIComponent(String(value));
     });
+    if (name === "logout") session++;
     return request<ResponseOf<N>>(route.method, path, args.body, args.query);
   }
-  async function connect() {
+  function isClosed() {
+    return status.phase === "closed";
+  }
+  async function connect(): Promise<Result<About>> {
     if (status.phase === "closed") throw new Error("Client closed");
     if (status.phase === "definitions_mismatch") return blocked<About>()!;
     const result = await about();
+    if (isClosed())
+      return {
+        ok: false,
+        error: "closed",
+        explanation: "Client closed",
+      };
     if (result.ok) {
       const oldRun =
         "run_id" in status
@@ -412,6 +530,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       throw new Error("Only account clients log in");
     const body = { operator_id, password };
     assertValid("requests.login", body);
+    session++;
     let recovery = 0;
     let result = await request<Json>("POST", "/administration/login", body);
     const deadline = clock.now() + timeout;
@@ -419,8 +538,14 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     while (result.ok || result.error === "unknown") {
       const me = await request<Json>("GET", "/administration/me");
       result = me;
-      unconfirmed = !me.ok && me.status === 401;
-      if (me.ok || me.status !== 401 || clock.now() >= deadline) break;
+      const confirmed =
+        me.ok &&
+        me.value !== null &&
+        typeof me.value === "object" &&
+        !Array.isArray(me.value) &&
+        me.value.operator_id === operator_id;
+      unconfirmed = (me.ok && !confirmed) || (!me.ok && me.status === 401);
+      if (confirmed || !unconfirmed || clock.now() >= deadline) break;
       await new Promise<void>((resolve) =>
         clock.after(
           Math.min(backoffDelay(recovery++, backoff), deadline - clock.now()),
@@ -548,19 +673,23 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     get epoch() {
       return epoch;
     },
-    streamFetch: (
+    streamFetch: async (
       after: number,
       asset_id: string | undefined,
       signal: AbortSignal,
-    ) =>
-      options.fetch(
+    ) => {
+      const sentSession = { session, epoch };
+      const response = await options.fetch(
         url("/events", { after, asset_id, definitions: protocol.hash }),
         {
           signal,
           headers: headers(),
           credentials: credential.kind === "account" ? "include" : "omit",
         },
-      ),
+      );
+      responseSessions.set(response, sentSession);
+      return response;
+    },
     streamResponse: (r: Response) => parse<Json>(r, "/events"),
   });
   return client;

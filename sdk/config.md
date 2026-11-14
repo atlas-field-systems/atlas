@@ -16,6 +16,10 @@ file. The private package is `@atlas/sdk`.
 | `heartbeatMs`      | Gateway and Plugin contact interval         | 10000                                 |
 | `observer`         | Receives [diagnostics](docs/logging.md)     | None                                  |
 
+`createClient` throws before sending if `baseUrl` uses `http:` outside loopback.
+Loopback means `localhost`, `127.0.0.0/8`, or `[::1]`. This follows
+[Core's transport rule](../core/docs/api.md#basics).
+
 Asset helpers also take a clock and `heartbeatMs`, defaulting to 10000.
 Keep that interval shorter than Core's
 [`offline_after_s`](../core/config.md).
