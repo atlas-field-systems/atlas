@@ -36,6 +36,7 @@ export async function startServer(
   streams: Streams,
 ): Promise<Server> {
   let stopping = false;
+  let commitsClosed = false;
   const passwordRetries = new Map<string, Promise<void>>();
   const segment = env.config.debug_endpoint
     ? randomBytes(24).toString("base64url")
@@ -359,6 +360,8 @@ export async function startServer(
       let reply;
       let acknowledgmentBody: unknown;
       try {
+        if (commitsClosed)
+          refuse("stopping", "Core has finished its stop grace");
         reply = store.write((tx) => {
           const current = resolveCaller(tx);
           if (!current) refuse("unauthenticated", "Invalid credential");
@@ -522,6 +525,7 @@ export async function startServer(
       streams.closeAll();
       return new Promise<void>((resolve, reject) => {
         env.clock.after(5000, () => {
+          commitsClosed = true;
           server.close((e) => {
             if (e) reject(e);
             else resolve();

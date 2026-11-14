@@ -40,6 +40,8 @@ Accounts may call every operator route.
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
+- **Stopping.** Requests already in preparation may commit during the five-second
+  stop grace. When grace ends, Core refuses their commits with `503 stopping`.
 - **Runs.** Every read, history page, and event stream covers only the current
   run. [Runs and identity](../../atlas/runs-and-identity.md) owns what a run is,
   what carries over, and which IDs start again. `GET /about` names the run with

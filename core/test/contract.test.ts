@@ -677,14 +677,27 @@ test("PR53-4 account retries protect passwords with salted scrypt [api.md#caller
   const h = await startHarness();
   try {
     const opts = {
-      cookie: h.admin, idem: "account-password",
+      cookie: h.admin,
+      idem: "account-password",
       body: { operator_id: "OP1", admin: false, password },
     };
-    assert.equal((await h.call("POST", "/administration/accounts", opts)).status, 201);
-    assert.equal((await h.call("POST", "/administration/accounts", opts)).status, 201);
-    assert.equal((await h.call("POST", "/administration/accounts", {
-      ...opts, body: { ...opts.body, password: password + "changed" },
-    })).body.error, "idempotency_conflict");
+    assert.equal(
+      (await h.call("POST", "/administration/accounts", opts)).status,
+      201,
+    );
+    assert.equal(
+      (await h.call("POST", "/administration/accounts", opts)).status,
+      201,
+    );
+    assert.equal(
+      (
+        await h.call("POST", "/administration/accounts", {
+          ...opts,
+          body: { ...opts.body, password: password + "changed" },
+        })
+      ).body.error,
+      "idempotency_conflict",
+    );
     const { DatabaseSync } = await import("node:sqlite");
     const snapshot = await mkdtemp(join(tmpdir(), "atlas-credential-state-"));
     for (const name of ["core.sqlite", "core.sqlite-wal"])
@@ -693,7 +706,10 @@ test("PR53-4 account retries protect passwords with salted scrypt [api.md#caller
       readOnly: true,
     });
     try {
-      const row = db.prepare("SELECT fingerprint FROM idempotency_keys WHERE scope=? AND key=?")
+      const row = db
+        .prepare(
+          "SELECT fingerprint FROM idempotency_keys WHERE scope=? AND key=?",
+        )
         .get("account:ADM", opts.idem)!;
       assert.match(String(row.fingerprint), /^scrypt\$/);
     } finally {
@@ -701,6 +717,52 @@ test("PR53-4 account retries protect passwords with salted scrypt [api.md#caller
       await rm(snapshot, { recursive: true, force: true });
     }
   } finally {
+    await h.close();
+  }
+});
+
+test("PR53-6 prepared login cannot commit after stop grace [api.md#basics, reset.md#stopping-core-ends-the-run]", async () => {
+  const { createHook } = await import("node:async_hooks");
+  const h = await startHarness();
+  let hashes = 0;
+  let verification: number | undefined;
+  const stopped = Promise.withResolvers<Awaited<ReturnType<typeof h.stop>>>();
+  const hook = createHook({
+    init(id, type) {
+      if (type === "SCRYPTREQUEST" && ++hashes === 2) verification = id;
+    },
+    before(id) {
+      if (id !== verification) return;
+      hook.disable();
+      h.stop().then(stopped.resolve, stopped.reject);
+    },
+  });
+  try {
+    hook.enable();
+    const pending = h
+      .call("POST", "/administration/login", {
+        body: { operator_id: "ADM", password },
+      })
+      .catch(() => null);
+    const result = await stopped.promise;
+    await pending;
+    assert.ok(result.archived);
+    const { execFileSync } = await import("node:child_process");
+    const sessions = execFileSync(
+      "unzip",
+      ["-p", result.zip, "state/sessions.jsonl"],
+      { encoding: "utf8" },
+    )
+      .trim()
+      .split("\n")
+      .filter(Boolean);
+    assert.equal(
+      sessions.length,
+      1,
+      "only the session created before stop grace is archived",
+    );
+  } finally {
+    hook.disable();
     await h.close();
   }
 });
