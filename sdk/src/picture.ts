@@ -79,7 +79,9 @@ export function createLivePicture(
         ]);
       for (const [key, value] of Object.entries(a.reports))
         latest.set(`report:${a.asset_id}:${key}`, [value.time, snapshot.as_of]);
-      const t = await client.call("tasks", { params: { asset_id: a.asset_id } });
+      const t = await client.call("tasks", {
+        params: { asset_id: a.asset_id },
+      });
       if (!t.ok || stopped || current !== generation) return;
       marks.set(a.asset_id, t.value.as_of);
       after.push(t.value.as_of);

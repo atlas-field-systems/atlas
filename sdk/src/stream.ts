@@ -102,10 +102,13 @@ export function follow(
                 data: string[] = [];
               const resetIdle = () => {
                 idle?.cancel();
-                idle = clock.after(internal(client).options.streamIdleMs ?? 30000, () => {
-                  internal(client).emit("stream.idle");
-                  controller?.abort();
-                });
+                idle = clock.after(
+                  internal(client).options.streamIdleMs ?? 30000,
+                  () => {
+                    internal(client).emit("stream.idle");
+                    controller?.abort();
+                  },
+                );
               };
               resetIdle();
               try {

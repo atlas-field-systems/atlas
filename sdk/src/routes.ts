@@ -41,7 +41,11 @@ export const ROUTES = {
     who: accounts,
     body: "requests.settings",
   },
-  cancel: { method: "POST", path: "/tasks/:asset_id/:task_id/cancel", who: accounts },
+  cancel: {
+    method: "POST",
+    path: "/tasks/:asset_id/:task_id/cancel",
+    who: accounts,
+  },
   observations: { method: "GET", path: "/entities/observations", who: readers },
   tracks: { method: "GET", path: "/entities/tracks", who: readers },
   track: { method: "GET", path: "/entities/tracks/:track_id", who: readers },
@@ -106,7 +110,11 @@ export const ROUTES = {
     who: accounts,
     body: "requests.attach",
   },
-  deleteObject: { method: "DELETE", path: "/objects/:object_id", who: accounts },
+  deleteObject: {
+    method: "DELETE",
+    path: "/objects/:object_id",
+    who: accounts,
+  },
   describePlugin: {
     method: "PUT",
     path: "/plugins/:plugin_id/description",
@@ -211,18 +219,41 @@ export type Allowed<C extends CallerKind> = {
 export type Params = Record<string, string | number>;
 export type Query = Record<string, string | number | boolean | undefined>;
 
-export type TaskView = { task: P["task"]; state: "requested" | "active" | "completed" | "failed" | "cancelled" | "dropped"; state_time: number; object_ids?: string[] };
-export type CallEntry = { call: AtlasEvent<"plugin.called">; answer: AtlasEvent<"plugin.result" | "plugin.failed" | "plugin.dropped"> | null };
+export type TaskView = {
+  task: P["task"];
+  state:
+    | "requested"
+    | "active"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "dropped";
+  state_time: number;
+  object_ids?: string[];
+};
+export type CallEntry = {
+  call: AtlasEvent<"plugin.called">;
+  answer: AtlasEvent<
+    "plugin.result" | "plugin.failed" | "plugin.dropped"
+  > | null;
+};
 type Cut<T> = { as_of: number; items: T[] };
 type EventAck = { event_id: number };
 type PlaceAck = EventAck & { geofeature: P["geofeature"] };
 type Empty = Record<string, never>;
-type Issue<K extends string> = Record<K, string> & ({ key: string } | { issued: true } | { replaced: true });
+type Issue<K extends string> = Record<K, string> &
+  ({ key: string } | { issued: true } | { replaced: true });
 type Responses = {
   about: About;
   me: { operator_id: string; admin: boolean };
   logout: Empty;
-  entities: { as_of: number; assets: AssetView[]; observations: P["report.observation"][]; tracks: P["track"][]; geofeatures: P["geofeature"][] };
+  entities: {
+    as_of: number;
+    assets: AssetView[];
+    observations: P["report.observation"][];
+    tracks: P["track"][];
+    geofeatures: P["geofeature"][];
+  };
   assets: Cut<AssetView>;
   asset: { as_of: number; item: AssetView };
   tasks: Cut<TaskView> & { held: number[] };
@@ -235,7 +266,10 @@ type Responses = {
   geofeatures: Cut<P["geofeature"]>;
   geofeature: { as_of: number; item: P["geofeature"] };
   createGeofeature: PlaceAck;
-  replaceGeofeature: PlaceAck & { updated_task_ids?: { asset_id: string; task_id: number }[]; not_updated_task_ids?: { asset_id: string; task_id: number }[] };
+  replaceGeofeature: PlaceAck & {
+    updated_task_ids?: { asset_id: string; task_id: number }[];
+    not_updated_task_ids?: { asset_id: string; task_id: number }[];
+  };
   deleteGeofeature: EventAck;
   register: { asset_id: string; as_of: number; last_task_id: number };
   registerRadio: { asset_id: string; as_of: number };
@@ -248,7 +282,12 @@ type Responses = {
   deleteObject: EventAck;
   describePlugin: EventAck;
   callPlugin: EventAck;
-  plugins: Cut<{ plugin_id: string; description: P["plugin.description"] | null; contact: P["contact"]; unanswered: number[] }>;
+  plugins: Cut<{
+    plugin_id: string;
+    description: P["plugin.description"] | null;
+    contact: P["contact"];
+    unanswered: number[];
+  }>;
   pluginCall: CallEntry;
   answerPlugin: EventAck;
   addAccount: { operator_id: string };

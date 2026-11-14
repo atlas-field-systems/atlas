@@ -9,6 +9,7 @@ export function scenario(spec: {
   checks: string[];
   run(world: World): Promise<void>;
   seed?: number;
+  config?: Parameters<typeof createWorld>[0];
 }) {
   test(spec.name, async () => {
     for (const check of spec.checks) {
@@ -23,7 +24,7 @@ export function scenario(spec: {
       if (anchor && !anchors.includes(anchor))
         throw new Error(`Missing doc anchor ${check}`);
     }
-    const world = await createWorld();
+    const world = await createWorld(spec.config);
     try {
       await spec.run(world);
     } catch (error) {

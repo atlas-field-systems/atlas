@@ -1,4 +1,10 @@
-import type { ClientOptions, Credential, About, Result, Json } from "./client.ts";
+import type {
+  ClientOptions,
+  Credential,
+  About,
+  Result,
+  Json,
+} from "./client.ts";
 import type { diagnostics } from "./diagnostics.ts";
 
 type Internals = {
@@ -6,7 +12,11 @@ type Internals = {
   emit: ReturnType<typeof diagnostics>;
   readonly epoch: number;
   verifyRun(): Promise<Result<About>>;
-  streamFetch(after: number, asset_id: string | undefined, signal: AbortSignal): Promise<Response>;
+  streamFetch(
+    after: number,
+    asset_id: string | undefined,
+    signal: AbortSignal,
+  ): Promise<Response>;
   streamResponse(response: Response): Promise<Result<Json>>;
 };
 export const internals = new WeakMap<object, Internals>();

@@ -15,14 +15,16 @@ export const description: P["requests.asset"] = {
   settings: ["lights"],
 };
 export async function ipAsset(w: World, name = "asset") {
-  const issued = value(
-    await w.complete(
-      w.admin.call(
-        "createAssetKey",
-      ),
-    ),
-  );
-  const client = w.client(name, { kind: "asset", key: "key" in issued ? issued.key : (() => { throw new Error("Issuance returned no key"); })() });
+  const issued = value(await w.complete(w.admin.call("createAssetKey")));
+  const client = w.client(name, {
+    kind: "asset",
+    key:
+      "key" in issued
+        ? issued.key
+        : (() => {
+            throw new Error("Issuance returned no key");
+          })(),
+  });
   const starts: number[] = [],
     stops: number[] = [];
   const result = await w.complete(
@@ -43,21 +45,22 @@ export async function ipAsset(w: World, name = "asset") {
   return { client, session, starts, stops };
 }
 export async function radioAsset(w: World) {
-  const issued = value(
-    await w.complete(
-      w.admin.call(
-        "provisionGateway",
-      ),
-    ),
-  );
-  const client = w.client("gateway", { kind: "gateway", key: "key" in issued ? issued.key : (() => { throw new Error("Issuance returned no key"); })() });
+  const issued = value(await w.complete(w.admin.call("provisionGateway")));
+  const client = w.client("gateway", {
+    kind: "gateway",
+    key:
+      "key" in issued
+        ? issued.key
+        : (() => {
+            throw new Error("Issuance returned no key");
+          })(),
+  });
   value(await w.complete(client.connect()));
   const radio = value(
     await w.complete(
-      client.call(
-        "registerRadio",
-        { body: { definitions_hash: w.protocol.hash } },
-      ),
+      client.call("registerRadio", {
+        body: { definitions_hash: w.protocol.hash },
+      }),
     ),
   );
   const asset_id = radio.asset_id;
@@ -146,16 +149,15 @@ export async function plugin(
   w: World,
   onCall: Parameters<typeof startPlugin>[1]["onCall"],
 ) {
-  const issued = value(
-    await w.complete(
-      w.admin.call(
-        "provisionPlugin",
-      ),
-    ),
-  );
+  const issued = value(await w.complete(w.admin.call("provisionPlugin")));
   const client = w.client("plugin", {
     kind: "plugin",
-    key: "key" in issued ? issued.key : (() => { throw new Error("Issuance returned no key"); })(),
+    key:
+      "key" in issued
+        ? issued.key
+        : (() => {
+            throw new Error("Issuance returned no key");
+          })(),
     plugin_id: issued.plugin_id,
   });
   const description: P["plugin.description"] = {

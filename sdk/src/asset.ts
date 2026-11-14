@@ -287,10 +287,7 @@ export async function startAsset(
       let geofeature_id: string | undefined;
       if (file.place) {
         const result = await known(
-          client.call(
-            "createGeofeature",
-            { body: file.place },
-          ),
+          client.call("createGeofeature", { body: file.place }),
         );
         if (!result.ok)
           return {

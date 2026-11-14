@@ -28,11 +28,7 @@ scenario({
         ),
       );
     const a = await create("First", 1);
-    const snapshot = value(
-      await w.complete(
-        w.admin.call("entities"),
-      ),
-    );
+    const snapshot = value(await w.complete(w.admin.call("entities")));
     const restored = new Map(
       snapshot.geofeatures.map((g) => [g.geofeature_id, g]),
     );
@@ -46,26 +42,22 @@ scenario({
     const b = await create("Second", 3);
     const replacement = value(
       await w.complete(
-        w.admin.call(
-          "replaceGeofeature",
-          {
-            params: { geofeature_id: b.geofeature.geofeature_id },
-            body: {
-              kind: "point",
-              name: "Final",
-              position: { latitude: 4, longitude: 2 },
-            },
+        w.admin.call("replaceGeofeature", {
+          params: { geofeature_id: b.geofeature.geofeature_id },
+          body: {
+            kind: "point",
+            name: "Final",
+            position: { latitude: 4, longitude: 2 },
           },
-        ),
+        }),
       ),
     );
     w.network.dropStreams("reader");
     const deletion = value(
       await w.complete(
-        w.admin.call(
-          "deleteGeofeature",
-          { params: { geofeature_id: a.geofeature.geofeature_id } },
-        ),
+        w.admin.call("deleteGeofeature", {
+          params: { geofeature_id: a.geofeature.geofeature_id },
+        }),
       ),
     );
     await w.until(() => stream.cursor >= deletion.event_id);

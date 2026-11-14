@@ -31,10 +31,10 @@ scenario({
     w.network.once("admin", `/tasks/${asset_id}`, { kind: "loseResponse" });
     const sent = value(
       await w.complete(
-        w.admin.call(
-          "sendTasks",
-          { params: { asset_id }, body: { tasks: [{ kind: "hold" }] } },
-        ),
+        w.admin.call("sendTasks", {
+          params: { asset_id },
+          body: { tasks: [{ kind: "hold" }] },
+        }),
       ),
     );
     assert.deepEqual(
@@ -103,17 +103,14 @@ scenario({
     });
     const replaced = value(
       await w.complete(
-        w.admin.call(
-          "replaceGeofeature",
-          {
-            params: { geofeature_id },
-            body: {
-              kind: "point",
-              name: "New landing",
-              position: { latitude: 3, longitude: 4 },
-            },
+        w.admin.call("replaceGeofeature", {
+          params: { geofeature_id },
+          body: {
+            kind: "point",
+            name: "New landing",
+            position: { latitude: 3, longitude: 4 },
           },
-        ),
+        }),
       ),
     );
     w.network.once("admin", "/objects", { kind: "loseResponse" });
@@ -175,10 +172,7 @@ scenario({
     });
     const deletedPlace = value(
       await w.complete(
-        w.admin.call(
-          "deleteGeofeature",
-          { params: { geofeature_id } },
-        ),
+        w.admin.call("deleteGeofeature", { params: { geofeature_id } }),
       ),
     );
     await w.settle();
@@ -230,12 +224,19 @@ scenario({
     assert.equal(attempts.length, 2);
     assert.equal(attempts[0].key, attempts[1].key, "retry preserves key");
     const savedFetch = w.network.fetchFor("conflict-account");
-    const changed = w.client("conflict-replay", { kind: "account" }, (input, init) => {
-      const headers = new Headers(init?.headers);
-      if (init?.method === "POST" && String(input).endsWith("/entities/geofeatures"))
-        headers.set("Idempotency-Key", "fixed-conflict");
-      return savedFetch(input, { ...init, headers });
-    });
+    const changed = w.client(
+      "conflict-replay",
+      { kind: "account" },
+      (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (
+          init?.method === "POST" &&
+          String(input).endsWith("/entities/geofeatures")
+        )
+          headers.set("Idempotency-Key", "fixed-conflict");
+        return savedFetch(input, { ...init, headers });
+      },
+    );
     value(await w.complete(changed.connect()));
     value(await w.complete(changed.login("ADM", "simulation-password")));
     value(

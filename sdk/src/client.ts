@@ -1,4 +1,4 @@
-import type { AtlasEvent } from "./stream.ts";
+import type { AtlasEvent, EventKind } from "./stream.ts";
 import { internals } from "./internal.ts";
 import type { Protocol } from "@atlas/protocol/browser";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
@@ -311,7 +311,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
                 { method, headers: h, body: bytes },
                 query,
               );
-              if (response.status < 500)
+              if (response.status < 500 || response.status === 507)
                 return await parse<T>(response, path, file);
               await response.arrayBuffer();
               needsVerify = true;
@@ -436,18 +436,33 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       throw new Error("Credential cannot call this route");
   }
   const client = {
-    get status() { return status; },
-    connect, call, login,
+    get status() {
+      return status;
+    },
+    connect,
+    call,
+    login,
     validate: (name: string, value: unknown) => protocol.check(name, value),
     holdContact,
     onStatus(cb: (s: Status) => void) {
       listeners.add(cb);
-      return () => { listeners.delete(cb); };
+      return () => {
+        listeners.delete(cb);
+      };
     },
-    history: (q?: Query) => pages<AtlasEvent>("/history", q),
-    trackHistory: (q?: Query) => pages<AtlasEvent<"track.updated" | "track.removed">>("/history/tracks", q),
+    history: (q?: Query) =>
+      pages<AtlasEvent<Extract<EventKind, `report.${string}`>>>("/history", q),
+    trackHistory: (q?: Query) =>
+      pages<AtlasEvent<"track.updated" | "track.removed">>(
+        "/history/tracks",
+        q,
+      ),
     geofeatureHistory: (q?: Query) =>
-      pages<AtlasEvent<"geofeature.created" | "geofeature.replaced" | "geofeature.deleted">>("/history/geofeatures", q),
+      pages<
+        AtlasEvent<
+          "geofeature.created" | "geofeature.replaced" | "geofeature.deleted"
+        >
+      >("/history/geofeatures", q),
     pluginCalls: (plugin_id: string, q?: Query) =>
       pages<CallEntry>(`/plugins/${encodeURIComponent(plugin_id)}/calls`, q),
     uploadObject: (bytes: Uint8Array, contentType: string, query: Query) =>
@@ -475,8 +490,12 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     },
   };
   internals.set(client, {
-    options, emit, verifyRun,
-    get epoch() { return epoch; },
+    options,
+    emit,
+    verifyRun,
+    get epoch() {
+      return epoch;
+    },
     streamFetch: (
       after: number,
       asset_id: string | undefined,

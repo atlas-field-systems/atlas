@@ -32,7 +32,8 @@ export function startPlugin(
     stream: ReturnType<typeof follow> | undefined,
     contact: ReturnType<typeof client.holdContact> | undefined;
   const credential = internal(client).options.credential;
-  if (credential.kind !== "plugin") throw new Error("Expected Plugin credential");
+  if (credential.kind !== "plugin")
+    throw new Error("Expected Plugin credential");
   const plugin_id = credential.plugin_id;
   const done = (async (): Promise<FollowEnd> => {
     while (!stopped) {
@@ -44,7 +45,10 @@ export function startPlugin(
               ? "definitions_mismatch"
               : "closed",
         };
-      const described = await client.call("describePlugin", { params: { plugin_id }, body: options.description });
+      const described = await client.call("describePlugin", {
+        params: { plugin_id },
+        body: options.description,
+      });
       if (!described.ok)
         return {
           reason:
