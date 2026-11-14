@@ -96,7 +96,7 @@ export const EVENT_KINDS = {
     audience: "accounts",
     stamps: ["requested_by"],
   },
-} as const satisfies Record<string, KindSpec>;
+} as const satisfies Record<keyof typeof KINDS, KindSpec>;
 
 export type EventKind = keyof typeof EVENT_KINDS;
 type Spec<K extends EventKind> = (typeof EVENT_KINDS)[K];
