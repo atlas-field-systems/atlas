@@ -79,9 +79,10 @@ export async function startServer(
         res.end((await env.log.readAfter(after, 1000)).join("\n") + "\n");
         return;
       }
-      const caller = store.read((tx) =>
-        callerFor(tx, credentialOf(req.headers)),
-      );
+      const credential = credentialOf(req.headers);
+      const resolveCaller = (tx: import("../store/db.ts").ReadTx) =>
+        callerFor(tx, credential) ?? (credential && "session" in credential && route.who.includes("public") ? {kind: "anonymous" as const} : null);
+      const caller = store.read(resolveCaller);
       if (!caller) refuse("unauthenticated", "Invalid credential");
       if (
         url.pathname === "/about" &&
@@ -273,7 +274,7 @@ export async function startServer(
       try {
         reply = store.write((tx) => {
           if (stopping) refuse("stopping", "Core is stopping");
-          const current = callerFor(tx, credentialOf(req.headers));
+          const current = resolveCaller(tx);
           if (!current) refuse("unauthenticated", "Invalid credential");
           authorize(
             tx,
@@ -316,7 +317,10 @@ export async function startServer(
       send(
         reply.status,
         reply.body,
-        "headers" in reply ? (reply.headers as Record<string, string>) : {},
+        {
+          ...("headers" in reply ? (reply.headers as Record<string, string>) : {}),
+          ...(route.path === "/administration/logout" ? {"set-cookie": "atlas_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"} : {}),
+        },
       );
 
     } catch (e) {

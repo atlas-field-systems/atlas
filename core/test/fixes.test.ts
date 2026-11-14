@@ -438,3 +438,34 @@ test("F12 malformed path escapes use listed errors [api.md#basics]", async () =>
     await h.close();
   }
 });
+test("F13 logout clears cookies and stale cookies allow public routes [api.md#callers-and-credentials]", async () => {
+  const h = await startHarness();
+  try {
+    const logout = await h.call("POST", "/administration/logout", {
+      cookie: h.admin,
+    });
+    assert.match(
+      logout.headers.get("set-cookie") ?? "",
+      /atlas_session=;.*Max-Age=0/,
+    );
+    assert.equal(
+      (await h.call("GET", "/about", { cookie: h.admin })).status,
+      200,
+    );
+    assert.equal(
+      (
+        await h.call("POST", "/administration/login", {
+          cookie: h.admin,
+          body: { operator_id: "ADM", password: "contract-password-unique" },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await h.call("GET", "/entities", { cookie: h.admin })).status,
+      401,
+    );
+  } finally {
+    await h.close();
+  }
+});
