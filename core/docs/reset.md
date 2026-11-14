@@ -104,6 +104,9 @@ Core does not try again. The next start begins a new run as usual, and the old
 run's data stays in the database until the admin removes it
 ([storage](storage.md#runs)).
 
+A failed startup cancels its contact deadlines before closing storage; it leaves
+no contact work running against the stopped Core.
+
 ## When Core stops unexpectedly
 
 If the open run already has a final-named ZIP, Core checks it again and

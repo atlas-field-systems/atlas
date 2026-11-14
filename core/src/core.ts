@@ -118,6 +118,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     ...fusion.TABLES,
   ];
   const store = openStore(env, tables);
+  let contact: ReturnType<typeof startContact> | undefined;
   try {
     await recoverReset(env, store, tables);
     const run = runs.beginOrResume(env, store);
@@ -148,7 +149,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       config: redactConfig(config),
       versions,
     });
-    const contact = startContact(
+    contact = startContact(
       store,
       options.clock,
       config.offline_after_s * 1000,
@@ -172,8 +173,8 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       stop() {
         return (stopped ??= stopRun(env, store, tables, {
           closeServer: () => server.close(),
-          stopContact: () => contact.stop(),
-          lastHeard: (id) => contact.lastHeard(id),
+          stopContact: () => contact!.stop(),
+          lastHeard: (id) => contact!.lastHeard(id),
           async drainFusion() {
             await follower.drain();
             follower.stop();
@@ -182,6 +183,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       },
     };
   } catch (error) {
+    contact?.stop();
     store.close();
     await log.flush();
     throw error;

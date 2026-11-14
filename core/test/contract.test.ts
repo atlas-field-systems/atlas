@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import { DatabaseSync } from "node:sqlite";
+import { createServer } from "node:net";
 import { startCore } from "../src/core.ts";
 import { readZip } from "../src/reset/zip.ts";
 import { checkZip } from "../src/reset/reset.ts";
@@ -316,6 +317,16 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
     ).json();
     assert.equal(tracksBefore.items.length, 1);
     await running.kill("SIGKILL");
+    running = undefined;
+    const blocker = createServer();
+    blocker.listen(0, "127.0.0.1");
+    await once(blocker, "listening");
+    try {
+      const address = blocker.address();
+      assert.ok(address && typeof address === "object");
+      await assert.rejects(startCore({ clock, config: { ...JSON.parse(await readFile(cfg, "utf8")), port: address.port } }), { code: "EADDRINUSE" });
+      assert.doesNotThrow(() => clock.advance(30000), "failed startup must cancel contact deadlines before closing storage");
+    } finally { await new Promise<void>((resolve) => blocker.close(() => resolve())); }
     running = await child(cfg);
     assert.equal(
       (await (await fetch(running.url + "/about")).json()).run_id,
