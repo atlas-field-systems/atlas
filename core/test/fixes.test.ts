@@ -580,3 +580,36 @@ test("F16 equal-time later Observations update Tracks and bearings clear positio
     await h.close();
   }
 });
+test("F17 failsafe responses must name supported commands [api.md#operator-requests]", async () => {
+  const h = await startHarness();
+  try {
+    const a = await asset(h, {
+      reports: ["status", "settings"],
+      commands: ["hold"],
+      settings: ["failsafe_policy"],
+    });
+    const settings = {
+      failsafe_policy: [
+        {
+          rule_id: "R1",
+          priority: 1,
+          conditions: [{ kind: "commanded" }],
+          response: { kind: "land" },
+        },
+      ],
+    };
+    const patch = await h.call("PATCH", `/entities/assets/${a.id}/settings`, {
+      cookie: h.admin,
+      body: { settings },
+    });
+    const queued = await task(h, a.id, {
+      tasks: [{ kind: "settings", settings }],
+    });
+    assert.deepEqual(
+      [patch.body.error, queued.body.error],
+      ["not_supported", "not_supported"],
+    );
+  } finally {
+    await h.close();
+  }
+});

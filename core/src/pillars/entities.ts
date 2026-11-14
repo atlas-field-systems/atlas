@@ -737,6 +737,9 @@ function restart(tx: Tx, asset_id: string): void {
   tasks.dropUnfinished(tx, asset_id);
 }
 export function checkSettings(v: AdmissionView, settings: Settings): void {
+  for (const rule of settings.failsafe_policy ?? [])
+    if (!v.description.commands.includes(rule.response.kind))
+      refuse("not_supported", "Failsafe response command is not declared");
   for (const key of Object.keys(settings))
     if (!v.description.settings?.some((s) => s === key))
       refuse("not_supported", "Setting is not declared");

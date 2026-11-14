@@ -151,7 +151,7 @@ test("6. admission refuses offline, unsupported commands, settings, cameras and 
     );
     const flying = await asset(h, {
       ...description,
-      commands: ["takeoff", "hold"],
+      commands: ["takeoff", "hold", "land"],
     });
     assert.equal(
       (await task(h, flying.id)).body.error,

@@ -16,3 +16,5 @@ finding	choice	evidence	result
 14	Resolve real directory paths at start; refuse archive under data; default sibling data_directory-archive	F14 startup accepted unsafe path before fix	Updated existing archive-path assertions for new default; symlink contract included
 15	Streams check credential validity on every commit before reading or waiting for drain	F15 old credential received new Task	Full suite green
 16	Follower processes event order; equal report times accept later event instead of skipping it	F16 Track latitude stayed one instead of two	Full suite green
+17	Shared settings admission checks failsafe response commands against description	F17 PATCH and settings Task both accepted unsupported land	Full suite green
+17-note	Existing flying-policy fixture used land while declaring only takeoff and hold; declare land to keep its safe-policy acceptance scenario valid	No existing assertions removed or relaxed	Full suite green
