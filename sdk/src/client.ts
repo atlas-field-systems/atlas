@@ -674,12 +674,17 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     },
     streamFetch: async (
       after: number,
-      asset_id: string | undefined,
+      filter: { asset_id?: string; everything?: boolean },
       signal: AbortSignal,
     ) => {
       const sentSession = { session, epoch };
       const response = await options.fetch(
-        url("/events", { after, asset_id, definitions: protocol.hash }),
+        url("/events", {
+          after,
+          asset_id: filter.asset_id,
+          everything: filter.everything ? "true" : undefined,
+          definitions: protocol.hash,
+        }),
         {
           signal,
           headers: headers(),

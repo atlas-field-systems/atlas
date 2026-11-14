@@ -17,6 +17,9 @@ subscription.stop();
 - **Start from a snapshot.** A program loads a read, then follows with `after`
   set to that read's `as_of`. That is how a page load, a refresh, or a new tab
   recovers everything. `after` is required, so every follow starts from an explicit cursor.
+- **Ask for everything.** An Asset, gateway, or Plugin follows only the events it
+  must act on. With `everything: true` it follows every event, as an account
+  does ([Callers and credentials](../../core/docs/api.md#callers-and-credentials)).
 - **One event at a time, in order.** The handler gets each event once, in
   `event_id` order. The cursor advances only when the handler returns or its
   promise resolves. If the handler throws, the follow stops at the last handled

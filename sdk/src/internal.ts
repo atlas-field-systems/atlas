@@ -14,7 +14,7 @@ type Internals = {
   verifyRun(): Promise<Result<About>>;
   streamFetch(
     after: number,
-    asset_id: string | undefined,
+    filter: { asset_id?: string; everything?: boolean },
     signal: AbortSignal,
   ): Promise<Response>;
   streamResponse(response: Response): Promise<Result<Json>>;

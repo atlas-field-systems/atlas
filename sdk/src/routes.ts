@@ -9,7 +9,7 @@ type Spec = {
   body?: keyof P;
 };
 const accounts = ["account"] as const,
-  readers = ["account", "plugin"] as const,
+  readers = ["account", "asset", "gateway", "plugin"] as const,
   reporters = ["asset", "gateway"] as const;
 export const ROUTES = {
   me: { method: "GET", path: "/administration/me", who: accounts },
@@ -19,9 +19,9 @@ export const ROUTES = {
   asset: {
     method: "GET",
     path: "/entities/assets/:asset_id",
-    who: ["account", "plugin", "asset", "gateway"],
+    who: readers,
   },
-  tasks: { method: "GET", path: "/tasks/:asset_id", who: accounts },
+  tasks: { method: "GET", path: "/tasks/:asset_id", who: readers },
   sendTasks: {
     method: "POST",
     path: "/tasks/:asset_id",
@@ -120,11 +120,11 @@ export const ROUTES = {
     who: accounts,
     body: "requests.plugin_call",
   },
-  plugins: { method: "GET", path: "/plugins", who: accounts },
+  plugins: { method: "GET", path: "/plugins", who: readers },
   pluginCall: {
     method: "GET",
     path: "/plugins/:plugin_id/calls/:event_id",
-    who: accounts,
+    who: readers,
   },
   answerPlugin: {
     method: "POST",

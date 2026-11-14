@@ -44,6 +44,7 @@ export function follow(
   options: {
     after: number;
     asset_id?: string;
+    everything?: boolean;
     beforeOpen?(): Promise<void>;
     onContact?(contact: { open: boolean; last_heard: number | null }): void;
   },
@@ -92,7 +93,7 @@ export function follow(
             );
             const response = await internal(client).streamFetch(
               cursor,
-              options.asset_id,
+              { asset_id: options.asset_id, everything: options.everything },
               controller.signal,
             );
             opening.cancel();
