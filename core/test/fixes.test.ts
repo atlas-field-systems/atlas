@@ -782,3 +782,18 @@ test("R2-9 uploads admitted before stop finish in grace [reset.md#stopping-core-
     assert.ok((await stop).archived);
   } finally { socket.destroy(); c.advance(5000); await h.close(); }
 });
+
+test("R2-10 unregistered key mismatches are diagnostics once per hash [api.md#basics]", async () => {
+  const h = await startHarness(undefined, {debug_endpoint: true});
+  try {
+    const issued = (await h.call("POST", "/administration/asset-keys", {cookie: h.admin})).body;
+    for (const hash of ["sha256:ab", "sha256:ab", "sha256:cd"]) {
+      const response = await fetch(h.core.url + "/about", {headers: {authorization: `Bearer ${issued.key}`, "atlas-definitions": hash}});
+      assert.equal(response.status, 200); await response.text();
+    }
+    const rows = (await (await fetch(h.core.debugUrl!)).text()).trim().split("\n").map(line => JSON.parse(line));
+    assert.deepEqual(rows.filter(r => r.msg === "Unregistered Asset definitions mismatch").map(r => [r.key_id, r.definitions_hash]), [[issued.key_id, "sha256:ab"], [issued.key_id, "sha256:cd"]]);
+    const snapshot = await h.call("GET", "/entities", {cookie: h.admin});
+    assert.equal(snapshot.body.as_of, 0);
+  } finally { await h.close(); }
+});

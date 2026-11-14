@@ -12,7 +12,10 @@ Core serves HTTPS when both TLS files are configured. Without them it serves
 plain HTTP only on loopback. [Configuration](../config.md) owns TLS setup.
 
 A keyed `GET /about` with another definitions hash records at most one
-`definitions.refused` per caller and hash per run. It still counts as contact.
+`definitions.refused` per registered Asset, gateway, or Plugin and hash per run. It still counts as contact.
+For an Asset key that has not registered, Core instead records its `key_id` and
+the differing hash on the console and in diagnostics, at most once per key and
+hash per run. It adds no event because the key has no Asset.
 Accounts may call every operator route.
 
 - HTTPS and JSON. Event bodies are Protocol records. Operator request bodies
@@ -29,8 +32,7 @@ Accounts may call every operator route.
   returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
   stream takes the hash as `?definitions=`, because browsers cannot set headers on it.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
-  that hash differs, Core adds a `definitions.refused` event, so operators see
-  why it is missing.
+  that hash differs, Core records the mismatch as described above.
 - **Retries are safe.** Every request that changes state carries an
   `Idempotency-Key` of up to 64 characters. Core keeps each key's non-secret
   response for the run when its transaction changed something. A refusal that changed nothing is not kept. A repeat returns that response and changes nothing; the

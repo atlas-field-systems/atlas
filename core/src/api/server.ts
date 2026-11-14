@@ -13,6 +13,7 @@ import {
   hashPassword,
   verifyPassword,
   callerFor,
+  unregisteredMismatch,
 } from "../pillars/administration.ts";
 import { Refusal, refuse, checkOrRefuse } from "./errors.ts";
 import { fingerprint, lookup, retain } from "../store/idempotency.ts";
@@ -122,7 +123,10 @@ export async function startServer(
                 : caller.kind === "plugin"
                   ? caller.plugin_id
                   : entities.assetForKey(tx, caller.key_id);
-            if (!value) return;
+            if (!value) {
+              if (caller.kind === "asset") unregisteredMismatch(tx, caller.key_id, hash);
+              return;
+            }
             const record = { time: tx.now, ...id, definitions_hash: hash };
             if (!env.protocol.check("refusal", record).ok) return;
             if (
