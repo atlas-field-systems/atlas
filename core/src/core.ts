@@ -154,6 +154,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
         return (stopped ??= stopRun(env, store, tables, {
           closeServer: () => server.close(),
           stopContact: () => contact.stop(),
+          lastHeard: id => contact.lastHeard(id),
           async drainFusion() {
             await follower.drain();
             follower.stop();

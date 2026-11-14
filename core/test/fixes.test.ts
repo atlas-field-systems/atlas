@@ -613,3 +613,32 @@ test("F17 failsafe responses must name supported commands [api.md#operator-reque
     await h.close();
   }
 });
+test("F18 Reset summary uses contact with no domain event [reset.md#cores-reset-zip]", async () => {
+  const { readZip } = await import("../src/reset/zip.ts");
+  const c = simulatedClock(),
+    h = await startHarness(c);
+  try {
+    const a = await asset(h);
+    c.advance(10000);
+    await report(h, a, []);
+    const heard = c.now();
+    c.advance(31000);
+    const stopped = await h.core.stop();
+    assert.equal(stopped.archived, true);
+    if (!stopped.archived) return;
+    const entry = (await readZip(stopped.zip)).find(
+      (e) => e.name === "summary.md",
+    )!;
+    const chunks: Buffer[] = [];
+    for await (const chunk of entry.open()) chunks.push(Buffer.from(chunk));
+    assert.ok(
+      Buffer.concat(chunks)
+        .toString()
+        .includes(
+          `Asset ${a.id}, gateway none, first heard 1794560400000, last heard ${heard}.`,
+        ),
+    );
+  } finally {
+    await h.close();
+  }
+});

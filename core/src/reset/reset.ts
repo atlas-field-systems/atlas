@@ -19,6 +19,7 @@ type Digest = { size: number; sha256: string };
 export interface StopParts {
   closeServer(): Promise<void>;
   stopContact(): void;
+  lastHeard(asset_id: string): number | undefined;
   drainFusion(): Promise<void>;
 }
 
@@ -127,7 +128,7 @@ export async function stopRun(
       "README.md",
       "# Core Reset archive\n\nsummary.md describes the run. events.jsonl is the ordered event log. state/ holds current table rows. objects/ holds Object files by ID, including deleted Objects. diagnostics/ holds Core diagnostics. config.json is resolved configuration without secrets. versions.json identifies the software and definitions. manifest.json checks every other file by size and SHA-256 and lists resumes and gaps.\n",
     );
-    await add("summary.md", writeSummary(store, run.run_id));
+    await add("summary.md", writeSummary(store, run.run_id, parts.lastHeard));
     async function* eventLines() {
       let after = 0;
       while (true) {
@@ -326,7 +327,7 @@ export async function checkZip(
   }
 }
 
-export function writeSummary(store: Store, runId: number): string {
+export function writeSummary(store: Store, runId: number, lastHeard: (asset_id: string) => number | undefined): string {
   const run = runRow(store, runId);
   const lines = [
     `# Run ${runId}`,
@@ -349,7 +350,7 @@ export function writeSummary(store: Store, runId: number): string {
   );
   for (const asset of assets)
     lines.push(
-      `Asset ${asset.asset_id}, gateway ${asset.gateway_id ?? "none"}, first heard ${asset.first}, last heard ${asset.last}.`,
+      `Asset ${asset.asset_id}, gateway ${asset.gateway_id ?? "none"}, first heard ${asset.first}, last heard ${lastHeard(asset.asset_id) ?? asset.last}.`,
     );
   const tasks = store.read((tx) =>
     tx.all<{

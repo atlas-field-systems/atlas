@@ -43,6 +43,7 @@ export interface Contact {
   /** At start: every subject the current run shows online gets lastHeard = now. */
   resume(): void;
   stop(): void;
+  lastHeard(asset_id: string): number | undefined;
 }
 
 export function startContact(
@@ -54,6 +55,7 @@ export function startContact(
     string,
     { who: Subject; at: number; retryAt?: number }
   >();
+  const lastHeard = new Map<string, number>();
   let timer: ReturnType<Clock["after"]> | undefined;
   let stopped = false;
   const key = (who: Subject) =>
@@ -127,6 +129,7 @@ export function startContact(
     heard(who) {
       if (stopped) return;
       transition(who, "online", clock.now());
+      if ("asset_id" in who) lastHeard.set(who.asset_id, clock.now());
       heard.set(key(who), { who, at: clock.now() });
       schedule();
     },
@@ -142,6 +145,7 @@ export function startContact(
       for (const who of subjects) heard.set(key(who), { who, at: clock.now() });
       schedule();
     },
+    lastHeard(asset_id) { return lastHeard.get(asset_id); },
     stop() {
       stopped = true;
       timer?.cancel();
