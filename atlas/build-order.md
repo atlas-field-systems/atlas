@@ -1,9 +1,8 @@
 # Build order after the first version
 
-> **Partly decided.** On 2026-11-14 the owner decided which parts come before
-> the Command Interface ([decision log](decision-log.md#build-and-test)). The
-> steps under [Proposed steps](#proposed-steps) and the
-> [questions](#questions-for-the-owner) await the owner.
+The owner decided this order on 2026-11-14
+([decision log](decision-log.md#build-and-test)). The numbered steps are the
+working plan for carrying it out.
 
 The first version is Protocol, Core, and the SDK, with their simulations
 ([Design decisions](design-decisions.md#design-the-whole-product-then-build-it)).
@@ -44,40 +43,43 @@ built. Until then the owner judges Atlas from simulation results.
    shorter range. The estimate is not a measurement, and only a measurement
    settles the question.
 
-## Proposed steps
+## The Meshtastic Fieldlink comes first
+
+Meshtastic is the first Fieldlink, and SiK is built on what it establishes.
+Meshtastic is the fuller Fieldlink and is closer to the Fieldlinks Atlas will
+see later, so the gateway app and the simulated radio link are shaped by it.
+Building for SiK first would shape them around SiK's one-drone,
+point-to-point link.
+
+## The radio is measured during the build
+
+While the Meshtastic Fieldlink is built, two Meshtastic radios are connected
+to the build computer and send messages to each other. Their measured numbers
+go into [Scale](scale.md) and the Meshtastic page, and the simulated radio
+link uses them. The measurement answers the second risk.
+
+## New failsafe and radio decisions wait
+
+No new failsafe or radio decision is made until the Asset app has run against
+simulated ArduPilot and the radio is measured. The decisions already in the
+log stay in force. After the results, they are reviewed against what was
+found.
+
+## The steps
 
 1. **The Asset app, built whole.** Simulations run it against simulated
    ArduPilot over IP
    ([Asset simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md)).
    The first scenarios are first flight's Takeoff, Move To, and Land, then a
    low battery and a lost link. They answer the first risk.
-2. **A bench measurement of the radio.** With two or three Meshtastic radios,
-   measure how many 200-byte frames arrive per minute at each radio setting,
-   and write the numbers into [Scale](scale.md) and the Meshtastic page. The
-   measurement answers the second risk, and it gives the simulated radio link
-   real numbers. It needs hardware and a person, and it can run beside step 1.
-3. **The gateway app and one Fieldlink**, over a simulated radio link. Which
-   Fieldlink comes first is a question for the owner.
-4. **The second Fieldlink.**
-5. **Simulation tools and the full simulation.** Tools make a whole operation
+2. **The gateway app and the Meshtastic Fieldlink**, over a simulated radio
+   link, with the two radios on the bench.
+3. **The SiK Fieldlink.**
+4. **Simulation tools and the full simulation.** Tools make a whole operation
    quick to write as a scenario. The full simulation then runs: Assets take
    off and make Observations, other Assets are tasked onto them, Fusion makes
    Tracks, a radio link fails, and hardware faults.
-6. **The Command Interface.**
-7. **First flight in the field** ([First flight](first-flight.md)).
+5. **The Command Interface.**
+6. **First flight in the field** ([First flight](first-flight.md)).
 
 Each part is still built whole, as the design decisions say.
-
-One more proposal: hold new failsafe and Fieldlink decisions until step 1 and
-step 2 report. The decisions already in the log stay in force. After the
-reports, review them against what was found.
-
-## Questions for the owner
-
-1. Which Fieldlink comes first? SiK is small and matches first flight, but it
-   carries one drone. Meshtastic carries many Assets, which the full
-   simulation needs, but it is larger and depends on the bench numbers.
-2. Do you have Meshtastic radios to bench-test, and can you or someone else
-   run the measurement?
-3. Do you agree to make no new failsafe or radio decisions until the Asset
-   app has run against simulated ArduPilot and the radio is measured?
