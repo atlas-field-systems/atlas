@@ -169,6 +169,7 @@ export function startLog(
       }
     })().finally(() => {
       writing = null;
+      if (queue.length) return drain();
     });
     return writing;
   };

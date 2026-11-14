@@ -843,3 +843,54 @@ test("counting capped diagnostic losses uses asynchronous I/O [logging.md#when-l
     await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
+
+
+test("debug flush includes records queued during a gap write [logging.md#read-the-log-while-core-runs]", () => {
+  const script = `
+    import { mock } from 'node:test';
+    import assert from 'node:assert/strict';
+    import * as fs from 'node:fs/promises';
+    import { join } from 'node:path';
+    import { tmpdir } from 'node:os';
+    const entered = Promise.withResolvers(), release = Promise.withResolvers();
+    let first = true;
+    mock.module('node:fs/promises', { namedExports: {
+      ...fs,
+      async appendFile(path, data, ...args) {
+        if (first) {
+          first = false;
+          await fs.mkdir(path);
+          try { return await fs.appendFile(path, data, ...args); }
+          finally { await fs.rm(path, { recursive: true }); }
+        }
+        await fs.appendFile(path, data, ...args);
+        if (JSON.parse(data).msg === 'diagnostic gaps') {
+          entered.resolve();
+          await release.promise;
+        }
+      }
+    } });
+    const real = await import('./src/log.ts');
+    mock.module('./src/log.ts', { namedExports: { ...real, startLog(...args) {
+      const log = real.startLog(...args);
+      return { ...log, readAfter(...args) { release.resolve(); return log.readAfter(...args); } };
+    } } });
+    const { startCore } = await import('./src/core.ts');
+    const { systemClock } = await import('./src/clock.ts');
+    const root = await fs.mkdtemp(join(tmpdir(), 'atlas-log-gap-'));
+    let core;
+    try {
+      core = await startCore({ clock: systemClock, config: { data_directory: join(root, 'data'), archive_directory: join(root, 'archive'), port: 0, debug_endpoint: true } });
+      await entered.promise;
+      await (await fetch(core.url + '/about')).text();
+      const records = await (await fetch(core.debugUrl)).text();
+      assert.ok(records.includes('/about'), 'debug flush must include the request queued during the gap append');
+    } finally {
+      release.resolve();
+      if (core) await core.stop();
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  `;
+  const run = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--input-type=module", "-e", script], { cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 20000 });
+  assert.equal(run.status, 0, run.stderr);
+});
