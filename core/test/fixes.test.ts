@@ -1380,3 +1380,31 @@ test("R3-8 default listen starts on loopback without TLS [config.md#defaults]", 
     await h.close();
   }
 });
+
+test("PR53-3 startup cursor includes work accepted before subscribing [api.md#asset-and-gateway-calls]", async () => {
+  const h = await startHarness();
+  const abort = new AbortController();
+  try {
+    const issued = (await h.call("POST", "/administration/asset-keys", { cookie: h.admin })).body;
+    const registered = (await h.call("POST", "/entities/assets", { key: issued.key, body: description })).body;
+    assert.ok(Number.isSafeInteger(registered.as_of), "registration returns a stream cursor");
+    const sent = await task(h, registered.asset_id);
+    assert.equal(sent.status, 202, JSON.stringify(sent.body));
+    const r = await fetch(h.core.url + "/events?after=" + registered.as_of, {
+      headers: { authorization: `Bearer ${issued.key}`, "atlas-definitions": protocol.hash },
+      signal: abort.signal,
+    });
+    assert.equal(r.status, 200);
+    const reader = r.body!.getReader();
+    let text = "";
+    while (!text.includes(`id: ${sent.body.event_id}\n`)) {
+      text += new TextDecoder().decode((await reader.read()).value);
+    }
+    abort.abort();
+    await reader.cancel().catch(() => {});
+    assert.ok(text.includes("event: tasks.requested"));
+  } finally {
+    abort.abort();
+    await h.close();
+  }
+});

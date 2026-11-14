@@ -310,7 +310,7 @@ starts in this order, and on reconnect within the run repeats it from step 3:
    without `time` and `asset_id`. Core assigns the next `asset_id`, never one
    used before, stamps `time` and the ID to make the description record, adds
    `asset.registered` and `asset.described`, and answers
-   `201 {asset_id, last_task_id}` ([restarts](#operator-requests)).
+   `201 {asset_id, last_task_id, as_of}` ([restarts](#operator-requests)).
    The Asset uses that ID for the rest of the run. Registering again with the
    same key in the run returns the same `asset_id`, even for an app that
    restarted and forgot its ID, unless an admin removed that Asset; then it
@@ -322,8 +322,8 @@ starts in this order, and on reconnect within the run repeats it from step 3:
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
-4. Open `/events?after=<last handled event_id>`. On first start, it follows from
-   the latest event.
+4. Open `/events?after=<as_of from registration>` on start, so work accepted
+   during startup is delivered. On reconnect, use the last handled `event_id`.
 
 - `POST /entities/assets/{asset_id}/reports` takes `requests.reports` in batches of up to 1000 reports. An empty batch is accepted for contact. A `200`
   stores and acknowledges the whole batch. The Asset resends a batch with the same
@@ -353,7 +353,9 @@ starts in this order, and on reconnect within the run repeats it from step 3:
   caught up with it.
 
 A gateway makes the same calls on behalf of each Asset it carries, with its own
-key, once it has [registered the radio](#radio-assets). It also sends
+key, once it has [registered the radio](#radio-assets). Its first subscription
+uses the registration answer’s `as_of`; an existing subscription stays open
+when another radio registers. It also sends
 `PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
 Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
 it carries, named by the path; any other caller gets `403`. Core
@@ -378,7 +380,7 @@ Asset on its own side and speaks to Core only by `asset_id`.
 - When the gateway hears a radio that has no `asset_id` in this run, it sends
   `POST /entities/assets/radios` with `requests.radio`: the radio's
   definitions hash. Core assigns the next `asset_id`, adds `asset.registered`
-  with the gateway as `requested_by`, and answers `201 {asset_id}`. The gateway
+  with the gateway as `requested_by`, and answers `201 {asset_id, as_of}`. The gateway
   carries that Asset, keeps which radio has which ID, and tells the radio its
   ID through the Fieldlink.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
@@ -694,7 +696,8 @@ not call Plugins yet.
    [Plugins](../../atlas/plugins.md#actions) describes. Core checks the
    description with Protocol's validator and refuses an invalid one with
    `400 invalid`.
-3. Open `/events?after=<last handled event_id>`. Its stream shows only
+3. On first start, open `/events?after=<event_id from the description answer>`.
+   On reconnect, use the last handled `event_id`. Its stream shows only
    `plugin.called` events addressed to it.
 
 A Plugin is online while Core has heard from it within `offline_after_s`
