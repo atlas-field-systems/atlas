@@ -38,6 +38,7 @@ export function startPlugin(
   const done = (async (): Promise<FollowEnd> => {
     while (!stopped) {
       const connected = await client.connect();
+      if (stopped) return { reason: "stopped" };
       if (!connected.ok)
         return {
           reason:
@@ -49,6 +50,7 @@ export function startPlugin(
         params: { plugin_id },
         body: options.description,
       });
+      if (stopped) return { reason: "stopped" };
       if (!described.ok)
         return {
           reason:
@@ -62,22 +64,48 @@ export function startPlugin(
         { after: described.value.event_id },
         (e) => {
           if (e.kind !== "plugin.called") return;
-          let answered = false;
+          let state: "unanswered" | "pending" | "answered" = "unanswered";
           const request_id = e.event_id;
           const reply: Reply = {
             createGeofeature: (body) =>
               client.call("createGeofeature", { body, query: { request_id } }),
             uploadObject: (bytes, contentType, name) =>
               client.uploadObject(bytes, contentType, { name, request_id }),
-            answer(body) {
-              if (answered)
+            async answer(body) {
+              if (state !== "unanswered")
                 throw new Error("A Plugin call has only one answer");
-              answered = true;
-              return client.call("answerPlugin", {
-                params: { plugin_id },
-                body: { ...body, request_id } as
-                  P["plugin.result"] | P["plugin.failure"],
-              });
+              state = "pending";
+              const track = async (
+                send: () => Promise<Result<unknown>>,
+              ): Promise<Result<unknown>> => {
+                let result: Result<unknown>;
+                try {
+                  result = await send();
+                } catch (error) {
+                  state = "unanswered";
+                  throw error;
+                }
+                if (result.ok) {
+                  state = "answered";
+                  return result;
+                }
+                if (result.error === "unknown") {
+                  const retry = result.retry;
+                  return retry
+                    ? { ...result, retry: () => track(retry) }
+                    : result;
+                }
+                state = "unanswered";
+                return result;
+              };
+              return track(() =>
+                client.call("answerPlugin", {
+                  params: { plugin_id },
+                  body: { ...body, request_id } as
+                    | P["plugin.result"]
+                    | P["plugin.failure"],
+                }),
+              );
             },
           };
           void Promise.resolve()
