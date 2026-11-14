@@ -21,7 +21,7 @@ faultRun({
     };
     async function known<T>(p: Promise<Result<T>>): Promise<T> {
       let result = await w.complete(p);
-      while (!result.ok && result.retry)
+      while (!result.ok && result.retry && result.error === "unknown")
         result = await w.complete(result.retry());
       return value(result);
     }

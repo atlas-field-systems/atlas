@@ -6,6 +6,9 @@ import { promisify } from "node:util";
 import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { startAsset } from "@atlas/sdk";
+import { description } from "../src/actors.ts";
+import { value } from "../src/world.ts";
 import { createWorld } from "../src/world.ts";
 const execute = promisify(execFile);
 test("full disk refuses a change without a partial event [core/docs/storage.md#memory-and-full-disks]", async (t) => {
@@ -29,6 +32,9 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
     return;
   }
   const w = await createWorld({ data_directory: join(mount, "data") });
+  const issued = value(await w.complete(w.admin.call("createAssetKey")));
+  assert.ok("key" in issued);
+  const asset = w.client("full-disk-asset", { kind: "asset", key: issued.key });
   const filler = await open(join(mount, "fill"), "w");
   try {
     try {
@@ -43,6 +49,31 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
     );
     assert.ok(
       !result.ok && result.status === 507 && result.error === "storage_full",
+    );
+    const before = w.clock.now();
+    const startup = await w.complete(
+      startAsset(asset, {
+        clock: w.clock,
+        description,
+        settings: () => ({}),
+      }),
+    );
+    assert.ok(
+      !startup.ok &&
+        "status" in startup &&
+        startup.status === 507 &&
+        startup.error === "storage_full",
+    );
+    assert.equal(
+      w.clock.now(),
+      before,
+      "a definitive refusal returns without retrying",
+    );
+    assert.equal(
+      w.network.traffic.filter(
+        (t) => t.caller === "full-disk-asset" && t.path === "/entities/assets",
+      ).length,
+      1,
     );
     await w.settle();
     assert.equal(

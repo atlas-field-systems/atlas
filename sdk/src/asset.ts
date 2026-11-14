@@ -208,11 +208,7 @@ export function runAsset(
 }
 async function known<T>(initial: Promise<Result<T>>): Promise<Result<T>> {
   let result = await initial;
-  while (
-    !result.ok &&
-    result.retry &&
-    (result.error === "unknown" || (result.status ?? 0) >= 500)
-  )
+  while (!result.ok && result.retry && result.error === "unknown")
     result = await result.retry();
   return result;
 }

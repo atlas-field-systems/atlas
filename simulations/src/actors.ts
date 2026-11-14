@@ -112,7 +112,8 @@ export async function radioAsset(w: World) {
         params: { asset_id },
         body: { reports: batch },
       });
-      while (!result.ok && result.retry) result = await result.retry();
+      while (!result.ok && result.retry && result.error === "unknown")
+        result = await result.retry();
       return result.ok
         ? { ok: true }
         : { ok: false, error: "refused", explanation: result.explanation };
