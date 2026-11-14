@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
+import { DatabaseSync } from "node:sqlite";
 import { startCore } from "../src/core.ts";
 import { readZip } from "../src/reset/zip.ts";
 import { checkZip } from "../src/reset/reset.ts";
@@ -772,4 +773,38 @@ test("invalid config names the option and exits 2 [config.md]", async () => {
     assert.equal(run.status, 2, run.stderr);
     assert.match(run.stderr, /config __proto__:/);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+
+test("full SQLite disk returns 507 and leaves no accepted change [storage.md#memory-and-full-disks]", async () => {
+  let connection: DatabaseSync | undefined;
+  const exec = DatabaseSync.prototype.exec;
+  DatabaseSync.prototype.exec = function(sql) {
+    connection = this;
+    return exec.call(this, sql);
+  };
+  let h: Awaited<ReturnType<typeof startHarness>>;
+  try { h = await startHarness(); }
+  finally { DatabaseSync.prototype.exec = exec; }
+  assert.ok(connection);
+  const db = connection;
+  try {
+    const pages = db.prepare("PRAGMA page_count").get()!.page_count;
+    db.exec(`PRAGMA max_page_count=${pages}`);
+    let refused = false;
+    for (let i = 0; i < 100; i++) {
+      const before = await h.call("GET", "/entities/geofeatures", { cookie: h.admin });
+      const response = await h.call("POST", "/entities/geofeatures", { cookie: h.admin, body: { kind: "line", name: "x".repeat(64), line: Array.from({ length: 32 }, () => ({ latitude: 1, longitude: 2 })) } });
+      if (response.status === 200) continue;
+      assert.equal(response.status, 507, JSON.stringify(response.body));
+      assert.equal(response.body.error, "storage_full");
+      assert.deepEqual((await h.call("GET", "/entities/geofeatures", { cookie: h.admin })).body, before.body);
+      refused = true;
+      break;
+    }
+    assert.ok(refused, "SQLite must reach its real page limit");
+  } finally {
+    db.exec("PRAGMA max_page_count=1073741823");
+    await h.close();
+  }
 });

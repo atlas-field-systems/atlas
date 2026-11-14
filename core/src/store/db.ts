@@ -69,7 +69,7 @@ export function openStore(env: Env, tables: readonly TableDef[]): Store {
     }
     db.exec("PRAGMA user_version=1; COMMIT");
   } catch (e) {
-    db.exec("ROLLBACK");
+    if (db.isTransaction) db.exec("ROLLBACK");
     db.close();
     throw e;
   }
@@ -112,15 +112,13 @@ export function openStore(env: Env, tables: readonly TableDef[]): Store {
         db.exec("COMMIT");
         return value;
       } catch (e) {
-        db.exec("ROLLBACK");
+        if (db.isTransaction) db.exec("ROLLBACK");
         throw e;
       }
     },
     write(fn) {
-      let began = false;
       try {
         db.exec("BEGIN IMMEDIATE");
-        began = true;
         const tx = handle();
         const value = fn(tx);
         if (value instanceof Promise) throw new Error("async transaction");
@@ -130,7 +128,7 @@ export function openStore(env: Env, tables: readonly TableDef[]): Store {
         });
         return value;
       } catch (e) {
-        if (began) db.exec("ROLLBACK");
+        if (db.isTransaction) db.exec("ROLLBACK");
         if (
           e instanceof Error &&
           ([10, 13].includes(Number(Reflect.get(e, "errcode")) & 255) ||
