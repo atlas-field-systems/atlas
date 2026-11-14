@@ -80,11 +80,11 @@ It uses only the gateway interface and the Asset link, never the SDK
 directly.</li>
 </ul>
 <h2 id="core-keeps-one-event-log">Core keeps one event log</h2>
-<p>Core keeps current state in ordinary SQLite tables. Every accepted request and
+<p>Core keeps current state in ordinary SQLite tables. Every accepted domain request and
 every Asset report also adds a row to an append-only <code>events</code> table, with a
 rising integer <code>event_id</code>, in the same transaction. Live updates, history and
 recovery after a refresh read <code>events</code>; current state is read from the tables,
-never rebuilt from events. A slow or disconnected reader resumes from its last
+never rebuilt from events. Credential and account changes go only to diagnostics. A slow or disconnected reader resumes from its last
 <code>event_id</code>; Core never buffers its backlog. See
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/storage.md">Core storage</a>.</p>
 <h2 id="stopping-core-ends-the-run">Stopping Core ends the run</h2>

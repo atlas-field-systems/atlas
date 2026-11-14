@@ -11,7 +11,8 @@ Interface and sends them in one request. Core numbers the Tasks 1, 2, and 3 and
 sends them to the Asset at once. The Asset starts Takeoff only when it holds all
 three. The app sends equipment commands to the flight controller and reports the
 observed outcomes. The operator sees the reported vehicle behavior.</p>
-<p>No runtime is built yet. The Pi can reach Core while vehicle equipment is still
+<p>Core is <strong>Built</strong>. The Asset app, gateway, Fieldlink, and Command Interface
+runtimes remain planned. The Pi can reach Core while vehicle equipment is still
 starting or unreachable. Connection alone does not establish takeoff readiness.
 The operator can intervene locally at the Pi. Independent vehicle controls and
 ArduPilot protections remain part of the setup. While they are in control,
@@ -92,7 +93,7 @@ down first, and then the admin stops Core on its own computer. Stopping Core
 ends the run (<a href="runs-and-identity.html#a-run-and-reset">Runs and identity</a>).
 Core&#39;s ZIP holds:</p>
 <ul>
-<li>Its run&#39;s data, including the event log: every accepted request and every
+<li>Its run&#39;s data, including the event log: every accepted domain request and every
 stored report, in order.</li>
 <li>Its diagnostics, such as errors, link drops, and contact changes.</li>
 <li>Its configuration, without secrets.</li>
