@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS objects (
   record        TEXT    NOT NULL,          -- the object record, latest (object.changed re-stamps time)
   file          TEXT    NOT NULL,          -- token under objects/run-<run_id>/
   sha256        TEXT    NOT NULL,          -- of the file; the ZIP manifest reuses it
-  geotiff       INTEGER NOT NULL,          -- image/tiff with GeoTIFF tags, checked once at upload
+  geotiff       INTEGER NOT NULL,          -- TIFF with GeoTIFF tags, checked once at upload
   creating_call INTEGER,
   deletion      TEXT,                      -- the deletion record once deleted (kept, hidden)
   geofeature_id TEXT GENERATED ALWAYS AS (json_extract(record, '$.geofeature_id')) VIRTUAL,
@@ -69,7 +69,7 @@ export async function receive(
       size_bytes,
       sha256: hash.digest("hex"),
       geotiff:
-        contentType === "image/tiff" && (await isGeoTiff(handle, size_bytes)),
+        await isGeoTiff(handle, size_bytes),
     };
   } catch (error) {
     await rm(path, { force: true });

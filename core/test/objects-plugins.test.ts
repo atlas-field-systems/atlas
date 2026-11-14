@@ -89,6 +89,17 @@ test("19. Object size boundary, attachments, imagery deletion and archived delet
     tiff.writeUInt32LE(8, 4);
     tiff.writeUInt16LE(1, 8);
     tiff.writeUInt16LE(34735, 10);
+    const generic = await upload(h, tiff);
+    assert.equal(generic.status, 201);
+    assert.equal(
+      (
+        await h.call("POST", "/entities/geofeatures", {
+          cookie: h.admin,
+          body: { kind: "imagery", object_id: generic.body.object_id },
+        })
+      ).status,
+      200,
+    );
     const image = await upload(
       h,
       tiff,
