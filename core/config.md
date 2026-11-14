@@ -38,3 +38,6 @@ Core refuses startup with the reason if `archive_directory` is inside or equal t
 
 Core refuses startup if `archive_directory` is inside `data_directory` or
 `log_directory`, or equals either, after resolving symbolic links.
+
+An invalid password in `first_admin.password_file` refuses startup before the
+first account is created; correct the file and start Core again.

@@ -729,3 +729,29 @@ test("Reset shows a late reported outcome beside a dropped Task [reset.md#cores-
     await h.close();
   }
 });
+
+
+test("bootstrap refuses unusable passwords before creating an account [config.md]", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-bootstrap-"));
+  const pw = join(dir, "pw");
+  const config = { data_directory: dir, port: 0, first_admin: { operator_id: "ADM", password_file: pw } };
+  try {
+    for (const invalid of ["\n", "x".repeat(1025)]) {
+      await writeFile(pw, invalid);
+      await assert.rejects(async () => {
+        const core = await startCore({ clock, config });
+        await stopCore(core);
+      }, /first_admin.password_file/);
+    }
+    await writeFile(pw, password);
+    const core = await startCore({ clock, config });
+    try {
+      const login = await fetch(core.url + "/administration/login", { method: "POST", headers: { "content-type": "application/json", "atlas-definitions": protocol.hash, "idempotency-key": "login" }, body: JSON.stringify({ operator_id: "ADM", password }) });
+      assert.equal(login.status, 200);
+      await login.text();
+    } finally { await stopCore(core); }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
+  }
+});

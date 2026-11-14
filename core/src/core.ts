@@ -130,6 +130,11 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       const password = (
         await readFile(config.first_admin.password_file, "utf8")
       ).replace(/\r?\n$/, "");
+      const checked = protocol.check("requests.account", {
+        operator_id: config.first_admin.operator_id, password, admin: true,
+      });
+      if (!checked.ok)
+        throw new Error(`first_admin.password_file: invalid account: ${JSON.stringify(checked.problems)}`);
       const hash = await admin.hashPassword(password);
       store.write((tx) =>
         admin.ensureFirstAdmin(tx, config.first_admin!.operator_id, hash),
