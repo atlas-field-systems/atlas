@@ -11,3 +11,4 @@ finding	choice	evidence	result
 10	Login retry scope spans accounts; salted scrypt body fingerprint before password verification; serialize same retry key	F10 failed unauthenticated versus idempotency_conflict	Full suite green
 10-note	Existing contract test expected 401 for changed login body, contradicting api.md credential-retry-scenarios 409; corrected expectation, preserving all assertions	Full-body conflict is the expressly requested behavior	Spec conflict reported
 11	Read call history from events independently of live Plugin setup	F11 failed 404 versus 200	Full suite green
+12	Reject malformed path escapes at route parsing	F12 failed internal_error versus invalid	Full suite green

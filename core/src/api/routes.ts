@@ -699,8 +699,13 @@ export function match(
     params: Object.fromEntries(
       selected.keys.map((key, i) => [
         key,
-        decodeURIComponent(selected.found![i + 1]),
+        decodePathSegment(selected.found![i + 1]),
       ]),
     ),
   };
+}
+
+function decodePathSegment(value: string): string {
+  try { return decodeURIComponent(value); }
+  catch { refuse("invalid", "Malformed path escape"); }
 }

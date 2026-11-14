@@ -426,3 +426,15 @@ test("F11 removed Plugin call history remains readable [api.md#plugins]", async 
     await h.close();
   }
 });
+test("F12 malformed path escapes use listed errors [api.md#basics]", async () => {
+  const h = await startHarness();
+  try {
+    assert.equal(
+      (await h.call("GET", "/entities/assets/%E0%A4%A", { cookie: h.admin }))
+        .body.error,
+      "invalid",
+    );
+  } finally {
+    await h.close();
+  }
+});
