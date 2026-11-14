@@ -74,7 +74,7 @@ Accounts may call every operator route.
 | `501 not_implemented` | The route's pillar is not built yet |
 | `503 stopping` | Core is stopping |
 | `410 deleted` | The Object was deleted in this run; the body adds its `deletion` record, which says who deleted it and when |
-| `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
+| `413 too_large` | The JSON body exceeds 16 MiB, or the file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
 ## Root paths
