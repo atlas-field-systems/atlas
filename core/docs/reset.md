@@ -68,7 +68,8 @@ Their credentials stop working immediately; the checked clear removes those rows
 - Each Asset that took part: its ID, its gateway if any, and when Core first
   and last heard it.
 - Each Asset's Tasks in order, with their final reported outcome, or no
-  reported outcome.
+  reported outcome. A dropped Task also names any later reported final outcome,
+  while remaining dropped in Core.
 - Plugin calls and how each ended.
 - Every gap: records lost, truncated, or never written, and when.
 

@@ -707,3 +707,25 @@ test("one Core owns a data directory [storage.md]", async () => {
     await h.close();
   }
 });
+
+
+test("Reset shows a late reported outcome beside a dropped Task [reset.md#cores-reset-zip]", async () => {
+  const h = await startHarness();
+  try {
+    const key = await h.call("POST", "/administration/asset-keys", { cookie: h.admin });
+    const registered = await h.call("POST", "/entities/assets", { key: key.body.key, body: { reports: ["status"], commands: ["hold"] } });
+    const id = registered.body.asset_id;
+    assert.equal((await h.call("POST", `/tasks/${id}`, { cookie: h.admin, body: { tasks: [{ kind: "hold" }] } })).status, 202);
+    clock.advance(30000);
+    assert.equal((await h.call("POST", `/entities/assets/${id}/reports`, { key: key.body.key, body: { reports: [{ type: "report.status", kind: "task", time: clock.now(), asset_id: id, task_id: 1, task_state: "completed" }] } })).status, 200);
+    assert.equal((await h.call("GET", `/tasks/${id}`, { cookie: h.admin })).body.items[0].state, "dropped");
+    const stopped = await h.stop();
+    assert.ok(stopped.archived);
+    const summary = (await readZip(stopped.zip)).find((e) => e.name === "summary.md")!;
+    const chunks: Buffer[] = [];
+    for await (const chunk of summary.open()) chunks.push(chunk);
+    assert.match(Buffer.concat(chunks).toString(), /Task 1: dropped; later reported completed/);
+  } finally {
+    await h.close();
+  }
+});

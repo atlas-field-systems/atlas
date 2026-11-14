@@ -240,6 +240,7 @@ when it includes a settings Task. Send the rule as a settings change first.
   it even at the 64 cap.
 - The Asset answers a Task request with a queue report that names the request
   and lists the Tasks the Asset holds.
+- Late reports stay in history without reconciling a dropped Task.
 - **Unanswered requests end when the Asset goes offline.** Core stops delivering
   every request the Asset has not answered: Tasks, settings changes, and cancels.
   Core adds `request.dropped` for each, and `task.dropped` for each Task the
