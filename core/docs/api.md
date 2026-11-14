@@ -35,7 +35,8 @@ Accounts may call every operator route.
   that hash differs, Core records the mismatch as described above.
 - **Retries are safe.** Every request that changes state carries an
   `Idempotency-Key` of up to 64 characters. Core keeps each key's non-secret
-  response for the run when its transaction changed something. A refusal that changed nothing is not kept. A repeat returns that response and changes nothing; the
+  response for the run when it succeeds (2xx) or its transaction changed something.
+  A refusal that changed nothing is not kept. A repeat returns that response and changes nothing; the
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.

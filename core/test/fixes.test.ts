@@ -1408,3 +1408,28 @@ test("PR53-3 startup cursor includes work accepted before subscribing [api.md#as
     await h.close();
   }
 });
+
+test("PR53-8 successful no-op retries preserve a later attachment [api.md#basics]", async () => {
+  const h = await startHarness();
+  try {
+    const upload = await fetch(h.core.url + "/objects?name=retry", {
+      method: "POST",
+      headers: { cookie: h.admin, "atlas-definitions": protocol.hash, "idempotency-key": "upload", "content-type": "application/octet-stream" },
+      body: "file",
+    });
+    assert.equal(upload.status, 201);
+    const path = "/objects/" + (await upload.json()).object_id;
+    const opts = { cookie: h.admin, idem: "detach", body: { geofeature_id: null } };
+    const first = await h.call("PATCH", path, opts);
+    assert.equal(first.status, 200);
+    const place = await h.call("POST", "/entities/geofeatures", {
+      cookie: h.admin, body: { kind: "point", position: { latitude: 0, longitude: 0 } },
+    });
+    const id = place.body.geofeature.geofeature_id;
+    assert.equal((await h.call("PATCH", path, { cookie: h.admin, body: { geofeature_id: id } })).status, 200);
+    assert.deepEqual((await h.call("PATCH", path, opts)).body, first.body);
+    assert.equal((await h.call("GET", path, { cookie: h.admin })).body.geofeature_id, id);
+  } finally {
+    await h.close();
+  }
+});

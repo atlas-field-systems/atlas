@@ -348,7 +348,8 @@ export async function startServer(
           const result = route.commit(tx, request, prepared);
           const first = "first" in result ? result.first : result;
           const keep = "ack" in result ? result.ack : result;
-          if (tx.get<{ n: number }>("SELECT total_changes() n")!.n > before)
+          if ((keep.status >= 200 && keep.status < 300) ||
+            tx.get<{ n: number }>("SELECT total_changes() n")!.n > before)
             retain(tx, scope, key, fp, keep);
           storedUpload = true;
           return first;
