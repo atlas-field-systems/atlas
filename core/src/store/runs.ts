@@ -107,7 +107,11 @@ export function nextGlobalId(tx: Tx): string | null {
     const n =
       tx.get<{ n: number }>("SELECT last_seq n FROM asset_ids WHERE only=1")!
         .n + 1;
-    if (n > SHORT_ID_CAPACITY) return null;
+    if (n > SHORT_ID_CAPACITY) {
+      tx.env.log.record({level: "error", area: "identity", msg: "Asset IDs exhausted"});
+      process.stderr.write("Asset IDs exhausted; new registrations are refused\n");
+      return null;
+    }
     tx.run("UPDATE asset_ids SET last_seq=? WHERE only=1", n);
     const id = encodeShortId(n);
     if (!tx.get("SELECT 1 FROM accounts WHERE operator_id=?", id)) return id;

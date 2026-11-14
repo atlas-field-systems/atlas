@@ -5,3 +5,4 @@ finding	choice	evidence	result
 4	Total budget includes incremental gap records; first overflow stops writes for run	F4 failed at 10828 bytes against 2048	Full suite green
 5	Refuse shared writes with no registered Asset at authorization boundary	F5 failed 200 versus 403	Full suite green
 6	Protocol validates hash; record registered Assets alongside gateways and Plugins	F6 failed two versus six refusals	Full suite green
+7	Warn on console and diagnostics at allocator exhaustion	Original P11 failed before, passes after; uses seeded SQLite outside contract suite	No permanent HTTP-only exhaustion test: requires 1247714 allocations
