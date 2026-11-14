@@ -24,18 +24,14 @@ built. Until then the owner judges Atlas from simulation results.</p>
 holds 19 failsafe decisions, made between 2026-11-10 and 2026-11-13. None
 has run against ArduPilot, real or simulated. One was reversed two days
 after it was made.</li>
-<li><strong>Can the radio carry the fleet?</strong> The design sizes are
-<a href="scale.html">about 20 Assets, a report about every 15 seconds, and frames of about 200
-bytes</a>. The Meshtastic page lists how many Assets the link
-carries as
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet">not designed yet</a>.
-A rough estimate says the sizes may not fit. If Meshtastic&#39;s default
-long-range setting carries about 1 kilobit per second, one 200-byte frame
-takes about 1.5 seconds of air time. Twenty of those frames then need about
-30 seconds of air time in every 15-second window, before any Task,
-acknowledgement, or relayed frame. A faster setting carries more over a
-shorter range. The estimate is not a measurement, and only a measurement
-settles the question.</li>
+<li><strong>How much does the radio really carry?</strong> Atlas uses a slow link&#39;s
+airtime <a href="scale.html#use-slow-links-fully-and-efficiently">fully and efficiently</a>,
+so the Asset and the Fieldlink need to know how much airtime they have to
+spend. What Meshtastic carries in practice, after its relays and
+acknowledgements, is
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet">not known yet</a>.
+A faster radio setting carries more over a shorter range. Only a
+measurement settles it.</li>
 </ol>
 <h2 id="the-meshtastic-fieldlink-comes-first">The Meshtastic Fieldlink comes first</h2>
 <p>Meshtastic is the first Fieldlink, and SiK is built on what it establishes.
@@ -46,8 +42,8 @@ point-to-point link.</p>
 <h2 id="the-radio-is-measured-during-the-build">The radio is measured during the build</h2>
 <p>While the Meshtastic Fieldlink is built, two Meshtastic radios are connected
 to the build computer and send messages to each other. Their measured numbers
-go into <a href="scale.html">Scale</a> and the Meshtastic page, and the simulated radio
-link uses them. The measurement answers the second risk.</p>
+go into the Meshtastic page, and the simulated radio link uses them. The
+measurement answers the second risk.</p>
 <h2 id="new-failsafe-and-radio-decisions-wait">New failsafe and radio decisions wait</h2>
 <p>No new failsafe or radio decision is made until the Asset app has run against
 simulated ArduPilot and the radio is measured. The decisions already in the

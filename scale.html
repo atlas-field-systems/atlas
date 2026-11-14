@@ -5,8 +5,8 @@
 Design so Atlas works well at these sizes and does not break just past them.</p>
 <h2 id="fleet">Fleet</h2>
 <ul>
-<li>Design for about 20 Assets at most. Larger fleets should still work, but without guarantees. The number is a goal, not a requirement: a field link may carry fewer.</li>
-<li>At this scale, IDs that people read or that cross a field link are 1 to 4 letters or digits, such as <code>A1</code> (<a href="CHARTER.html#keep-shared-data-simple">the ID rule</a>). That gives over a million IDs and keeps field-link frames short.</li>
+<li>Atlas has no set fleet size. An early figure of about 20 Assets was a rough guess, not a requirement or a test. How many Assets a field link carries is whatever its measured airtime allows.</li>
+<li>IDs that people read or that cross a field link are 1 to 4 letters or digits, such as <code>A1</code> (<a href="CHARTER.html#keep-shared-data-simple">the ID rule</a>). That gives over a million IDs and keeps field-link frames short.</li>
 </ul>
 <h2 id="setup">Setup</h2>
 <ul>
@@ -16,10 +16,18 @@ Design so Atlas works well at these sizes and does not break just past them.</p>
 <h2 id="radio">Radio</h2>
 <ul>
 <li>Links start with pure LoRa, then move to a multi-layer mesh with FLRC between Assets wherever FLRC is viable (<a href="environment.html#connectivity-evolves">Environment</a>).</li>
-<li>The telemetry rate is about every 15 seconds on LoRa and about every second on FLRC.</li>
-<li>Each Fieldlink sets its own size limit and splits records into chunks if it needs to. Protocol records have no size cap and no chunking. About 200 bytes per frame is a goal for slow links, not a limit.</li>
-<li>Tasks go before telemetry when the radio is busy. Expect a few Tasks or settings changes per minute per Asset.</li>
+<li>Each Fieldlink sets its own size limit and splits records into chunks if it needs to. Protocol records have no size cap and no chunking.</li>
+<li>Expect a few Tasks or settings changes per minute per Asset.</li>
 </ul>
+<h3 id="use-slow-links-fully-and-efficiently">Use slow links fully and efficiently</h3>
+<p>On a slow link such as LoRa, airtime is the scarce thing, and Atlas spends all of it well.</p>
+<ul>
+<li><strong>Send as much as the link carries.</strong> Airtime left unused while an Asset has useful data is wasted. There is no fixed telemetry rate: an Asset reports as often as free airtime allows, more often on a quiet link and less often on a busy one.</li>
+<li><strong>Spend every byte well.</strong> The most important data goes first, and airtime never carries data that is already out of date or that the other end already has.</li>
+</ul>
+<p><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state">Asset communications</a>
+owns what an Asset chooses to send, and each Fieldlink owns how compactly it
+carries it (<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides">Fieldlink</a>).</p>
 <h2 id="runs-and-storage">Runs and storage</h2>
 <ul>
 <li>Each run lasts up to about 2 hours, limited by battery. Core should run all day across many runs.</li>
