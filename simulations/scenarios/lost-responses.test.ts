@@ -261,3 +261,26 @@ scenario({
     stream.stop();
   },
 });
+
+scenario({
+  name: "retry waits through a failed run verification",
+  checks: ["sdk/docs/client.md#retries-and-idempotency"],
+  async run(w) {
+    w.network.once("admin", "/entities/geofeatures", { kind: "loseResponse" });
+    w.network.once("admin", "/about", { kind: "refuse", status: 503 });
+    const result = await w.complete(
+      w.admin.call("createGeofeature", {
+        body: { kind: "point", position: { latitude: 1, longitude: 2 } },
+      }),
+    );
+    assert.ok(
+      result.ok,
+      "a transient failure to verify the run must not end the immutable attempt",
+    );
+    await w.until(() => w.events.some((e) => e.kind === "geofeature.created"));
+    assert.equal(
+      w.events.filter((e) => e.kind === "geofeature.created").length,
+      1,
+    );
+  },
+});

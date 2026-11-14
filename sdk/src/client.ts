@@ -292,7 +292,11 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
             if (stop) return stop;
             if (needsVerify) {
               const verified = await verifyRun();
-              if (!verified.ok && verified.error !== "unknown")
+              if (
+                !verified.ok &&
+                verified.error !== "unknown" &&
+                (verified.status === undefined || verified.status < 500)
+              )
                 return {
                   ok: false,
                   error: verified.error,
