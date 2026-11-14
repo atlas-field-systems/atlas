@@ -64,6 +64,7 @@ export async function startHarness(
     admin,
     async close() {
       await core.stop();
+      await rm(dataDir + "-archive", { recursive: true, force: true });
       await rm(dataDir, { recursive: true, force: true });
     },
   };

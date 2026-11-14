@@ -469,3 +469,38 @@ test("F13 logout clears cookies and stale cookies allow public routes [api.md#ca
     await h.close();
   }
 });
+test("F14 startup refuses archives within data including symlink aliases [config.md, reset.md#check-then-clear]", async () => {
+  const { startCore } = await import("../src/core.ts"),
+    { mkdtemp, rm, mkdir, symlink } = await import("node:fs/promises"),
+    { tmpdir } = await import("node:os"),
+    { join } = await import("node:path");
+  const dir = await mkdtemp(join(tmpdir(), "atlas-paths-"));
+  try {
+    await mkdir(join(dir, "objects"));
+    await symlink(join(dir, "objects"), dir + "-alias");
+    for (const archive_directory of [
+      join(dir, "objects/run-1"),
+      dir + "-alias/archives",
+    ]) {
+      let started: Awaited<ReturnType<typeof startCore>> | undefined;
+      try {
+        await assert.rejects(async () => {
+          started = await startCore({
+            clock: simulatedClock(),
+            config: {
+              data_directory: dir,
+              archive_directory,
+              listen_address: "127.0.0.1",
+              port: 0,
+            },
+          });
+        }, /archive_directory.*outside.*data_directory/);
+      } finally {
+        await started?.stop();
+      }
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-alias", { force: true });
+  }
+});

@@ -13,3 +13,4 @@ finding	choice	evidence	result
 11	Read call history from events independently of live Plugin setup	F11 failed 404 versus 200	Full suite green
 12	Reject malformed path escapes at route parsing	F12 failed internal_error versus invalid	Full suite green
 13	Ignore invalid session cookies only on public routes; every logout response expires browser cookie	F13 missing clearing cookie	Full suite green
+14	Resolve real directory paths at start; refuse archive under data; default sibling data_directory-archive	F14 startup accepted unsafe path before fix	Updated existing archive-path assertions for new default; symlink contract included

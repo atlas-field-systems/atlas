@@ -26,9 +26,12 @@ for HTTPS. Without them Core listens only on loopback.
 | `log_file_limit_bytes` | `67108864` (64 MiB) |
 | `log_total_limit_bytes` | `2147483648` (2 GiB) |
 | `debug_endpoint` | `false` |
-| `archive_directory` | `<data_directory>/archive`; Core never deletes ZIPs |
+| `archive_directory` | `<data_directory>-archive`; Core never deletes ZIPs |
 
 `port` accepts 0 to choose a free port. Timeouts and limits must be positive.
 The password file is read once for bootstrap, with a trailing newline removed.
 Accounts and keys are otherwise provisioned through the [Core API](docs/api.md#accounts-and-provisioning).
 [Logging](docs/logging.md) owns diagnostics and [Reset](docs/reset.md) owns archives.
+
+Core refuses startup with the reason if `archive_directory` is inside or equal to
+`data_directory`, after resolving symbolic links, so Reset cannot erase its ZIP.

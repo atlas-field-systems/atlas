@@ -1,4 +1,5 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { relative, isAbsolute } from "node:path";
+import { mkdir, readFile, realpath } from "node:fs/promises";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import { resolveConfig, pathsFor, redactConfig } from "./config.ts";
 import { recoverReset, stopRun } from "./reset/reset.ts";
@@ -62,6 +63,9 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     paths.uploadsDir,
   ])
     await mkdir(dir, { recursive: true });
+  const archiveRelative = relative(await realpath(config.data_directory), await realpath(config.archive_directory));
+  if (!archiveRelative || (!isAbsolute(archiveRelative) && archiveRelative !== ".." && !archiveRelative.startsWith("../")))
+    throw new Error("archive_directory must be outside data_directory");
   const protocol = await loadPackagedProtocol();
   events.assertKindsMatchProtocol(protocol.names);
   const protocolPackage = JSON.parse(

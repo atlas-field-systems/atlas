@@ -352,5 +352,10 @@
     "phrase": "409 unknown Task",
     "why": "An unknown Task is 404 not_found.",
     "example": "Core refuses with 409 unknown Task."
+  },
+  {
+    "phrase": "<data_directory>/archive",
+    "why": "Core archives live outside data_directory so Reset cannot erase its ZIP.",
+    "example": "The archive default is <data_directory>/archive."
   }
 ]

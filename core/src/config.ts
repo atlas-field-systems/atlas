@@ -47,7 +47,7 @@ export function resolveConfig(
   const config = {
     ...CONFIG_DEFAULTS,
     log_directory: `${partial.data_directory ?? CONFIG_DEFAULTS.data_directory}/diagnostics`,
-    archive_directory: `${partial.data_directory ?? CONFIG_DEFAULTS.data_directory}/archive`,
+    archive_directory: `${partial.data_directory ?? CONFIG_DEFAULTS.data_directory}-archive`,
     ...partial,
   };
   const problems: ConfigProblem[] = [];

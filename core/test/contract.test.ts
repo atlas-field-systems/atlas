@@ -180,10 +180,10 @@ test("3. stored state and diagnostics contain no credentials [api.md#credential-
       }
     }
     await inspect(h.dataDir);
-    const archives = await readdir(join(h.dataDir, "archive"));
+    const archives = await readdir(h.dataDir + "-archive");
     assert.equal(archives.length, 1);
     for (const entry of await readZip(
-      join(h.dataDir, "archive", archives[0]!),
+      join(h.dataDir + "-archive", archives[0]!),
     )) {
       const chunks: Buffer[] = [];
       for await (const chunk of entry.open()) chunks.push(chunk);
@@ -558,19 +558,19 @@ test("12. an unwritable archive clears nothing and next start is new [reset.md#w
   let next: Awaited<ReturnType<typeof startCore>> | undefined;
   try {
     await h.call("POST", "/administration/gateways", { cookie: h.admin });
-    await chmod(join(h.dataDir, "archive"), 0o500);
+    await chmod(h.dataDir + "-archive", 0o500);
     const result = await h.core.stop();
     assert.equal(result.archived, false);
-    assert.deepEqual(await readdir(join(h.dataDir, "archive")), []);
+    assert.deepEqual(await readdir(h.dataDir + "-archive"), []);
     assert.ok(
       (await readdir(join(h.dataDir, "diagnostics", `run-${h.core.runId}`)))
         .length > 0,
     );
-    await chmod(join(h.dataDir, "archive"), 0o700);
+    await chmod(h.dataDir + "-archive", 0o700);
     next = await startCore({ clock, config: h.config });
     assert.equal(next.runId, h.core.runId + 1);
   } finally {
-    await chmod(join(h.dataDir, "archive"), 0o700);
+    await chmod(h.dataDir + "-archive", 0o700);
     await next?.stop();
     await h.close();
   }
@@ -603,7 +603,7 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
     } finally {
       await log.close();
     }
-    const watcher = watch(join(dir, "archive"), {
+    const watcher = watch(dir + "-archive", {
       signal: AbortSignal.timeout(15000),
     });
     const exited = once(running.process, "exit");
@@ -612,7 +612,7 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
     for await (const event of watcher) {
       if (event.filename?.endsWith(".partial")) {
         partial = event.filename;
-        if ((await stat(join(dir, "archive", partial))).size > 0) break;
+        if ((await stat(join(dir + "-archive", partial))).size > 0) break;
       }
     }
     assert.ok(partial);
@@ -623,7 +623,7 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
       (await (await fetch(running.url + "/about")).json()).run_id,
       run,
     );
-    assert.deepEqual(await readdir(join(dir, "archive")), []);
+    assert.deepEqual(await readdir(dir + "-archive"), []);
     assert.equal((await running.kill("SIGTERM"))[0], 0);
     running = undefined;
   } finally {
