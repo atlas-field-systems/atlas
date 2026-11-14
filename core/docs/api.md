@@ -1,7 +1,7 @@
 # Core API
 
-The Command Interface, Assets on IP, gateways, and Plugins use this API to talk to Core
-from outside its inner wall. This design is selected but not implemented.
+**Built.** The Command Interface, Assets on IP, gateways, and Plugins use this API
+to talk to Core from outside its inner wall.
 Record shapes belong to [Protocol](../../protocol/README.md); this page names them and never redefines
 their fields. The [walled city](../../atlas/design-decisions.md#a-walled-city)
 explains why the API is the only way in.
@@ -68,7 +68,6 @@ Accounts may call every operator route.
 | `409 not_a_point`, `not_geotiff` | Place or file cannot serve the requested use |
 | `409 imagery_fixed`, `object_shown` | Imagery change is forbidden or imagery still shows the Object |
 | `409 id_taken`, `idempotency_conflict` | Identity is in use or retry key names another body |
-| `501 not_implemented` | The route's pillar is not built yet |
 | `503 stopping` | Core is stopping |
 | `410 deleted` | The Object was deleted in this run; the body adds its `deletion` record, which says who deleted it and when |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |

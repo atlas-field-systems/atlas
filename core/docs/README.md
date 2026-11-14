@@ -1,6 +1,6 @@
 # Core docs
 
-Selected behavior for the Core runtime. Administration and the storage/API foundation are implemented; other pillars remain pending.
+**Built.** These pages describe the Core runtime, including all pillars and the Plugin interface.
 
 - [Core API](api.md): requests, reads, the event stream, Asset and gateway calls,
   contact, provisioning, Objects, and Plugins.

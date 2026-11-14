@@ -1,6 +1,6 @@
 # Fusion
 
-This direction is selected but not implemented. Protocol defines the
+**Built.** Core uses the temporary first iteration below. Protocol defines the
 `report.observation` and `track` records ([Protocol](../../protocol/README.md#records)).
 This page owns how Core processes them.
 
