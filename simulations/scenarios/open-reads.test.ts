@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
+import { createLivePicture } from "@atlas/sdk";
 import { scenario } from "../src/scenario.ts";
 import { ipAsset, radioAsset, plugin } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 scenario({
-  name: "an Asset and a gateway read another Asset, its Tasks, and the picture",
+  name: "an Asset and a gateway read another Asset, its Tasks, history, Objects, Plugin calls, and the picture",
   checks: ["core/docs/api.md#reads"],
   async run(w) {
     const reader = await ipAsset(w, "reader");
@@ -106,5 +107,36 @@ scenario({
         ),
       );
     }
+  },
+});
+
+scenario({
+  name: "an Asset's live picture follows another Asset's Tasks",
+  checks: ["core/docs/api.md#reads", "sdk/docs/live.md#live-picture"],
+  async run(w) {
+    const reader = await ipAsset(w, "reader");
+    const other = await ipAsset(w, "other");
+    const picture = createLivePicture(reader.client);
+    w.onClose(() => picture.stop());
+    await w.until(() => picture.tasks(other.session.asset_id).ready);
+    const send = async (asset_id: string) =>
+      value(
+        await w.complete(
+          w.admin.call("sendTasks", {
+            params: { asset_id },
+            body: { tasks: [{ kind: "hold" }] },
+          }),
+        ),
+      ).task_ids[0];
+    const unrelated = await send(other.session.asset_id);
+    const own = await send(reader.session.asset_id);
+    const ids = (asset_id: string) =>
+      picture.tasks(asset_id).items.map((t) => t.task.task_id);
+    // The reader's own Task arrives after the other's, so the stream has passed it.
+    await w.until(() => ids(reader.session.asset_id).includes(own));
+    assert.ok(
+      ids(other.session.asset_id).includes(unrelated),
+      "live picture shows another Asset's new Task",
+    );
   },
 });

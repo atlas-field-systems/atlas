@@ -54,8 +54,9 @@ apply its own [contact rule](../../core/docs/api.md#contact).
 
 ## Live picture
 
-The live picture is an optional in-memory view of Entities and Tasks for operator
-apps. Assets do not use it.
+The live picture is an optional in-memory view of Entities and Tasks, meant for
+operator apps. Any caller may load it, because every caller
+[reads everything](../../core/docs/api.md#reads).
 
 ```ts
 const picture = createLivePicture(atlas, { asset_id }); // asset_id optional
@@ -72,8 +73,8 @@ picture.onChange(cb);
   `GET /tasks/{asset_id}` ([Reads](../../core/docs/api.md#reads)), then follows
   from the smallest `as_of`. Recoverable snapshot failures retry with the configured
   backoff. If an Asset disappears between reads, loading starts again.
-  The follow is unfiltered: `asset_id` narrows only Asset entries and Tasks on
-  the client. Places, Tracks, and every Observation stay live.
+  It follows with `everything: true`, so the follow is unfiltered for every
+  caller: `asset_id` narrows only Asset entries and Tasks on the client. Places, Tracks, and every Observation stay live.
   For each part, it skips events at or below the `as_of` of the read that loaded it.
 - **Readiness is explicit.** Reads return `{ready, stale, items}`. Until loading
   finishes, `ready` is false; a read never returns an empty list as if it were true.

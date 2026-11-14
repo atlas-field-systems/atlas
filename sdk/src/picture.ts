@@ -135,6 +135,7 @@ export function createLivePicture(
       client,
       {
         after: Math.min(...after),
+        everything: true,
         onContact(contact) {
           if (open === contact.open) return;
           open = contact.open;

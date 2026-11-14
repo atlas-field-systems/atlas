@@ -582,8 +582,8 @@ and a removal adds `track.removed`.
   into the Task, beside the `geofeature_id`, so the Task keeps the place as it
   was when it was sent. A shape drawn into one Task is carried by that Task the
   same way.
-- Reading geo features follows [Reads](#reads). Failsafe boundaries and
-  failsafe responses never name a geo feature.
+- **Failsafes never name a place.** Failsafe boundaries and failsafe responses
+  never name a geo feature.
 - **Edits are never blocked.** An operator may replace or delete a place while
   unfinished Tasks name it. Core does not refuse the change and does not cancel
   any Task. Deleting a place changes no Task already sent.
