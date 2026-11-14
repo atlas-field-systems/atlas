@@ -66,9 +66,9 @@ export async function ipAsset(
     },
   };
 }
-export async function radioAsset(w: World) {
+export async function radioAsset(w: World, name = "gateway") {
   const issued = value(await w.complete(w.admin.call("provisionGateway")));
-  const client = w.client("gateway", {
+  const client = w.client(name, {
     kind: "gateway",
     key:
       "key" in issued
