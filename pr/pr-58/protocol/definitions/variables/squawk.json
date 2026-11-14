@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/squawk.json",
+  "title": "squawk",
+  "description": "An aircraft's transponder code: four octal digits.",
+  "type": "string",
+  "pattern": "^[0-7]{4}$",
+  "maxLength": 4,
+  "examples": [
+    "1200"
+  ]
+}

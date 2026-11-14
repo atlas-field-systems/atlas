@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/track.json",
+  "title": "Track",
+  "description": "Fusion's conclusion about one target, resting on one or more Observations. Only Fusion creates, changes, or removes a Track; no caller writes one. time is the last sighting: the time of the newest Observation report the Track uses. Silence does not prove the target is gone, and Core adds no stale status: readers show the Track's age. A Track whose sources only give a direction has no position; a display draws the direction from the source Observations. A Track carries no asset_id, because it is not about one Asset.",
+  "type": "object",
+  "required": [
+    "time",
+    "track_id",
+    "sources"
+  ],
+  "dependentRequired": {
+    "uncertainty": [
+      "position"
+    ]
+  },
+  "additionalProperties": false,
+  "properties": {
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "track_id": {
+      "$ref": "../variables/track_id.json"
+    },
+    "entity_type": {
+      "$ref": "../variables/entity_type.json"
+    },
+    "position": {
+      "$ref": "../components/position.json"
+    },
+    "uncertainty": {
+      "$ref": "../components/uncertainty.json"
+    },
+    "details": {
+      "$ref": "../components/details.json"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "../components/source.json"
+      },
+      "minItems": 1,
+      "maxItems": 32
+    }
+  },
+  "examples": [
+    {
+      "time": 1793667600000,
+      "track_id": "T1",
+      "entity_type": "airplane",
+      "position": {
+        "latitude": 42.2758,
+        "longitude": -71.8041,
+        "altitudes": [
+          {
+            "altitude_m": 1250,
+            "altitude_reference": "msl"
+          }
+        ]
+      },
+      "uncertainty": {
+        "semi_major_m": 30,
+        "altitude_uncertainty_m": 15
+      },
+      "details": {
+        "icao_address": "A1B2C3",
+        "callsign": "N123AB",
+        "squawk": "1200"
+      },
+      "sources": [
+        {
+          "asset_id": "A3",
+          "observation_id": "O1"
+        }
+      ]
+    },
+    {
+      "time": 1793667600000,
+      "track_id": "T2",
+      "entity_type": "ground_vehicle",
+      "details": {
+        "color": "red"
+      },
+      "sources": [
+        {
+          "asset_id": "A2",
+          "observation_id": "O3"
+        }
+      ]
+    }
+  ]
+}

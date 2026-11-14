@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/input_kind.json",
+  "title": "input_kind",
+  "description": "Which common piece a Plugin action's input takes: exactly the kinds of the input_value component.",
+  "enum": [
+    "area",
+    "position",
+    "time",
+    "geofeature",
+    "number",
+    "text",
+    "choice"
+  ],
+  "examples": [
+    "area"
+  ]
+}
