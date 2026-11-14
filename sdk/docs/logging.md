@@ -17,6 +17,8 @@ The SDK reports every step, not only errors:
   ignored; Tasks handed to the app, finished, cancelled or cleared.
 
 Each event has a `name`, a local millisecond `at`, a local counter, and its detail.
+Each client shares one counter across its requests, link, outbox, and queue.
+Each batch resend produces one `batch.resent` event.
 These are local diagnostics, not Protocol records.
 
 ## Rules

@@ -1,0 +1,31 @@
+name: sdk
+on:
+  push:
+    branches: [main]
+    paths: ['sdk/**', 'core/**', 'protocol/**', '.github/workflows/sdk.yml']
+  pull_request:
+    paths: ['sdk/**', 'core/**', 'protocol/**', '.github/workflows/sdk.yml']
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+        working-directory: protocol
+      - run: npm ci
+        working-directory: core
+      - run: npm ci
+        working-directory: sdk
+      - run: npx tsc --noEmit
+        working-directory: sdk
+      - run: npm run check:browser
+        working-directory: sdk
+      - run: npm test
+        working-directory: sdk

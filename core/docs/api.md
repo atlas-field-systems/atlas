@@ -58,7 +58,7 @@ Accounts may call every operator route.
 | --- | --- |
 | `400 invalid` | The body fails Protocol's validator; `explanation` lists the paths |
 | `401 unauthenticated` | No valid session or key |
-| `403 forbidden` | The caller may not do this, such as an Asset reading another Asset |
+| `403 forbidden` | The caller may not do this, such as an Asset sending Tasks |
 | `404 not_found` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
 | `405 method_not_allowed` | The path exists but does not accept this method |
 | `409 asset_ids_exhausted`, `task_ids_exhausted` | No ID remains in the applicable sequence |
@@ -582,9 +582,8 @@ and a removal adds `track.removed`.
   into the Task, beside the `geofeature_id`, so the Task keeps the place as it
   was when it was sent. A shape drawn into one Task is carried by that Task the
   same way.
-- **Assets never read places.** Geo features are never sent to Assets or
-  gateways, and they read nothing of the picture. Failsafe boundaries and
-  failsafe responses never name a geo feature.
+- **Failsafes never name a place.** Failsafe boundaries and failsafe responses
+  never name a geo feature.
 - **Edits are never blocked.** An operator may replace or delete a place while
   unfinished Tasks name it. Core does not refuse the change and does not cancel
   any Task. Deleting a place changes no Task already sent.
@@ -618,15 +617,15 @@ end state adds no event and returns its existing latest Object `event_id`.
 
 An Object is a file Core holds, with an `object` record that says what it is:
 `object_id`, `name`, `content_type`, `size_bytes`, and an optional
-`geofeature_id`. Operators, Plugins, and Assets store Objects. Core never sends
-them to Assets or gateways.
+`geofeature_id`. Operators, Plugins, and Assets store Objects. Reading Objects
+follows [Reads](#reads).
 
 | Request | Who | Result |
 | --- | --- | --- |
 | `POST /objects?name=<name>&geofeature_id=<id>` | Account, Plugin, or Asset | Stores the file; `201 {object_id, event_id}` |
-| `GET /objects?geofeature_id=<id>` | Account or Plugin | Every Object record, or those attached to one geo feature, with `as_of` |
-| `GET /objects/{object_id}` | Account or Plugin | One Object record |
-| `GET /objects/{object_id}/file` | Account or Plugin | The file, with its `content_type` |
+| `GET /objects?geofeature_id=<id>` | [Readers](#reads) | Every Object record, or those attached to one geo feature, with `as_of` |
+| `GET /objects/{object_id}` | [Readers](#reads) | One Object record |
+| `GET /objects/{object_id}/file` | [Readers](#reads) | The file, with its `content_type` |
 | `PATCH /objects/{object_id}` | Account | `{"geofeature_id": <id or null>}` attaches, moves, or detaches it; `200 {event_id}` |
 | `DELETE /objects/{object_id}` | Account | Deletes the Object: hides it and its file for the rest of the run; `200 {event_id}` |
 
@@ -647,8 +646,7 @@ All files, including photos and clips, are Objects
   taken, then uploads the file naming it. A gateway adds `asset_id=<id>` to
   both calls to say which Asset it acts for, and Core refuses an Asset it does
   not carry with `403`; an Asset on IP needs none, because its key names it.
-  `requested_by` is that `asset_id`. An Asset never reads, moves, or deletes an
-  Object.
+  `requested_by` is that `asset_id`. An Asset never moves or deletes an Object.
 - **Task output names its Objects.** A completed Task report carries the
   `object_ids` of files it made, as [Protocol defines](../../protocol/definitions/records/report/status/task.json).
   These are the IDs returned by upload, not file names.

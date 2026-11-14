@@ -27,7 +27,6 @@ types](../protocol/docs/decisions.md#typescript-types).
 - **No flying.** Helpers carry requests, reports and contact. The Asset app owns
   motion, equipment checks and failsafes.
 - **No second validator** and no generated clients.
-- **No live picture on Assets.** It is optional and meant for operator apps.
 
 The SDK takes its clock and its connection to Core from the program that
 creates it, so [Simulations](../simulations/README.md#what-each-part-allows) can
@@ -45,6 +44,11 @@ run it unchanged against a faulty network.
 
 ## Status
 
-These docs are a draft; no runtime code is built. The SDK uses TypeScript
+**Built.** The owner requested implementation on 2026-11-14. The SDK uses TypeScript
 throughout. Node 24 runs the `.ts` sources directly, and browser builds may be
 bundled.
+
+
+Run `npm ci`, `npx tsc --noEmit`, `npm run check:browser`, and `npm test`
+in this folder after installing Protocol and Core. The queue is the SDK contract
+test. [Simulations](../simulations/README.md) checks the parts together.

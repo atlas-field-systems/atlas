@@ -12,5 +12,9 @@
   "devDependencies": {
     "typescript": "7.0.2",
     "@types/node": "^24.0.0"
+  },
+  "exports": {
+    ".": "./src/core.ts",
+    "./event-kinds": "./src/api/event-kinds.ts"
   }
 }
