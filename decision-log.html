@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Decision log</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html" class="on">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="decision-log">Decision log</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="decision-log.html" class="on">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="decision-log">Decision log</h1>
 <p>The owner&#39;s product decisions, newest first. This page is authoritative: when
 another page disagrees with it, that page is wrong. Each entry names its scope,
 so a rule is never stretched past it, and the one page that owns the detail.</p>
@@ -11,6 +11,59 @@ request, every page that still teaches the old rule, and adds the old wording to
 the <a href="https://github.com/atlas-field-systems/atlas/blob/main/.github/retired-phrases.json">retired phrases</a> so CI catches it coming
 back.</p>
 <p>Dates are when the owner decided (America/New_York).</p>
+<h2 id="the-goal">The goal</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Decision</th>
+<th>Scope</th>
+<th>Home</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2026-11-14</td>
+<td>Atlas is for one person in a field testing drones and sensors, today the owner. Usually one operator controls several Assets; sometimes there is more than one operator.</td>
+<td>The whole project.</td>
+<td><a href="goal.html#who-it-is-for">The goal</a></td>
+</tr>
+<tr>
+<td>2026-11-14</td>
+<td>Atlas is a platform for experiments, not yet a product that has to work every time. The owner will say when that changes.</td>
+<td>The whole project.</td>
+<td><a href="goal.html#who-it-is-for">The goal</a></td>
+</tr>
+<tr>
+<td>2026-11-14</td>
+<td>The point of Atlas is to receive data from Assets about themselves, receive the Observations they make, and send them commands. Every other part serves those three.</td>
+<td>The whole project.</td>
+<td><a href="goal.html#what-atlas-does">The goal</a></td>
+</tr>
+<tr>
+<td>2026-11-14</td>
+<td>Atlas is not a joystick, not a swarm brain, not for separate teams, not a phone app for people in the field, not for every vehicle, and not usable without Core.</td>
+<td>The whole project.</td>
+<td><a href="goal.html#what-atlas-is-not">The goal</a></td>
+</tr>
+<tr>
+<td>2026-11-14</td>
+<td>In-depth simulations of whole operations are how Atlas is shown to work, and for now they are the whole answer; proof from real flights comes later. A simulation runs the real code of every part with no real hardware, and simulates only the equipment and the links.</td>
+<td>Verification.</td>
+<td><a href="goal.html#how-we-know-it-works">The goal</a></td>
+</tr>
+<tr>
+<td>2026-11-14</td>
+<td>Every new idea is held against one question: is this overcomplicated? Complexity is accepted only when a hard problem needs it, after looking for a simpler solution.</td>
+<td>Every design choice.</td>
+<td><a href="goal.html#the-test-question">The goal</a></td>
+</tr>
+<tr>
+<td>2026-11-14</td>
+<td>Kept in mind and not built now: a live video feed as an Object that plays only while open and is linked to an Asset by hand; a gateway for standard FPV drones; a command that makes an Asset follow a Track; drops of packages; and Assets on a mesh link listening in to build a local picture.</td>
+<td>Later work. Today no command sends an Asset to follow a Track.</td>
+<td><a href="goal.html#kept-in-mind-for-later">The goal</a></td>
+</tr>
+</tbody></table>
 <h2 id="runs-and-identity">Runs and identity</h2>
 <table>
 <thead>
@@ -427,6 +480,12 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-14</td>
+<td>Everything connected to Atlas can read everything Core holds, whether it is an operator, an Asset, a gateway, or a Plugin. Nothing restricts what a connected program may ask about other Assets or any other data.</td>
+<td>Reading. Who may send work or manage accounts and keys is unchanged.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#reads">Core API, Reads</a></td>
+</tr>
+<tr>
 <td>2026-11-13</td>
 <td>All files, photos and clips included, are stored as Objects.</td>
 <td>Every file in Atlas.</td>
