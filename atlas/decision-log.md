@@ -106,6 +106,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-14 | Everything connected to Atlas can read everything Core holds, whether it is an operator, an Asset, a gateway, or a Plugin. Nothing restricts what a connected program may ask about other Assets or any other data. | Reading. Who may send work or manage accounts and keys is unchanged. | [Core API, Reads](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#reads) |
 | 2026-11-13 | All files, photos and clips included, are stored as Objects. | Every file in Atlas. | [Core API, Objects](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#objects) |
 | 2026-11-13 | An Asset with a gimbal camera reports which way it points, so operators see where each camera is looking. | Gimbal cameras. | [Protocol records](https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md#records) |
 | 2026-11-13 | Each Asset decides which files it sends, by its configuration and link. A file a Task asks for is sent with that Task; other files are sent when the link allows, such as over Wi-Fi but not LoRa. Operators never fetch an earlier file from an Asset, and Assets never answer operators directly: everything goes through Core. | Files from Assets. | [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#capture-files) |

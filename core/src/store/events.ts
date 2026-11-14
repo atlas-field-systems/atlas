@@ -330,7 +330,7 @@ export function dropUnsettled(tx: Tx, to: Recipient): number[] {
 }
 
 export type Audience =
-  | { kind: "everything"; asset_id?: string } // accounts; optional ?asset_id= filter
+  | { kind: "everything"; asset_id?: string } // accounts, or any caller with ?everything=true; optional ?asset_id= filter
   | { kind: "assets"; assetIds: (tx: ReadTx) => readonly string[] } // an Asset on IP (one id) or a gateway (its carried Assets)
   | { kind: "plugin"; plugin_id: string };
 

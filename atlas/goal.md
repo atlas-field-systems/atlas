@@ -46,8 +46,8 @@ other part of Atlas exists to serve those three.
   tasks each one.
 - **Not usable without Core.** While Core is unreachable, nobody can send new
   work ([Environment](environment.md#core-is-a-deliberate-dependency)).
-- **Not for separate teams.** Everyone who logs in is trusted and sees
-  everything.
+- **Not for separate teams.** Everything connected to Atlas is trusted and sees
+  everything, whether an operator or an Asset.
 - **Not a phone app for people in the field.** The screen is for someone at a
   command station with internet
   ([Command Interface](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/README.md#operators-and-connectivity)).

@@ -497,13 +497,17 @@ test("place copies, optional updates, imagery kind rules and Fusion freshness [a
     );
     assert.equal(
       (await h.call("GET", "/entities/geofeatures", { key: a.key })).status,
-      403,
+      200,
     );
     const other = await asset(h);
     assert.equal(
-      (await h.call("GET", `/entities/assets/${other.id}`, { key: a.key }))
-        .status,
-      403,
+      (await h.call("GET", `/entities/assets/${other.id}`, { key: a.key })).body
+        .item.asset_id,
+      other.id,
+    );
+    assert.equal(
+      (await h.call("GET", `/tasks/${other.id}`, { key: a.key })).status,
+      200,
     );
     await report(h, a, [
       {
@@ -645,4 +649,40 @@ test("simulated clock runs deadlines chronologically, including nested timers [C
   assert.equal(clock.now(), start + 20);
   clock.advance(20);
   assert.deepEqual(order, [10, 15, 20]);
+});
+
+test("an Asset follows every event with everything=true (Core API, Callers and credentials)", async () => {
+  const h = await startHarness();
+  try {
+    const a = await asset(h);
+    const other = await asset(h);
+    const end = (await h.call("GET", "/entities", { key: a.key })).body.as_of;
+    const ac = new AbortController();
+    const r = await fetch(h.core.url + "/events?after=0&everything=true", {
+      headers: {
+        authorization: `Bearer ${a.key}`,
+        "atlas-definitions": protocol.hash,
+      },
+      signal: ac.signal,
+    });
+    assert.equal(r.status, 200);
+    const reader = r.body!.getReader();
+    let text = "";
+    try {
+      while (!text.includes(`id: ${end}\n`))
+        text += new TextDecoder().decode((await reader.read()).value);
+    } finally {
+      ac.abort();
+      await reader.cancel().catch(() => {});
+    }
+    const registered = text
+      .split("\n")
+      .filter((l) => l.startsWith("data: "))
+      .map((l) => JSON.parse(l.slice(6)))
+      .filter((e) => e.kind === "asset.registered")
+      .map((e) => e.record.asset_id);
+    assert.deepEqual(registered, [a.id, other.id]);
+  } finally {
+    await h.stop();
+  }
 });
