@@ -165,6 +165,8 @@ CREATE INDEX IF NOT EXISTS events_asset ON events(run_id, asset_id, kind, order_
 -- latest subsystem condition, latest Task report
 CREATE INDEX IF NOT EXISTS events_status ON events(run_id, asset_id, sub_kind, subsystem_id, task_id, order_time)
   WHERE kind = 'report.status';
+CREATE INDEX IF NOT EXISTS events_fusion ON events(run_id, event_id)
+  WHERE kind = 'report.observation' AND clock_ahead = 0;
 -- Observations: latest per (asset_id, observation_id)
 CREATE INDEX IF NOT EXISTS events_observation ON events(run_id, asset_id, observation_id, order_time, event_id)
   WHERE kind = 'report.observation' AND clock_ahead = 0;
