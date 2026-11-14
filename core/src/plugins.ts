@@ -107,6 +107,9 @@ export function answer(
   for (const id of ids)
     if (!objects.createdFor(tx, id, record.request_id))
       refuse("invalid", "Object was not created by this call");
+  if (record.type === "plugin.result")
+    for (const place of record.places ?? [])
+      if (place.kind === "imagery") objects.objectForImagery(tx, place.object_id);
   return {
     event_id:
       record.type === "plugin.result"

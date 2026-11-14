@@ -301,22 +301,18 @@ async function isGeoTiff(
   const u32 = (b: Buffer, o: number) =>
     little ? b.readUInt32LE(o) : b.readUInt32BE(o);
   if (u16(header, 2) !== 42) return false;
-  const seen = new Set<number>();
-  let offset = u32(header, 4);
-  const bytes = Buffer.alloc(12);
-  while (offset && !seen.has(offset)) {
-    seen.add(offset);
-    if (offset + 2 > size) return false;
-    await file.read(bytes, 0, 2, offset);
-    const count = u16(bytes, 0);
-    if (offset + 2 + count * 12 + 4 > size) return false;
-    for (let i = 0; i < count; i++) {
-      await file.read(bytes, 0, 12, offset + 2 + i * 12);
-      if (u16(bytes, 0) === 34735) return true;
-    }
-    await file.read(bytes, 0, 4, offset + 2 + count * 12);
-    offset = u32(bytes, 0);
-  }
+  const offset = u32(header, 4);
+  if (!offset || offset + 2 > size) return false;
+  const countBytes = Buffer.alloc(2);
+  if ((await file.read(countBytes, 0, 2, offset)).bytesRead !== 2) return false;
+  const count = u16(countBytes, 0);
+  const length = count * 12;
+  if (offset + 2 + length + 4 > size) return false;
+  const entries = Buffer.alloc(length);
+  if ((await file.read(entries, 0, length, offset + 2)).bytesRead !== length)
+    return false;
+  for (let i = 0; i < count; i++)
+    if (u16(entries, i * 12) === 34735) return true;
   return false;
 }
 

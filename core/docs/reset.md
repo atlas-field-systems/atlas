@@ -1,7 +1,7 @@
 # Core Reset
 
-This design is selected but not implemented. It says how Core ends a run, what
-it writes into its Reset ZIP, and what it clears.
+**Built.** Core ends a run by writing and checking its Reset ZIP before clearing
+the run data.
 [Runs and identity](../../atlas/runs-and-identity.md) owns the rules this page
 carries out: what a run is, what carries over, and signing in again.
 [Storage](storage.md#runs) says where a run's data lives. [Logging](logging.md)

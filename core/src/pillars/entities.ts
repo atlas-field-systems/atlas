@@ -371,11 +371,12 @@ export type AssetEntry = {
   gateway_id: string | null;
   description: Description | null;
   contact: Contact;
-  reports: Partial<Record<Exclude<ReportKind, "report.observation">, Report>>;
+  reports: Partial<Record<Exclude<ReportKind, "report.observation" | "report.gimbal">, Report>>;
   settings: Partial<{
     [K in keyof Settings]: { value: Settings[K]; time: number };
   }>;
   subsystems: Record<string, ProtocolTypes["report.status"]>;
+  gimbals: Record<string, ProtocolTypes["report.gimbal"]>;
 };
 
 export function listAssets(tx: ReadTx): {
@@ -772,7 +773,7 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
     : null;
   const reports: AssetEntry["reports"] = {};
   for (const kind of reportKinds)
-    if (kind !== "report.observation") {
+    if (kind !== "report.observation" && kind !== "report.gimbal") {
       const e = latestReport(tx, { asset_id: row.asset_id, kind });
       if (e) reports[kind] = e.record;
     }
@@ -806,6 +807,12 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
     });
     if (e?.kind === "report.status") subsystems[subsystem_id] = e.record;
   }
+  const gimbals: AssetEntry["gimbals"] = {};
+  for (const { camera_id, mount } of description?.cameras ?? []) {
+    if (mount !== "gimbal") continue;
+    const e = latestReport(tx, { asset_id: row.asset_id, kind: "report.gimbal", camera_id });
+    if (e?.kind === "report.gimbal") gimbals[camera_id] = e.record;
+  }
   return {
     asset_id: row.asset_id,
     gateway_id: row.gateway_id,
@@ -814,6 +821,7 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
     reports,
     settings,
     subsystems,
+    gimbals,
   };
 }
 

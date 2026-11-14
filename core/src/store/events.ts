@@ -165,6 +165,8 @@ CREATE INDEX IF NOT EXISTS events_asset ON events(run_id, asset_id, kind, order_
 -- latest subsystem condition, latest Task report
 CREATE INDEX IF NOT EXISTS events_status ON events(run_id, asset_id, sub_kind, subsystem_id, task_id, order_time)
   WHERE kind = 'report.status';
+CREATE INDEX IF NOT EXISTS events_fusion ON events(run_id, event_id)
+  WHERE kind = 'report.observation' AND clock_ahead = 0;
 -- Observations: latest per (asset_id, observation_id)
 CREATE INDEX IF NOT EXISTS events_observation ON events(run_id, asset_id, observation_id, order_time, event_id)
   WHERE kind = 'report.observation' AND clock_ahead = 0;
@@ -372,6 +374,7 @@ export function pageAfter(
 }
 
 export type LatestWhere =
+  | { asset_id: string; kind: "report.gimbal"; camera_id: string }
   | { asset_id: string; kind: ReportKind; sub_kind?: string }
   | {
       asset_id: string;
@@ -393,6 +396,10 @@ export function latestReport(
   if ("subsystem_id" in where) {
     filter += " AND subsystem_id=?";
     args.push(where.subsystem_id);
+  }
+  if ("camera_id" in where) {
+    filter += " AND json_extract(record,'$.camera_id')=?";
+    args.push(where.camera_id);
   }
   if ("setting" in where) {
     filter += " AND json_extract(record,?) IS NOT NULL";

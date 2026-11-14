@@ -7,7 +7,7 @@ This repository holds every part of it, one folder each:
   [decision log](atlas/decision-log.md) of the owner's decisions. Start here.
 - [protocol/](protocol/): the shared records and the one validator.
 - [sdk/](sdk/): the client for the Core API. Docs only so far.
-- [core/](core/): Atlas Core, the server, and the [Core API](core/docs/api.md). Planning.
+- [core/](core/): Atlas Core, the server, and the [Core API](core/docs/api.md). Built.
 - [asset/](asset/): how an Asset behaves. Planning.
 - [command-interface/](command-interface/): the operator interface. Planning.
 - [gateway/](gateway/): the gateway app, which installs and runs a Fieldlink. Planning.

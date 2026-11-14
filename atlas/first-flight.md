@@ -12,7 +12,8 @@ sends them to the Asset at once. The Asset starts Takeoff only when it holds all
 three. The app sends equipment commands to the flight controller and reports the
 observed outcomes. The operator sees the reported vehicle behavior.
 
-No runtime is built yet. The Pi can reach Core while vehicle equipment is still
+Core is **Built**. The Asset app, gateway, Fieldlink, and Command Interface
+runtimes remain planned. The Pi can reach Core while vehicle equipment is still
 starting or unreachable. Connection alone does not establish takeoff readiness.
 The operator can intervene locally at the Pi. Independent vehicle controls and
 ArduPilot protections remain part of the setup. While they are in control,

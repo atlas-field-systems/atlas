@@ -1,6 +1,6 @@
 # Core storage
 
-This design for Core storage is selected but not implemented. Record shapes
+**Built.** Core stores current state and events in SQLite. Record shapes
 belong to [Protocol](../../protocol/README.md); this page says where Core puts them.
 
 ## Tables hold current state

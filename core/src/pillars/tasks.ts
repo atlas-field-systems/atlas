@@ -215,6 +215,7 @@ export function dropUnconfirmed(tx: Tx, asset_id: string): number[] {
   return drop(tx, asset_id, ["sent"]);
 }
 export function dropUnfinished(tx: Tx, asset_id: string): number[] {
+  tx.run("DELETE FROM queues WHERE run_id=? AND asset_id=?", tx.runId, asset_id);
   return drop(tx, asset_id, ["sent", "queued", "active"]);
 }
 export function lastTaskId(tx: ReadTx, asset_id: string): number {

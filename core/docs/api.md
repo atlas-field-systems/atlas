@@ -1,7 +1,7 @@
 # Core API
 
-The Command Interface, Assets on IP, gateways, and Plugins use this API to talk to Core
-from outside its inner wall. This design is selected but not implemented.
+**Built.** The Command Interface, Assets on IP, gateways, and Plugins use this API
+to talk to Core from outside its inner wall.
 Record shapes belong to [Protocol](../../protocol/README.md); this page names them and never redefines
 their fields. The [walled city](../../atlas/design-decisions.md#a-walled-city)
 explains why the API is the only way in.
@@ -68,7 +68,6 @@ Accounts may call every operator route.
 | `409 not_a_point`, `not_geotiff` | Place or file cannot serve the requested use |
 | `409 imagery_fixed`, `object_shown` | Imagery change is forbidden or imagery still shows the Object |
 | `409 id_taken`, `idempotency_conflict` | Identity is in use or retry key names another body |
-| `501 not_implemented` | The route's pillar is not built yet |
 | `503 stopping` | Core is stopping |
 | `410 deleted` | The Object was deleted in this run; the body adds its `deletion` record, which says who deleted it and when |
 | `413 too_large` | The file is larger than `max_object_bytes` ([configuration](../config.md)) |
@@ -271,11 +270,14 @@ reads belong to accounts.
 
 `GET /entities/assets` returns `{as_of, items, gateways}`. Each Asset entry
 contains `asset_id`, `gateway_id` (or null), `description` (or null), `contact`,
-`reports` (latest by report kind), `settings` (latest report per setting), and
-`subsystems` (latest condition per declared subsystem). `GET /entities/assets/{asset_id}`
-returns `{as_of, item}` with the same entry. `GET /tasks/{asset_id}` returns
-`{as_of, items, held}`. Each Task entry has `task`, `state`, `state_time`, and optional `object_ids`;
-`held` is the latest reported list of Task IDs.
+`reports` (latest by report kind, excluding Observations and gimbals),
+`settings` (latest report per setting), `subsystems` (latest condition per declared
+subsystem), and `gimbals` (latest report per declared gimbal `camera_id`).
+`GET /entities/assets/{asset_id}` returns `{as_of, item}` with the same entry.
+`GET /tasks/{asset_id}` returns `{as_of, items, held}`. Each Task entry has `task`,
+`state`, `state_time`, and optional `object_ids`. `held` is the latest reported
+list of Task IDs since the Asset app last signed up; signing up again clears
+the earlier queue.
 
 | Request | Returns |
 | --- | --- |
@@ -595,7 +597,7 @@ and a removal adds `track.removed`.
 ## Objects
 
 Core accepts imagery only when the file is a TIFF with GeoKeyDirectory tag
-34735, regardless of the upload's `Content-Type`. Attach requests use `requests.attach`. Attaching an Object to the same
+34735 in its first image directory, regardless of the upload's `Content-Type`. Attach requests use `requests.attach`. Attaching an Object to the same
 end state adds no event and returns its existing latest Object `event_id`.
 
 An Object is a file Core holds, with an `object` record that says what it is:

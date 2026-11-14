@@ -6,25 +6,36 @@ import { startCore } from "../src/core.ts";
 import type { Clock } from "../src/clock.ts";
 import { loadPackagedProtocol } from "@atlas/protocol";
 
-const timers = new Set<{ at: number; fn: () => void }>();
-let time = 1794560400000;
-export const clock = {
-  now: () => time,
-  after(ms: number, fn: () => void) {
-    const timer = { at: time + ms, fn };
-    timers.add(timer);
-    return {
-      cancel() {
-        timers.delete(timer);
-      },
-    };
-  },
-  advance(ms: number) {
-    time += ms;
-    for (const timer of [...timers])
-      if (timer.at <= time && timers.delete(timer)) timer.fn();
-  },
-} satisfies Clock & { advance(ms: number): void };
+export function simulatedClock() {
+  const timers = new Set<{ at: number; fn: () => void }>();
+  let time = 1794560400000;
+  return {
+    now: () => time,
+    after(ms: number, fn: () => void) {
+      const timer = { at: time + ms, fn };
+      timers.add(timer);
+      return {
+        cancel() {
+          timers.delete(timer);
+        },
+      };
+    },
+    advance(ms: number) {
+      const target = time + ms;
+      for (;;) {
+        let next: { at: number; fn: () => void } | undefined;
+        for (const timer of timers)
+          if (timer.at <= target && (!next || timer.at < next.at)) next = timer;
+        if (!next) break;
+        time = next.at;
+        timers.delete(next);
+        next.fn();
+      }
+      time = target;
+    },
+  } satisfies Clock & { advance(ms: number): void };
+}
+export const clock = simulatedClock();
 
 export async function stopCore(
   core: Awaited<ReturnType<typeof startCore>>,

@@ -1,8 +1,7 @@
 # Core logging
 
-Core needs detailed diagnostics from startup through Reset so a run can be
-reconstructed from its archive. This is a requirement for the runtime, which is
-not built yet.
+**Built.** Core records diagnostics from startup through Reset so a run can be
+reconstructed from its archive.
 
 ## Keep diagnostics beside the event log
 
