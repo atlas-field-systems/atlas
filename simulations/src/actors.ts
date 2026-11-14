@@ -20,6 +20,7 @@ export async function ipAsset(
   name = "asset",
   clock: Clock = w.clock,
   assetDescription: P["requests.asset"] = description,
+  settings: P["report.settings"]["settings"] = {},
 ) {
   const issued = value(await w.complete(w.admin.call("createAssetKey")));
   const client = w.client(
@@ -42,7 +43,7 @@ export async function ipAsset(
     startAsset(client, {
       clock,
       description: assetDescription,
-      settings: () => ({}),
+      settings: () => settings,
       queue: {
         runNow: (t) => starts.push(t.task_id),
         stop: (id) => stops.push(id),

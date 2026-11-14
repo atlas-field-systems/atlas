@@ -1,7 +1,7 @@
-import { createLivePicture } from "@atlas/sdk";
+import { createLivePicture, startAsset } from "@atlas/sdk";
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset } from "../src/actors.ts";
+import { ipAsset, description } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 scenario({
   name: "clock-ahead reports remain history and never latest",
@@ -11,36 +11,25 @@ scenario({
   ],
   async run(w) {
     const shifted = w.clock.shifted(60000);
-    const asset = await ipAsset(w, "asset", shifted);
+    const asset = await ipAsset(w, "asset", w.clock, description, {
+      lights: "off",
+    });
+    asset.session.stop();
     const live = createLivePicture(w.admin);
     w.onClose(() => live.stop());
     await w.until(() => live.assets().ready);
     const asset_id = asset.session.asset_id;
     const params = { asset_id };
-    const now = w.clock.now();
-    value(
+    const future = value(
       await w.complete(
-        asset.client.call("sendReports", {
-          params,
-          body: {
-            reports: [
-              {
-                type: "report.settings",
-                time: now,
-                asset_id,
-                settings: { lights: "off" },
-              },
-              {
-                type: "report.settings",
-                time: shifted.now(),
-                asset_id,
-                settings: { lights: "on" },
-              },
-            ],
-          },
+        startAsset(asset.client, {
+          clock: shifted,
+          description,
+          settings: () => ({ lights: "on" }),
         }),
       ),
     );
+    w.onClose(() => future.stop());
     await w.until(() =>
       w.events.some(
         (e) => e.kind === "report.settings" && e.clock_ahead === true,
@@ -62,6 +51,12 @@ scenario({
       if (page.done) break;
       history.push(...value(page.value).items);
     }
+    const futureReport = history.find(
+      (e) => e.kind === "report.settings" && e.clock_ahead,
+    );
+    assert.ok(futureReport && futureReport.kind === "report.settings");
+    assert.equal(futureReport.record.time, shifted.now());
+    assert.equal(futureReport.record.settings.lights, "on");
     assert.equal(
       history.filter((e) => e.clock_ahead).length,
       1,
