@@ -356,3 +356,27 @@ test("F8 diagnostics identify routes, refusals, validation paths and streams [lo
     await h.close();
   }
 });
+test("F9 registration announces initial contact [api.md#contact, api.md#reads]", async () => {
+  const h = await startHarness();
+  try {
+    const a = await asset(h),
+      g = (
+        await h.call("POST", "/administration/gateways", { cookie: h.admin })
+      ).body;
+    const radio = (
+      await h.call("POST", "/entities/assets/radios", {
+        key: g.key,
+        body: { definitions_hash: protocol.hash },
+      })
+    ).body.asset_id;
+    const contact = (await events(h))
+      .filter((e) => e.kind === "asset.contact")
+      .map((e) => [e.record.asset_id, e.record.contact]);
+    assert.deepEqual(contact, [
+      [a.id, "online"],
+      [radio, "offline"],
+    ]);
+  } finally {
+    await h.close();
+  }
+});

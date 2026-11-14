@@ -7,3 +7,4 @@ finding	choice	evidence	result
 6	Protocol validates hash; record registered Assets alongside gateways and Plugins	F6 failed two versus six refusals	Full suite green
 7	Warn on console and diagnostics at allocator exhaustion	Original P11 failed before, passes after; uses seeded SQLite outside contract suite	No permanent HTTP-only exhaustion test: requires 1247714 allocations
 8	One completion diagnostic includes route and safe refusal details; stream lifecycle records	F8 missing route and validation reason	Full suite green
+9	Initial registration emits the initial contact view in its transaction	F9 observed empty contact event list	Full suite green

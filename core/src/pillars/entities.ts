@@ -127,6 +127,7 @@ export function registerAsset(
       JSON.stringify({ time: tx.now, asset_id, contact: "online" }),
     );
     tx.append("asset.registered", { time: tx.now, asset_id });
+    tx.append("asset.contact", { time: tx.now, asset_id, contact: "online" });
   }
   const description = { ...body, time: tx.now, asset_id };
   tx.run(
@@ -171,6 +172,7 @@ export function registerRadio(
     asset_id,
     requested_by: gateway_id,
   });
+  tx.append("asset.contact", { time: tx.now, asset_id, contact: "offline" });
   return { registered: true, asset_id };
 }
 
