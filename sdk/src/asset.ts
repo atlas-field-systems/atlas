@@ -211,10 +211,7 @@ export async function startAsset(
   const connected = await client.connect();
   if (!connected.ok) return connected;
   const registered = await known(
-    client.call<
-      "register",
-      { asset_id: string; as_of: number; last_task_id: number }
-    >("register", { body: options.description }),
+    client.call("register", { body: options.description }),
   );
   if (!registered.ok) return registered;
   const { asset_id, as_of, last_task_id } = registered.value;
@@ -293,7 +290,7 @@ export async function startAsset(
       let geofeature_id: string | undefined;
       if (file.place) {
         const result = await known(
-          client.call<"createGeofeature", { geofeature: P["geofeature"] }>(
+          client.call(
             "createGeofeature",
             { body: file.place },
           ),

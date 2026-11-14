@@ -17,12 +17,12 @@ export const description: P["requests.asset"] = {
 export async function ipAsset(w: World, name = "asset") {
   const issued = value(
     await w.complete(
-      w.admin.call<"createAssetKey", { key_id: string; key: string }>(
+      w.admin.call(
         "createAssetKey",
       ),
     ),
   );
-  const client = w.client(name, { kind: "asset", key: issued.key });
+  const client = w.client(name, { kind: "asset", key: "key" in issued ? issued.key : (() => { throw new Error("Issuance returned no key"); })() });
   const starts: number[] = [],
     stops: number[] = [];
   const result = await w.complete(
@@ -45,16 +45,16 @@ export async function ipAsset(w: World, name = "asset") {
 export async function radioAsset(w: World) {
   const issued = value(
     await w.complete(
-      w.admin.call<"provisionGateway", { gateway_id: string; key: string }>(
+      w.admin.call(
         "provisionGateway",
       ),
     ),
   );
-  const client = w.client("gateway", { kind: "gateway", key: issued.key });
+  const client = w.client("gateway", { kind: "gateway", key: "key" in issued ? issued.key : (() => { throw new Error("Issuance returned no key"); })() });
   value(await w.complete(client.connect()));
   const radio = value(
     await w.complete(
-      client.call<"registerRadio", { asset_id: string; as_of: number }>(
+      client.call(
         "registerRadio",
         { body: { definitions_hash: w.protocol.hash } },
       ),
@@ -148,14 +148,14 @@ export async function plugin(
 ) {
   const issued = value(
     await w.complete(
-      w.admin.call<"provisionPlugin", { plugin_id: string; key: string }>(
+      w.admin.call(
         "provisionPlugin",
       ),
     ),
   );
   const client = w.client("plugin", {
     kind: "plugin",
-    key: issued.key,
+    key: "key" in issued ? issued.key : (() => { throw new Error("Issuance returned no key"); })(),
     plugin_id: issued.plugin_id,
   });
   const description: P["plugin.description"] = {

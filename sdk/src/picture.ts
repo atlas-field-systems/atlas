@@ -18,13 +18,6 @@ type TaskView = {
   state_time: number;
   object_ids?: string[];
 };
-type Snapshot = {
-  as_of: number;
-  assets: AssetView[];
-  observations: P["report.observation"][];
-  tracks: P["track"][];
-  geofeatures: P["geofeature"][];
-};
 export function createLivePicture(
   client: Client,
   options: { asset_id?: string } = {},
@@ -66,7 +59,7 @@ export function createLivePicture(
     const current = ++generation;
     stream?.stop();
     clear();
-    const result = await client.call<"entities", Snapshot>("entities");
+    const result = await client.call("entities");
     if (!result.ok || stopped || current !== generation) return;
     const snapshot = result.value,
       after = [snapshot.as_of];
@@ -86,10 +79,7 @@ export function createLivePicture(
         ]);
       for (const [key, value] of Object.entries(a.reports))
         latest.set(`report:${a.asset_id}:${key}`, [value.time, snapshot.as_of]);
-      const t = await client.call<
-        "tasks",
-        { as_of: number; items: TaskView[] }
-      >("tasks", { params: { asset_id: a.asset_id } });
+      const t = await client.call("tasks", { params: { asset_id: a.asset_id } });
       if (!t.ok || stopped || current !== generation) return;
       marks.set(a.asset_id, t.value.as_of);
       after.push(t.value.as_of);

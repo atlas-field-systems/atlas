@@ -44,10 +44,7 @@ export function startPlugin(
               ? "definitions_mismatch"
               : "closed",
         };
-      const described = await client.call<
-        "describePlugin",
-        { event_id: number }
-      >("describePlugin", { params: { plugin_id }, body: options.description });
+      const described = await client.call("describePlugin", { params: { plugin_id }, body: options.description });
       if (!described.ok)
         return {
           reason:

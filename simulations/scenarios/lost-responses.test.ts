@@ -31,7 +31,7 @@ scenario({
     w.network.once("admin", `/tasks/${asset_id}`, { kind: "loseResponse" });
     const sent = value(
       await w.complete(
-        w.admin.call<"sendTasks", { task_ids: number[]; event_id: number }>(
+        w.admin.call(
           "sendTasks",
           { params: { asset_id }, body: { tasks: [{ kind: "hold" }] } },
         ),
@@ -47,7 +47,7 @@ scenario({
     });
     const settings = value(
       await w.complete(
-        w.admin.call<"changeSettings", { event_id: number }>("changeSettings", {
+        w.admin.call("changeSettings", {
           params: { asset_id },
           body: { settings: { lights: "on" } },
         }),
@@ -58,7 +58,7 @@ scenario({
     });
     const cancel = value(
       await w.complete(
-        w.admin.call<"cancel", { event_id: number }>("cancel", {
+        w.admin.call("cancel", {
           params: { asset_id, task_id: 1 },
         }),
       ),
@@ -88,10 +88,7 @@ scenario({
     w.network.once("admin", "/entities/geofeatures", { kind: "loseResponse" });
     const place = value(
       await w.complete(
-        w.admin.call<
-          "createGeofeature",
-          { event_id: number; geofeature: P["geofeature"] }
-        >("createGeofeature", {
+        w.admin.call("createGeofeature", {
           body: {
             kind: "point",
             name: "Landing",
@@ -106,7 +103,7 @@ scenario({
     });
     const replaced = value(
       await w.complete(
-        w.admin.call<"replaceGeofeature", { event_id: number }>(
+        w.admin.call(
           "replaceGeofeature",
           {
             params: { geofeature_id },
@@ -134,7 +131,7 @@ scenario({
     });
     const attached = value(
       await w.complete(
-        w.admin.call<"attachObject", { event_id: number }>("attachObject", {
+        w.admin.call("attachObject", {
           params: { object_id: object.object_id },
           body: { geofeature_id: null },
         }),
@@ -156,7 +153,7 @@ scenario({
     });
     const called = value(
       await w.complete(
-        w.admin.call<"callPlugin", { event_id: number }>("callPlugin", {
+        w.admin.call("callPlugin", {
           params: { plugin_id: p.plugin_id, action: "scan" },
           body: { inputs: [] },
         }),
@@ -168,7 +165,7 @@ scenario({
     });
     const deletedObject = value(
       await w.complete(
-        w.admin.call<"deleteObject", { event_id: number }>("deleteObject", {
+        w.admin.call("deleteObject", {
           params: { object_id: object.object_id },
         }),
       ),
@@ -178,7 +175,7 @@ scenario({
     });
     const deletedPlace = value(
       await w.complete(
-        w.admin.call<"deleteGeofeature", { event_id: number }>(
+        w.admin.call(
           "deleteGeofeature",
           { params: { geofeature_id } },
         ),

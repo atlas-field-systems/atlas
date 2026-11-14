@@ -22,10 +22,7 @@ scenario({
     const create = async (name: string, latitude: number) =>
       value(
         await w.complete(
-          w.admin.call<
-            "createGeofeature",
-            { geofeature: P["geofeature"]; event_id: number }
-          >("createGeofeature", {
+          w.admin.call("createGeofeature", {
             body: { kind: "point", name, position: { latitude, longitude: 2 } },
           }),
         ),
@@ -33,10 +30,7 @@ scenario({
     const a = await create("First", 1);
     const snapshot = value(
       await w.complete(
-        w.admin.call<
-          "entities",
-          { as_of: number; geofeatures: P["geofeature"][] }
-        >("entities"),
+        w.admin.call("entities"),
       ),
     );
     const restored = new Map(
@@ -52,7 +46,7 @@ scenario({
     const b = await create("Second", 3);
     const replacement = value(
       await w.complete(
-        w.admin.call<"replaceGeofeature", { event_id: number }>(
+        w.admin.call(
           "replaceGeofeature",
           {
             params: { geofeature_id: b.geofeature.geofeature_id },
@@ -68,7 +62,7 @@ scenario({
     w.network.dropStreams("reader");
     const deletion = value(
       await w.complete(
-        w.admin.call<"deleteGeofeature", { event_id: number }>(
+        w.admin.call(
           "deleteGeofeature",
           { params: { geofeature_id: a.geofeature.geofeature_id } },
         ),

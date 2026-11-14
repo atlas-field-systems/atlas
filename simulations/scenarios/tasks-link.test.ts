@@ -19,7 +19,7 @@ scenario({
     await w.settle();
     const sent = value(
       await w.complete(
-        w.admin.call<"sendTasks", { task_ids: number[] }>("sendTasks", {
+        w.admin.call("sendTasks", {
           params: { asset_id: radio.asset_id },
           body: {
             tasks: [

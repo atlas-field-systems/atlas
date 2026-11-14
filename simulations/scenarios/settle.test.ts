@@ -14,7 +14,7 @@ scenario({
     await w.settle();
     const changed = value(
       await w.complete(
-        w.admin.call<"createGeofeature", { event_id: number }>(
+        w.admin.call(
           "createGeofeature",
           { body: { kind: "point", position: { latitude: 1, longitude: 2 } } },
         ),

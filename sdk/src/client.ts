@@ -1,3 +1,4 @@
+import type { AtlasEvent } from "./stream.ts";
 import { internals } from "./internal.ts";
 import type { Protocol } from "@atlas/protocol/browser";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
@@ -9,6 +10,8 @@ import {
   type Query,
   type RouteBody,
   type RouteName,
+  type ResponseOf,
+  type CallEntry,
 } from "./routes.ts";
 import { backoffDelay, type Backoff, type Clock } from "./clock.ts";
 import { diagnostics, type Observer } from "./diagnostics.ts";
@@ -335,10 +338,10 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       })());
     return send();
   }
-  function call<N extends Allowed<C["kind"]>, T = Json>(
+  function call<N extends Allowed<C["kind"]>>(
     name: N,
     args: { params?: Params; query?: Query; body?: RouteBody<N> } = {},
-  ): Promise<Result<T>> {
+  ): Promise<Result<ResponseOf<N>>> {
     const route: {
       method: string;
       path: string;
@@ -361,7 +364,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       if (value === undefined) throw new Error(`Missing ${k}`);
       return encodeURIComponent(String(value));
     });
-    return request<T>(route.method, path, args.body, args.query);
+    return request<ResponseOf<N>>(route.method, path, args.body, args.query);
   }
   async function connect() {
     if (status.phase === "closed") throw new Error("Client closed");
@@ -441,12 +444,12 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       listeners.add(cb);
       return () => { listeners.delete(cb); };
     },
-    history: <T = Json>(q?: Query) => pages<T>("/history", q),
-    trackHistory: <T = Json>(q?: Query) => pages<T>("/history/tracks", q),
-    geofeatureHistory: <T = Json>(q?: Query) =>
-      pages<T>("/history/geofeatures", q),
-    pluginCalls: <T = Json>(plugin_id: string, q?: Query) =>
-      pages<T>(`/plugins/${encodeURIComponent(plugin_id)}/calls`, q),
+    history: (q?: Query) => pages<AtlasEvent>("/history", q),
+    trackHistory: (q?: Query) => pages<AtlasEvent<"track.updated" | "track.removed">>("/history/tracks", q),
+    geofeatureHistory: (q?: Query) =>
+      pages<AtlasEvent<"geofeature.created" | "geofeature.replaced" | "geofeature.deleted">>("/history/geofeatures", q),
+    pluginCalls: (plugin_id: string, q?: Query) =>
+      pages<CallEntry>(`/plugins/${encodeURIComponent(plugin_id)}/calls`, q),
     uploadObject: (bytes: Uint8Array, contentType: string, query: Query) =>
       request<{ object_id: string; event_id: number }>(
         "POST",
