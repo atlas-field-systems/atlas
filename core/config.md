@@ -35,3 +35,6 @@ Accounts and keys are otherwise provisioned through the [Core API](docs/api.md#a
 
 Core refuses startup with the reason if `archive_directory` is inside or equal to
 `data_directory`, after resolving symbolic links, so Reset cannot erase its ZIP.
+
+Core refuses startup if `archive_directory` is inside `data_directory` or
+`log_directory`, or equals either, after resolving symbolic links.

@@ -9,6 +9,8 @@ import {
   chmod,
   stat,
   copyFile,
+  mkdir,
+  symlink,
 } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -670,5 +672,24 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
       await h.close();
       await rm(snapshot, { recursive: true, force: true });
     }
+  }
+});
+
+
+test("archive stays outside data and diagnostics, including aliases [config.md#paths]", async () => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-archive-path-"));
+  try {
+    const data = join(root, "data");
+    const logs = join(root, "logs");
+    await mkdir(logs);
+    await symlink(logs, join(root, "alias"));
+    for (const archive of [logs, join(logs, "run-1", "archive"), join(root, "alias", "archives"), data]) {
+      await assert.rejects(async () => {
+        const core = await startCore({ clock, config: { data_directory: data, log_directory: logs, archive_directory: archive, port: 0 } });
+        await stopCore(core);
+      }, /archive_directory must be outside (data_directory|log_directory)/);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });

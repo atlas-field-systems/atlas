@@ -61,20 +61,23 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
   for (const dir of [
     config.data_directory,
     config.archive_directory,
+    config.log_directory,
     paths.uploadsDir,
   ])
     await mkdir(dir, { recursive: true });
-  const archiveRelative = relative(
-    await realpath(config.data_directory),
-    await realpath(config.archive_directory),
-  );
-  if (
-    !archiveRelative ||
-    (!isAbsolute(archiveRelative) &&
-      archiveRelative !== ".." &&
-      !archiveRelative.startsWith("../"))
-  )
-    throw new Error("archive_directory must be outside data_directory");
+  for (const key of ["data_directory", "log_directory"] as const) {
+    const archiveRelative = relative(
+      await realpath(config[key]),
+      await realpath(config.archive_directory),
+    );
+    if (
+      !archiveRelative ||
+      (!isAbsolute(archiveRelative) &&
+        archiveRelative !== ".." &&
+        !archiveRelative.startsWith("../"))
+    )
+      throw new Error(`archive_directory must be outside ${key}`);
+  }
   const protocol = await loadPackagedProtocol();
   events.assertKindsMatchProtocol(protocol.names);
   const protocolPackage = JSON.parse(
