@@ -151,7 +151,13 @@ part of the SDK.
 optional queue, and settings dispatch over an Asset link. Its options hold the
 clock, heartbeat interval, current settings function, optional queue host, and
 settings-request handler. It returns the queue, outbox, `rejoin()`, `done`,
-and `stop()`. The IP wrapper is `startAsset(client, options)`. It sends the
+and `stop()`. Stopping releases an idle event read, calls the iterator's
+`return()`, discards an event awaiting consumption, and settles `done` without
+delivering another event. An asynchronous settings handler completes before the
+next event is consumed. On IP, this also holds the stream cursor and backpressure
+until consumption finishes. Closing the client or ending its run stops the helper.
+A consumer error rejects `done` and stops the stream, outbox, and report retries.
+The IP wrapper is `startAsset(client, options)`. It sends the
 Asset helpers' diagnostics to the client's `observer`, so one counter orders them.
 
 `LinkResult` is `{ok: true}` on end-to-end acknowledgement, or
@@ -165,6 +171,8 @@ refuse a batch. A permanent refusal keeps the batch, blocks the outbox, and rema
 
 Rejoin omits a settings report when no setting is known, because Protocol
 requires at least one setting. It reports a queue on rejoin only when Tasks are
-held. Live and retained reports use separate lanes. Live reports go first.
+held. Live and retained reports use separate lanes. Live reports go first. Rejoin enqueues the current snapshot in the live lane
+before waiting for its acknowledgement. Only a batch already in flight may go
+first; reopening the stream does not wait for retained history to drain.
 Reports keep emission order within each lane and batch. Priority selects batches,
 never reorders their reports.

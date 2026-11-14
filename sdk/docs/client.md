@@ -166,6 +166,14 @@ A Plugin uses one client with its own key and makes the
 event stream for the calls addressed to it, stores what it creates, and posts one
 answer per call. The SDK keeps the Plugin in contact while it is idle.
 
+`startPlugin(client, {description, onCall})` returns `done` and `stop()`.
+Stopping during connection or description prevents subsequent startup steps,
+contact heartbeats, and call delivery; `done` resolves with `reason: "stopped"`.
+A reply remains unanswered after local validation fails or Core definitively
+refuses it without accepting an answer. An `unknown` result reserves that reply
+for the same attempt: use its `retry()` handle until the outcome is known.
+An accepted answer prevents another answer through that reply.
+
 ## Run changes and idle contact
 
 A connection binds one run. After a transport failure, the client checks

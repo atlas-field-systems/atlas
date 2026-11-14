@@ -3,7 +3,7 @@ import { diagnostics, type Observer } from "./diagnostics.ts";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import type { Client, Result } from "./client.ts";
 import { backoffDelay, type Clock } from "./clock.ts";
-import { follow, type FollowEnd, type AtlasEvent } from "./stream.ts";
+import { follow, type FollowEnd } from "./stream.ts";
 import {
   createQueue,
   type AssetEvent,
@@ -59,6 +59,20 @@ export function createOutbox(
     blockedBatch: Report[] | undefined,
     flight: Promise<void> | undefined;
   const listeners = new Set<(result: LinkResult) => void>();
+  const acknowledged = new Map<Report, () => void>();
+  function releaseWaiters() {
+    for (const resolve of acknowledged.values()) resolve();
+    acknowledged.clear();
+  }
+  function waitFor(report: Report) {
+    return new Promise<void>((resolve) => {
+      const previous = acknowledged.get(report);
+      acknowledged.set(report, () => {
+        previous?.();
+        resolve();
+      });
+    });
+  }
   let timer = clock.after(heartbeatMs, beat);
   function beat() {
     void flush(true);
@@ -79,11 +93,16 @@ export function createOutbox(
         if (!result.ok) {
           blocked = result;
           blockedBatch = batch;
+          releaseWaiters();
           for (const cb of listeners) cb(result);
           break;
         }
         emit("batch.acknowledged", { count: batch.length });
         lane.splice(0, batch.length);
+        for (const report of batch) {
+          acknowledged.get(report)?.();
+          acknowledged.delete(report);
+        }
         heartbeat = false;
       } while (!stopped && (live.length || retained.length));
     })().finally(() => {
@@ -98,10 +117,21 @@ export function createOutbox(
   }
   return {
     add(reports: Report[], lane: "live" | "retained" = "live") {
-      (lane === "live" ? live : retained).push(...structuredClone(reports));
+      if (stopped || !reports.length) return Promise.resolve();
+      const copies = structuredClone(reports);
+      (lane === "live" ? live : retained).push(...copies);
+      if (blocked) return Promise.resolve();
+      const sent = waitFor(copies[copies.length - 1]);
       void flush();
+      return sent;
     },
     flush,
+    flushLive() {
+      if (stopped || blocked) return Promise.resolve();
+      const last = live.at(-1);
+      if (last) return waitFor(last);
+      return retained.length ? Promise.resolve() : flush(true);
+    },
     get blocked() {
       return blocked;
     },
@@ -116,6 +146,7 @@ export function createOutbox(
     },
     stop() {
       stopped = true;
+      releaseWaiters();
       timer.cancel();
     },
   };
@@ -159,8 +190,16 @@ export function runAsset(
       )
     : undefined;
   let stopped = false;
+  let wakeStop: (() => void) | undefined;
+  function untilStopped<T>(pending: Promise<T>): Promise<T | undefined> {
+    return Promise.race([
+      pending,
+      new Promise<undefined>((resolve) => {
+        wakeStop = () => resolve(undefined);
+      }),
+    ]);
+  }
   async function rejoin() {
-    await outbox.flush();
     const settings: Report = {
       type: "report.settings",
       time: options.clock.now(),
@@ -176,22 +215,39 @@ export function runAsset(
             .filter((r) => r.type === "report.status" && r.kind === "task") ??
           [])),
     ];
-    if (reports.length) outbox.add(reports);
-    await outbox.flush(!reports.length);
+    if (reports.length) await outbox.add(reports);
+    // Reopening must not wait for retained history to drain.
+    if (!reports.length) await outbox.flushLive();
   }
-  const ready = rejoin().then((): LinkResult => outbox.blocked ?? { ok: true });
+  const ready = rejoin().then(async (): Promise<LinkResult> => {
+    await outbox.flush();
+    return outbox.blocked ?? { ok: true };
+  });
   const done = (async (): Promise<FollowEnd> => {
     try {
-      const initial = await ready;
+      const initial = await untilStopped(ready);
+      if (!initial) return { reason: "stopped" };
       if (!initial.ok)
         return {
           reason: initial.error === "refused" ? "closed" : initial.error,
         };
-      for await (const event of link.events(registration.after)) {
-        if (stopped) return { reason: "stopped" };
-        if (event.kind === "settings.requested")
-          await options.onSettings?.(event.record, event.event_id);
-        else queue?.apply(event);
+      const iterator = link.events(registration.after)[Symbol.asyncIterator]();
+      try {
+        while (!stopped) {
+          const next = await untilStopped(iterator.next());
+          if (!next || stopped || next.done) break;
+          const event = next.value;
+          if (event.kind === "settings.requested")
+            await untilStopped(
+              Promise.resolve(
+                options.onSettings?.(event.record, event.event_id),
+              ),
+            );
+          else queue?.apply(event);
+        }
+      } finally {
+        // A link may leave next() pending even after return().
+        void iterator.return?.().catch(() => {});
       }
       return { reason: stopped ? "stopped" : "closed" };
     } finally {
@@ -207,6 +263,7 @@ export function runAsset(
     done,
     stop() {
       stopped = true;
+      wakeStop?.();
       outbox.stop();
     },
   };
@@ -223,7 +280,25 @@ export async function startAsset(
     description: P["requests.asset"];
   },
 ) {
-  const connected = await client.connect();
+  let connected = await client.connect();
+  let attempt = 0;
+  while (!connected.ok && connected.error === "unknown") {
+    await new Promise<void>((resolve) =>
+      options.clock.after(
+        backoffDelay(
+          attempt++,
+          internal(client).options.backoff ?? {
+            minMs: 500,
+            maxMs: 30000,
+            factor: 2,
+            jitter: 0.2,
+          },
+        ),
+        resolve,
+      ),
+    );
+    connected = await client.connect();
+  }
   if (!connected.ok) return connected;
   const registered = await known(
     client.call("register", { body: options.description }),
@@ -235,18 +310,23 @@ export async function startAsset(
   >();
   let session: ReturnType<typeof runAsset> | undefined;
   let stream: ReturnType<typeof follow> | undefined;
-  let ending: FollowEnd = { reason: "closed" };
+  let ending: FollowEnd | undefined;
   let stopped = false;
+  let wakeEvent: (() => void) | undefined;
+  let acknowledge: (() => void) | undefined;
   let wakeRetry: (() => void) | undefined;
   const stopLink = () => {
     stopped = true;
     wakeRetry?.();
+    wakeEvent?.();
+    acknowledge?.();
+    stream?.stop();
+    session?.stop();
   };
   const link: AssetLink = {
     async *events(after) {
-      const events: AssetEvent[] = [];
-      let wake: (() => void) | undefined,
-        ended = false;
+      let pending: AssetEvent | undefined;
+      let ended = false;
       let firstOpen = true;
       stream = follow(
         client as Client,
@@ -260,32 +340,55 @@ export async function startAsset(
             for (const cb of contacts) cb(c);
           },
         },
-        (event) => {
+        async (event) => {
+          if (stopped) return;
           if (
             event.kind === "tasks.requested" ||
             event.kind === "tasks.updated" ||
             event.kind === "cancel.requested" ||
             event.kind === "settings.requested" ||
             event.kind === "task.dropped"
-          )
-            events.push(event as AssetEvent);
-          wake?.();
+          ) {
+            pending = event;
+            const consumed = new Promise<void>((resolve) => {
+              acknowledge = resolve;
+            });
+            wakeEvent?.();
+            await consumed;
+            acknowledge = undefined;
+          }
         },
       );
       void stream.done.then((end) => {
-        ending = end;
+        if (!stopped) ending = end;
         ended = true;
-        wake?.();
+        wakeEvent?.();
       });
-      while (!ended || events.length) {
-        if (events.length) yield events.shift()!;
-        else
-          await new Promise<void>((resolve) => {
-            wake = resolve;
-          });
+      try {
+        while (!ended && !stopped) {
+          if (pending) {
+            const event = pending;
+            pending = undefined;
+            yield event;
+            acknowledge?.();
+          } else
+            await new Promise<void>((resolve) => {
+              wakeEvent = resolve;
+            });
+        }
+      } finally {
+        pending = undefined;
+        acknowledge?.();
+        stream.stop();
       }
     },
     async sendReports(reports) {
+      if (stopped)
+        return {
+          ok: false,
+          error: "closed",
+          explanation: "Asset session stopped",
+        };
       let attempt = 0;
       let result = await client.call("sendReports", {
         params: { asset_id },
@@ -373,21 +476,43 @@ export async function startAsset(
     internal(client).emit,
   );
   const running = session;
-  void running.done.then(stopLink);
+  const unsubscribe = client.onStatus((status) => {
+    if (
+      status.phase === "closed" ||
+      status.phase === "run_ended" ||
+      status.phase === "unauthenticated" ||
+      status.phase === "definitions_mismatch"
+    ) {
+      ending = { reason: status.phase };
+      stopLink();
+    }
+  });
+  const done = running.done.then(
+    (end) => {
+      stopLink();
+      unsubscribe();
+      return ending ?? end;
+    },
+    (error: unknown) => {
+      stopLink();
+      unsubscribe();
+      throw error;
+    },
+  );
   const ready = await running.ready;
   if (!ready.ok) {
-    running.stop();
+    stopLink();
+    await done;
     return ready;
   }
   return {
     ok: true as const,
     value: {
       ...running,
-      done: running.done.then(() => ending),
+      done,
       stop() {
+        ending = { reason: "stopped" };
         stopLink();
-        stream?.stop();
-        running.stop();
       },
       link,
     },
