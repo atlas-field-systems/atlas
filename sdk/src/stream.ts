@@ -3,7 +3,8 @@ import { EVENT_KINDS } from "@atlas/core/event-kinds";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { Client } from "./client.ts";
 import { backoffDelay, type Timer } from "./clock.ts";
-const MAX_SSE_FRAME_BYTES = 16 * 1024 * 1024 + 1024;
+// Counted in UTF-16 code units, which never exceed a string's UTF-8 bytes.
+const MAX_SSE_FRAME = 16 * 1024 * 1024 + 1024;
 
 export type EventKind = keyof typeof EVENT_KINDS;
 type RecordOf<K extends EventKind> = (typeof EVENT_KINDS)[K] extends {
@@ -108,8 +109,7 @@ export function follow(
                 decoder = new TextDecoder();
               let buffer = "",
                 data: string[] = [],
-                frameBytes = 0;
-              const encoder = new TextEncoder();
+                frameLength = 0;
               const resetIdle = () => {
                 idle?.cancel();
                 idle = clock.after(
@@ -129,17 +129,15 @@ export function follow(
                   buffer += decoder.decode(chunk.value, { stream: true });
                   let index: number;
                   while (!terminal() && (index = buffer.indexOf("\n")) >= 0) {
-                    frameBytes += encoder.encode(
-                      buffer.slice(0, index + 1),
-                    ).byteLength;
-                    if (frameBytes > MAX_SSE_FRAME_BYTES)
+                    frameLength += index + 1;
+                    if (frameLength > MAX_SSE_FRAME)
                       return {
                         reason: "invalid_event",
                         error: "SSE frame too large",
                       };
                     const line = buffer.slice(0, index).replace(/\r$/, "");
                     buffer = buffer.slice(index + 1);
-                    if (line === "") frameBytes = 0;
+                    if (line === "") frameLength = 0;
                     if (line.startsWith(":")) {
                       internal(client).emit("stream.alive");
                       options.onContact?.({
@@ -197,10 +195,7 @@ export function follow(
                       internal(client).emit("stream.handled", { cursor });
                     }
                   }
-                  if (
-                    frameBytes + encoder.encode(buffer).byteLength >
-                    MAX_SSE_FRAME_BYTES
-                  )
+                  if (frameLength + buffer.length > MAX_SSE_FRAME)
                     return {
                       reason: "invalid_event",
                       error: "SSE frame too large",
