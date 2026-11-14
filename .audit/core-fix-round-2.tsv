@@ -2,3 +2,4 @@ finding	choice	evidence	result
 3	Use shared settlement in summary	R2-3 failed on foreign queue answer	Full suite green; deslop reviewed
 4	Share command admission between Tasks and failsafes	F17 failed on undeclared capture camera	Full suite green; deslop reviewed
 5	Resolve data path before deriving sibling archive	F14 trailing-slash start rejected before fix	Full suite green; deslop reviewed
+6	Require live Plugin or removal history before call list	F11 got 200 for never-provisioned Plugin	Full suite green; deslop reviewed

@@ -409,6 +409,7 @@ test("F10 login retry keys bind the complete body across accounts [api.md#basics
 test("F11 removed Plugin call history remains readable [api.md#plugins]", async () => {
   const h = await startHarness();
   try {
+    assert.equal((await h.call("GET", "/plugins/ZZZZ/calls", {cookie: h.admin})).status, 404);
     const p = await plugin(h),
       base = `/plugins/${p.plugin_id}`;
     const call = await h.call("POST", base + "/actions/find", {

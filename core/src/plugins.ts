@@ -160,6 +160,8 @@ export function calls(
   cursor: Cursor | null,
   limit: number,
 ) {
+  if (!tx.get("SELECT 1 FROM plugins WHERE plugin_id=?", plugin_id) && !tx.get("SELECT 1 FROM events WHERE run_id=? AND kind='plugin.removed' AND plugin_id=?", tx.runId, plugin_id))
+    refuse("not_found", "No such Plugin");
   const before = cursor === null ? Number.MAX_SAFE_INTEGER : Number(cursor);
   if (
     !Number.isSafeInteger(before) ||
