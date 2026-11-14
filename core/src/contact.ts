@@ -35,7 +35,8 @@ export type Subject =
 export interface Contact {
   /**
    * Every authenticated request from an Asset key (with a registered Asset), a
-   * gateway key, or a Plugin key, including GET /about. Records the time; if
+   * gateway key, or a Plugin key, including GET /about, excluding event streams.
+   * Records the time; if
    * the stored state is offline, writes the online transition now, before the
    * request's own change, so its event comes first.
    */
@@ -145,7 +146,9 @@ export function startContact(
       for (const who of subjects) heard.set(key(who), { who, at: clock.now() });
       schedule();
     },
-    lastHeard(asset_id) { return lastHeard.get(asset_id); },
+    lastHeard(asset_id) {
+      return lastHeard.get(asset_id);
+    },
     stop() {
       stopped = true;
       timer?.cancel();

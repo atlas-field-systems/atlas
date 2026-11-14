@@ -21,12 +21,7 @@ export function credentialOf(
 }
 
 export type Who =
-  | "admin"
-  | "account"
-  | "asset"
-  | "gateway"
-  | "plugin"
-  | "public";
+  "admin" | "account" | "asset" | "gateway" | "plugin" | "public";
 
 export type ActsFor = "path:asset_id" | "query:asset_id" | "path:plugin_id";
 

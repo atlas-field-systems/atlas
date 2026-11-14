@@ -683,3 +683,47 @@ test("F19 bootstrap removes only one trailing newline [config.md]", async () => 
     await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
+test("F20 event streams never renew Asset or Plugin contact [api.md#contact, api.md#plugins]", async () => {
+  const c = simulatedClock(),
+    h = await startHarness(c),
+    controllers: AbortController[] = [];
+  const open = async (key: string) => {
+    const ac = new AbortController();
+    controllers.push(ac);
+    const r = await fetch(h.core.url + "/events", {
+      headers: {
+        authorization: `Bearer ${key}`,
+        "atlas-definitions": protocol.hash,
+      },
+      signal: ac.signal,
+    });
+    assert.equal(r.status, 200);
+  };
+  try {
+    const a = await asset(h);
+    c.advance(31000);
+    await open(a.key);
+    assert.equal((await task(h, a.id)).body.error, "asset_offline");
+    const p = await plugin(h);
+    const call = await h.call("POST", `/plugins/${p.plugin_id}/actions/find`, {
+      cookie: h.admin,
+      body: { inputs: [] },
+    });
+    c.advance(20000);
+    await open(p.key);
+    c.advance(15000);
+    assert.equal(
+      (
+        await h.call(
+          "GET",
+          `/plugins/${p.plugin_id}/calls/${call.body.event_id}`,
+          { cookie: h.admin },
+        )
+      ).body.answer.kind,
+      "plugin.dropped",
+    );
+  } finally {
+    for (const ac of controllers) ac.abort();
+    await h.close();
+  }
+});

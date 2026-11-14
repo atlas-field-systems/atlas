@@ -327,7 +327,11 @@ export async function checkZip(
   }
 }
 
-export function writeSummary(store: Store, runId: number, lastHeard: (asset_id: string) => number | undefined): string {
+export function writeSummary(
+  store: Store,
+  runId: number,
+  lastHeard: (asset_id: string) => number | undefined,
+): string {
   const run = runRow(store, runId);
   const lines = [
     `# Run ${runId}`,

@@ -16,7 +16,10 @@ type KindSpec = {
 };
 
 const REPORT = { audience: "accounts", stamps: ["clock_ahead"] } as const;
-const TO_ASSET = { recipient: "asset_id", droppedAs: "request.dropped" } as const;
+const TO_ASSET = {
+  recipient: "asset_id",
+  droppedAs: "request.dropped",
+} as const;
 
 export const EVENT_KINDS = {
   "asset.registered": { record: "registration", audience: "accounts" },
@@ -33,7 +36,11 @@ export const EVENT_KINDS = {
   "plugin.called": {
     record: "plugin.call",
     audience: "plugin",
-    request: { recipient: "plugin_id", answers: ["plugin.result", "plugin.failed"], droppedAs: "plugin.dropped" },
+    request: {
+      recipient: "plugin_id",
+      answers: ["plugin.result", "plugin.failed"],
+      droppedAs: "plugin.dropped",
+    },
   },
   "plugin.result": { record: "plugin.result", audience: "accounts" },
   "plugin.failed": { record: "plugin.failure", audience: "accounts" },
@@ -219,12 +226,16 @@ export function getEvent(tx: ReadTx, eventId: number): AtlasEvent | undefined {
 
 export type Recipient = { asset_id: string } | { plugin_id: string };
 
-const answersRequest = Object.entries(EVENT_KINDS).flatMap(([kind, spec]) => {
-  if (!("request" in spec)) return [];
-  const r = spec.request;
-  const kinds = [...r.answers, r.droppedAs].map(k => `'${k}'`).join(",");
-  return [`(e.kind='${kind}' AND a.${r.recipient}=e.${r.recipient} AND a.kind IN (${kinds}))`];
-}).join(" OR ");
+const answersRequest = Object.entries(EVENT_KINDS)
+  .flatMap(([kind, spec]) => {
+    if (!("request" in spec)) return [];
+    const r = spec.request;
+    const kinds = [...r.answers, r.droppedAs].map((k) => `'${k}'`).join(",");
+    return [
+      `(e.kind='${kind}' AND a.${r.recipient}=e.${r.recipient} AND a.kind IN (${kinds}))`,
+    ];
+  })
+  .join(" OR ");
 const settlementMatch = `a.run_id=e.run_id AND a.request_id=e.event_id AND (${answersRequest})`;
 
 export function unsettledRequests(

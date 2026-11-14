@@ -215,7 +215,6 @@ export function applyQueueReport(
     report.time,
     event_id,
   );
-
 }
 
 export function dropUnconfirmed(tx: Tx, asset_id: string): number[] {

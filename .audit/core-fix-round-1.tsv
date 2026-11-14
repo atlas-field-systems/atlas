@@ -20,3 +20,10 @@ finding	choice	evidence	result
 17-note	Existing flying-policy fixture used land while declaring only takeoff and hold; declare land to keep its safe-policy acceptance scenario valid	No existing assertions removed or relaxed	Full suite green
 18	Keep per-Asset last-heard arrival time after offline; pass contact evidence to Reset summary	F18 empty reports absent from summary before fix	Full suite green; crash interval arrival times remain unavailable by design
 19	Remove exactly one terminal LF or CRLF from bootstrap password file	F19 exact trailing-space password was refused	Full suite green
+20	Stream routes bypass contact evidence, including initial connection	F20 stream revived offline Asset	Full suite green
+20-deslop	Reviewed complete diff against 78b95cb; formatted changed TypeScript; removed unused test import and kept settlement policy centralized	No new dependencies, mocks or any casts	Deslop complete
+20-repros-C	Adapted original imports to this Core; archive path uses new sibling default; stalled-stop simulated clock advances five-second grace	14 original reviewer probes pass	Includes paused uploads, downloads and seeded ID exhaustion
+20-repros-G	Ran all 14 named GPT repros against this Core	13 produce corrected outcomes; archive-inside-objects exits at expected startup rejection	No assertions weakened in repro copies
+20-repros-K	Ran break.ts against this Core, including its exhaustion section	Streams remain offline, Plugin call drops, Fusion clears position, differing hashes preserved, writes refused, login conflicts, warning logged	Original probes inspect SQLite outside permanent suite
+20-limits	Exhaustion regression remains reviewer seed-based rather than permanent HTTP-only contract; two existing test fixtures corrected to written spec	No real equipment or deployed TLS checked	No push or PR
+20-verification	Replayed typecheck and full Core suite at every one of the 20 finding commits	All 20 commit boundaries pass; final Core 39/39; Protocol check 175 definitions and 91/91 tests	887 links and 66 retired phrase rules pass

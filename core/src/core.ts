@@ -63,8 +63,16 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     paths.uploadsDir,
   ])
     await mkdir(dir, { recursive: true });
-  const archiveRelative = relative(await realpath(config.data_directory), await realpath(config.archive_directory));
-  if (!archiveRelative || (!isAbsolute(archiveRelative) && archiveRelative !== ".." && !archiveRelative.startsWith("../")))
+  const archiveRelative = relative(
+    await realpath(config.data_directory),
+    await realpath(config.archive_directory),
+  );
+  if (
+    !archiveRelative ||
+    (!isAbsolute(archiveRelative) &&
+      archiveRelative !== ".." &&
+      !archiveRelative.startsWith("../"))
+  )
     throw new Error("archive_directory must be outside data_directory");
   const protocol = await loadPackagedProtocol();
   events.assertKindsMatchProtocol(protocol.names);
@@ -154,7 +162,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
         return (stopped ??= stopRun(env, store, tables, {
           closeServer: () => server.close(),
           stopContact: () => contact.stop(),
-          lastHeard: id => contact.lastHeard(id),
+          lastHeard: (id) => contact.lastHeard(id),
           async drainFusion() {
             await follower.drain();
             follower.stop();

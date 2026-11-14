@@ -706,6 +706,9 @@ export function match(
 }
 
 function decodePathSegment(value: string): string {
-  try { return decodeURIComponent(value); }
-  catch { refuse("invalid", "Malformed path escape"); }
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    refuse("invalid", "Malformed path escape");
+  }
 }

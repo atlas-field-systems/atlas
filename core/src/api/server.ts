@@ -9,7 +9,11 @@ import { readFileSync } from "node:fs";
 import { match } from "./routes.ts";
 import type { Req } from "./routes.ts";
 import { credentialOf, authorize } from "./auth.ts";
-import { hashPassword, verifyPassword, callerFor } from "../pillars/administration.ts";
+import {
+  hashPassword,
+  verifyPassword,
+  callerFor,
+} from "../pillars/administration.ts";
 import { Refusal, refuse, checkOrRefuse } from "./errors.ts";
 import { fingerprint, lookup, retain } from "../store/idempotency.ts";
 import { audienceFor } from "./stream.ts";
@@ -81,31 +85,45 @@ export async function startServer(
       }
       const credential = credentialOf(req.headers);
       const resolveCaller = (tx: import("../store/db.ts").ReadTx) =>
-        callerFor(tx, credential) ?? (credential && "session" in credential && route.who.includes("public") ? {kind: "anonymous" as const} : null);
+        callerFor(tx, credential) ??
+        (credential && "session" in credential && route.who.includes("public")
+          ? { kind: "anonymous" as const }
+          : null);
       const caller = store.read(resolveCaller);
       if (!caller) refuse("unauthenticated", "Invalid credential");
       if (
         url.pathname === "/about" &&
-        (caller.kind === "gateway" || caller.kind === "plugin" || caller.kind === "asset")
+        (caller.kind === "gateway" ||
+          caller.kind === "plugin" ||
+          caller.kind === "asset")
       ) {
         const hash = req.headers["atlas-definitions"];
-        if (
-          typeof hash === "string" &&
-          hash !== env.protocol.hash &&
-          env.protocol.check("refusal", {time: env.clock.now(), gateway_id: "G", definitions_hash: hash}).ok
-        )
+        if (typeof hash === "string" && hash !== env.protocol.hash)
           store.write((tx) => {
             const id =
               caller.kind === "gateway"
                 ? { gateway_id: caller.gateway_id }
                 : caller.kind === "plugin"
                   ? { plugin_id: caller.plugin_id }
-                  : { asset_id: entities.assetForKey(tx, caller.key_id) ?? undefined };
+                  : {
+                      asset_id:
+                        entities.assetForKey(tx, caller.key_id) ?? undefined,
+                    };
             const column =
-              caller.kind === "gateway" ? "gateway_id" : caller.kind === "plugin" ? "plugin_id" : "asset_id";
+              caller.kind === "gateway"
+                ? "gateway_id"
+                : caller.kind === "plugin"
+                  ? "plugin_id"
+                  : "asset_id";
             const value =
-              caller.kind === "gateway" ? caller.gateway_id : caller.kind === "plugin" ? caller.plugin_id : entities.assetForKey(tx, caller.key_id);
+              caller.kind === "gateway"
+                ? caller.gateway_id
+                : caller.kind === "plugin"
+                  ? caller.plugin_id
+                  : entities.assetForKey(tx, caller.key_id);
             if (!value) return;
+            const record = { time: tx.now, ...id, definitions_hash: hash };
+            if (!env.protocol.check("refusal", record).ok) return;
             if (
               !tx.get(
                 `SELECT 1 FROM events WHERE run_id=? AND kind='definitions.refused' AND json_extract(record,'$.${column}')=? AND json_extract(record,'$.definitions_hash')=?`,
@@ -114,11 +132,7 @@ export async function startServer(
                 hash,
               )
             )
-              tx.append("definitions.refused", {
-                time: tx.now,
-                ...id,
-                definitions_hash: hash,
-              });
+              tx.append("definitions.refused", record);
           });
       }
       const principal = store.read((tx) =>
@@ -141,13 +155,6 @@ export async function startServer(
           "definitions_mismatch",
           "Use the definitions hash reported by GET /about",
         );
-      if (principal.heard) contact.heard(principal.heard);
-      else if (caller.kind === "asset") {
-        const asset_id = store.read((tx) =>
-          entities.assetForKey(tx, caller.key_id),
-        );
-        if (asset_id) contact.heard({ asset_id });
-      }
       const request: Req<any> = {
         params,
         query: url.searchParams,
@@ -161,8 +168,17 @@ export async function startServer(
           raw === null || raw === undefined ? "latest" : Number(raw);
         if (after !== "latest" && (!Number.isSafeInteger(after) || after < 0))
           refuse("invalid", "after must be a nonnegative event ID");
-        streams.open(res, audienceFor(principal, url.searchParams), after, () => store.read(tx => !!callerFor(tx, credential)));
+        streams.open(res, audienceFor(principal, url.searchParams), after, () =>
+          store.read((tx) => !!callerFor(tx, credential)),
+        );
         return;
+      }
+      if (principal.heard) contact.heard(principal.heard);
+      else if (caller.kind === "asset") {
+        const asset_id = store.read((tx) =>
+          entities.assetForKey(tx, caller.key_id),
+        );
+        if (asset_id) contact.heard({ asset_id });
       }
       if (route.kind === "read") {
         send(
@@ -255,19 +271,34 @@ export async function startServer(
       if (login) {
         loginKey = key;
         const previous = loginRetries.get(key);
-        loginGate = new Promise<void>(resolve => { releaseLogin = resolve; });
+        loginGate = new Promise<void>((resolve) => {
+          releaseLogin = resolve;
+        });
         loginRetries.set(key, loginGate);
         await previous;
-        const prior = store.read(tx => tx.get<{fingerprint: string}>(
-          "SELECT fingerprint FROM idempotency_keys WHERE run_id=? AND scope=? AND key=?", tx.runId, scope, key));
+        const prior = store.read((tx) =>
+          tx.get<{ fingerprint: string }>(
+            "SELECT fingerprint FROM idempotency_keys WHERE run_id=? AND scope=? AND key=?",
+            tx.runId,
+            scope,
+            key,
+          ),
+        );
         const body = JSON.stringify(request.body);
-        if (prior && !await verifyPassword(prior.fingerprint, body))
-          refuse("idempotency_conflict", "This key was used for another request");
-        fp = prior?.fingerprint ?? await hashPassword(body);
-      } else fp = fingerprint({
-        method: route.method, route: route.path, params,
-        query: url.searchParams.toString(), body: bytes,
-      });
+        if (prior && !(await verifyPassword(prior.fingerprint, body)))
+          refuse(
+            "idempotency_conflict",
+            "This key was used for another request",
+          );
+        fp = prior?.fingerprint ?? (await hashPassword(body));
+      } else
+        fp = fingerprint({
+          method: route.method,
+          route: route.path,
+          params,
+          query: url.searchParams.toString(),
+          body: bytes,
+        });
       const prepared = await route.prepare?.(request, store);
       let storedUpload = false;
       let reply;
@@ -314,15 +345,17 @@ export async function startServer(
         );
         if (asset_id) contact.heard({ asset_id });
       }
-      send(
-        reply.status,
-        reply.body,
-        {
-          ...("headers" in reply ? (reply.headers as Record<string, string>) : {}),
-          ...(route.path === "/administration/logout" ? {"set-cookie": "atlas_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"} : {}),
-        },
-      );
-
+      send(reply.status, reply.body, {
+        ...("headers" in reply
+          ? (reply.headers as Record<string, string>)
+          : {}),
+        ...(route.path === "/administration/logout"
+          ? {
+              "set-cookie":
+                "atlas_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0",
+            }
+          : {}),
+      });
     } catch (e) {
       if (res.headersSent) {
         res.destroy();
@@ -350,7 +383,8 @@ export async function startServer(
       }
     } finally {
       releaseLogin?.();
-      if (loginKey && loginRetries.get(loginKey) === loginGate) loginRetries.delete(loginKey);
+      if (loginKey && loginRetries.get(loginKey) === loginGate)
+        loginRetries.delete(loginKey);
     }
   };
   const server =

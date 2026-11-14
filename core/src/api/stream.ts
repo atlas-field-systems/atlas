@@ -32,7 +32,12 @@ export function audienceFor(
 }
 
 export interface Streams {
-  open(res: ServerResponse, audience: Audience, after: number | "latest", valid: () => boolean): void;
+  open(
+    res: ServerResponse,
+    audience: Audience,
+    after: number | "latest",
+    valid: () => boolean,
+  ): void;
   closeAll(): void;
 }
 
@@ -55,12 +60,22 @@ export function startStreams(store: Store, clock: Clock): Streams {
         deadline?.cancel();
         keepalive?.cancel();
         closers.delete(close);
-        store.read(tx=>tx.env.log.record({level:"info",area:"api",msg:"event stream disconnected",route:"/events"}));
+        store.read((tx) =>
+          tx.env.log.record({
+            level: "info",
+            area: "api",
+            msg: "event stream disconnected",
+            route: "/events",
+          }),
+        );
         res.end();
       };
       const pump = () => {
         if (closed) return;
-        if (!valid()) { close(); return; }
+        if (!valid()) {
+          close();
+          return;
+        }
         if (blocked) return;
         try {
           while (!blocked) {
@@ -106,7 +121,14 @@ export function startStreams(store: Store, clock: Clock): Streams {
         "cache-control": "no-cache",
       });
       res.flushHeaders();
-      store.read(tx=>tx.env.log.record({level:"info",area:"api",msg:"event stream connected",route:"/events"}));
+      store.read((tx) =>
+        tx.env.log.record({
+          level: "info",
+          area: "api",
+          msg: "event stream connected",
+          route: "/events",
+        }),
+      );
       pump();
       keepalive = clock.after(10000, alive);
     },
