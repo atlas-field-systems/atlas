@@ -13,7 +13,12 @@ import {
   type ResponseOf,
   type CallEntry,
 } from "./routes.ts";
-import { backoffDelay, type Backoff, type Clock } from "./clock.ts";
+import {
+  backoffDelay,
+  defaultBackoff,
+  type Backoff,
+  type Clock,
+} from "./clock.ts";
 import { diagnostics, type Observer } from "./diagnostics.ts";
 
 export type Credential =
@@ -72,12 +77,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     throw new Error("HTTP Core baseUrl must use loopback");
   const emit = diagnostics(clock, options.observer);
   const timeout = options.requestTimeoutMs ?? 10000;
-  const backoff = options.backoff ?? {
-    minMs: 500,
-    maxMs: 30000,
-    factor: 2,
-    jitter: 0.2,
-  };
+  const backoff = options.backoff ?? defaultBackoff;
   let status: Status = { phase: "new" },
     epoch = 0,
     session = 0,
@@ -215,10 +215,9 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     if (
       current &&
       body.error === "definitions_mismatch" &&
-      !(
-        path === "/entities/assets/radios" &&
-        body.explanation === "The radio uses different Protocol definitions."
-      )
+      // connect() confirmed this client's hash for the run, so a refusal
+      // here is the radio's own hash.
+      path !== "/entities/assets/radios"
     )
       setStatus({
         phase: "definitions_mismatch",

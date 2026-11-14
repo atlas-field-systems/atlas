@@ -2,7 +2,7 @@ import { internal } from "./internal.ts";
 import { diagnostics, type Observer } from "./diagnostics.ts";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import type { Client, Result } from "./client.ts";
-import { backoffDelay, type Clock } from "./clock.ts";
+import { backoffDelay, defaultBackoff, type Clock } from "./clock.ts";
 import { follow, type FollowEnd } from "./stream.ts";
 import {
   createQueue,
@@ -287,12 +287,7 @@ export async function startAsset(
       options.clock.after(
         backoffDelay(
           attempt++,
-          internal(client).options.backoff ?? {
-            minMs: 500,
-            maxMs: 30000,
-            factor: 2,
-            jitter: 0.2,
-          },
+          internal(client).options.backoff ?? defaultBackoff,
         ),
         resolve,
       ),
@@ -402,12 +397,7 @@ export async function startAsset(
       ) {
         const delay = backoffDelay(
           attempt++,
-          internal(client).options.backoff ?? {
-            minMs: 500,
-            maxMs: 30000,
-            factor: 2,
-            jitter: 0.2,
-          },
+          internal(client).options.backoff ?? defaultBackoff,
         );
         await new Promise<void>((resolve) => {
           const timer = options.clock.after(delay, resolve);

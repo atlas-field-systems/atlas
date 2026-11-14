@@ -18,6 +18,12 @@ export interface Backoff {
   factor: number;
   jitter: number;
 }
+export const defaultBackoff: Backoff = {
+  minMs: 500,
+  maxMs: 30000,
+  factor: 2,
+  jitter: 0.2,
+};
 export function backoffDelay(attempt: number, b: Backoff): number {
   return Math.max(
     0,

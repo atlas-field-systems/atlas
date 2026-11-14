@@ -2,7 +2,7 @@ import { internal } from "./internal.ts";
 import { EVENT_KINDS } from "@atlas/core/event-kinds";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { Client } from "./client.ts";
-import { backoffDelay, type Timer } from "./clock.ts";
+import { backoffDelay, defaultBackoff, type Timer } from "./clock.ts";
 // Counted in UTF-16 code units, which never exceed a string's UTF-8 bytes.
 const MAX_SSE_FRAME = 16 * 1024 * 1024 + 1024;
 
@@ -219,12 +219,7 @@ export function follow(
         if (terminal()) break;
         const delay = backoffDelay(
           attempts++,
-          internal(client).options.backoff ?? {
-            minMs: 500,
-            maxMs: 30000,
-            factor: 2,
-            jitter: 0.2,
-          },
+          internal(client).options.backoff ?? defaultBackoff,
         );
         internal(client).emit("stream.reconnect", { delay });
         await new Promise<void>((resolve) => {

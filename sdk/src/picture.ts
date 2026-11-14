@@ -1,6 +1,6 @@
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import { internal } from "./internal.ts";
-import { backoffDelay, type Timer } from "./clock.ts";
+import { backoffDelay, defaultBackoff, type Timer } from "./clock.ts";
 import type { Client } from "./client.ts";
 import { follow, type AtlasEvent, type Follow } from "./stream.ts";
 import type { TaskView } from "./routes.ts";
@@ -39,10 +39,7 @@ export function createLivePicture(
       return;
     const { clock, backoff } = internal(client).options;
     retryTimer = clock.after(
-      backoffDelay(
-        attempts++,
-        backoff ?? { minMs: 500, maxMs: 30000, factor: 2, jitter: 0.2 },
-      ),
+      backoffDelay(attempts++, backoff ?? defaultBackoff),
       () => void load(),
     );
   }

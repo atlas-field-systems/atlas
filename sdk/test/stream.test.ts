@@ -3,14 +3,7 @@ import assert from "node:assert/strict";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import { createClient } from "../src/client.ts";
 import { follow } from "../src/stream.ts";
-
-const clock = {
-  now: () => Date.now(),
-  after(ms: number, fn: () => void) {
-    const t = setTimeout(fn, ms);
-    return { cancel: () => clearTimeout(t) };
-  },
-};
+import { systemClock as clock } from "../src/clock.ts";
 
 for (const shape of ["line", "frame"] as const) {
   test(
