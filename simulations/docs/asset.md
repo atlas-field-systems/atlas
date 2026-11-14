@@ -55,7 +55,8 @@ Each checks behavior its [Asset page](../../asset/docs/README.md) owns.
   now or pause while the battery is below the critical level, and expect the
   rule to fire again at once.
 - Two critical rules matching at once: only the higher-priority one fires. Make
-  a critical rule's response fail: the Asset returns home, once. Make any other
+  a critical rule's response fail while the battery is still critical: the Asset
+  returns home, once. Make any other
   rule's response fail: nothing is retried.
 - Kill the app in flight: it stays down, Core shows the Asset offline, and the
   flight controller's own failsafe returns it home after its timeout. Start the

@@ -201,7 +201,7 @@ and never retried, and no response restarts or triggers itself. The Asset stays
 in failsafe state and records the actual equipment state; a failed response
 does not establish a landing. The one exception is a
 [critical battery rule](#an-override-with-hold-or-pause-re-arms-protection),
-whose failed response falls back to Return to home.
+whose failed response falls back to Return to home while the battery is still critical.
 
 ## Lock ordinary work for the rest of the operation
 
@@ -259,7 +259,7 @@ at once, only the highest-priority one fires, and a lower-priority critical
 rule never interrupts its response.
 
 **A failed critical response falls back to Return to home.** If a critical
-rule's response fails, the Asset returns home. Nothing is retried: if the
+rule's response fails while the battery is still critical, the Asset returns home. Nothing is retried: if the
 failed response was itself Return to home, or the return home fails, the Asset
 stays in failsafe state as after any
 [failed response](#a-failsafe-activates-a-configured-task).
