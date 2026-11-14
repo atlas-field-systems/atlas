@@ -2,7 +2,7 @@ import { setImmediate } from "node:timers/promises";
 import type { SimClock } from "./clock.ts";
 export type Fault = { kind: "loseRequest" | "loseResponse" | "repeat" | "cutStream" } | { kind: "delay"; ms: number } | { kind: "refuse"; status: number };
 type Rule = { caller: string; path: string; fault: Fault; remaining: number };
-export type Traffic = { caller: string; method: string; path: string; key: string | null; status?: number; fault?: Fault };
+export type Traffic = { caller: string; method: string; path: string; key: string | null; status?: number; fault?: Fault; body?: unknown };
 export class Network {
   private rules: Rule[] = [];
   private cutCallers = new Set<string>();
@@ -31,6 +31,8 @@ export class Network {
       const fault = rule?.fault;
       const headers = new Headers(init.headers); if (cookie) headers.set("Cookie",cookie);
       const traffic: Traffic = { caller, method: init.method ?? "GET", path, key: headers.get("Idempotency-Key"), fault };
+      if (!path.startsWith("/administration") && typeof init.body === "string") traffic.body = JSON.parse(init.body);
+      if (init.body instanceof Uint8Array) traffic.body = { size_bytes: init.body.byteLength };
       this.traffic.push(traffic);
       const controller = new AbortController();
       const abort = () => controller.abort();

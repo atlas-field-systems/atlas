@@ -55,16 +55,21 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     lastSent = clock.now();
     emit("request.attempt", { method: init.method ?? "GET", path: path.startsWith("/administration") ? "/administration" : path });
     try {
-      return await options.fetch(url(path, query), { ...init, headers: headers(init.headers), credentials: credential.kind === "account" ? "include" : "omit", signal: controller.signal });
+      const response = await options.fetch(url(path, query), { ...init, headers: headers(init.headers), credentials: credential.kind === "account" ? "include" : "omit", signal: controller.signal });
+      const bytes = await response.arrayBuffer();
+      return new Response(response.status === 204 ? null : bytes, { status: response.status, headers: response.headers });
     } finally {
       timer.cancel(); controllers.delete(controller); external?.removeEventListener("abort", abort);
     }
   }
   async function parse<T>(response: Response, path: string, file = false): Promise<Result<T>> {
-    const body = file && response.ok ? await response.blob() : await response.json();
+    let body: unknown;
+    try { body = file && response.ok ? await response.blob() : await response.json(); }
+    catch { return { ok: false, error: "invalid_response", explanation: "Core returned invalid JSON" }; }
     emit("request.response", { status: response.status });
     if (response.ok) return { ok: true, value: body as T };
-    if (body.error === "definitions_mismatch") setStatus({ phase: "definitions_mismatch", ours: protocol.hash, core: body.definitions_hash ?? "unknown" });
+    if (!body || typeof body !== "object" || !("error" in body) || typeof body.error !== "string" || !("explanation" in body) || typeof body.explanation !== "string") return { ok: false, error: "invalid_response", status: response.status, explanation: "Core returned an invalid error response" };
+    if (body.error === "definitions_mismatch") setStatus({ phase: "definitions_mismatch", ours: protocol.hash, core: "definitions_hash" in body && typeof body.definitions_hash === "string" ? body.definitions_hash : "unknown" });
     if (response.status === 401 && path !== "/administration/login" && (status.phase === "connected" || status.phase === "unauthenticated")) setStatus({ phase: "unauthenticated", run_id: status.run_id });
     return { ok: false, error: String(body.error ?? "invalid_response"), status: response.status, explanation: String(body.explanation ?? "Invalid response") };
   }
@@ -93,7 +98,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       } finally { verification = undefined; }
     })();
   }
-  function validate(name: string, value: unknown) {
+  function assertValid(name: string, value: unknown) {
     const checked = protocol.check(name, value);
     if (!checked.ok) { emit("validation.failed", { name }); throw new Error(JSON.stringify(checked.problems)); }
   }
@@ -137,14 +142,14 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   function call<N extends Allowed<C["kind"]>, T = Json>(name: N, args: { params?: Params; query?: Query; body?: RouteBody<N> } = {}): Promise<Result<T>> {
     const route: { method: string; path: string; who: readonly CallerKind[]; body?: keyof P } = ROUTES[name];
     if (!route.who.includes(credential.kind)) throw new Error("Credential cannot call this route");
-    if (route.body) validate(route.body, args.body);
+    if (route.body) assertValid(route.body, args.body);
     if (name === "sendReports") {
       const body = args.body as P["requests.reports"];
-      for (const report of body.reports) validate(report.type, report);
+      for (const report of body.reports) assertValid(report.type, report);
     }
     if (name === "answerPlugin") {
       const answer = args.body as P["plugin.result"] | P["plugin.failure"];
-      validate(answer.type, answer);
+      assertValid(answer.type, answer);
     }
     const path = route.path.replace(/:([a-z_]+)/g, (_, k: string) => {
       const value = args.params?.[k]; if (value === undefined) throw new Error(`Missing ${k}`);
@@ -161,7 +166,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   }
   async function login(operator_id: string, password: string): Promise<Result<Json>> {
     if (credential.kind !== "account") throw new Error("Only account clients log in");
-    const body = { operator_id, password }; validate("requests.login", body);
+    const body = { operator_id, password }; assertValid("requests.login", body);
     let result = await request<Json>("POST", "/administration/login", body);
     if (result.ok || result.error === "unknown") {
       const me = await request<Json>("GET", "/administration/me");
@@ -172,6 +177,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     return result;
   }
   async function* pages<T>(path: string, query: Query = {}): AsyncIterable<Result<Page<T>>> {
+    requireCaller(["account", "plugin"]);
     let cursor: string | undefined;
     do {
       const result = await request<Page<T>>("GET", path, undefined, { ...query, cursor });
@@ -190,9 +196,12 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     }
     return { stop() { stopped = true; timer.cancel(); } };
   }
+  function requireCaller(kinds: readonly CallerKind[]) {
+    if (!kinds.includes(credential.kind)) throw new Error("Credential cannot call this route");
+  }
   return {
     options, emit, get status() { return status; }, get epoch() { return epoch; },
-    connect, verifyRun, call, login, validate, holdContact,
+    connect, verifyRun, call, login, validate: (name: string, value: unknown) => protocol.check(name,value), holdContact,
     onStatus(cb: (s: Status) => void) { listeners.add(cb); return () => { listeners.delete(cb); }; },
     streamFetch: (after: number, asset_id: string | undefined, signal: AbortSignal) => options.fetch(url("/events", { after, asset_id, definitions: protocol.hash }), { signal, headers: headers(), credentials: credential.kind === "account" ? "include" : "omit" }),
     streamResponse: (r: Response) => parse<Json>(r, "/events"),
@@ -201,7 +210,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     geofeatureHistory: <T = Json>(q?: Query) => pages<T>("/history/geofeatures", q),
     pluginCalls: <T = Json>(plugin_id: string, q?: Query) => pages<T>(`/plugins/${encodeURIComponent(plugin_id)}/calls`, q),
     uploadObject: (bytes: Uint8Array, contentType: string, query: Query) => request<{ object_id: string; event_id: number }>("POST", "/objects", bytes, query, false, contentType),
-    objectFile: (object_id: string) => request<Blob>("GET", `/objects/${encodeURIComponent(object_id)}/file`, undefined, undefined, true),
+    objectFile: (object_id: string) => { requireCaller(["account","plugin"]); return request<Blob>("GET", `/objects/${encodeURIComponent(object_id)}/file`, undefined, undefined, true); },
     close() { setStatus({ phase: "closed" }); for (const c of controllers) c.abort(); },
   };
 }

@@ -1,4 +1,4 @@
-import { startAsset, runAsset, startPlugin, type AssetLink, type AssetEvent, type Task, type Report } from "@atlas/sdk";
+import { startAsset, runAsset, startPlugin, type AssetLink, type AssetEvent, type Report } from "@atlas/sdk";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import { type World, value } from "./world.ts";
 export const description: P["requests.asset"] = { entity_type:"ground_vehicle", commands:["hold","return_to_home"], reports:["status","settings"], settings:["lights"] };

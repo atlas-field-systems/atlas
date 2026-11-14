@@ -17,7 +17,7 @@ export function scenario(spec: { name: string; checks: string[]; run(world: Worl
     catch (error) {
       const folder = resolve(root,"simulations/.runs",`${spec.name.replace(/[^a-z0-9-]/gi,"-")}-${spec.seed ?? 0}`);
       await mkdir(folder,{recursive:true});
-      await writeFile(resolve(folder,"failure.json"),JSON.stringify({ seed:spec.seed ?? 0, checks:spec.checks, error:String(error), trace:world.trace },null,2));
+      await writeFile(resolve(folder,"failure.json"),JSON.stringify({ seed:spec.seed ?? 0, checks:spec.checks, error: error instanceof Error ? { message: error.message, stack: error.stack, expected: "expected" in error ? error.expected : undefined, observed: "actual" in error ? error.actual : undefined } : String(error), trace:world.trace },null,2));
       throw error;
     } finally { await world.close(); }
   });

@@ -48,7 +48,6 @@ scenario({ name:"lost responses change each domain once",checks:["simulations/do
   assert.equal(events.filter(e => e.kind === "report.settings" && e.record.settings.lights === "on").length,1,"same report batch is not stored twice");
   const attempts = w.network.traffic.filter(t => t.path === "/entities/geofeatures" && t.method === "POST");
   assert.equal(attempts.length,2); assert.equal(attempts[0].key,attempts[1].key,"retry preserves key");
-  const conflictFetch = w.network.fetchFor("conflict");
   const conflictClient = w.client("conflict-account",{kind:"account"});
   value(await w.complete(conflictClient.connect()));
   value(await w.complete(conflictClient.login("ADM","simulation-password")));
