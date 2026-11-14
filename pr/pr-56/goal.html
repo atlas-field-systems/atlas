@@ -1,12 +1,9 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>The goal</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="the-goal">The goal</h1>
-<blockquote>
-<p><strong>Proposal, drafted with the owner on 2026-11-14.</strong> The sections below are in
-the owner&#39;s words, tidied. The points under <a href="#open">Open</a> are not settled.
-Nothing here is a decision until the owner puts it in the
-<a href="decision-log.html">decision log</a>, and then this banner is removed.</p>
-</blockquote>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html" class="on">The goal</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="the-goal">The goal</h1>
+<p>Who Atlas is for, the problem it solves, what it does and does not do, and how
+to tell it works. The <a href="decision-log.html#the-goal">decision log</a> dates each
+decision.</p>
 <h2 id="who-it-is-for">Who it is for</h2>
 <p>Atlas is for one person in a field, testing drones and sensors. Today that
 person is the owner. Usually one operator controls several Assets. Sometimes
@@ -38,7 +35,6 @@ Asset carries them out.</li>
 flies (<a href="CHARTER.html#keep-judgment-sharp">Charter</a>).</li>
 <li><strong>Not a radio.</strong> Atlas rides on existing radios through
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md">Fieldlinks</a>.</li>
-<li><strong>Not a weapons system.</strong> The exact wording is <a href="#open">open</a>, point 1.</li>
 <li><strong>Not a swarm brain.</strong> Assets do not plan among themselves. The operator
 tasks each one.</li>
 <li><strong>Not usable without Core.</strong> While Core is unreachable, nobody can send new
@@ -65,7 +61,7 @@ work must not rule them out, and must not grow to make room for them.</p>
 may run together: in different areas, such as two gateways 20 miles apart,
 or in one area on different bands, such as an FLRC gateway beside a
 Meshtastic gateway. Atlas today is designed around one gateway
-(<a href="#open">Open</a>, point 2).</li>
+(<a href="#open">Open</a>).</li>
 <li><strong>Live video.</strong> A video feed is an Object, and it plays only while someone
 has it open. An example is a 5.8 GHz video receiver plugged into a gateway.
 The operator links the feed to an Asset by hand, and then watches it on that
@@ -76,8 +72,11 @@ ordinary drone radios, and brings back their video.</li>
 send an Asset to where a Track is now. Later a command will make an Asset
 keep following a Track.</li>
 <li><strong>Drops.</strong> An Asset drops a package, such as first aid or supplies.</li>
-<li><strong>Listening in.</strong> On a radio link, an Asset hears what other Assets report
-and uses it (<a href="experimental.html#passive-listening">Experimental ideas</a>).</li>
+<li><strong>Listening in.</strong> On a mesh radio link every radio hears the others. An
+Asset keeps what it hears as its own local picture of the Assets,
+Observations, and Tracks around it, at no cost in air time. An Asset told
+to follow another Asset then listens to it and does not ask Core
+(<a href="experimental.html#passive-listening">Experimental ideas</a>).</li>
 </ul>
 <h2 id="how-we-know-it-works">How we know it works</h2>
 <p>In-depth simulations of whole operations show that Atlas works, together with
@@ -108,16 +107,11 @@ and the Fieldlinks are not built. The
 sake is not worth having. When a hard problem needs complexity, look for the
 simpler solution first (<a href="design-decisions.html#proven-and-lean">Proven and lean</a>).</p>
 <h2 id="open">Open</h2>
-<ol>
-<li><strong>The wording of &quot;not a weapons system&quot;.</strong> The owner also wants training
-strikes, where a drone flies into a target so that the experiment records
-what a strike looks like. The line between the two needs the owner&#39;s
-wording.</li>
-<li><strong>The gateway rule.</strong> The current rule is
-<a href="scale.html#setup">one site per Core, with one gateway</a>. Several gateways on
-one Core reverses it. Core already lets an admin add more than one gateway
+<p><strong>The gateway rule.</strong> The current rule is
+<a href="scale.html#setup">one site per Core, with one gateway</a>. Several gateways on one
+Core reverses it, and the reversal gets its own pull request. An Asset always
+uses exactly one gateway. Core already lets an admin add more than one gateway
 and records which gateway carries each Asset, so the reversal is mostly a
-change to the pages that teach the old rule. It gets its own pull request.</li>
-</ol>
+change to the pages that teach the old rule.</p>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
