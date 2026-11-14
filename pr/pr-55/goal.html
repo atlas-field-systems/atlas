@@ -8,6 +8,8 @@ decision.</p>
 <p>Atlas is for one person in a field, testing drones and sensors. Today that
 person is the owner. Usually one operator controls several Assets. Sometimes
 there is more than one operator.</p>
+<p>One Core may run several gateways at once, as long as their radio links
+cannot clash (<a href="scale.html#setup">Scale</a>).</p>
 <p>Atlas is a platform for experiments. It is not yet a product that has to work
 every time. The owner will say when that changes.</p>
 <h2 id="the-problem">The problem</h2>
@@ -57,11 +59,6 @@ work every time.</li>
 <p>The owner wants each of these one day. None is designed or built now. Today&#39;s
 work must not rule them out, and must not grow to make room for them.</p>
 <ul>
-<li><strong>Several gateways on one Core.</strong> Gateways whose radio links cannot clash
-may run together: in different areas, such as two gateways 20 miles apart,
-or in one area on different bands, such as an FLRC gateway beside a
-Meshtastic gateway. Atlas today is designed around one gateway
-(<a href="#open">Open</a>).</li>
 <li><strong>Live video.</strong> A video feed is an Object, and it plays only while someone
 has it open. An example is a 5.8 GHz video receiver plugged into a gateway.
 The operator links the feed to an Asset by hand, and then watches it on that
@@ -100,18 +97,11 @@ as a simulated radio link.</p>
 operations.</p>
 <p>That full simulation cannot run yet, because the Asset app, the gateway app,
 and the Fieldlinks are not built. The
-<a href="build-order.html">proposed build order</a> says what to build next.</p>
+<a href="build-order.html">build order</a> says what to build next.</p>
 <h2 id="the-test-question">The test question</h2>
 <p>Hold every new idea against one question: is this overcomplicated?</p>
 <p>Atlas aims for systems that are simple and elegant. Complexity for its own
 sake is not worth having. When a hard problem needs complexity, look for the
 simpler solution first (<a href="design-decisions.html#proven-and-lean">Proven and lean</a>).</p>
-<h2 id="open">Open</h2>
-<p><strong>The gateway rule.</strong> The current rule is
-<a href="scale.html#setup">one site per Core, with one gateway</a>. Several gateways on one
-Core reverses it, and the reversal gets its own pull request. An Asset always
-uses exactly one gateway. Core already lets an admin add more than one gateway
-and records which gateway carries each Asset, so the reversal is mostly a
-change to the pages that teach the old rule.</p>
 </main>
 <script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>

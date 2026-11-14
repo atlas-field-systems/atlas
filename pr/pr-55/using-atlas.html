@@ -25,7 +25,8 @@ Core only through the <a href="https://github.com/atlas-field-systems/atlas/blob
 <a href="design-decisions.html#a-walled-city">Design decisions</a> has the layout.</p>
 <p>Most physical Assets use the gateway path, through the gateway&#39;s one
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#two-kinds-of-fieldlink">Fieldlink</a>. A direct-IP Asset, often a digital
-one, calls the Core API itself. A site runs one gateway at a time, and the
+one, calls the Core API itself. A Core may run several gateways, each on its own radio network
+(<a href="scale.html#setup">Scale</a>), and the
 gateway design can change as <a href="environment.html#connectivity-evolves">connectivity evolves</a>. The diagram shows
 responsibilities, not a required network topology.</p>
 <p>The <a href="first-flight.html">first-flight setup</a> uses a ground Raspberry Pi as a

@@ -122,11 +122,12 @@ Fieldlink and keeps its <code>asset_id</code>, and the gateway signs it up again
 work does not resume, as for any restarted app.</li>
 <li><strong>A removed radio can come back.</strong> If it is heard again, the gateway
 registers it as a new Asset with a new ID.</li>
-<li><strong>One gateway for the whole network.</strong> One gateway is deployed per area
-(<a href="scale.html#setup">Scale</a>). On a mesh Fieldlink, Assets talk to each other and
-to that one gateway, and every radio Asset in the area rides on it; the
+<li><strong>One gateway for each network.</strong> Each radio network has one gateway, and a
+Core may run several networks (<a href="scale.html#setup">Scale</a>). On a mesh
+Fieldlink, Assets talk to each other and to their network&#39;s gateway, and
+every radio Asset on the network rides on it; the
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md">SiK Fieldlink</a> carries one drone.
-No Asset uses two gateways. Several gateways in one network, and moving a
+No Asset uses two gateways. Two gateways in one network, and moving a
 radio Asset to another gateway while it keeps its ID, are out of scope.</li>
 </ul>
 <h2 id="when-the-gateway-changes">When the gateway changes</h2>
