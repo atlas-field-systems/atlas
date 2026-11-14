@@ -53,12 +53,7 @@ export type About = {
   protocol_version: string;
 };
 export type Json =
-  | null
-  | boolean
-  | number
-  | string
-  | Json[]
-  | { [key: string]: Json };
+  null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Page<T> = { as_of: number; items: T[]; next_cursor: string | null };
 export function createClient<C extends Credential>(options: ClientOptions<C>) {
   const { protocol, credential, clock } = options;
@@ -79,6 +74,8 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   const controllers = new Set<AbortController>();
   function setStatus(next: Status) {
     status = next;
+    if (next.phase === "definitions_mismatch")
+      emit("definitions.mismatch", { ours: next.ours, core: next.core });
     for (const cb of listeners) cb(next);
   }
   function blocked<T>(): Result<T> | undefined {
@@ -160,6 +157,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       };
     }
     emit("request.response", { status: response.status });
+    if (response.status === 401) emit("authentication.401");
     if (response.ok) return { ok: true, value: body as T };
     if (
       !body ||
@@ -201,6 +199,11 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   async function about(): Promise<Result<About>> {
     try {
       const result = await parse<About>(await raw("/about", {}), "/about");
+      if (result.ok)
+        emit("definitions.checked", {
+          ours: protocol.hash,
+          core: result.value.definitions_hash,
+        });
       if (result.ok && result.value.definitions_hash !== protocol.hash) {
         setStatus({
           phase: "definitions_mismatch",
@@ -247,7 +250,10 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   function assertValid(name: string, value: unknown) {
     const checked = protocol.check(name, value);
     if (!checked.ok) {
-      emit("validation.failed", { name });
+      emit("validation.failed", {
+        name,
+        problems: JSON.stringify(checked.problems),
+      });
       throw new Error(JSON.stringify(checked.problems));
     }
   }
@@ -315,8 +321,13 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
                 { method, headers: h, body: bytes },
                 query,
               );
-              if (response.status < 500 || response.status === 507)
-                return await parse<T>(response, path, file);
+              if (response.status < 500 || response.status === 507) {
+                const result = await parse<T>(response, path, file);
+                return !result.ok && response.status === 507
+                  ? { ...result, retry: send }
+                  : result;
+              }
+              emit("request.retry_status", { status: response.status });
               await response.arrayBuffer();
               needsVerify = true;
             } catch {
@@ -375,7 +386,13 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     if (status.phase === "definitions_mismatch") return blocked<About>()!;
     const result = await about();
     if (result.ok) {
-      epoch++;
+      const oldRun =
+        "run_id" in status
+          ? status.run_id
+          : status.phase === "run_ended"
+            ? status.old_run_id
+            : undefined;
+      if (oldRun !== result.value.run_id) epoch++;
       needsVerify = false;
       setStatus({ phase: "connected", run_id: result.value.run_id });
     }
@@ -389,12 +406,16 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       throw new Error("Only account clients log in");
     const body = { operator_id, password };
     assertValid("requests.login", body);
+    const deadline = clock.now() + timeout;
     let result = await request<Json>("POST", "/administration/login", body);
-    if (result.ok || result.error === "unknown") {
+    while (result.ok || result.error === "unknown") {
       const me = await request<Json>("GET", "/administration/me");
-      if (!me.ok && me.status === 401)
-        result = await request<Json>("POST", "/administration/login", body);
-      else result = me;
+      result = me;
+      if (me.ok || me.status !== 401 || clock.now() >= deadline) break;
+      await new Promise<void>((resolve) =>
+        clock.after(Math.min(10, deadline - clock.now()), resolve),
+      );
+      result = await request<Json>("POST", "/administration/login", body);
     }
     if (result.ok && status.phase === "unauthenticated")
       setStatus({ phase: "connected", run_id: status.run_id });
@@ -420,13 +441,19 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     if (credential.kind !== "gateway" && credential.kind !== "plugin")
       throw new Error("Only gateways and Plugins hold contact");
     let stopped = false;
-    let timer = clock.after(options.heartbeatMs ?? 10000, beat);
+    let timer = clock.after(
+      Math.max(0, lastSent + (options.heartbeatMs ?? 10000) - clock.now()),
+      beat,
+    );
     async function beat() {
       if (stopped || status.phase !== "connected") return;
       if (clock.now() - lastSent >= (options.heartbeatMs ?? 10000))
         await verifyRun();
       if (!stopped && status.phase === "connected")
-        timer = clock.after(options.heartbeatMs ?? 10000, beat);
+        timer = clock.after(
+          Math.max(0, lastSent + (options.heartbeatMs ?? 10000) - clock.now()),
+          beat,
+        );
     }
     return {
       stop() {

@@ -111,14 +111,39 @@ export function follow(
                 );
               };
               resetIdle();
+              const chunks: Uint8Array[] = [];
+              let ended = false,
+                readError: unknown,
+                chunkReady: (() => void) | undefined;
+              const pump = (async () => {
+                try {
+                  while (!terminal()) {
+                    const chunk = await reader.read();
+                    if (chunk.done) break;
+                    resetIdle();
+                    chunks.push(chunk.value);
+                    chunkReady?.();
+                  }
+                } catch (error) {
+                  readError = error;
+                } finally {
+                  ended = true;
+                  chunkReady?.();
+                }
+              })();
               try {
                 while (!terminal()) {
-                  const chunk = await reader.read();
-                  if (chunk.done) break;
-                  resetIdle();
-                  buffer += decoder.decode(chunk.value, { stream: true });
+                  if (!chunks.length) {
+                    if (readError) throw readError;
+                    if (ended) break;
+                    await new Promise<void>((resolve) => {
+                      chunkReady = resolve;
+                    });
+                    continue;
+                  }
+                  buffer += decoder.decode(chunks.shift()!, { stream: true });
                   let index: number;
-                  while ((index = buffer.indexOf("\n")) >= 0) {
+                  while (!terminal() && (index = buffer.indexOf("\n")) >= 0) {
                     const line = buffer.slice(0, index).replace(/\r$/, "");
                     buffer = buffer.slice(index + 1);
                     if (line.startsWith(":")) {
@@ -175,6 +200,7 @@ export function follow(
               } finally {
                 idle?.cancel();
                 await reader.cancel().catch(() => {});
+                await pump;
               }
             }
           } catch {

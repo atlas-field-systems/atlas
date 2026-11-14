@@ -60,7 +60,7 @@ export function startPlugin(
       stream = follow(
         client as Client,
         { after: described.value.event_id },
-        async (e) => {
+        (e) => {
           if (e.kind !== "plugin.called") return;
           let answered = false;
           const request_id = e.event_id;
@@ -76,12 +76,17 @@ export function startPlugin(
               return client.call("answerPlugin", {
                 params: { plugin_id },
                 body: { ...body, request_id } as
-                  | P["plugin.result"]
-                  | P["plugin.failure"],
+                  P["plugin.result"] | P["plugin.failure"],
               });
             },
           };
-          await options.onCall(e.record, reply, e.event_id);
+          void Promise.resolve()
+            .then(() => options.onCall(e.record, reply, e.event_id))
+            .catch(() => {
+              internal(client).emit("plugin.handler_failed", {
+                request_id: e.event_id,
+              });
+            });
         },
       );
       const end = await stream.done;

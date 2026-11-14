@@ -153,3 +153,30 @@ test("place updates precede delivery and reach running app [sdk/docs/asset.md#th
     ),
   );
 });
+
+test("drop ends running slot but preserves late evidence [sdk/docs/asset.md#the-queue-helper]", () => {
+  const f = fixture();
+  f.deliver([1, 2]);
+  assert.equal(f.q.next()?.task_id, 1);
+  f.q.apply({
+    kind: "task.dropped",
+    event_id: 40,
+    record: { time: 1000, asset_id: "A", task_id: 1 },
+  });
+  assert.deepEqual(f.stops, [1]);
+  assert.equal(f.q.next()?.task_id, 2);
+  f.q.finish(1, "completed");
+  assert.deepEqual(
+    f.q.active().map((t) => t.task_id),
+    [2],
+  );
+  assert.ok(
+    f.reports.some(
+      (r) =>
+        r.type === "report.status" &&
+        r.kind === "task" &&
+        r.task_id === 1 &&
+        r.task_state === "completed",
+    ),
+  );
+});

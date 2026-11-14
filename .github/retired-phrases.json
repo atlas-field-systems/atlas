@@ -372,5 +372,10 @@
     "phrase": "Those are test hooks, not settings",
     "why": "The SDK clock and connection are normal host inputs, per the build-and-test decision.",
     "example": "Those are test hooks, not settings."
+  },
+  {
+    "phrase": "Request answers and final Task reports go first within a lane",
+    "why": "Emission order must survive batching so equal-time queue reports keep their order.",
+    "example": "Request answers and final Task reports go first within a lane."
   }
 ]

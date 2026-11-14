@@ -13,11 +13,14 @@ Asset link:
 
 ```ts
 interface AssetLink {
-  events(after: number): AsyncIterable<Event>;  // this Asset's requests, in event_id order
-  sendReports(reports: Report[], priority: 'must_arrive' | 'can_skip'): Promise<LinkResult>;
-                                                 // resolves once the batch is acknowledged
+  events(after: number): AsyncIterable<Event>; // this Asset's requests, in event_id order
+  sendReports(
+    reports: Report[],
+    priority: "must_arrive" | "can_skip",
+  ): Promise<LinkResult>;
+  // resolves once the batch is acknowledged
   onContact(cb: (contact: Contact) => void): () => void;
-  capacity(): number | undefined;                // bytes per second the link can carry now, if known
+  capacity(): number | undefined; // bytes per second the link can carry now, if known
   storeFile(file: AssetFile): Promise<Result<{ object_id: string }>>;
 }
 ```
@@ -95,13 +98,16 @@ it. The helper holds the Asset's Tasks and hands them to the app.
 - **Refuses a full queue.** Holding 64 unstarted Tasks, it reports each
   further Task `cancelled`, unless `now` is set.
 - **Skips dropped Tasks.** A `task.dropped` event counts its `task_id` as ended;
-  a held Task it names is removed without running.
+  a held Task it names is removed without running. For a running Task, it calls
+  `QueueHost.stop(task_id, "dropped")` and releases the slot. A later `finish`
+  still reports evidence without changing a slot.
 - **Answers each request.** It sends a queue report with the `request_id` of each
   `tasks.requested`, listing the Tasks it holds.
 - **Never runs a `task_id` twice.** A repeated Task changes nothing.
 - **Applies place updates.** A `tasks.updated` event replaces the body of each
   held Task it names and hands an updated running Task to the app; it changes
-  nothing for a Task that has ended. The helper answers it with a queue report
+  nothing for a Task that has ended. An update received before its Task is kept
+  and used when that Task arrives. The helper answers it with a queue report
   carrying its `request_id`
   ([geo features](../../core/docs/api.md#geo-features)).
 - **The app pulls work.** The app calls `next()` when it is ready to run a Task,
@@ -134,7 +140,6 @@ It resolves `sendReports` on end-to-end acknowledgement and supplies contact. Th
 Fieldlink owns its own startup and the hash check on its link. Fieldlinks are not
 part of the SDK.
 
-
 ## Running over any link
 
 `runAsset(link, {asset_id, after, last_task_id}, options)` runs the outbox,
@@ -146,10 +151,14 @@ and `stop()`. The IP wrapper is `startAsset(client, options)`.
 `LinkResult` is `{ok: true}` on end-to-end acknowledgement, or
 `{ok: false, error, explanation}`. Errors are `run_ended`,
 `unauthenticated`, `definitions_mismatch`, `closed`, or `refused`.
-A permanent refusal blocks the outbox and remains visible through
+On IP, a `507` or other `5xx` is transient: the link resends the immutable batch
+with its key after backoff. A direct client call can return `507` without retrying.
+Only `400`, `403`, `404`, and `409` other than `definitions_mismatch` permanently
+refuse a batch. A permanent refusal keeps the batch, blocks the outbox, and remains visible through
 `outbox.blocked` and `onBlocked`. It is never retried.
 
 Rejoin omits a settings report when no setting is known, because Protocol
 requires at least one setting. It reports a queue on rejoin only when Tasks are
 held. Live and retained reports use separate lanes. Live reports go first.
-Request answers and final Task reports go first within a lane.
+Reports keep emission order within each lane and batch. Priority selects batches,
+never reorders their reports.

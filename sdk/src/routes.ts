@@ -1,4 +1,3 @@
-import type { About } from "./client.ts";
 import type { AtlasEvent } from "./stream.ts";
 import type { AssetView } from "./picture.ts";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
@@ -8,17 +7,11 @@ type Spec = {
   path: string;
   who: readonly CallerKind[];
   body?: keyof P;
-  secret?: true;
 };
 const accounts = ["account"] as const,
   readers = ["account", "plugin"] as const,
   reporters = ["asset", "gateway"] as const;
 export const ROUTES = {
-  about: {
-    method: "GET",
-    path: "/about",
-    who: ["account", "asset", "gateway", "plugin"],
-  },
   me: { method: "GET", path: "/administration/me", who: accounts },
   logout: { method: "POST", path: "/administration/logout", who: accounts },
   entities: { method: "GET", path: "/entities", who: readers },
@@ -143,7 +136,6 @@ export const ROUTES = {
     path: "/administration/accounts",
     who: accounts,
     body: "requests.account",
-    secret: true,
   },
   removeAccount: {
     method: "DELETE",
@@ -154,7 +146,6 @@ export const ROUTES = {
     method: "POST",
     path: "/administration/asset-keys",
     who: accounts,
-    secret: true,
   },
   removeAssetKey: {
     method: "DELETE",
@@ -165,7 +156,6 @@ export const ROUTES = {
     method: "POST",
     path: "/administration/asset-keys/:key_id/key",
     who: accounts,
-    secret: true,
   },
   removeAsset: {
     method: "DELETE",
@@ -176,7 +166,6 @@ export const ROUTES = {
     method: "POST",
     path: "/administration/gateways",
     who: accounts,
-    secret: true,
   },
   removeGateway: {
     method: "DELETE",
@@ -187,13 +176,11 @@ export const ROUTES = {
     method: "POST",
     path: "/administration/gateways/:gateway_id/key",
     who: accounts,
-    secret: true,
   },
   provisionPlugin: {
     method: "POST",
     path: "/administration/plugins",
     who: accounts,
-    secret: true,
   },
   removePlugin: {
     method: "DELETE",
@@ -204,7 +191,6 @@ export const ROUTES = {
     method: "POST",
     path: "/administration/plugins/:plugin_id/key",
     who: accounts,
-    secret: true,
   },
 } as const satisfies Record<string, Spec>;
 export type RouteName = keyof typeof ROUTES;
@@ -222,12 +208,7 @@ export type Query = Record<string, string | number | boolean | undefined>;
 export type TaskView = {
   task: P["task"];
   state:
-    | "requested"
-    | "active"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "dropped";
+    "requested" | "active" | "completed" | "failed" | "cancelled" | "dropped";
   state_time: number;
   object_ids?: string[];
 };
@@ -244,7 +225,6 @@ type Empty = Record<string, never>;
 type Issue<K extends string> = Record<K, string> &
   ({ key: string } | { issued: true } | { replaced: true });
 type Responses = {
-  about: About;
   me: { operator_id: string; admin: boolean };
   logout: Empty;
   entities: {

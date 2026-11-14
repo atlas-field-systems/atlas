@@ -1,3 +1,4 @@
+import { diagnostics, type Observer } from "./diagnostics.ts";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { Clock } from "./clock.ts";
 
@@ -23,7 +24,7 @@ export type AssetEvent =
 export interface QueueHost {
   ready?(): void;
   runNow(task: Task): void;
-  stop(task_id: number, because: "cancel" | "now"): void;
+  stop(task_id: number, because: "cancel" | "now" | "dropped"): void;
   update(task: Task): void;
 }
 type FinishState = "completed" | "failed" | "cancelled";
@@ -33,7 +34,7 @@ type Slot =
   | { at: "stopping"; task: Task; requests: number[] }
   | { at: "cancel_first"; requests: number[] }
   | { at: "pending_update"; task: Task }
-  | { at: "ended" };
+  | { at: "ended"; lateFinish?: true };
 type State = {
   floor: number;
   supersededBelow: number;
@@ -51,7 +52,7 @@ type Input =
 type Effect =
   | { kind: "report"; body: ProtocolTypes["report.status"] }
   | { kind: "run" | "runNow" | "update"; task: Task }
-  | { kind: "stop"; id: number; because: "cancel" | "now" }
+  | { kind: "stop"; id: number; because: "cancel" | "now" | "dropped" }
   | { kind: "ready" };
 export interface Queue {
   apply(event: AssetEvent): void;
@@ -225,12 +226,14 @@ function reduce(
     }
     case "task.dropped": {
       const id = input.record.task_id;
-      if (
-        id !== undefined &&
-        slots.get(id)?.at !== "running" &&
-        slots.get(id)?.at !== "stopping"
-      ) {
-        slots.set(id, { at: "ended" });
+      if (id !== undefined) {
+        const slot = slots.get(id);
+        const running = slot?.at === "running" || slot?.at === "stopping";
+        slots.set(id, {
+          at: "ended",
+          ...(running ? { lateFinish: true as const } : {}),
+        });
+        if (running) effects.push({ kind: "stop", id, because: "dropped" });
         queue();
       }
       break;
@@ -254,6 +257,10 @@ function reduce(
     }
     case "finish": {
       const slot = slots.get(input.task_id);
+      if (slot?.at === "ended" && slot.lateFinish) {
+        final(input.task_id, input.state, [], input.fields);
+        break;
+      }
       if (slot?.at !== "running" && slot?.at !== "stopping")
         throw new Error("Only a running Task can finish");
       final(
@@ -280,7 +287,9 @@ export function createQueue(o: {
   emit(report: Report): void;
   clock: Clock;
   asset_id: string;
+  observer?: Observer;
 }): Queue {
+  const emit = diagnostics(o.clock, o.observer);
   let state: State = {
     floor: o.last_task_id,
     supersededBelow: 0,
@@ -288,17 +297,32 @@ export function createQueue(o: {
   };
   function apply(input: Input): Task | undefined {
     const result = reduce(state, input, o.asset_id, o.clock.now());
+    if (input.kind === "tasks.requested" || input.kind === "tasks.updated") {
+      const changed =
+        JSON.stringify([...state.slots]) !==
+        JSON.stringify([...result.state.slots]);
+      emit(changed ? "queue.applied" : "queue.ignored", {
+        request_id: input.event_id,
+      });
+    }
+    if (input.kind === "finish")
+      emit("task.finished", { task_id: input.task_id, state: input.state });
+    if (input.kind === "clear") emit("queue.cleared");
     state = result.state;
     let started: Task | undefined;
     for (const e of result.effects) {
       switch (e.kind) {
         case "report":
           o.emit(e.body);
+          if (e.body.kind === "task" && e.body.task_state === "cancelled")
+            emit("task.cancelled", { task_id: e.body.task_id });
           break;
         case "run":
+          emit("task.handed", { task_id: e.task.task_id });
           started = e.task;
           break;
         case "runNow":
+          emit("task.handed", { task_id: e.task.task_id });
           o.host.runNow(e.task);
           break;
         case "update":

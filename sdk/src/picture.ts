@@ -77,6 +77,8 @@ export function createLivePicture(
           value.time,
           snapshot.as_of,
         ]);
+      for (const [key, value] of Object.entries(a.gimbals))
+        latest.set(`gimbal:${a.asset_id}:${key}`, [value.time, snapshot.as_of]);
       for (const [key, value] of Object.entries(a.reports))
         latest.set(`report:${a.asset_id}:${key}`, [value.time, snapshot.as_of]);
       const t = await client.call("tasks", {
@@ -100,21 +102,24 @@ export function createLivePicture(
     for (const t of snapshot.tracks) tracks.set(t.track_id, t);
     for (const g of snapshot.geofeatures) geofeatures.set(g.geofeature_id, g);
     ready = true;
-    stream = follow(
-      client,
-      { after: Math.min(...after), asset_id: options.asset_id },
-      apply,
-    );
+    stream = follow(client, { after: Math.min(...after) }, apply);
     notify();
   }
   function apply(e: AtlasEvent) {
-    if (e.event_id > (marks.get("entities") ?? 0)) {
+    const belongs =
+      !options.asset_id ||
+      !("asset_id" in e.record) ||
+      e.record.asset_id === options.asset_id;
+    if (
+      e.event_id > (marks.get("entities") ?? 0) &&
+      (belongs || e.kind === "report.observation")
+    ) {
       switch (e.kind) {
         case "asset.registered": {
           const id = e.record.asset_id;
           assets.set(id, {
             asset_id: id,
-            gateway_id: null,
+            gateway_id: e.record.requested_by ?? null,
             description: null,
             contact: { time: e.time, asset_id: id, contact: "online" },
             reports: {},
@@ -201,6 +206,7 @@ export function createLivePicture(
                 a.gimbals[e.record.camera_id] = e.record;
             }
             if (
+              e.kind !== "report.gimbal" &&
               e.kind.startsWith("report.") &&
               "type" in e.record &&
               newer(`report:${a.asset_id}:${e.kind}`, e.record.time, e.event_id)
@@ -212,6 +218,7 @@ export function createLivePicture(
     }
     if (e.kind === "tasks.requested" || e.kind === "tasks.updated") {
       for (const task of e.record) {
+        if (options.asset_id && task.asset_id !== options.asset_id) continue;
         if (e.event_id <= (marks.get(task.asset_id) ?? 0)) continue;
         let part = tasks.get(task.asset_id);
         if (!part) {
@@ -221,7 +228,7 @@ export function createLivePicture(
         const old = part.get(task.task_id);
         part.set(task.task_id, {
           task,
-          state: old?.state ?? "requested",
+          state: old?.state ?? "sent",
           state_time: old?.state_time ?? task.time,
         });
       }
@@ -231,7 +238,20 @@ export function createLivePicture(
       e.event_id > (marks.get(e.record.asset_id) ?? 0)
     ) {
       const task = tasks.get(e.record.asset_id)?.get(e.record.task_id);
-      if (task)
+      const rank: Record<string, number> = {
+        sent: 0,
+        queued: 1,
+        active: 2,
+        completed: 3,
+        failed: 3,
+        cancelled: 3,
+        dropped: 3,
+      };
+      if (
+        task &&
+        rank[task.state] < 3 &&
+        rank[e.record.task_state] > rank[task.state]
+      )
         Object.assign(task, {
           state: e.record.task_state,
           state_time: e.record.time,

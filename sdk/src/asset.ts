@@ -1,3 +1,5 @@
+import { internal } from "./internal.ts";
+import { diagnostics, type Observer } from "./diagnostics.ts";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import type { Client, Result } from "./client.ts";
 import type { Clock } from "./clock.ts";
@@ -47,7 +49,9 @@ export function createOutbox(
   link: AssetLink,
   clock: Clock,
   heartbeatMs = 10000,
+  observer?: Observer,
 ) {
+  const emit = diagnostics(clock, observer);
   const live: Report[] = [],
     retained: Report[] = [];
   let stopped = false,
@@ -65,16 +69,8 @@ export function createOutbox(
       do {
         const lane = live.length ? live : retained;
         if (!lane.length && !heartbeat) break;
-        const sorted = lane
-          .map((r, i) => ({ r, i }))
-          .sort(
-            (a, b) =>
-              Number(mustArrive(b.r)) - Number(mustArrive(a.r)) || a.i - b.i,
-          );
-        const batch = sorted.slice(0, 1000).map((v) => v.r);
-        const chosen = new Set(sorted.slice(0, 1000).map((v) => v.i));
-        const rest = lane.filter((_, i) => !chosen.has(i));
-        lane.splice(0, lane.length, ...rest);
+        const batch = lane.slice(0, 1000);
+        emit("batch.sent", { count: batch.length });
         const result = await link.sendReports(
           batch,
           batch.some(mustArrive) ? "must_arrive" : "can_skip",
@@ -84,12 +80,17 @@ export function createOutbox(
           for (const cb of listeners) cb(result);
           break;
         }
+        emit("batch.acknowledged", { count: batch.length });
+        lane.splice(0, batch.length);
         heartbeat = false;
       } while (!stopped && (live.length || retained.length));
     })().finally(() => {
       flight = undefined;
       timer.cancel();
-      if (!stopped && !blocked) timer = clock.after(heartbeatMs, beat);
+      if (!stopped && !blocked) {
+        timer = clock.after(heartbeatMs, beat);
+        if (live.length || retained.length) void flush();
+      }
     });
     return flight;
   }
@@ -117,6 +118,7 @@ export function createOutbox(
 export interface AssetOptions {
   clock: Clock;
   heartbeatMs?: number;
+  observer?: Observer;
   queue?: QueueHost;
   settings(): P["report.settings"]["settings"];
   onSettings?(
@@ -130,10 +132,16 @@ export function runAsset(
   options: AssetOptions,
 ) {
   const { asset_id } = registration;
-  const outbox = createOutbox(link, options.clock, options.heartbeatMs);
+  const outbox = createOutbox(
+    link,
+    options.clock,
+    options.heartbeatMs,
+    options.observer,
+  );
   const queue = options.queue
     ? createQueue({
         asset_id,
+        observer: options.observer,
         last_task_id: registration.last_task_id,
         clock: options.clock,
         host: options.queue,
@@ -195,7 +203,11 @@ export function runAsset(
 }
 async function known<T>(initial: Promise<Result<T>>): Promise<Result<T>> {
   let result = await initial;
-  while (!result.ok && result.error === "unknown" && result.retry)
+  while (
+    !result.ok &&
+    result.retry &&
+    (result.error === "unknown" || (result.status ?? 0) >= 500)
+  )
     result = await result.retry();
   return result;
 }
@@ -260,9 +272,22 @@ export async function startAsset(
       }
     },
     async sendReports(reports) {
-      const result = await known(
-        client.call("sendReports", { params: { asset_id }, body: { reports } }),
-      );
+      let result = await client.call("sendReports", {
+        params: { asset_id },
+        body: { reports },
+      });
+      while (
+        !result.ok &&
+        result.retry &&
+        (result.error === "unknown" || (result.status ?? 0) >= 500)
+      ) {
+        internal(client).emit("batch.resent", {
+          count: reports.length,
+          status: result.status ?? 0,
+        });
+        await new Promise<void>((resolve) => options.clock.after(500, resolve));
+        result = await result.retry();
+      }
       if (result.ok) return { ok: true };
       return {
         ok: false,
@@ -305,7 +330,14 @@ export async function startAsset(
       );
     },
   };
-  session = runAsset(link, { asset_id, after: as_of, last_task_id }, options);
+  session = runAsset(
+    link,
+    { asset_id, after: as_of, last_task_id },
+    {
+      ...options,
+      observer: options.observer ?? internal(client).options.observer,
+    },
+  );
   const running = session;
   const ready = await running.ready;
   if (!ready.ok) {

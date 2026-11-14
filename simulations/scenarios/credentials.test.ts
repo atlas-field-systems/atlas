@@ -25,7 +25,7 @@ scenario({
       await w.complete(w.admin.call("replaceAssetKey", { params })),
     );
     assert.ok("replaced" in lost && !("key" in lost));
-    const rejected = await w.complete(old.call("about"));
+    const rejected = await w.complete(old.connect());
     assert.ok(
       !rejected.ok && rejected.status === 401,
       "lost replacement rotates once and invalidates old key",
@@ -63,7 +63,7 @@ scenario({
           await w.complete(w.admin.call("replaceGatewayKey", { params })),
         );
         assert.ok("replaced" in ack && !("key" in ack));
-        const rejected = await w.complete(old.call("about"));
+        const rejected = await w.complete(old.connect());
         assert.ok(!rejected.ok && rejected.status === 401);
         assert.ok(
           "key" in
@@ -92,7 +92,7 @@ scenario({
           await w.complete(w.admin.call("replacePluginKey", { params })),
         );
         assert.ok("replaced" in ack && !("key" in ack));
-        const rejected = await w.complete(old.call("about"));
+        const rejected = await w.complete(old.connect());
         assert.ok(!rejected.ok && rejected.status === 401);
         assert.ok(
           "key" in
