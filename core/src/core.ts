@@ -116,7 +116,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     ) {
       const password = (
         await readFile(config.first_admin.password_file, "utf8")
-      ).trimEnd();
+      ).replace(/\r?\n$/, "");
       const hash = await admin.hashPassword(password);
       store.write((tx) =>
         admin.ensureFirstAdmin(tx, config.first_admin!.operator_id, hash),

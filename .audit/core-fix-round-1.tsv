@@ -19,3 +19,4 @@ finding	choice	evidence	result
 17	Shared settings admission checks failsafe response commands against description	F17 PATCH and settings Task both accepted unsupported land	Full suite green
 17-note	Existing flying-policy fixture used land while declaring only takeoff and hold; declare land to keep its safe-policy acceptance scenario valid	No existing assertions removed or relaxed	Full suite green
 18	Keep per-Asset last-heard arrival time after offline; pass contact evidence to Reset summary	F18 empty reports absent from summary before fix	Full suite green; crash interval arrival times remain unavailable by design
+19	Remove exactly one terminal LF or CRLF from bootstrap password file	F19 exact trailing-space password was refused	Full suite green

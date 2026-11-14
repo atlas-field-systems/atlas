@@ -642,3 +642,44 @@ test("F18 Reset summary uses contact with no domain event [reset.md#cores-reset-
     await h.close();
   }
 });
+test("F19 bootstrap removes only one trailing newline [config.md]", async () => {
+  const { startCore } = await import("../src/core.ts"),
+    { mkdtemp, writeFile, rm } = await import("node:fs/promises"),
+    { tmpdir } = await import("node:os"),
+    { join } = await import("node:path");
+  const dir = await mkdtemp(join(tmpdir(), "atlas-password-"));
+  let core: Awaited<ReturnType<typeof startCore>> | undefined;
+  try {
+    const exact = "bootstrap-password-with-space ";
+    await writeFile(join(dir, "pw"), exact + "\n");
+    core = await startCore({
+      clock: simulatedClock(),
+      config: {
+        data_directory: dir,
+        listen_address: "127.0.0.1",
+        port: 0,
+        first_admin: { operator_id: "ADM", password_file: join(dir, "pw") },
+      },
+    });
+    for (const [password, status] of [
+      [exact, 200],
+      [exact.trimEnd(), 401],
+    ] as const) {
+      const r: Response = await fetch(core.url + "/administration/login", {
+        method: "POST",
+        headers: {
+          "atlas-definitions": protocol.hash,
+          "idempotency-key": crypto.randomUUID(),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ operator_id: "ADM", password }),
+      });
+      await r.text();
+      assert.equal(r.status, status);
+    }
+  } finally {
+    await core?.stop();
+    await rm(dir, { recursive: true, force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
+  }
+});
