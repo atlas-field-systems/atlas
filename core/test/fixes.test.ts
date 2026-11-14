@@ -443,12 +443,17 @@ test("F13 logout clears cookies and stale cookies allow public routes [api.md#ca
   const h = await startHarness();
   try {
     const logout = await h.call("POST", "/administration/logout", {
-      cookie: h.admin,
+      cookie: h.admin, idem: "logout-retry",
     });
     assert.match(
       logout.headers.get("set-cookie") ?? "",
       /atlas_session=;.*Max-Age=0/,
     );
+    const retry = await h.call("POST", "/administration/logout", {cookie: h.admin, idem: "logout-retry"});
+    assert.equal(retry.status, logout.status);
+    assert.deepEqual(retry.body, logout.body);
+    assert.equal(retry.headers.get("set-cookie"), logout.headers.get("set-cookie"));
+    assert.equal((await h.call("POST", "/administration/logout", {cookie: h.admin})).status, 401);
     assert.equal(
       (await h.call("GET", "/about", { cookie: h.admin })).status,
       200,

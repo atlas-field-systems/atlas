@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   token_hash  TEXT PRIMARY KEY,
   run_id      INTEGER NOT NULL,            -- a session ends with its run; a crash ends none
   operator_id TEXT NOT NULL REFERENCES accounts(operator_id) ON DELETE CASCADE,
-  created_at  INTEGER NOT NULL
+  created_at  INTEGER NOT NULL,
+  ended       INTEGER NOT NULL DEFAULT 0
 );`,
   },
   {
@@ -82,6 +83,7 @@ export type Issued<Shown, Ack> = { shown: Shown; ack: Ack };
 export function callerFor(
   tx: ReadTx,
   credential: { bearer: string } | { session: string } | null,
+  includeEnded = false,
 ): Caller | undefined {
   if (!credential) return { kind: "anonymous" };
   if ("session" in credential) {
@@ -90,9 +92,10 @@ export function callerFor(
       admin: number;
       token_hash: string;
     }>(
-      "SELECT a.operator_id,a.admin,s.token_hash FROM sessions s JOIN accounts a USING(operator_id) WHERE s.run_id=? AND s.token_hash=?",
+      "SELECT a.operator_id,a.admin,s.token_hash FROM sessions s JOIN accounts a USING(operator_id) WHERE s.run_id=? AND s.token_hash=? AND (s.ended=0 OR ?)",
       tx.runId,
       digest(credential.session),
+      includeEnded ? 1 : 0,
     );
     return row
       ? {
@@ -154,7 +157,7 @@ export function createSession(
   requireRow(tx, "accounts", "operator_id", operator_id);
   const token = randomBytes(32).toString("base64url");
   tx.run(
-    "INSERT INTO sessions VALUES (?,?,?,?)",
+    "INSERT INTO sessions(token_hash,run_id,operator_id,created_at) VALUES (?,?,?,?)",
     digest(token),
     tx.runId,
     operator_id,
@@ -169,7 +172,7 @@ export function createSession(
 }
 export function endSession(tx: Tx, token_hash: string): void {
   tx.run(
-    "DELETE FROM sessions WHERE token_hash=? AND run_id=?",
+    "UPDATE sessions SET ended=1 WHERE token_hash=? AND run_id=?",
     token_hash,
     tx.runId,
   );

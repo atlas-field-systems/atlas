@@ -84,8 +84,9 @@ export async function startServer(
         return;
       }
       const credential = credentialOf(req.headers);
+      const logout = route.path === "/administration/logout";
       const resolveCaller = (tx: import("../store/db.ts").ReadTx) =>
-        callerFor(tx, credential) ??
+        callerFor(tx, credential, logout) ??
         (credential && "session" in credential && route.who.includes("public")
           ? { kind: "anonymous" as const }
           : null);
@@ -266,7 +267,7 @@ export async function startServer(
           refuse("invalid", "This route takes no body");
       }
       const login = url.pathname === "/administration/login";
-      const scope = login ? "login" : principal.scope;
+      const scope = login ? "login" : logout && caller.kind === "account" ? `logout:${caller.token_hash}` : principal.scope;
       let fp: string;
       if (login) {
         loginKey = key;
@@ -324,6 +325,7 @@ export async function startServer(
               );
             return prior.retained;
           }
+          if (logout && !callerFor(tx, credential)) refuse("unauthenticated", "Session has ended");
           const before = tx.get<{ n: number }>("SELECT total_changes() n")!.n;
           const result = route.commit(tx, request, prepared);
           const first = "first" in result ? result.first : result;

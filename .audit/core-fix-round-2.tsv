@@ -4,3 +4,4 @@ finding	choice	evidence	result
 5	Resolve data path before deriving sibling archive	F14 trailing-slash start rejected before fix	Full suite green; deslop reviewed
 6	Require live Plugin or removal history before call list	F11 got 200 for never-provisioned Plugin	Full suite green; deslop reviewed
 7	Skip unchanged Track writes at Entities boundary	F16 got three updates instead of two	Full suite green; deslop reviewed
+8	Ended sessions identify only logout retries; scope retry by session hash	F13 retry returned 401 instead of 200	Full suite green; deslop reviewed
