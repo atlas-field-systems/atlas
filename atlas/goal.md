@@ -10,6 +10,9 @@ Atlas is for one person in a field, testing drones and sensors. Today that
 person is the owner. Usually one operator controls several Assets. Sometimes
 there is more than one operator.
 
+One Core may run several gateways at once, as long as their radio links
+cannot clash ([Scale](scale.md#setup)).
+
 Atlas is a platform for experiments. It is not yet a product that has to work
 every time. The owner will say when that changes.
 
@@ -65,11 +68,6 @@ other part of Atlas exists to serve those three.
 The owner wants each of these one day. None is designed or built now. Today's
 work must not rule them out, and must not grow to make room for them.
 
-- **Several gateways on one Core.** Gateways whose radio links cannot clash
-  may run together: in different areas, such as two gateways 20 miles apart,
-  or in one area on different bands, such as an FLRC gateway beside a
-  Meshtastic gateway. Atlas today is designed around one gateway
-  ([Open](#open)).
 - **Live video.** A video feed is an Object, and it plays only while someone
   has it open. An example is a 5.8 GHz video receiver plugged into a gateway.
   The operator links the feed to an Asset by hand, and then watches it on that
@@ -112,7 +110,7 @@ operations.
 
 That full simulation cannot run yet, because the Asset app, the gateway app,
 and the Fieldlinks are not built. The
-[proposed build order](build-order.md) says what to build next.
+[build order](build-order.md) says what to build next.
 
 ## The test question
 
@@ -121,12 +119,3 @@ Hold every new idea against one question: is this overcomplicated?
 Atlas aims for systems that are simple and elegant. Complexity for its own
 sake is not worth having. When a hard problem needs complexity, look for the
 simpler solution first ([Proven and lean](design-decisions.md#proven-and-lean)).
-
-## Open
-
-**The gateway rule.** The current rule is
-[one site per Core, with one gateway](scale.md#setup). Several gateways on one
-Core reverses it, and the reversal gets its own pull request. An Asset always
-uses exactly one gateway. Core already lets an admin add more than one gateway
-and records which gateway carries each Asset, so the reversal is mostly a
-change to the pages that teach the old rule.

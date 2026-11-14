@@ -686,3 +686,45 @@ test("an Asset follows every event with everything=true (Core API, Callers and c
     await h.stop();
   }
 });
+
+test("two gateways on one Core each carry only their own radio Assets (Scale, Setup; Core API, Radio Assets)", async () => {
+  const h = await startHarness();
+  try {
+    const radio = async () => {
+      const g = (
+        await h.call("POST", "/administration/gateways", { cookie: h.admin })
+      ).body;
+      const r = await h.call("POST", "/entities/assets/radios", {
+        key: g.key,
+        body: { definitions_hash: protocol.hash },
+      });
+      assert.equal(r.status, 201, JSON.stringify(r.body));
+      return { gateway_id: g.gateway_id, key: g.key, asset_id: r.body.asset_id };
+    };
+    const north = await radio();
+    const south = await radio();
+    const carriers = Object.fromEntries(
+      (
+        await h.call("GET", "/entities/assets", { cookie: h.admin })
+      ).body.items.map((a: { asset_id: string; gateway_id: string }) => [
+        a.asset_id,
+        a.gateway_id,
+      ]),
+    );
+    assert.deepEqual(carriers, {
+      [north.asset_id]: north.gateway_id,
+      [south.asset_id]: south.gateway_id,
+    });
+    assert.equal(
+      (
+        await h.call("POST", `/entities/assets/${north.asset_id}/reports`, {
+          key: south.key,
+          body: { reports: [] },
+        })
+      ).status,
+      403,
+    );
+  } finally {
+    await h.stop();
+  }
+});
