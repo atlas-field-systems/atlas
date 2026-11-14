@@ -410,7 +410,10 @@ test("F10 login retry keys bind the complete body across accounts [api.md#basics
 test("F11 removed Plugin call history remains readable [api.md#plugins]", async () => {
   const h = await startHarness();
   try {
-    assert.equal((await h.call("GET", "/plugins/ZZZZ/calls", {cookie: h.admin})).status, 404);
+    assert.equal(
+      (await h.call("GET", "/plugins/ZZZZ/calls", { cookie: h.admin })).status,
+      404,
+    );
     const p = await plugin(h),
       base = `/plugins/${p.plugin_id}`;
     const call = await h.call("POST", base + "/actions/find", {
@@ -444,17 +447,28 @@ test("F13 logout clears cookies and stale cookies allow public routes [api.md#ca
   const h = await startHarness();
   try {
     const logout = await h.call("POST", "/administration/logout", {
-      cookie: h.admin, idem: "logout-retry",
+      cookie: h.admin,
+      idem: "logout-retry",
     });
     assert.match(
       logout.headers.get("set-cookie") ?? "",
       /atlas_session=;.*Max-Age=0/,
     );
-    const retry = await h.call("POST", "/administration/logout", {cookie: h.admin, idem: "logout-retry"});
+    const retry = await h.call("POST", "/administration/logout", {
+      cookie: h.admin,
+      idem: "logout-retry",
+    });
     assert.equal(retry.status, logout.status);
     assert.deepEqual(retry.body, logout.body);
-    assert.equal(retry.headers.get("set-cookie"), logout.headers.get("set-cookie"));
-    assert.equal((await h.call("POST", "/administration/logout", {cookie: h.admin})).status, 401);
+    assert.equal(
+      retry.headers.get("set-cookie"),
+      logout.headers.get("set-cookie"),
+    );
+    assert.equal(
+      (await h.call("POST", "/administration/logout", { cookie: h.admin }))
+        .status,
+      401,
+    );
     assert.equal(
       (await h.call("GET", "/about", { cookie: h.admin })).status,
       200,
@@ -506,7 +520,14 @@ test("F14 startup refuses archives within data including symlink aliases [config
         await started?.stop();
       }
     }
-    const started = await startCore({clock: simulatedClock(), config: {data_directory: dir + "/", listen_address: "127.0.0.1", port: 0}});
+    const started = await startCore({
+      clock: simulatedClock(),
+      config: {
+        data_directory: dir + "/",
+        listen_address: "127.0.0.1",
+        port: 0,
+      },
+    });
     const stopped = await started.stop();
     assert.ok(stopped.archived);
     assert.ok(stopped.zip.startsWith(dir + "-archive/"));
@@ -570,9 +591,23 @@ test("F16 equal-time later Observations update Tracks and bearings clear positio
           position,
         },
       ]);
-    const beforeRepeat = (await events(h)).filter(e => e.kind === "track.updated").length;
-    await report(h, a, [{type: "report.observation", kind: "coordinates", time: c.now(), asset_id: a.id, observation_id: "O1", position: {latitude: 2, longitude: 0}}]);
-    assert.equal((await events(h)).filter(e => e.kind === "track.updated").length, beforeRepeat);
+    const beforeRepeat = (await events(h)).filter(
+      (e) => e.kind === "track.updated",
+    ).length;
+    await report(h, a, [
+      {
+        type: "report.observation",
+        kind: "coordinates",
+        time: c.now(),
+        asset_id: a.id,
+        observation_id: "O1",
+        position: { latitude: 2, longitude: 0 },
+      },
+    ]);
+    assert.equal(
+      (await events(h)).filter((e) => e.kind === "track.updated").length,
+      beforeRepeat,
+    );
     let tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin }))
       .body.items;
     assert.equal(tracks[0].position.latitude, 2);
@@ -624,16 +659,30 @@ test("F17 failsafe responses must name supported commands [api.md#operator-reque
       [patch.body.error, queued.body.error],
       ["not_supported", "not_supported"],
     );
-    const captureSettings = {failsafe_policy: [{rule_id: "R2", priority: 1, conditions: [{kind: "commanded"}], response: {kind: "capture", camera_id: "NOPE", media: "photo"}}]};
+    const captureSettings = {
+      failsafe_policy: [
+        {
+          rule_id: "R2",
+          priority: 1,
+          conditions: [{ kind: "commanded" }],
+          response: { kind: "capture", camera_id: "NOPE", media: "photo" },
+        },
+      ],
+    };
     const cameraAsset = await asset(h);
     for (const result of [
-      await h.call("PATCH", `/entities/assets/${cameraAsset.id}/settings`, {cookie: h.admin, body: {settings: captureSettings}}),
-      await task(h, cameraAsset.id, {tasks: [{kind: "settings", settings: captureSettings}]}),
-    ]) assert.equal(result.body.error, "not_supported");
+      await h.call("PATCH", `/entities/assets/${cameraAsset.id}/settings`, {
+        cookie: h.admin,
+        body: { settings: captureSettings },
+      }),
+      await task(h, cameraAsset.id, {
+        tasks: [{ kind: "settings", settings: captureSettings }],
+      }),
+    ])
+      assert.equal(result.body.error, "not_supported");
   } finally {
     await h.close();
   }
-
 });
 test("F18 Reset summary uses contact with no domain event [reset.md#cores-reset-zip]", async () => {
   const { readZip } = await import("../src/reset/zip.ts");
@@ -753,106 +802,271 @@ test("F20 event streams never renew Asset or Plugin contact [api.md#contact, api
 test("R2-3 summary uses recipient and answer-kind settlement [reset.md#cores-reset-zip]", async () => {
   const h = await startHarness();
   try {
-    const p = await plugin(h), a = await asset(h);
-    const call = await h.call("POST", `/plugins/${p.plugin_id}/actions/find`, {cookie: h.admin, body: {inputs: []}});
+    const p = await plugin(h),
+      a = await asset(h);
+    const call = await h.call("POST", `/plugins/${p.plugin_id}/actions/find`, {
+      cookie: h.admin,
+      body: { inputs: [] },
+    });
     await report(h, a, [queue(a.id, 1794560400000, 0, call.body.event_id)]);
-    assert.equal((await h.call("POST", `/plugins/${p.plugin_id}/answers`, {key: p.key, body: {type: "plugin.result", time: 1794560400000, plugin_id: p.plugin_id, request_id: call.body.event_id}})).status, 200);
+    assert.equal(
+      (
+        await h.call("POST", `/plugins/${p.plugin_id}/answers`, {
+          key: p.key,
+          body: {
+            type: "plugin.result",
+            time: 1794560400000,
+            plugin_id: p.plugin_id,
+            request_id: call.body.event_id,
+          },
+        })
+      ).status,
+      200,
+    );
     const stopped = await h.core.stop();
     assert.ok(stopped.archived);
-    const {execFileSync} = await import("node:child_process");
-    assert.ok(execFileSync("unzip", ["-p", stopped.zip, "summary.md"], {encoding: "utf8"}).includes(`Plugin call ${call.body.event_id}: plugin.result.`));
-  } finally { await h.close(); }
+    const { execFileSync } = await import("node:child_process");
+    assert.ok(
+      execFileSync("unzip", ["-p", stopped.zip, "summary.md"], {
+        encoding: "utf8",
+      }).includes(`Plugin call ${call.body.event_id}: plugin.result.`),
+    );
+  } finally {
+    await h.close();
+  }
 });
 
-test("R2-9 uploads admitted before stop finish in grace [reset.md#stopping-core-ends-the-run]", {timeout: 10000}, async () => {
-  const {connect} = await import("node:net");
-  const c = simulatedClock(), h = await startHarness(c);
-  const socket = connect(Number(new URL(h.core.url).port), "127.0.0.1");
-  let response = "";
-  socket.setEncoding("utf8");
-  socket.on("data", chunk => response += chunk);
-  const ended = new Promise<void>(resolve => socket.on("end", resolve));
-  try {
-    await new Promise<void>(resolve => socket.once("connect", resolve));
-    socket.write(`POST /objects?name=grace HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nCookie: ${h.admin}\r\nAtlas-Definitions: ${protocol.hash}\r\nIdempotency-Key: grace\r\nContent-Type: application/octet-stream\r\nContent-Length: 2\r\n\r\nx`);
-    await h.call("GET", "/about");
-    const stop = h.core.stop();
-    socket.write("y");
-    await ended;
-    assert.match(response, /^HTTP\/1.1 201 /);
-    assert.ok((await stop).archived);
-  } finally { socket.destroy(); c.advance(5000); await h.close(); }
-});
+test(
+  "R2-9 uploads admitted before stop finish in grace [reset.md#stopping-core-ends-the-run]",
+  { timeout: 10000 },
+  async () => {
+    const { connect } = await import("node:net");
+    const c = simulatedClock(),
+      h = await startHarness(c);
+    const socket = connect(Number(new URL(h.core.url).port), "127.0.0.1");
+    let response = "";
+    socket.setEncoding("utf8");
+    socket.on("data", (chunk) => (response += chunk));
+    const ended = new Promise<void>((resolve) => socket.on("end", resolve));
+    try {
+      await new Promise<void>((resolve) => socket.once("connect", resolve));
+      socket.write(
+        `POST /objects?name=grace HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nCookie: ${h.admin}\r\nAtlas-Definitions: ${protocol.hash}\r\nIdempotency-Key: grace\r\nContent-Type: application/octet-stream\r\nContent-Length: 2\r\n\r\nx`,
+      );
+      await h.call("GET", "/about");
+      const stop = h.core.stop();
+      socket.write("y");
+      await ended;
+      assert.match(response, /^HTTP\/1.1 201 /);
+      assert.ok((await stop).archived);
+    } finally {
+      socket.destroy();
+      c.advance(5000);
+      await h.close();
+    }
+  },
+);
 
 test("R2-10 unregistered key mismatches are diagnostics once per hash [api.md#basics]", async () => {
-  const h = await startHarness(undefined, {debug_endpoint: true});
+  const h = await startHarness(undefined, { debug_endpoint: true });
   try {
-    const issued = (await h.call("POST", "/administration/asset-keys", {cookie: h.admin})).body;
+    const issued = (
+      await h.call("POST", "/administration/asset-keys", { cookie: h.admin })
+    ).body;
     for (const hash of ["sha256:ab", "sha256:ab", "sha256:cd"]) {
-      const response = await fetch(h.core.url + "/about", {headers: {authorization: `Bearer ${issued.key}`, "atlas-definitions": hash}});
-      assert.equal(response.status, 200); await response.text();
+      const response = await fetch(h.core.url + "/about", {
+        headers: {
+          authorization: `Bearer ${issued.key}`,
+          "atlas-definitions": hash,
+        },
+      });
+      assert.equal(response.status, 200);
+      await response.text();
     }
-    const rows = (await (await fetch(h.core.debugUrl!)).text()).trim().split("\n").map(line => JSON.parse(line));
-    assert.deepEqual(rows.filter(r => r.msg === "Unregistered Asset definitions mismatch").map(r => [r.key_id, r.definitions_hash]), [[issued.key_id, "sha256:ab"], [issued.key_id, "sha256:cd"]]);
-    const snapshot = await h.call("GET", "/entities", {cookie: h.admin});
+    const rows = (await (await fetch(h.core.debugUrl!)).text())
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.deepEqual(
+      rows
+        .filter((r) => r.msg === "Unregistered Asset definitions mismatch")
+        .map((r) => [r.key_id, r.definitions_hash]),
+      [
+        [issued.key_id, "sha256:ab"],
+        [issued.key_id, "sha256:cd"],
+      ],
+    );
+    const snapshot = await h.call("GET", "/entities", { cookie: h.admin });
     assert.equal(snapshot.body.as_of, 0);
-  } finally { await h.close(); }
+  } finally {
+    await h.close();
+  }
 });
 
 async function crashCore(config: Record<string, unknown>) {
-  const {mkdtemp, writeFile, rm, readdir} = await import("node:fs/promises");
-  const {tmpdir} = await import("node:os");
-  const {join} = await import("node:path");
-  const {spawn, execFileSync} = await import("node:child_process");
+  const { mkdtemp, writeFile, rm, readdir } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { spawn, execFileSync } = await import("node:child_process");
   const dir = await mkdtemp(join(tmpdir(), "atlas-round2-crash-"));
   await writeFile(join(dir, "pw"), "crash-contract-password");
-  await writeFile(join(dir, "config.json"), JSON.stringify({data_directory: dir, listen_address: "127.0.0.1", port: 0, first_admin: {operator_id: "ADM", password_file: join(dir, "pw")}, ...config}));
-  let url = "", debugUrl = "";
+  await writeFile(
+    join(dir, "config.json"),
+    JSON.stringify({
+      data_directory: dir,
+      listen_address: "127.0.0.1",
+      port: 0,
+      first_admin: { operator_id: "ADM", password_file: join(dir, "pw") },
+      ...config,
+    }),
+  );
+  let url = "",
+    debugUrl = "";
   let child: ReturnType<typeof spawn>;
   async function start() {
-    child = spawn(process.execPath, ["src/main.ts", join(dir, "config.json")], {stdio: ["ignore", "pipe", "pipe"]});
-    let output = "", errors = "";
-    child.stderr!.on("data", chunk => errors += chunk);
+    child = spawn(process.execPath, ["src/main.ts", join(dir, "config.json")], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let output = "",
+      errors = "";
+    child.stderr!.on("data", (chunk) => (errors += chunk));
     await new Promise<void>((resolve, reject) => {
       child.once("error", reject);
-      child.once("exit", code => reject(new Error(`Core exited ${code}: ${errors}`)));
-      child.stdout!.on("data", chunk => {
+      child.once("exit", (code) =>
+        reject(new Error(`Core exited ${code}: ${errors}`)),
+      );
+      child.stdout!.on("data", (chunk) => {
         output += chunk;
-        if (output.includes("\n")) { const ready = JSON.parse(output.split("\n")[0]); url = ready.url; debugUrl = ready.debug_url; resolve(); }
+        if (output.includes("\n")) {
+          const ready = JSON.parse(output.split("\n")[0]);
+          url = ready.url;
+          debugUrl = ready.debug_url;
+          resolve();
+        }
       });
     });
   }
   async function kill(signal: "SIGTERM" | "SIGKILL") {
-    const exited = once(child, "exit"); child.kill(signal); await exited;
+    const exited = once(child, "exit");
+    child.kill(signal);
+    await exited;
   }
   await start();
-  const call = async (path: string, body?: unknown, key?: string, cookie?: string) => {
-    const response = await fetch(url + path, {method: body === undefined ? "GET" : "POST", headers: {"atlas-definitions": protocol.hash, "idempotency-key": crypto.randomUUID(), "content-type": "application/json", ...(key ? {authorization: `Bearer ${key}`} : {}), ...(cookie ? {cookie} : {})}, ...(body === undefined ? {} : {body: JSON.stringify(body)})});
+  const call = async (
+    path: string,
+    body?: unknown,
+    key?: string,
+    cookie?: string,
+  ) => {
+    const response = await fetch(url + path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: {
+        "atlas-definitions": protocol.hash,
+        "idempotency-key": crypto.randomUUID(),
+        "content-type": "application/json",
+        ...(key ? { authorization: `Bearer ${key}` } : {}),
+        ...(cookie ? { cookie } : {}),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
     assert.ok(response.ok, await response.clone().text());
-    return {body: await response.json(), headers: response.headers};
+    return { body: await response.json(), headers: response.headers };
   };
-  const login = await call("/administration/login", {operator_id: "ADM", password: "crash-contract-password"});
+  const login = await call("/administration/login", {
+    operator_id: "ADM",
+    password: "crash-contract-password",
+  });
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
-  return {call, cookie,
-    async flush() { await (await fetch(debugUrl)).text(); },
-    async crash() { await kill("SIGKILL"); await start(); },
+  return {
+    call,
+    cookie,
+    async flush() {
+      await (await fetch(debugUrl)).text();
+    },
+    async crash() {
+      await kill("SIGKILL");
+      await start();
+    },
     async archive() {
       await kill("SIGTERM");
       const [file] = await readdir(dir + "-archive");
-      return (name: string) => execFileSync("unzip", ["-p", join(dir + "-archive", file), name], {encoding: "utf8"});
+      return (name: string) =>
+        execFileSync("unzip", ["-p", join(dir + "-archive", file), name], {
+          encoding: "utf8",
+        });
     },
-    async close() { if (child!.exitCode === null && child!.signalCode === null) await kill("SIGKILL"); await rm(dir, {recursive: true, force: true}); await rm(dir + "-archive", {recursive: true, force: true}); },
+    async close() {
+      if (child!.exitCode === null && child!.signalCode === null)
+        await kill("SIGKILL");
+      await rm(dir, { recursive: true, force: true });
+      await rm(dir + "-archive", { recursive: true, force: true });
+    },
   };
 }
 
 test("R2-1 diagnostic losses survive SIGKILL at total limit [logging.md#when-logging-cannot-keep-up]", async () => {
-  const h = await crashCore({log_total_limit_bytes: 2048, log_file_limit_bytes: 2048, debug_endpoint: true});
+  const h = await crashCore({
+    log_total_limit_bytes: 2048,
+    log_file_limit_bytes: 2048,
+    debug_endpoint: true,
+  });
   try {
     for (let i = 0; i < 60; i++) await h.call("/about");
     await h.flush();
     await h.crash();
-    const zip = await h.archive(), manifest = JSON.parse(zip("manifest.json"));
-    const written = Object.keys(manifest.files).filter(name => name.startsWith("diagnostics/")).reduce((n, name) => n + zip(name).trim().split("\n").length, 0);
-    assert.ok(manifest.gaps.reduce((n: number, gap: {lost: number}) => n + (gap.lost ?? 0), 0) >= 60 - written, "pre-crash losses must survive");
-  } finally { await h.close(); }
+    const zip = await h.archive(),
+      manifest = JSON.parse(zip("manifest.json"));
+    const written = Object.keys(manifest.files)
+      .filter((name) => name.startsWith("diagnostics/"))
+      .reduce((n, name) => n + zip(name).trim().split("\n").length, 0);
+    assert.ok(
+      manifest.gaps.reduce(
+        (n: number, gap: { lost: number }) => n + (gap.lost ?? 0),
+        0,
+      ) >=
+        60 - written,
+      "pre-crash losses must survive",
+    );
+  } finally {
+    await h.close();
+  }
+});
+
+test("R2-2 Reset preserves actual last heard across SIGKILL [reset.md#cores-reset-zip]", async () => {
+  const h = await crashCore({ offline_after_s: 1 });
+  try {
+    const issued = (
+      await h.call("/administration/asset-keys", {}, undefined, h.cookie)
+    ).body;
+    const registered = (
+      await h.call("/entities/assets", description, issued.key)
+    ).body;
+    const before = Date.now();
+    await h.call(
+      `/entities/assets/${registered.asset_id}/reports`,
+      { reports: [] },
+      issued.key,
+    );
+    const after = Date.now();
+    await h.crash();
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    const snapshot = await h.call(
+      `/entities/assets/${registered.asset_id}`,
+      undefined,
+      undefined,
+      h.cookie,
+    );
+    assert.equal(snapshot.body.item.contact.contact, "offline");
+    const zip = await h.archive();
+    const line = zip("summary.md")
+      .split("\n")
+      .find((line) => line.startsWith(`Asset ${registered.asset_id},`))!;
+    const last = Number(line.match(/last heard (\d+)/)![1]);
+    assert.ok(
+      last >= before && last <= after,
+      `${last} must be between ${before} and ${after}`,
+    );
+  } finally {
+    await h.close();
+  }
 });

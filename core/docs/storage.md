@@ -83,3 +83,7 @@ Diagnostic loss counts are durable run metadata in `data_directory/diagnostic-ga
 Core replaces the run's loss ledger atomically after each counted loss, separately
 from the capped diagnostic files. Reset includes the counts in its manifest and
 summary and removes the ledger only after checking the ZIP.
+
+Entities keeps each Asset's actual last arrival in `asset_heard`, including empty
+report batches. Contact deadlines restart at resume independently of this evidence;
+Reset uses the stored arrival rather than the later offline transition.

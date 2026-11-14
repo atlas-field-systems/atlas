@@ -96,10 +96,14 @@ export function startLog(
       });
     if (gapFile) {
       try {
-        writeFileSync(gapFile + ".partial", JSON.stringify(gaps), {flush: true});
+        writeFileSync(gapFile + ".partial", JSON.stringify(gaps), {
+          flush: true,
+        });
         renameSync(gapFile + ".partial", gapFile);
       } catch (error) {
-        process.stderr.write(`Diagnostic loss accounting failed: ${String(error)}\n`);
+        process.stderr.write(
+          `Diagnostic loss accounting failed: ${String(error)}\n`,
+        );
       }
     }
   };
@@ -195,16 +199,19 @@ export function startLog(
           }
         } catch {}
       }
-      mkdirSync(options.gapDirectory, {recursive: true});
+      mkdirSync(options.gapDirectory, { recursive: true });
       gapFile = join(options.gapDirectory, `run-${id}.json`);
       try {
         const saved = JSON.parse(readFileSync(gapFile, "utf8"));
         gaps.splice(0, gaps.length, ...saved);
       } catch (error) {
-        if (!(error instanceof Error && Reflect.get(error, "code") === "ENOENT")) throw error;
+        if (
+          !(error instanceof Error && Reflect.get(error, "code") === "ENOENT")
+        )
+          throw error;
       }
-      n = Math.max(n, ...gaps.map(g => g.to_n));
-      atLimit = gaps.some(g => g.why === "total limit");
+      n = Math.max(n, ...gaps.map((g) => g.to_n));
+      atLimit = gaps.some((g) => g.why === "total limit");
       const names = files(directory);
       total = names.reduce(
         (sum, name) => sum + statSync(join(directory, name)).size,

@@ -44,7 +44,9 @@ export type ConfigProblem = { key: string; explanation: string };
 export function resolveConfig(
   partial: Partial<CoreConfig>,
 ): { ok: true; config: CoreConfig } | { ok: false; problems: ConfigProblem[] } {
-  const dataDirectory = resolve(partial.data_directory ?? CONFIG_DEFAULTS.data_directory);
+  const dataDirectory = resolve(
+    partial.data_directory ?? CONFIG_DEFAULTS.data_directory,
+  );
   const config = {
     ...CONFIG_DEFAULTS,
     log_directory: join(dataDirectory, "diagnostics"),

@@ -33,6 +33,19 @@ type Report =
 export const TABLES: TableDef[] = [
   {
     owner: "entities",
+    name: "asset_heard",
+    runScoped: true,
+    ddl: `
+CREATE TABLE IF NOT EXISTS asset_heard (
+  run_id     INTEGER NOT NULL,
+  asset_id   TEXT NOT NULL,
+  last_heard INTEGER NOT NULL,
+  PRIMARY KEY(run_id,asset_id)
+);`,
+  },
+
+  {
+    owner: "entities",
     name: "assets",
     runScoped: true,
     ddl: `
@@ -222,6 +235,7 @@ export function storeReports(
   reports: unknown[],
 ): { stored: number } {
   requireAsset(tx, asset_id);
+  noteHeard(tx, asset_id);
   for (const [i, value] of reports.entries()) {
     if (
       !value ||
@@ -266,6 +280,7 @@ export function applyContact(
   const row = requireAsset(tx, asset_id);
   if (record.asset_id !== asset_id)
     refuse("invalid", "Contact Asset differs from path");
+  if (record.contact === "online") noteHeard(tx, asset_id);
   if (JSON.parse(row.contact).contact === record.contact)
     return { changed: false };
   tx.run(
@@ -665,8 +680,13 @@ export function putTrack(
     ...track,
     track_id: track.track_id ?? encodeShortId(nextRunSeq(tx, "track")),
   };
-  const old = tx.get<{record: string}>("SELECT record FROM tracks WHERE run_id=? AND track_id=?", tx.runId, record.track_id);
-  if (old && isDeepStrictEqual(JSON.parse(old.record), record)) return record.track_id;
+  const old = tx.get<{ record: string }>(
+    "SELECT record FROM tracks WHERE run_id=? AND track_id=?",
+    tx.runId,
+    record.track_id,
+  );
+  if (old && isDeepStrictEqual(JSON.parse(old.record), record))
+    return record.track_id;
   tx.run(
     "INSERT INTO tracks VALUES (?,?,?) ON CONFLICT(run_id,track_id) DO UPDATE SET record=excluded.record",
     tx.runId,
@@ -815,9 +835,31 @@ export function createdFor(tx: ReadTx, id: string, call: number): boolean {
   );
 }
 
-export function checkCommand(description: Description, command: {kind: string; camera_id?: string}): void {
-  if (!description.commands.includes(command.kind as Description["commands"][number]))
+export function checkCommand(
+  description: Description,
+  command: { kind: Description["commands"][number]; camera_id?: string },
+): void {
+  if (!description.commands.includes(command.kind))
     refuse("not_supported", "Command is not declared");
-  if (command.kind === "capture" && !description.cameras?.some(c => c.camera_id === command.camera_id))
+  if (
+    command.kind === "capture" &&
+    !description.cameras?.some((c) => c.camera_id === command.camera_id)
+  )
     refuse("not_supported", "Camera is not declared");
+}
+
+export function noteHeard(tx: Tx, asset_id: string): void {
+  tx.run(
+    "INSERT INTO asset_heard VALUES (?,?,?) ON CONFLICT(run_id,asset_id) DO UPDATE SET last_heard=excluded.last_heard",
+    tx.runId,
+    asset_id,
+    tx.now,
+  );
+}
+export function lastHeard(tx: ReadTx, asset_id: string): number | undefined {
+  return tx.get<{ last_heard: number }>(
+    "SELECT last_heard FROM asset_heard WHERE run_id=? AND asset_id=?",
+    tx.runId,
+    asset_id,
+  )?.last_heard;
 }

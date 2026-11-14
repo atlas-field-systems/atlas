@@ -9,11 +9,8 @@ import { Refusal } from "./api/errors.ts";
  * Entities.applyContact, Administration.setGatewayContact, and
  * Administration.setPluginContact, each in a transaction with its event.
  *
- * What it keeps is in memory: when each subject was last heard. That is
- * deliberate. reset.md#when-core-stops-unexpectedly says a resumed run starts
- * its contact view again ("not heard within offline_after_s of the start shows
- * offline"), so last-heard times need not survive a crash, and keeping them in
- * memory saves a database write on every request a gateway, Plugin, or Asset makes.
+ * Deadlines restart on resume. Actual Asset arrival times are persisted by
+ * Entities separately so Reset can report them after a crash.
  *
  * One timer, on the injected clock, set for the earliest deadline
  * (lastHeard + offline_after_s). When it fires, every subject past its
@@ -30,7 +27,9 @@ import type { Clock } from "./clock.ts";
 import type { Store } from "./store/db.ts";
 
 export type Subject =
-  { asset_id: string } | { gateway_id: string } | { plugin_id: string };
+  | { asset_id: string }
+  | { gateway_id: string }
+  | { plugin_id: string };
 
 export interface Contact {
   /**
@@ -56,7 +55,6 @@ export function startContact(
     string,
     { who: Subject; at: number; retryAt?: number }
   >();
-  const lastHeard = new Map<string, number>();
   let timer: ReturnType<Clock["after"]> | undefined;
   let stopped = false;
   const key = (who: Subject) =>
@@ -130,7 +128,6 @@ export function startContact(
     heard(who) {
       if (stopped) return;
       transition(who, "online", clock.now());
-      if ("asset_id" in who) lastHeard.set(who.asset_id, clock.now());
       heard.set(key(who), { who, at: clock.now() });
       schedule();
     },
@@ -147,7 +144,7 @@ export function startContact(
       schedule();
     },
     lastHeard(asset_id) {
-      return lastHeard.get(asset_id);
+      return store.read((tx) => entities.lastHeard(tx, asset_id));
     },
     stop() {
       stopped = true;

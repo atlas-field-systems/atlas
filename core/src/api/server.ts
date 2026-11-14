@@ -63,6 +63,7 @@ export async function startServer(
       res.end(JSON.stringify(body));
     };
     try {
+      if (stopping) refuse("stopping", "Core is stopping");
       const url = new URL(req.url ?? "/", "http://core");
       const selected = match(req.method ?? "GET", url.pathname);
       if ("status" in selected) {
@@ -71,7 +72,6 @@ export async function startServer(
         });
         return;
       }
-      if (stopping) refuse("stopping", "Core is stopping");
       const { route, params } = selected;
       routePath = route.path;
       if (route.path === "/debug/:segment/log") {
@@ -124,7 +124,8 @@ export async function startServer(
                   ? caller.plugin_id
                   : entities.assetForKey(tx, caller.key_id);
             if (!value) {
-              if (caller.kind === "asset") unregisteredMismatch(tx, caller.key_id, hash);
+              if (caller.kind === "asset")
+                unregisteredMismatch(tx, caller.key_id, hash);
               return;
             }
             const record = { time: tx.now, ...id, definitions_hash: hash };
@@ -271,7 +272,7 @@ export async function startServer(
           refuse("invalid", "This route takes no body");
       }
       const login = url.pathname === "/administration/login";
-      const scope = login ? "login" : logout && caller.kind === "account" ? `logout:${caller.token_hash}` : principal.scope;
+      const scope = login ? "login" : principal.scope;
       let fp: string;
       if (login) {
         loginKey = key;
@@ -328,7 +329,8 @@ export async function startServer(
               );
             return prior.retained;
           }
-          if (logout && !callerFor(tx, credential)) refuse("unauthenticated", "Session has ended");
+          if (logout && !callerFor(tx, credential))
+            refuse("unauthenticated", "Session has ended");
           const before = tx.get<{ n: number }>("SELECT total_changes() n")!.n;
           const result = route.commit(tx, request, prepared);
           const first = "first" in result ? result.first : result;

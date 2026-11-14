@@ -4,7 +4,13 @@ finding	choice	evidence	result
 5	Resolve data path before deriving sibling archive	F14 trailing-slash start rejected before fix	Full suite green; deslop reviewed
 6	Require live Plugin or removal history before call list	F11 got 200 for never-provisioned Plugin	Full suite green; deslop reviewed
 7	Skip unchanged Track writes at Entities boundary	F16 got three updates instead of two	Full suite green; deslop reviewed
-8	Ended sessions identify only logout retries; scope retry by session hash	F13 retry returned 401 instead of 200	Full suite green; deslop reviewed
+8	Ended sessions identify only logout retries; preserve account retry scope	F13 retry returned 401 instead of 200	Full suite green; deslop reviewed
 9	Stop admission is checked once when request starts; document grace	R2-9 upload completed with 503 before fix	Full suite green; deslop reviewed
 10	Run-scoped key/hash diagnostic deduplication with console record; clarify API	R2-10 diagnostic records were absent	Full suite green; deslop reviewed
 1	Atomically persist loss ranges outside capped diagnostic files; restore numbering and cap state	R2-1 pre-crash losses absent; log-crash now reports 23 lost	Full suite green; deslop reviewed; metadata ledger is a documented sketch deviation
+2	Persist Asset arrivals in Entities independently of resumed contact deadlines	R2-2 summary used resume time outside actual arrival bounds	Full suite green; no in-memory evidence loss
+2-deviation	Add asset_heard and asset_key_mismatches run metadata; retain ended session identities solely for logout retry resolution	Crash evidence and diagnostic-only deduplication cannot be represented by domain events	No new dependency; owning storage and API docs updated
+2-deslop	Review f913be2..HEAD plus final diff; remove command-kind cast; retain account retry scope; format changed code and restore unrelated formatting	Fix Root Causes moved state persistence to evidence owners; Type System Discipline derives supported kinds from Protocol	No weakened tests, new any casts, mocks, or dependencies
+2-probes	Replay all 21 HTTP probes unchanged plus all four process scenarios	20/21 HTTP pass; R6b expects superseded event; R2-10 proves settled diagnostic-only rule; final R13b passes	log-crash 42 written plus 23 lost; summary within 13 ms of response; grace upload 201; archive-slash starts
+2-verification	Core typecheck and full suite; Protocol check and suite; root link and retired checks	Core 44/44; Protocol 175 definitions and 91/91; 887 links; 66 retired rules	Passed; evidence retained locally under .audit/round-2-evidence
+2-limits	SIGKILL recovery verified; physical power loss, disk-failure loss-ledger durability, existing-database schema upgrade, equipment and deployed TLS not verified	Fresh greenfield databases and local HTTP/process contracts were exercised	No push or PR

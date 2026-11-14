@@ -34,7 +34,8 @@ export interface RunningCore {
 }
 
 export type StopResult =
-  { archived: true; zip: string } | { archived: false; explanation: string }; // reset.md#when-the-zip-fails: nothing cleared
+  | { archived: true; zip: string }
+  | { archived: false; explanation: string }; // reset.md#when-the-zip-fails: nothing cleared
 
 export interface Env {
   readonly protocol: Protocol; // loadPackagedProtocol(), loaded once

@@ -10,7 +10,18 @@ type Contact = ProtocolTypes["contact"];
 type PluginDescription = ProtocolTypes["plugin.description"];
 
 export const TABLES: TableDef[] = [
-  {owner: "administration", name: "asset_key_mismatches", runScoped: true, ddl: `CREATE TABLE IF NOT EXISTS asset_key_mismatches (run_id INTEGER NOT NULL, key_id TEXT NOT NULL, definitions_hash TEXT NOT NULL, PRIMARY KEY(run_id,key_id,definitions_hash));`},
+  {
+    owner: "administration",
+    name: "asset_key_mismatches",
+    runScoped: true,
+    ddl: `
+CREATE TABLE IF NOT EXISTS asset_key_mismatches (
+  run_id           INTEGER NOT NULL,
+  key_id           TEXT NOT NULL,
+  definitions_hash TEXT NOT NULL,
+  PRIMARY KEY(run_id,key_id,definitions_hash)
+);`,
+  },
 
   {
     owner: "administration",
@@ -514,9 +525,26 @@ function replace(tx: Tx, table: string, column: string, id: string): string {
   return key;
 }
 
-export function unregisteredMismatch(tx: Tx, key_id: string, definitions_hash: string): void {
-  const inserted = tx.run("INSERT OR IGNORE INTO asset_key_mismatches VALUES (?,?,?)", tx.runId, key_id, definitions_hash);
+export function unregisteredMismatch(
+  tx: Tx,
+  key_id: string,
+  definitions_hash: string,
+): void {
+  const inserted = tx.run(
+    "INSERT OR IGNORE INTO asset_key_mismatches VALUES (?,?,?)",
+    tx.runId,
+    key_id,
+    definitions_hash,
+  );
   if (!inserted.changes) return;
-  tx.env.log.record({level: "warn", area: "definitions", msg: "Unregistered Asset definitions mismatch", key_id, definitions_hash});
-  process.stderr.write(`Unregistered Asset key ${key_id} uses definitions ${definitions_hash}\n`);
+  tx.env.log.record({
+    level: "warn",
+    area: "definitions",
+    msg: "Unregistered Asset definitions mismatch",
+    key_id,
+    definitions_hash,
+  });
+  process.stderr.write(
+    `Unregistered Asset key ${key_id} uses definitions ${definitions_hash}\n`,
+  );
 }
