@@ -31,7 +31,9 @@ export function scenario(spec: {
       const folder = resolve(
         root,
         "simulations/.runs",
-        `${spec.name.replace(/[^a-z0-9-]/gi, "-")}-${spec.seed ?? 0}`,
+        spec.seed === undefined
+          ? `${spec.name.replace(/[^a-z0-9-]/gi, "-")}-0`
+          : spec.name.replace(/[^a-z0-9-]/gi, "-"),
       );
       await mkdir(folder, { recursive: true });
       await writeFile(

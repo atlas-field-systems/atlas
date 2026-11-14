@@ -71,6 +71,11 @@ test("crash resumes and deliberate stop archives then starts an empty run [core/
         { encoding: "buffer" },
       )
     ).stdout;
+    for (const secret of network.secrets)
+      assert.ok(
+        !archive.includes(Buffer.from(secret)),
+        "Reset ZIP contains no issued credential",
+      );
     assert.ok(
       archive.includes(Buffer.from("Before crash")),
       "ZIP holds old run evidence",

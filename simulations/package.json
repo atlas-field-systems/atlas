@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test --test-timeout=30000 scenarios/*.test.ts"
+    "test": "node --test --test-timeout=30000 scenarios/*.test.ts faults/*.test.ts"
   },
   "dependencies": {
     "@atlas/sdk": "file:../sdk",

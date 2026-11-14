@@ -13,6 +13,7 @@ export type Traffic = {
   status?: number;
   fault?: Fault;
   body?: unknown;
+  response?: unknown;
 };
 export class Network {
   private rules: Rule[] = [];
@@ -22,6 +23,9 @@ export class Network {
   private streams = new Map<string, Set<AbortController>>();
   readonly traffic: Traffic[] = [];
   activity = 0;
+  seed: number | undefined;
+  readonly secrets = new Set<string>();
+  private counts = new Map<string, number>();
   chunkTurnDelay = false;
   clock: SimClock;
   constructor(clock: SimClock) {
@@ -61,7 +65,24 @@ export class Network {
         (r) => r.remaining > 0 && r.caller === caller && r.path === path,
       );
       if (rule) rule.remaining--;
-      const fault = rule?.fault;
+      const counter = `${caller}:${init.method ?? "GET"}:${path}`;
+      const n = (this.counts.get(counter) ?? 0) + 1;
+      this.counts.set(counter, n);
+      const choice =
+        this.seed === undefined ? 1 : faultChoice(this.seed, caller, path, n);
+      const seeded: Fault | undefined =
+        path.startsWith("/administration") || path === "/about"
+          ? undefined
+          : choice < 0.08
+            ? { kind: "loseRequest" }
+            : choice < 0.16 && path !== "/events"
+              ? { kind: "loseResponse" }
+              : choice < 0.24 && path !== "/events"
+                ? { kind: "repeat" }
+                : choice < 0.32 && path === "/events"
+                  ? { kind: "cutStream" }
+                  : undefined;
+      const fault = rule?.fault ?? seeded;
       const headers = new Headers(init.headers);
       if (cookie) headers.set("Cookie", cookie);
       const traffic: Traffic = {
@@ -99,6 +120,26 @@ export class Network {
           fetch(input, { ...init, headers, signal: controller.signal });
         let response = await send();
         traffic.status = response.status;
+        if (
+          path !== "/events" &&
+          response.headers.get("content-type")?.includes("json")
+        ) {
+          const received: unknown = await response.clone().json();
+          if (path.startsWith("/administration")) {
+            if (
+              received &&
+              typeof received === "object" &&
+              "key" in received &&
+              typeof received.key === "string"
+            )
+              this.secrets.add(received.key);
+          } else traffic.response = received;
+        }
+        const setCookie = response.headers.get("set-cookie");
+        if (setCookie)
+          this.secrets.add(
+            setCookie.split(";")[0].split("=").slice(1).join("="),
+          );
         if (fault?.kind === "repeat") {
           await response.arrayBuffer();
           response = await send();
