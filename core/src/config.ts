@@ -23,7 +23,7 @@ export const CONFIG_DEFAULTS: Omit<
   CoreConfig,
   "log_directory" | "archive_directory"
 > = {
-  listen_address: "0.0.0.0",
+  listen_address: "127.0.0.1",
   port: 8443,
   tls_certificate: null,
   tls_key: null,

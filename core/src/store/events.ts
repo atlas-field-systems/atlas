@@ -213,17 +213,42 @@ export function appendEvent<K extends EventKind>(
     extra?.requested_by ?? null,
     extra?.clock_ahead ? 1 : 0,
   )!.id;
-  if (kind.endsWith(".contact") || kind.startsWith("track.") || kind.endsWith(".dropped")) {
-    const subject = kind === "asset.contact" ? "Asset" : kind === "gateway.contact" ? "Gateway" : "Plugin";
+  if (
+    kind.endsWith(".contact") ||
+    kind.startsWith("track.") ||
+    kind.endsWith(".dropped")
+  ) {
+    const subject =
+      kind === "asset.contact"
+        ? "Asset"
+        : kind === "gateway.contact"
+          ? "Gateway"
+          : "Plugin";
     const details: Record<string, unknown> = {};
-    for (const field of ["asset_id", "gateway_id", "plugin_id", "track_id", "task_id", "request_id", "contact"])
+    for (const field of [
+      "asset_id",
+      "gateway_id",
+      "plugin_id",
+      "track_id",
+      "task_id",
+      "request_id",
+      "contact",
+    ])
       if (field in record) details[field] = Reflect.get(record, field);
     tx.env.log.record({
       ...details,
+      ...(kind.endsWith(".contact")
+        ? { last_heard: Reflect.get(record, "time") }
+        : {}),
       level: "info",
-      area: kind.startsWith("track.") ? "fusion" : kind.endsWith(".contact") ? "contact" : "requests",
+      area: kind.startsWith("track.")
+        ? "fusion"
+        : kind.endsWith(".contact")
+          ? "contact"
+          : "requests",
       msg: kind.endsWith(".contact") ? `${subject} contact changed` : kind,
-      kind, event_id,
+      kind,
+      event_id,
     });
   }
   return event_id;

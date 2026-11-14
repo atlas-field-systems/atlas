@@ -1363,3 +1363,20 @@ test("R3-7 Reset state retains removed gateways and Plugins [reset.md#cores-rese
     await h.close();
   }
 });
+
+test("R3-8 default listen starts on loopback without TLS [config.md#defaults]", async () => {
+  const h = await crashCore({ listen_address: undefined });
+  try {
+    await h.call("/about");
+    const { startCore } = await import("../src/core.ts");
+    await assert.rejects(
+      startCore({
+        clock: simulatedClock(),
+        config: { listen_address: "0.0.0.0" },
+      }),
+      /plain HTTP requires loopback/,
+    );
+  } finally {
+    await h.close();
+  }
+});

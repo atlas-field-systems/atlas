@@ -357,5 +357,10 @@
     "phrase": "<data_directory>/archive",
     "why": "Core archives live outside data_directory so Reset cannot erase its ZIP.",
     "example": "The archive default is <data_directory>/archive."
+  },
+  {
+    "phrase": "0\\.0\\.0\\.0,\\s*8443\\b",
+    "why": "Core defaults to loopback so startup without TLS succeeds.",
+    "example": "`0.0.0.0`, `8443`; set TLS files for this address"
   }
 ]

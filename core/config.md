@@ -13,7 +13,7 @@ for HTTPS. Without them Core listens only on loopback.
 
 | Option | Default |
 | --- | --- |
-| `listen_address`, `port` | `0.0.0.0`, `8443`; set TLS files for this address |
+| `listen_address`, `port` | `127.0.0.1`, `8443`; without TLS, a non-loopback address is refused |
 | `tls_certificate`, `tls_key` | `null`, `null` |
 | `data_directory` | `/var/lib/atlas-core` |
 | `first_admin` | `null`; or `{operator_id, password_file}`, used only if no account exists |

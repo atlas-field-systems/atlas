@@ -10,7 +10,7 @@ import { Refusal } from "./api/errors.ts";
  * Administration.setPluginContact, each in a transaction with its event.
  *
  * Deadlines restart on resume. Actual arrival times are persisted by
- * The owning pillars separately so Reset can report them after a crash.
+ * the owning pillars separately so Reset can report them after a crash.
  *
  * One timer, on the injected clock, set for the earliest deadline
  * (lastHeard + offline_after_s). When it fires, every subject past its
@@ -141,12 +141,18 @@ export function startContact(
         ];
       });
       for (const who of subjects) {
-        const at = store.read(tx => "asset_id" in who
-          ? entities.lastHeard(tx, who.asset_id)
-          : "gateway_id" in who
-            ? admin.lastIdentityHeard(tx, "gateway", who.gateway_id)
-            : admin.lastIdentityHeard(tx, "plugin", who.plugin_id));
-        heard.set(key(who), { who, at: at ?? clock.now(), retryAt: clock.now() + offlineAfterMs });
+        const at = store.read((tx) =>
+          "asset_id" in who
+            ? entities.lastHeard(tx, who.asset_id)
+            : "gateway_id" in who
+              ? admin.lastIdentityHeard(tx, "gateway", who.gateway_id)
+              : admin.lastIdentityHeard(tx, "plugin", who.plugin_id),
+        );
+        heard.set(key(who), {
+          who,
+          at: at ?? clock.now(),
+          retryAt: clock.now() + offlineAfterMs,
+        });
       }
       schedule();
     },

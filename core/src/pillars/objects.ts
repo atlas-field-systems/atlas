@@ -68,8 +68,7 @@ export async function receive(
       content_type: contentType,
       size_bytes,
       sha256: hash.digest("hex"),
-      geotiff:
-        await isGeoTiff(handle, size_bytes),
+      geotiff: await isGeoTiff(handle, size_bytes),
     };
   } catch (error) {
     await rm(path, { force: true });
