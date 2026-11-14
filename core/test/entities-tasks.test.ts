@@ -303,7 +303,7 @@ test("8. offline drops are durable evidence and keyed stream skips dropped reque
     await h.close();
   }
 });
-test("9. quiet gateway takes radios offline; reports alone do not revive radio contact [api.md#contact]", async () => {
+test("9. quiet or removed gateway takes radios offline at their own last-heard time; reports alone do not revive radio contact [api.md#contact]", async () => {
   const c = simulatedClock(),
     h = await startHarness(c);
   try {
@@ -324,16 +324,36 @@ test("9. quiet gateway takes radios offline; reports alone do not revive radio c
       key: g.key,
       body: { time: c.now(), asset_id: id, contact: "online" },
     });
+    const heardAt = c.now();
     assert.equal((await task(h, id)).status, 202);
+    c.advance(10000);
+    await h.call("GET", "/about", { key: g.key });
     c.advance(30000);
-    assert.equal(
+    const contact = async () =>
       (await h.call("GET", `/entities/assets/${id}`, { cookie: h.admin })).body
-        .item.contact.contact,
-      "offline",
-    );
+        .item.contact;
+    assert.deepEqual(await contact(), {
+      time: heardAt,
+      asset_id: id,
+      contact: "offline",
+    });
     assert.equal((await task(h, id)).body.error, "asset_offline");
     await h.call("GET", "/about", { key: g.key });
     assert.equal((await task(h, id)).body.error, "asset_offline");
+    const backAt = c.now();
+    await h.call("PUT", `/entities/assets/${id}/contact`, {
+      key: g.key,
+      body: { time: backAt, asset_id: id, contact: "online" },
+    });
+    c.advance(5000);
+    await h.call("DELETE", `/administration/gateways/${g.gateway_id}`, {
+      cookie: h.admin,
+    });
+    assert.deepEqual(await contact(), {
+      time: backAt,
+      asset_id: id,
+      contact: "offline",
+    });
   } finally {
     await h.close();
   }

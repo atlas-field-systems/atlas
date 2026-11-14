@@ -82,7 +82,7 @@ export function startContact(
         )
           for (const asset_id of entities.carriedBy(tx, who.gateway_id))
             entities.applyContact(tx, asset_id, {
-              time: at,
+              time: entities.lastHeard(tx, asset_id) ?? at,
               asset_id,
               contact: state,
             });

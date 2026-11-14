@@ -299,7 +299,7 @@ export function removeGateway(
   });
   for (const asset_id of entities.carriedBy(tx, gateway_id))
     entities.applyContact(tx, asset_id, {
-      time: tx.now,
+      time: entities.lastHeard(tx, asset_id) ?? tx.now,
       asset_id,
       contact: "offline",
     });
