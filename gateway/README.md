@@ -65,15 +65,16 @@ works with.
 The gateway app logs both sides of the interface. The exact TypeScript
 interface is written with the first Fieldlink.
 
-## One gateway per site
+## One gateway per radio network
 
-A site runs one gateway at a time. Each radio Asset is carried by that gateway:
+Each radio network has one gateway, and a Core may run several gateways
+([Scale](../atlas/scale.md#setup)). Each radio Asset is carried by its network's gateway:
 the gateway hears it, makes its Core API calls, and reports its contact. Core
 shows which gateway carries each Asset. Core authenticates the gateway with its
 key and trusts it for which radio Asset sent what. A gateway can register radio
 Assets, but it cannot register an Asset on IP or issue a Core key. On a mesh
 Fieldlink such as [Meshtastic](../fieldlink/meshtastic/README.md), Assets talk to each other and to the one gateway,
-and many Assets ride on it; a SiK gateway carries one vehicle. Several gateways
+and many Assets ride on it; a SiK gateway carries one vehicle. Two gateways
 in one network are out of scope.
 
 How radio Assets register, keep their IDs, and what happens when the gateway

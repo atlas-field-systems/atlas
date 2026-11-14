@@ -372,5 +372,10 @@
     "phrase": "\\b(only )?accounts and plugins read (the picture|them)\\b|\\btasks reads belong to accounts\\b",
     "why": "Every caller with a credential reads everything Core holds.",
     "example": "Accounts and Plugins read the picture."
+  },
+  {
+    "phrase": "\\bone site per core\\b|\\bone gateway per site\\b|\\ba site (still )?runs one gateway at a time\\b|\\beach site has exactly one gateway\\b|\\bone gateway is deployed per area\\b",
+    "why": "One Core may run several gateways when their radio links cannot clash; each radio network has one gateway.",
+    "example": "A site runs one gateway at a time."
   }
 ]
