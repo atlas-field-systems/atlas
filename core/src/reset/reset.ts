@@ -39,6 +39,11 @@ export function clearRun(
     for (const table of [...tables].reverse())
       if (table.runScoped)
         tx.run(`DELETE FROM "${table.name}" WHERE run_id=?`, runId);
+    for (const table of ["gateways", "plugins"])
+      tx.run(
+        `DELETE FROM ${table} WHERE removed=1 AND contact_run_id=?`,
+        runId,
+      );
     tx.run(
       "UPDATE runs SET ended_at=?,outcome='archived',zip_name=? WHERE run_id=?",
       tx.now,

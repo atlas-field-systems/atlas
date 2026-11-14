@@ -11,7 +11,9 @@ type PluginDescription = ProtocolTypes["plugin.description"];
 
 export const TABLES: TableDef[] = [
   {
-    owner: "administration", name: "identity_heard", runScoped: true,
+    owner: "administration",
+    name: "identity_heard",
+    runScoped: true,
     ddl: `CREATE TABLE IF NOT EXISTS identity_heard (
       run_id INTEGER NOT NULL, kind TEXT NOT NULL, id TEXT NOT NULL,
       time INTEGER NOT NULL, PRIMARY KEY(run_id,kind,id)
@@ -71,7 +73,8 @@ CREATE TABLE IF NOT EXISTS asset_keys (
     ddl: `
 CREATE TABLE IF NOT EXISTS gateways (
   gateway_id     TEXT PRIMARY KEY,         -- from the global short-ID sequence, never reused
-  key_hash       TEXT NOT NULL UNIQUE,
+  key_hash       TEXT UNIQUE,
+  removed        INTEGER NOT NULL DEFAULT 0,
   contact_run_id INTEGER,                  -- contact belongs to a run: any other run reads as offline,
   contact        TEXT                      -- so a new run starts every gateway offline without a clear
 );`,
@@ -83,7 +86,8 @@ CREATE TABLE IF NOT EXISTS gateways (
     ddl: `
 CREATE TABLE IF NOT EXISTS plugins (
   plugin_id      TEXT PRIMARY KEY,
-  key_hash       TEXT NOT NULL UNIQUE,
+  key_hash       TEXT UNIQUE,
+  removed        INTEGER NOT NULL DEFAULT 0,
   description    TEXT,                     -- latest plugin.description; carried over runs ("installed Plugin setup")
   contact_run_id INTEGER,
   contact        TEXT
@@ -216,8 +220,14 @@ export function addAccount(
 ): { operator_id: string } {
   if (
     tx.get("SELECT 1 FROM accounts WHERE operator_id=?", body.operator_id) ||
-    tx.get("SELECT 1 FROM gateways WHERE gateway_id=?", body.operator_id) ||
-    tx.get("SELECT 1 FROM plugins WHERE plugin_id=?", body.operator_id) ||
+    tx.get(
+      "SELECT 1 FROM gateways WHERE gateway_id=? AND removed=0",
+      body.operator_id,
+    ) ||
+    tx.get(
+      "SELECT 1 FROM plugins WHERE plugin_id=? AND removed=0",
+      body.operator_id,
+    ) ||
     tx.get("SELECT 1 FROM asset_keys WHERE key_id=?", body.operator_id) ||
     entities.assetIdInUse(tx, body.operator_id)
   )
@@ -272,6 +282,11 @@ export function provisionGateway(
 > {
   const gateway_id = nextId(tx);
   const key = issue(tx, "gateways", "gateway_id", gateway_id);
+  tx.run(
+    "UPDATE gateways SET contact_run_id=? WHERE gateway_id=?",
+    tx.runId,
+    gateway_id,
+  );
   const event_id = tx.append("gateway.provisioned", {
     time: tx.now,
     gateway_id,
@@ -298,7 +313,16 @@ export function removeGateway(
   by: string,
 ): { event_id: number } {
   requireRow(tx, "gateways", "gateway_id", gateway_id);
-  tx.run("DELETE FROM gateways WHERE gateway_id=?", gateway_id);
+  tx.run(
+    "UPDATE gateways SET removed=1,key_hash=NULL,contact_run_id=?,contact=? WHERE gateway_id=?",
+    tx.runId,
+    JSON.stringify({
+      time: lastIdentityHeard(tx, "gateway", gateway_id) ?? tx.now,
+      gateway_id,
+      contact: "offline",
+    }),
+    gateway_id,
+  );
   const event_id = tx.append("gateway.removed", {
     time: tx.now,
     gateway_id,
@@ -322,6 +346,11 @@ export function provisionPlugin(
 > {
   const plugin_id = nextId(tx);
   const key = issue(tx, "plugins", "plugin_id", plugin_id);
+  tx.run(
+    "UPDATE plugins SET contact_run_id=? WHERE plugin_id=?",
+    tx.runId,
+    plugin_id,
+  );
   const event_id = tx.append("plugin.provisioned", {
     time: tx.now,
     plugin_id,
@@ -348,7 +377,16 @@ export function removePlugin(
   by: string,
 ): { event_id: number } {
   requireRow(tx, "plugins", "plugin_id", plugin_id);
-  tx.run("DELETE FROM plugins WHERE plugin_id=?", plugin_id);
+  tx.run(
+    "UPDATE plugins SET removed=1,key_hash=NULL,contact_run_id=?,contact=? WHERE plugin_id=?",
+    tx.runId,
+    JSON.stringify({
+      time: lastIdentityHeard(tx, "plugin", plugin_id) ?? tx.now,
+      plugin_id,
+      contact: "offline",
+    }),
+    plugin_id,
+  );
   const event_id = tx.append("plugin.removed", {
     time: tx.now,
     plugin_id,
@@ -362,7 +400,7 @@ export type ContactState = "online" | "offline";
 
 export function gatewayContact(tx: ReadTx, gateway_id: string): Contact {
   const row = tx.get<{ contact_run_id: number; contact: string | null }>(
-    "SELECT contact_run_id,contact FROM gateways WHERE gateway_id=?",
+    "SELECT contact_run_id,contact FROM gateways WHERE gateway_id=? AND removed=0",
     gateway_id,
   );
   if (!row) refuse("not_found", "No such gateway");
@@ -372,7 +410,7 @@ export function gatewayContact(tx: ReadTx, gateway_id: string): Contact {
 }
 export function pluginContact(tx: ReadTx, plugin_id: string): Contact {
   const row = tx.get<{ contact_run_id: number; contact: string | null }>(
-    "SELECT contact_run_id,contact FROM plugins WHERE plugin_id=?",
+    "SELECT contact_run_id,contact FROM plugins WHERE plugin_id=? AND removed=0",
     plugin_id,
   );
   if (!row) refuse("not_found", "No such plugin");
@@ -425,7 +463,7 @@ export function onlineGatewaysAndPlugins(tx: ReadTx): {
       .all<{
         gateway_id: string;
       }>(
-        "SELECT gateway_id FROM gateways WHERE contact_run_id=? AND json_extract(contact,'$.contact')='online'",
+        "SELECT gateway_id FROM gateways WHERE removed=0 AND contact_run_id=? AND json_extract(contact,'$.contact')='online'",
         tx.runId,
       )
       .map((r) => r.gateway_id),
@@ -433,7 +471,7 @@ export function onlineGatewaysAndPlugins(tx: ReadTx): {
       .all<{
         plugin_id: string;
       }>(
-        "SELECT plugin_id FROM plugins WHERE contact_run_id=? AND json_extract(contact,'$.contact')='online'",
+        "SELECT plugin_id FROM plugins WHERE removed=0 AND contact_run_id=? AND json_extract(contact,'$.contact')='online'",
         tx.runId,
       )
       .map((r) => r.plugin_id),
@@ -445,7 +483,7 @@ export function pluginDescription(
   plugin_id: string,
 ): PluginDescription | undefined {
   const row = tx.get<{ description: string | null }>(
-    "SELECT description FROM plugins WHERE plugin_id=?",
+    "SELECT description FROM plugins WHERE plugin_id=? AND removed=0",
     plugin_id,
   );
   return row?.description ? JSON.parse(row.description) : undefined;
@@ -471,7 +509,7 @@ export function listPlugins(tx: ReadTx): {
     .all<{
       plugin_id: string;
       description: string | null;
-    }>("SELECT plugin_id,description FROM plugins")
+    }>("SELECT plugin_id,description FROM plugins WHERE removed=0")
     .map((r) => ({
       plugin_id: r.plugin_id,
       description: r.description ? JSON.parse(r.description) : null,
@@ -484,9 +522,11 @@ export function exportRows(tx: ReadTx): {
   plugins: unknown[];
 } {
   return {
-    gateways: tx.all("SELECT gateway_id,contact_run_id,contact FROM gateways"),
+    gateways: tx.all(
+      "SELECT gateway_id,contact_run_id,contact FROM gateways WHERE removed=0",
+    ),
     plugins: tx.all(
-      "SELECT plugin_id,description,contact_run_id,contact FROM plugins",
+      "SELECT plugin_id,description,contact_run_id,contact FROM plugins WHERE removed=0",
     ),
   };
 }
@@ -515,7 +555,9 @@ function requireRow(
   column: string,
   id: string,
 ): void {
-  if (!tx.get(`SELECT 1 FROM ${table} WHERE ${column}=?`, id))
+  const active =
+    table === "gateways" || table === "plugins" ? " AND removed=0" : "";
+  if (!tx.get(`SELECT 1 FROM ${table} WHERE ${column}=?${active}`, id))
     refuse("not_found", "No such identity");
 }
 function issue(tx: Tx, table: string, column: string, id: string): string {
@@ -558,9 +600,28 @@ export function unregisteredMismatch(
   );
 }
 
-function noteIdentityHeard(tx: Tx, kind: "gateway" | "plugin", id: string): void {
-  tx.run("INSERT INTO identity_heard VALUES (?,?,?,?) ON CONFLICT(run_id,kind,id) DO UPDATE SET time=excluded.time", tx.runId, kind, id, tx.now);
+function noteIdentityHeard(
+  tx: Tx,
+  kind: "gateway" | "plugin",
+  id: string,
+): void {
+  tx.run(
+    "INSERT INTO identity_heard VALUES (?,?,?,?) ON CONFLICT(run_id,kind,id) DO UPDATE SET time=excluded.time",
+    tx.runId,
+    kind,
+    id,
+    tx.now,
+  );
 }
-export function lastIdentityHeard(tx: ReadTx, kind: "gateway" | "plugin", id: string): number | undefined {
-  return tx.get<{time: number}>("SELECT time FROM identity_heard WHERE run_id=? AND kind=? AND id=?", tx.runId, kind, id)?.time;
+export function lastIdentityHeard(
+  tx: ReadTx,
+  kind: "gateway" | "plugin",
+  id: string,
+): number | undefined {
+  return tx.get<{ time: number }>(
+    "SELECT time FROM identity_heard WHERE run_id=? AND kind=? AND id=?",
+    tx.runId,
+    kind,
+    id,
+  )?.time;
 }

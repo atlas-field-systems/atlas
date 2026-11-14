@@ -26,9 +26,9 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `idempotency_keys` | Shared | Each caller's keys for the run, with a hash of the body and the non-secret response or credential acknowledgment ([retry rules](api.md#callers-and-credentials)) |
 | `accounts` | Administration | Admin and operator accounts and their password hashes |
 | `sessions` | Administration | Each session's token hash and account, for the run |
-| `gateways` | Administration | Provisioned gateways, their key hashes, and contact |
+| `gateways` | Administration | Provisioned gateways, their key hashes, and contact; removed rows remain until their run clears |
 | `asset_keys` | Administration | Each Asset key's `key_id` and hash |
-| `plugins` | Administration | Provisioned Plugins: ID, key hash, latest description, and contact |
+| `plugins` | Administration | Provisioned Plugins: ID, key hash, latest description, and contact; removed rows remain until their run clears |
 | `objects` | Objects | Each Object record, a deleted one marked deleted. The files sit in the `data_directory` beside the database, deleted ones included |
 | `assets` | Entities | Each Asset registered in the run: `asset_id`, the Asset key or gateway that registered it, the gateway carrying a radio Asset, latest description, and contact. A removed Asset keeps its row, marked removed and not listed |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |

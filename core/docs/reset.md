@@ -58,6 +58,9 @@ process.
 | `config.json` | The resolved configuration, with secrets removed |
 | `versions.json` | Core's version, the Protocol package version, and the definitions hash |
 
+Removed gateways and Plugins keep their run-state rows marked removed, as Assets do.
+Their credentials stop working immediately; the checked clear removes those rows.
+
 `summary.md` says, in plain words:
 
 - The run's ID, its start and end, and each time Core stopped unexpectedly

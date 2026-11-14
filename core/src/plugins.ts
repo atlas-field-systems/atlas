@@ -159,7 +159,10 @@ export function calls(
   limit: number,
 ) {
   if (
-    !tx.get("SELECT 1 FROM plugins WHERE plugin_id=?", plugin_id) &&
+    !tx.get(
+      "SELECT 1 FROM plugins WHERE plugin_id=? AND removed=0",
+      plugin_id,
+    ) &&
     !tx.get(
       "SELECT 1 FROM events WHERE run_id=? AND kind='plugin.removed' AND plugin_id=?",
       tx.runId,

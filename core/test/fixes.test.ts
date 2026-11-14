@@ -1303,3 +1303,63 @@ test("R3-6 only event streams accept query definitions [api.md#basics, api.md#ob
     await h.close();
   }
 });
+
+test("R3-7 Reset state retains removed gateways and Plugins [reset.md#cores-reset-zip]", async () => {
+  const h = await startHarness();
+  try {
+    const g = (
+      await h.call("POST", "/administration/gateways", { cookie: h.admin })
+    ).body;
+    const neverHeard = (
+      await h.call("POST", "/administration/gateways", { cookie: h.admin })
+    ).body;
+    await h.call("GET", "/about", { key: g.key });
+    const p = await plugin(h);
+    for (const [kind, id] of [
+      ["gateways", g.gateway_id],
+      ["gateways", neverHeard.gateway_id],
+      ["plugins", p.plugin_id],
+    ])
+      assert.equal(
+        (
+          await h.call("DELETE", `/administration/${kind}/${id}`, {
+            cookie: h.admin,
+          })
+        ).status,
+        200,
+      );
+    assert.equal(
+      (await h.call("GET", "/entities/assets", { cookie: h.admin })).body
+        .gateways.length,
+      0,
+    );
+    assert.equal(
+      (await h.call("GET", "/plugins", { cookie: h.admin })).body.items.length,
+      0,
+    );
+    assert.equal((await h.call("GET", "/about", { key: g.key })).status, 401);
+    const stopped = await h.stop();
+    assert.ok(stopped.archived);
+    const { execFileSync } = await import("node:child_process");
+    for (const [table, column, ids] of [
+      ["gateways", "gateway_id", [g.gateway_id, neverHeard.gateway_id]],
+      ["plugins", "plugin_id", [p.plugin_id]],
+    ] as const) {
+      const rows: Record<string, unknown>[] = execFileSync(
+        "unzip",
+        ["-p", stopped.zip, `state/${table}.jsonl`],
+        { encoding: "utf8" },
+      )
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+      assert.deepEqual(
+        rows.map((row) => [row[column], row.removed]).sort(),
+        ids.map((id) => [id, 1]).sort(),
+      );
+    }
+  } finally {
+    await h.close();
+  }
+});

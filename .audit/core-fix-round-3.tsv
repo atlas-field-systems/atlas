@@ -5,3 +5,4 @@ finding	choice	evidence	result
 4	Keep listener through full grace, then close; advance injected test clocks for cleanup	R3-4 failed ECONNREFUSED; existing stalled-stop and admitted-upload assertions preserved	Core 47/47; typecheck; deslop reviewed
 5	Classify GeoTIFF from bytes independently of upload media type	Contract 19 failed 409 versus 200 for octet-stream; image/tiff assertions retained	Core 47/47; typecheck; deslop reviewed
 6	Allow definitions query fallback only for stream routes	R3-6 read returned 200 versus required 409; reads, upload, login and stream now checked	Core 48/48; typecheck; deslop reviewed
+7	Retain marked removed identities until checked clear; revoke keys; include provisioned never-heard subjects	R3-7 archive gateways were empty before fix	Core 49/49; typecheck; deslop reviewed
