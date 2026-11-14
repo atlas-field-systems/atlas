@@ -160,7 +160,6 @@ export function calls(
   cursor: Cursor | null,
   limit: number,
 ) {
-  admin.pluginContact(tx, plugin_id);
   const before = cursor === null ? Number.MAX_SAFE_INTEGER : Number(cursor);
   if (
     !Number.isSafeInteger(before) ||

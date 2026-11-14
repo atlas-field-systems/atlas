@@ -406,3 +406,23 @@ test("F10 login retry keys bind the complete body across accounts [api.md#basics
     await h.close();
   }
 });
+test("F11 removed Plugin call history remains readable [api.md#plugins]", async () => {
+  const h = await startHarness();
+  try {
+    const p = await plugin(h),
+      base = `/plugins/${p.plugin_id}`;
+    const call = await h.call("POST", base + "/actions/find", {
+      cookie: h.admin,
+      body: { inputs: [] },
+    });
+    await h.call("DELETE", `/administration/plugins/${p.plugin_id}`, {
+      cookie: h.admin,
+    });
+    const list = await h.call("GET", base + "/calls", { cookie: h.admin });
+    assert.equal(list.status, 200);
+    assert.equal(list.body.items[0].call.event_id, call.body.event_id);
+    assert.equal(list.body.items[0].answer.kind, "plugin.dropped");
+  } finally {
+    await h.close();
+  }
+});
