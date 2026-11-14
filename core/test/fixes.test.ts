@@ -499,9 +499,14 @@ test("F14 startup refuses archives within data including symlink aliases [config
         await started?.stop();
       }
     }
+    const started = await startCore({clock: simulatedClock(), config: {data_directory: dir + "/", listen_address: "127.0.0.1", port: 0}});
+    const stopped = await started.stop();
+    assert.ok(stopped.archived);
+    assert.ok(stopped.zip.startsWith(dir + "-archive/"));
   } finally {
     await rm(dir, { recursive: true, force: true });
     await rm(dir + "-alias", { force: true });
+    await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
 test("F15 streams end when their credential is revoked [api.md#callers-and-credentials]", async () => {

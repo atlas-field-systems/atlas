@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 export interface CoreConfig {
   listen_address: string;
   port: number;
@@ -44,10 +44,11 @@ export type ConfigProblem = { key: string; explanation: string };
 export function resolveConfig(
   partial: Partial<CoreConfig>,
 ): { ok: true; config: CoreConfig } | { ok: false; problems: ConfigProblem[] } {
+  const dataDirectory = resolve(partial.data_directory ?? CONFIG_DEFAULTS.data_directory);
   const config = {
     ...CONFIG_DEFAULTS,
-    log_directory: `${partial.data_directory ?? CONFIG_DEFAULTS.data_directory}/diagnostics`,
-    archive_directory: `${partial.data_directory ?? CONFIG_DEFAULTS.data_directory}-archive`,
+    log_directory: join(dataDirectory, "diagnostics"),
+    archive_directory: `${dataDirectory}-archive`,
     ...partial,
   };
   const problems: ConfigProblem[] = [];
