@@ -33,8 +33,8 @@ example:
 An Asset uses whatever it can read. A report it cannot read in full is skipped.
 
 Not every link can do this. A point-to-point link, such as SiK, has nothing to
-overhear. An Asset on IP would ask Core instead, and today Core lets an Asset
-read only its own entry.
+overhear. An Asset on IP asks Core instead, which lets every caller
+[read everything](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#reads).
 
 Open questions:
 

@@ -94,12 +94,15 @@ and `/debug` belong to no pillar and stay at the top level.
 
 ## Callers and credentials
 
-| Caller | Credential | Event stream shows |
+| Caller | Credential | Event stream shows by default |
 | --- | --- | --- |
 | Account (admin or operator) | Session cookie from `POST /administration/login` | Everything |
 | Asset on IP | Bearer Asset key | Requests for the Asset it registered, and drops of its Tasks |
 | Gateway | Bearer key | Requests for the Assets it carries, and drops of their Tasks |
 | Plugin | Bearer key | Calls addressed to it |
+
+By default a program's stream carries what it must act on. Any caller may add
+`everything=true` to follow every event, as an account does ([Reads](#reads)).
 
 - Accounts log in with `operator_id` and a password. Core stores password hashes
   (scrypt). The session cookie is `HttpOnly`, `Secure`, and `SameSite=Strict`, and
@@ -174,9 +177,10 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `geofeature.created`, `geofeature.replaced` | A caller creates or replaces a geo feature | `geofeature`, and the event carries `requested_by` |
 | `geofeature.deleted` | A caller deletes a geo feature | The `geofeature` as it last stood, and the event carries `requested_by` |
 
-`GET /events?after=<event_id>&asset_id=<id>` is a Server-Sent Events stream. Each
-message has `id: <event_id>`, `event: <kind>`, and the event as `data`. Both
-parameters are optional. A browser that reconnects sends `Last-Event-ID`, and Core
+`GET /events?after=<event_id>&asset_id=<id>&everything=true` is a Server-Sent
+Events stream. Each message has `id: <event_id>`, `event: <kind>`, and the event
+as `data`. Every parameter is optional. `asset_id` narrows a stream of every
+event to one Asset. A browser that reconnects sends `Last-Event-ID`, and Core
 resumes after it. Core sends a `: alive` comment every 10 s.
 Core closes streams by terminating their connection; a reader discards any
 incomplete event and resumes after its last fully handled `event_id`.
@@ -275,9 +279,11 @@ when it includes a settings Task. Send the rule as a settings change first.
 
 ## Reads
 
-Accounts read everything. Plugins read the picture and history. Assets read
-only their own Asset entry; gateways read only the Assets they carry. Tasks
-reads belong to accounts.
+Every caller with a credential reads everything: accounts, Assets, gateways, and
+Plugins see the same picture, Tasks, history, Objects, and Plugin calls. Core
+keeps no data from a connected program. Keys and password hashes are never
+returned to anyone, and [`/administration`](#callers-and-credentials) stays with
+admins.
 
 `GET /entities/assets` returns `{as_of, items, gateways}`. Each Asset entry
 contains `asset_id`, `gateway_id` (or null), `description` (or null), `contact`,
@@ -304,8 +310,7 @@ each geo feature as it stood at the time being replayed, including ones deleted
 later. A Track's past path follows its sighting times, as an Asset's trail
 follows report times, so `since` and `until` compare with the Track's `time`;
 a `track.removed` event sorts at the event's own `time`. For geo features they
-compare with the event's `time`. Only
-accounts and Plugins read them. The rest of the picture is under
+compare with the event's `time`. The rest of the picture is under
 [Entities](#entities).
 
 ## Asset and gateway calls
@@ -522,10 +527,8 @@ Objects are not Entities.
   [`GET /entities/assets`](#reads).
 - **No filters or paging.** At Atlas's [scale](../../atlas/scale.md) the whole
   picture stays small, so every read returns all of it.
-- **Accounts and Plugins read the picture.** A Plugin uses this same API with
-  its Plugin key, through the [Plugin interface](#plugins).
-  Assets and gateways get `403` on these paths and keep only their own
-  `/entities/assets/{asset_id}` calls.
+- **Every caller reads the picture.** An Asset, a gateway, or a Plugin uses this
+  same API with its own key ([Reads](#reads)).
 - **Nothing expires during a run.** Observations stay in the picture for the
   whole run, and a Track stays until Fusion removes it. Core adds no stale
   status. Every record keeps its `time`, and readers show its age. A status

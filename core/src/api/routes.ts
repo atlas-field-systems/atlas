@@ -119,7 +119,7 @@ const C = <N extends keyof CoreBodies>(name: N) =>
 const NONE = { kind: "none" } as const;
 const ACCOUNTS = ["account"] as const;
 const ADMIN = ["admin"] as const;
-const READERS = ["account", "plugin"] as const; // "Accounts and Plugins read the picture"
+const READERS = ["account", "asset", "gateway", "plugin"] as const;
 
 function about(tx: ReadTx): unknown {
   return { ...tx.env.versions, run_id: tx.runId };
@@ -173,7 +173,7 @@ export const ROUTES: readonly Route[] = [
     method: "GET",
     path: "/events",
     doc: "the-event-log-and-live-stream",
-    who: ["account", "asset", "gateway", "plugin"],
+    who: READERS,
   },
   read({
     method: "GET",
@@ -236,7 +236,7 @@ export const ROUTES: readonly Route[] = [
     method: "GET",
     path: "/tasks/:asset_id",
     doc: "reads",
-    who: ACCOUNTS,
+    who: READERS,
     serve: (tx, r) => tasks.readTasks(tx, a(r)),
   }),
   read({
@@ -257,8 +257,7 @@ export const ROUTES: readonly Route[] = [
     method: "GET",
     path: "/entities/assets/:asset_id",
     doc: "reads",
-    who: ["account", "plugin", "asset", "gateway"],
-    actsFor: "path:asset_id",
+    who: READERS,
     serve: (tx, r) => entities.getAsset(tx, a(r)),
   }),
   read({
@@ -485,14 +484,14 @@ export const ROUTES: readonly Route[] = [
     method: "GET",
     path: "/plugins",
     doc: "operators-call-actions",
-    who: ACCOUNTS,
+    who: READERS,
     serve: (tx) => plugins.list(tx),
   }),
   read({
     method: "GET",
     path: "/plugins/:plugin_id/calls",
     doc: "operators-call-actions",
-    who: ACCOUNTS,
+    who: READERS,
     serve: (tx, r) =>
       plugins.calls(
         tx,
@@ -505,7 +504,7 @@ export const ROUTES: readonly Route[] = [
     method: "GET",
     path: "/plugins/:plugin_id/calls/:event_id",
     doc: "operators-call-actions",
-    who: ACCOUNTS,
+    who: READERS,
     serve: (tx, r) =>
       plugins.getCall(tx, r.params.plugin_id!, Number(r.params.event_id)),
   }),
