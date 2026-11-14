@@ -403,7 +403,7 @@ Asset on its own side and speaks to Core only by `asset_id`.
   ID through the Fieldlink.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
   adds `definitions.refused`. The refusal adds no Asset.
-- **One gateway for the network.** The area's one gateway carries every radio
+- **One gateway for each network.** A network's one gateway carries every radio
   Asset it registered, and no other gateway carries them. A radio whose app
   restarted mid-run identifies itself to that gateway through the Fieldlink and
   keeps its ID, but its work does not resume

@@ -40,7 +40,8 @@ Different radio systems can have different gateways. For example, the initial
 LoRa link could have a dedicated LoRa gateway, and a later FLRC mesh a new one,
 while the older design is still maintained for sites that use it. Several gateway
 designs can be maintained at once because each reaches Core only through the
-Core API. A site still runs one gateway at a time ([Scale](scale.md#setup)).
+Core API. A Core may run several gateways at once, each on its own radio network
+([Scale](scale.md#setup)).
 Atlas does not assume one permanent gateway design.
 
 ## Core is a deliberate dependency

@@ -8,7 +8,7 @@ are on their own pages; this page owns only what is particular to SiK.
 
 **An experimental Fieldlink.** SiK is for trying out a drone that is not
 traditionally an Atlas Asset, not for a long-term deployment. The gateway runs
-one SiK radio, so a site using SiK flies one drone. Several drones at once
+one SiK radio, so a SiK gateway flies one drone. Several drones at once
 belong on a Fieldlink built for it, such as [Meshtastic](../meshtastic/README.md).
 
 **Planning.** Nothing is built.
