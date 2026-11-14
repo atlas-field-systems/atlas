@@ -18,11 +18,12 @@ jobs:
   deploy:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - if: github.event.action != 'closed'
         name: Snapshot pull request previews
         shell: bash
@@ -47,13 +48,13 @@ jobs:
         working-directory: protocol
         run: npm ci && npm run check && npm run build:site
       - if: github.event_name != 'pull_request'
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
         with:
           folder: _site
           branch: gh-pages
           clean-exclude: pr/
       - if: github.event_name == 'pull_request'
-        uses: rossjrw/pr-preview-action@v1
+        uses: rossjrw/pr-preview-action@873417d2df72380da1f3978378fb58560bcde976 # v1.8.2
         with:
           source-dir: _site
           preview-branch: gh-pages
