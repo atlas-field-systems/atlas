@@ -762,3 +762,23 @@ test("R2-3 summary uses recipient and answer-kind settlement [reset.md#cores-res
     assert.ok(execFileSync("unzip", ["-p", stopped.zip, "summary.md"], {encoding: "utf8"}).includes(`Plugin call ${call.body.event_id}: plugin.result.`));
   } finally { await h.close(); }
 });
+
+test("R2-9 uploads admitted before stop finish in grace [reset.md#stopping-core-ends-the-run]", {timeout: 10000}, async () => {
+  const {connect} = await import("node:net");
+  const c = simulatedClock(), h = await startHarness(c);
+  const socket = connect(Number(new URL(h.core.url).port), "127.0.0.1");
+  let response = "";
+  socket.setEncoding("utf8");
+  socket.on("data", chunk => response += chunk);
+  const ended = new Promise<void>(resolve => socket.on("end", resolve));
+  try {
+    await new Promise<void>(resolve => socket.once("connect", resolve));
+    socket.write(`POST /objects?name=grace HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nCookie: ${h.admin}\r\nAtlas-Definitions: ${protocol.hash}\r\nIdempotency-Key: grace\r\nContent-Type: application/octet-stream\r\nContent-Length: 2\r\n\r\nx`);
+    await h.call("GET", "/about");
+    const stop = h.core.stop();
+    socket.write("y");
+    await ended;
+    assert.match(response, /^HTTP\/1.1 201 /);
+    assert.ok((await stop).archived);
+  } finally { socket.destroy(); c.advance(5000); await h.close(); }
+});

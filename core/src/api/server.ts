@@ -305,7 +305,6 @@ export async function startServer(
       let reply;
       try {
         reply = store.write((tx) => {
-          if (stopping) refuse("stopping", "Core is stopping");
           const current = resolveCaller(tx);
           if (!current) refuse("unauthenticated", "Invalid credential");
           authorize(

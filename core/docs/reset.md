@@ -34,8 +34,9 @@ sequenceDiagram
     Note over Core: New empty run, next run_id
 ```
 
-Requests in progress have five seconds to finish during deliberate stop. Core then
-closes the remaining connections before writing the Reset ZIP.
+Requests already in progress when deliberate stop begins may finish within a
+five-second grace period. Requests that start after stop begins receive
+`503 stopping`. Core then closes the remaining connections before writing the Reset ZIP.
 
 ## Core's Reset ZIP
 
