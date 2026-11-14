@@ -3,3 +3,4 @@ finding	choice	evidence	result
 2	Queue evidence advances Tasks independently of latest cap	F2 failed sent versus queued	Full suite green
 3	Five-second grace via injected clock, then close remaining HTTP connections	F3 failed bounded-stop assertion	Full suite green
 4	Total budget includes incremental gap records; first overflow stops writes for run	F4 failed at 10828 bytes against 2048	Full suite green
+5	Refuse shared writes with no registered Asset at authorization boundary	F5 failed 200 versus 403	Full suite green

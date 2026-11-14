@@ -243,3 +243,53 @@ test("F4 diagnostics obey total limit including gaps [logging.md#when-logging-ca
     await h.close();
   }
 });
+test("F5 only registered Assets create places and Objects [api.md#geo-features, api.md#objects]", async () => {
+  const h = await startHarness();
+  try {
+    const issued = (
+      await h.call("POST", "/administration/asset-keys", { cookie: h.admin })
+    ).body;
+    const place = () =>
+      h.call("POST", "/entities/geofeatures", {
+        key: issued.key,
+        body: { kind: "point", position: { latitude: 0, longitude: 0 } },
+      });
+    const upload = () =>
+      fetch(h.core.url + "/objects?name=photo", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${issued.key}`,
+          "atlas-definitions": protocol.hash,
+          "idempotency-key": crypto.randomUUID(),
+          "content-type": "image/jpeg",
+        },
+        body: "x",
+      });
+    assert.equal((await place()).status, 403);
+    const denied = await upload();
+    await denied.text();
+    assert.equal(denied.status, 403);
+    const a = (
+      await h.call("POST", "/entities/assets", {
+        key: issued.key,
+        body: description,
+      })
+    ).body.asset_id;
+    assert.equal((await place()).status, 200);
+    const stored = await upload();
+    assert.equal(stored.status, 201);
+    const id = (await stored.json()).object_id;
+    assert.equal(
+      (await h.call("GET", `/objects/${id}`, { cookie: h.admin })).body
+        .requested_by,
+      a,
+    );
+    assert.equal(
+      (await events(h)).find((e) => e.kind === "geofeature.created")
+        .requested_by,
+      a,
+    );
+  } finally {
+    await h.close();
+  }
+});

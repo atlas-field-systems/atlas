@@ -77,6 +77,8 @@ export function authorize(
       }
     }
   }
+  if (caller.kind === "asset" && actsFor === "query:asset_id" && !asset_id)
+    refuse("forbidden", "Register an Asset before creating shared data");
   const by =
     caller.kind === "account"
       ? caller.operator_id
