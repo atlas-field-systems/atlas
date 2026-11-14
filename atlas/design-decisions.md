@@ -210,8 +210,8 @@ underlying code. Later parts follow the first version. First flight is their
 first field test, once the Asset app, the gateway, and the SiK Fieldlink are
 built.
 
-A [proposed build order](build-order.md) for the parts after the first version
-awaits the owner's decision.
+After the first version, the parts the full simulation needs come before the
+Command Interface ([Build order](build-order.md)).
 
 ## Changes and releases
 

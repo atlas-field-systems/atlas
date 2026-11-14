@@ -134,6 +134,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-14 | After the first version, the parts the full simulation needs are built before the Command Interface: the Asset app, the gateway app, and the Fieldlinks. | The build order after the first version. The order among those three parts is not decided. | [Build order](build-order.md#decided-the-parts-the-full-simulation-needs-come-first) |
 | 2026-11-13 | Any change to Protocol's files, wording included, is a new version. Every part updates together, and wording fixes wait for the next real release. | Protocol releases. | [Protocol working choices](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/decisions.md#definitions-hash) |
 | 2026-11-13 | Protocol stays unpublished during the first development run, and the other parts use it from this repository. It will be published publicly later. | Protocol publishing. | [Design decisions, changes and releases](https://github.com/atlas-field-systems/atlas/blob/main/atlas/design-decisions.md#changes-and-releases) |
 | 2026-11-13 | Atlas keeps few unit tests. End-to-end simulations are the main tests. | Every part. | [Charter, Test what matters](https://github.com/atlas-field-systems/atlas/blob/main/atlas/CHARTER.md#test-what-matters) |

@@ -112,7 +112,7 @@ operations.
 
 That full simulation cannot run yet, because the Asset app, the gateway app,
 and the Fieldlinks are not built. The
-[proposed build order](build-order.md) says what to build next.
+[build order](build-order.md) says what to build next.
 
 ## The test question
 

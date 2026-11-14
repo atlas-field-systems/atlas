@@ -20,8 +20,8 @@ This folder explains what Atlas is for and the environment its parts work in.
 11. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
 12. [Experimental ideas](experimental.md) lists ideas being explored, not committed.
 
-One page is a proposal that awaits the owner's decision: the
-[build order after the first version](build-order.md).
+The [build order after the first version](build-order.md) is partly decided.
+Its proposed steps await the owner.
 
 Superseded plans and historical findings are in the [archive](https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/README.md).
 They are never a source for current rules.
