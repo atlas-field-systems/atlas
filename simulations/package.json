@@ -1,0 +1,6 @@
+{
+  "name": "@atlas/simulations", "version": "0.1.0", "private": true, "type": "module",
+  "scripts": { "test": "node --test --test-timeout=30000 scenarios/*.test.ts" },
+  "dependencies": { "@atlas/sdk": "file:../sdk", "@atlas/core": "file:../core", "@atlas/protocol": "file:../protocol" },
+  "devDependencies": { "typescript": "7.0.2", "@types/node": "^24.0.0" }
+}

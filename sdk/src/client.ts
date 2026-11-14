@@ -194,7 +194,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     options, emit, get status() { return status; }, get epoch() { return epoch; },
     connect, verifyRun, call, login, validate, holdContact,
     onStatus(cb: (s: Status) => void) { listeners.add(cb); return () => { listeners.delete(cb); }; },
-    streamFetch: (after: number, asset_id: string | undefined, signal: AbortSignal) => raw("/events", { signal }, { after, asset_id, definitions: protocol.hash }),
+    streamFetch: (after: number, asset_id: string | undefined, signal: AbortSignal) => options.fetch(url("/events", { after, asset_id, definitions: protocol.hash }), { signal, headers: headers(), credentials: credential.kind === "account" ? "include" : "omit" }),
     streamResponse: (r: Response) => parse<Json>(r, "/events"),
     history: <T = Json>(q?: Query) => pages<T>("/history", q),
     trackHistory: <T = Json>(q?: Query) => pages<T>("/history/tracks", q),
