@@ -37,6 +37,7 @@ sends over the radio only what each Asset does not already have.
 ## Not designed yet
 
 - The compact encoding, frame size, retry timing, and contact timing.
-- How many Assets the link carries in practice.
+- How much the link carries in practice, measured with two radios on the bench
+  ([Build order](../../atlas/build-order.md#the-radio-is-measured-during-the-build)).
 
 AI agents: read [the Fieldlink AGENTS.md](../AGENTS.md).

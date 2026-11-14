@@ -30,18 +30,14 @@ built. Until then the owner judges Atlas from simulation results.
    holds 19 failsafe decisions, made between 2026-11-10 and 2026-11-13. None
    has run against ArduPilot, real or simulated. One was reversed two days
    after it was made.
-2. **Can the radio carry the fleet?** The design sizes are
-   [about 20 Assets, a report about every 15 seconds, and frames of about 200
-   bytes](scale.md). The Meshtastic page lists how many Assets the link
-   carries as
-   [not designed yet](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet).
-   A rough estimate says the sizes may not fit. If Meshtastic's default
-   long-range setting carries about 1 kilobit per second, one 200-byte frame
-   takes about 1.5 seconds of air time. Twenty of those frames then need about
-   30 seconds of air time in every 15-second window, before any Task,
-   acknowledgement, or relayed frame. A faster setting carries more over a
-   shorter range. The estimate is not a measurement, and only a measurement
-   settles the question.
+2. **How much does the radio really carry?** Atlas uses a slow link's
+   airtime [fully and efficiently](scale.md#use-slow-links-fully-and-efficiently),
+   so the Asset and the Fieldlink need to know how much airtime they have to
+   spend. What Meshtastic carries in practice, after its relays and
+   acknowledgements, is
+   [not known yet](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet).
+   A faster radio setting carries more over a shorter range. Only a
+   measurement settles it.
 
 ## The Meshtastic Fieldlink comes first
 
@@ -55,8 +51,8 @@ point-to-point link.
 
 While the Meshtastic Fieldlink is built, two Meshtastic radios are connected
 to the build computer and send messages to each other. Their measured numbers
-go into [Scale](scale.md) and the Meshtastic page, and the simulated radio
-link uses them. The measurement answers the second risk.
+go into the Meshtastic page, and the simulated radio link uses them. The
+measurement answers the second risk.
 
 ## New failsafe and radio decisions wait
 

@@ -49,11 +49,24 @@ Contact is not freshness. Hearing from Core proves nothing about measurements.
 
 Behavior modules and equipment drivers update the
 [Asset's local state](assets.md#local-state-and-data-flow). The communications
-module reads it and chooses which reports to send and how often, by data
-relevance and the link's quality and capacity. It can report on change, on an
-interval, or as capacity allows. Sending fewer measurements never drops a Task
-outcome or presents an old measurement as fresh. Local acquisition and execution
-never wait on reporting.
+module reads it and chooses which reports to send. On a slow link it fills the
+airtime it has with the most useful data, as
+[Scale](../../atlas/scale.md#use-slow-links-fully-and-efficiently) sets out:
+
+- **One waiting slot per item, newest value wins.** Position, battery, each
+  subsystem, and each Observation hold only their latest unsent value. A newer
+  value replaces an older one that has not gone out, so the link never carries
+  data that is already out of date.
+- **Most important first.** Task outcomes and answers to requests go first and
+  must arrive. Then changes that matter, such as a failsafe, a fault, or a new
+  or moved Observation. Then current telemetry. Retained history goes last,
+  only when nothing live is waiting.
+- **As often as the link allows.** There is no fixed reporting rate on a slow
+  link. A quiet link carries telemetry often and a busy one less often. On a
+  fast link such as IP, the Asset reports on change.
+
+Sending fewer measurements never drops a Task outcome or presents an old
+measurement as fresh. Local acquisition and execution never wait on reporting.
 
 The module also tells other modules when internet access is available, for
 modules that call external APIs. A field radio is not assumed to carry internet
@@ -74,5 +87,12 @@ Atlas assumes an Asset connects to Wi-Fi during startup or setup.
 
 ## Open
 
-- Reporting thresholds, rates, and priorities under congestion.
+- The exact order within each priority, and what counts as a change that matters
+  for each kind of report.
+- **Proposal:** the link asks the Asset for up to a given number of bytes
+  whenever it has airtime to spend, and the Asset answers with its most
+  important waiting reports. Today the [Asset link](../../sdk/docs/asset.md#the-asset-link)
+  works the other way: the Asset sends batches and reads a capacity figure.
+  Asking fills each chance to transmit without piling reports up behind a busy
+  radio. It would change the SDK's Asset link and needs the owner's agreement.
 - How several links, and relaying for peers, fit behind the one interface.

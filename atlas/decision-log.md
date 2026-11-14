@@ -29,6 +29,8 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-14 | Atlas has no set fleet size. The earlier figure of about 20 Assets was a rough guess, not a requirement, and no field link is designed or judged by whether it carries a set number of Assets. | Fleet size, every field link. | [Scale](scale.md#fleet) |
+| 2026-11-14 | On slow links, Atlas uses the airtime fully and efficiently: it sends as much useful data as the link can carry, and spends every byte well. | Slow field links, such as LoRa. | [Scale](scale.md#use-slow-links-fully-and-efficiently) |
 | 2026-11-14 | One Core may run several gateways at once when their radio links cannot clash: gateways in different areas, such as two gateways 20 miles apart, or gateways in one area on different bands, such as an FLRC gateway beside a Meshtastic gateway. An Asset always uses exactly one gateway. | Gateways on one Core. Two gateways in one radio network stay out of scope. | [Scale](scale.md#setup) |
 | 2026-11-13 | SiK is an experimental Fieldlink for trying out drones that are not traditionally Atlas, not for long-term deployment. The gateway runs one SiK radio, so a SiK gateway flies one drone. | SiK gateways. | [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md) |
 | 2026-11-13 | Fieldlink is its own part of Atlas. Each Fieldlink holds both ends of its link: the side the gateway runs and the side the Asset's communications module runs. SiK is a Fieldlink with only a gateway side, because the vehicle runs no Atlas software. | Every Fieldlink. | [Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md) |

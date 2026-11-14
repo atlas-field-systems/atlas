@@ -185,7 +185,7 @@ Behavior tests come from these, once the gateway exists.
 ## Not designed yet
 
 - The gateway app's configuration file and what its diagnostics record.
-- What each field link can carry. [About 20 Assets](../atlas/scale.md#fleet) is a
-  goal, and a Fieldlink states what its link supports.
+- What each field link can carry. Atlas has [no set fleet size](../atlas/scale.md#fleet);
+  each Fieldlink measures and states what its link supports.
 
 AI agents: read [AGENTS.md](AGENTS.md).

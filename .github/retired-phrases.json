@@ -412,5 +412,16 @@
     "phrase": "\\bno live picture on assets\\b|\\bcore never sends them to assets or gateways\\b",
     "why": "Assets and gateways may read Objects and the picture through the Core API.",
     "example": "No live picture on Assets."
+  },
+  {
+    "phrase": "\\b(about|up to|at most|design for) (about )?20 Assets\\b",
+    "why": "About 20 Assets was a rough guess, not a requirement. Atlas has no set fleet size.",
+    "example": "Design for about 20 Assets at most.",
+    "unless": "rough guess"
+  },
+  {
+    "phrase": "\\b(telemetry|reports?)( rate)?( is)? (about )?every 15 seconds\\b|\\bcarry the fleet\\b",
+    "why": "Slow links have no fixed telemetry rate; an Asset reports as often as free airtime allows.",
+    "example": "The telemetry rate is about every 15 seconds on LoRa."
   }
 ]
