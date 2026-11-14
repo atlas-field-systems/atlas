@@ -184,3 +184,69 @@ scenario({
     );
   },
 });
+
+scenario({
+  name: "report resend uses configured growing backoff and ends with the session",
+  checks: ["sdk/docs/asset.md#running-over-any-link"],
+  async run(w) {
+    const issued = value(await w.complete(w.admin.call("createAssetKey")));
+    assert.ok("key" in issued);
+    const sends: number[] = [];
+    const networkFetch = w.network.fetchFor("backoff");
+    const client = createClient({
+      credential: { kind: "asset", key: issued.key },
+      protocol: w.protocol,
+      clock: w.clock,
+      baseUrl: w.core.url,
+      backoff: { minMs: 50, maxMs: 200, factor: 2, jitter: 0 },
+      fetch: (input, init) => {
+        if (new URL(String(input)).pathname.endsWith("/reports"))
+          sends.push(w.clock.now());
+        return networkFetch(input, init);
+      },
+    });
+    w.onClose(() => client.close());
+    const session = value(
+      await w.complete(
+        startAsset(client, {
+          clock: w.clock,
+          description,
+          settings: () => ({}),
+        }),
+      ),
+    );
+    w.onClose(() => session.stop());
+    sends.length = 0;
+    w.network.always(
+      "backoff",
+      `/entities/assets/${session.asset_id}/reports`,
+      { kind: "refuse", status: 507 },
+    );
+    session.outbox.add([
+      {
+        type: "report.settings",
+        time: w.clock.now(),
+        asset_id: session.asset_id,
+        settings: { lights: "on" },
+      },
+    ]);
+    await w.settle();
+    assert.equal(sends.length, 1);
+    await w.advance(49);
+    assert.equal(sends.length, 1);
+    await w.advance(1);
+    assert.equal(sends.length, 2);
+    await w.advance(99);
+    assert.equal(sends.length, 2);
+    await w.advance(1);
+    assert.equal(sends.length, 3);
+    assert.deepEqual(
+      sends.map((t) => t - sends[0]),
+      [0, 50, 150],
+    );
+    session.stop();
+    await w.advance(1000);
+    assert.equal(sends.length, 3, "a stopped session sends no more retries");
+    await w.complete(session.outbox.flush());
+  },
+});

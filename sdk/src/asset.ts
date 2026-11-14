@@ -2,7 +2,7 @@ import { internal } from "./internal.ts";
 import { diagnostics, type Observer } from "./diagnostics.ts";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import type { Client, Result } from "./client.ts";
-import type { Clock } from "./clock.ts";
+import { backoffDelay, type Clock } from "./clock.ts";
 import { follow, type FollowEnd, type AtlasEvent } from "./stream.ts";
 import {
   createQueue,
@@ -234,6 +234,12 @@ export async function startAsset(
   let session: ReturnType<typeof runAsset> | undefined;
   let stream: ReturnType<typeof follow> | undefined;
   let ending: FollowEnd = { reason: "closed" };
+  let stopped = false;
+  let wakeRetry: (() => void) | undefined;
+  const stopLink = () => {
+    stopped = true;
+    wakeRetry?.();
+  };
   const link: AssetLink = {
     async *events(after) {
       const events: AssetEvent[] = [];
@@ -278,18 +284,43 @@ export async function startAsset(
       }
     },
     async sendReports(reports) {
+      let attempt = 0;
       let result = await client.call("sendReports", {
         params: { asset_id },
         body: { reports },
       });
       while (
+        !stopped &&
         !result.ok &&
         result.retry &&
         (result.error === "unknown" || (result.status ?? 0) >= 500)
       ) {
-        await new Promise<void>((resolve) => options.clock.after(500, resolve));
+        const delay = backoffDelay(
+          attempt++,
+          internal(client).options.backoff ?? {
+            minMs: 500,
+            maxMs: 30000,
+            factor: 2,
+            jitter: 0.2,
+          },
+        );
+        await new Promise<void>((resolve) => {
+          const timer = options.clock.after(delay, resolve);
+          wakeRetry = () => {
+            timer.cancel();
+            resolve();
+          };
+        });
+        wakeRetry = undefined;
+        if (stopped) break;
         result = await result.retry();
       }
+      if (stopped)
+        return {
+          ok: false,
+          error: "closed",
+          explanation: "Asset session stopped",
+        };
       if (result.ok) return { ok: true };
       return {
         ok: false,
@@ -342,6 +373,7 @@ export async function startAsset(
     internal(client).emit,
   );
   const running = session;
+  void running.done.then(stopLink);
   const ready = await running.ready;
   if (!ready.ok) {
     running.stop();
@@ -353,6 +385,7 @@ export async function startAsset(
       ...running,
       done: running.done.then(() => ending),
       stop() {
+        stopLink();
         stream?.stop();
         running.stop();
       },
