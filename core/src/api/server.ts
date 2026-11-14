@@ -36,7 +36,7 @@ export async function startServer(
   streams: Streams,
 ): Promise<Server> {
   let stopping = false;
-  const loginRetries = new Map<string, Promise<void>>();
+  const passwordRetries = new Map<string, Promise<void>>();
   const segment = env.config.debug_endpoint
     ? randomBytes(24).toString("base64url")
     : null;
@@ -285,14 +285,15 @@ export async function startServer(
       }
       const login = url.pathname === "/administration/login";
       const scope = login ? "login" : principal.scope;
+      const passwordRequest = login || route.path === "/administration/accounts";
       let fp: string;
-      if (login) {
-        loginKey = key;
-        const previous = loginRetries.get(key);
+      if (passwordRequest) {
+        loginKey = JSON.stringify([scope, key]);
+        const previous = passwordRetries.get(loginKey);
         loginGate = new Promise<void>((resolve) => {
           releaseLogin = resolve;
         });
-        loginRetries.set(key, loginGate);
+        passwordRetries.set(loginKey, loginGate);
         await previous;
         const prior = store.read((tx) =>
           tx.get<{ fingerprint: string }>(
@@ -402,8 +403,8 @@ export async function startServer(
       }
     } finally {
       releaseLogin?.();
-      if (loginKey && loginRetries.get(loginKey) === loginGate)
-        loginRetries.delete(loginKey);
+      if (loginKey && passwordRetries.get(loginKey) === loginGate)
+        passwordRetries.delete(loginKey);
     }
   };
   const server =

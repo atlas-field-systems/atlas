@@ -672,3 +672,35 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
     }
   }
 });
+
+test("PR53-4 account retries protect passwords with salted scrypt [api.md#callers-and-credentials]", async () => {
+  const h = await startHarness();
+  try {
+    const opts = {
+      cookie: h.admin, idem: "account-password",
+      body: { operator_id: "OP1", admin: false, password },
+    };
+    assert.equal((await h.call("POST", "/administration/accounts", opts)).status, 201);
+    assert.equal((await h.call("POST", "/administration/accounts", opts)).status, 201);
+    assert.equal((await h.call("POST", "/administration/accounts", {
+      ...opts, body: { ...opts.body, password: password + "changed" },
+    })).body.error, "idempotency_conflict");
+    const { DatabaseSync } = await import("node:sqlite");
+    const snapshot = await mkdtemp(join(tmpdir(), "atlas-credential-state-"));
+    for (const name of ["core.sqlite", "core.sqlite-wal"])
+      await copyFile(join(h.dataDir, name), join(snapshot, name));
+    const db = new DatabaseSync(join(snapshot, "core.sqlite"), {
+      readOnly: true,
+    });
+    try {
+      const row = db.prepare("SELECT fingerprint FROM idempotency_keys WHERE scope=? AND key=?")
+        .get("account:ADM", opts.idem)!;
+      assert.match(String(row.fingerprint), /^scrypt\$/);
+    } finally {
+      db.close();
+      await rm(snapshot, { recursive: true, force: true });
+    }
+  } finally {
+    await h.close();
+  }
+});

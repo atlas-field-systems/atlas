@@ -123,6 +123,8 @@ and `/debug` belong to no pillar and stay at the top level.
   cookie. A caller that missed the cookie logs in with a new idempotency key to
   create a new session. A caller that received it keeps using that session;
   the acknowledgment alone does not authenticate a caller.
+- Password-bearing retry fingerprints use salted scrypt for login and account
+  creation; retry state never exposes a fast password verifier.
 - The first admin account comes from [Core configuration](../config.md).
 - A radio Asset holds no Core key and never calls this API
   ([radio Assets](#radio-assets)).
