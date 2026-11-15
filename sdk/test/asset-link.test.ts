@@ -100,3 +100,37 @@ test("final failsafe response reports must arrive [sdk/docs/asset.md#the-asset-l
   assert.equal(outbox.take({ bytes: Infinity, size: () => 1 })?.priority, "must_arrive");
   outbox.stop();
 });
+
+test("bounded ordinary evidence preserves finals, in-flight batches and acknowledgement waits [sdk/docs/asset.md#the-asset-link]", async () => {
+  const gaps: number[] = [];
+  const outbox = createOutbox({ now: () => 0, after: () => ({ cancel() {} }) }, 10000, undefined,
+    (name, detail) => { if (name === "reports.gap") gaps.push(Number(detail?.dropped)); });
+  const sample = (time: number) => ({ type: "report.battery", asset_id: "A", time, battery_percent: 50 }) as const;
+  let droppedSettled = false;
+  const old = outbox.add([sample(0)]).then(() => { droppedSettled = true; });
+  const first = outbox.take({ bytes: 1, size: r => r.length })!;
+  const finals = [
+    { type: "report.status", kind: "task", asset_id: "A", time: 1, task_id: 1, task_state: "completed" },
+    { type: "report.failsafe", kind: "response", asset_id: "A", time: 2, response: { kind: "hold" }, task_state: "completed" },
+  ] as const;
+  void outbox.add([...finals]);
+  for (let i = 1; i <= 1100; i++) void outbox.add([sample(i)]);
+  first.settle({ ok: false, error: "lost", explanation: "no contact" });
+  const retry = outbox.take({ bytes: 1, size: r => r.length })!;
+  assert.deepEqual(retry.reports, [sample(0)], "in-flight report survives overflow");
+  retry.settle({ ok: true });
+  await old;
+  assert.ok(droppedSettled);
+  const reports = [];
+  for (;;) {
+    const batch = outbox.take({ bytes: Infinity, size: () => 0 });
+    if (!batch) break;
+    reports.push(...batch.reports);
+    batch.settle({ ok: true });
+  }
+  assert.equal(reports.filter(r => r.type === "report.battery").length, 1024);
+  for (const final of finals) assert.ok(reports.some(r => JSON.stringify(r) === JSON.stringify(final)));
+  assert.equal(gaps.reduce((a, b) => a + b, 0), 76);
+  await outbox.flush();
+  outbox.stop();
+});

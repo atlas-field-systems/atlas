@@ -23,13 +23,15 @@ scenario({
     assert.ok("key" in key);
     const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
     const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
+      initial_settings: { ...raw.initial_settings, failsafe_policy: [...raw.initial_settings.failsafe_policy, { rule_id: "IDLE", priority: 1, conditions: [{ kind: "idle", for_s: 2 }], response: { kind: "hold" } }] },
       control_tick_s: 0.137, equipment: { ...raw.equipment, port: address.port, heartbeat_s: 0.274 },
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
-    let fail = false, inTick = false;
+    let fail = false, inTick = false, failingTicks = false;
     const clock = {
       now() { if (fail && inTick) { fail = false; throw new Error("transient equipment clock failure"); } return w.clock.now(); },
       after(ms: number, fn: () => void) { return w.clock.after(Math.ceil(ms), () => {
         inTick = ms === config.control_tick_s * 1000;
+        if (inTick && failingTicks) fail = true;
         try { fn(); } finally { inTick = false; }
       }); },
     };
@@ -40,11 +42,13 @@ scenario({
     peer.on("data", (bytes: Buffer) => { received += bytes.length; });
     let archive: string;
     try {
-      fail = true;
+      failingTicks = true;
       await assert.doesNotReject(w.advance(1000));
       await new Promise(resolve => setImmediate(resolve));
       const before = received;
-      await w.advance(1000);
+      await w.advance(3000);
+      failingTicks = false;
+      assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "IDLE"), "rules run even when every equipment tick throws");
       await new Promise(resolve => setTimeout(resolve, 20));
       assert.ok(received > before, "MAVLink heartbeats continue after the failed tick");
     } finally {
