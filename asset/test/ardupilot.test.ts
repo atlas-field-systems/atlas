@@ -31,6 +31,7 @@ test("docs/failsafes.md: flight-controller takeover remains visible while Land c
   };
   await heartbeat(4);
   const pending = vehicle.command({ kind: "land", mode: 9, destination: undefined, transit_altitude: undefined }).catch(() => {});
+  assert.equal((await heartbeat(4)).in_control?.value, true, "the previous Atlas mode remains valid until Land is observed");
   const observed = await heartbeat(6);
   assert.equal(observed.in_control?.value, false);
   vehicle.stop();

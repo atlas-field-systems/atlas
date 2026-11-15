@@ -28,6 +28,8 @@ export function ardupilot(
   let positionEstimated = false;
   let operation: AbortController | undefined;
   let expectedMode: number | null = null;
+  let observedMode: number | null = null;
+  let transitionFrom: number | null = null;
   let inControl = true;
   let lastHeartbeat = -Infinity;
   const listeners = new Set<(id: number, value: unknown) => void>();
@@ -103,8 +105,10 @@ export function ardupilot(
       const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
       for (const cb of listeners) cb(id, m);
       const armed = Boolean(m.baseMode & 128);
+      observedMode = m.customMode;
+      if (observedMode === expectedMode) transitionFrom = null;
       if (!inControl) inControl = m.customMode === 4;
-      else if (armed && expectedMode !== null) inControl = m.customMode === expectedMode;
+      else if (armed && expectedMode !== null) inControl = m.customMode === expectedMode || m.customMode === transitionFrom;
       observe({ armed: stamp(armed), in_control: stamp(inControl) });
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
@@ -191,6 +195,7 @@ export function ardupilot(
       });
     },
     async command(c: VehicleCommand) {
+      transitionFrom = inControl ? observedMode : null;
       expectedMode = c.mode;
       operation?.abort(new Error("superseded"));
       const current = new AbortController();

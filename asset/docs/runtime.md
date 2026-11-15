@@ -23,8 +23,10 @@ The command registry declares whether an override re-arms protection or stands
 until its execution ends. Command timeouts come directly from configuration.
 
 Every registry step names its equipment mode. The ArduPilot driver compares
-heartbeat modes with the command it received and reports generic `in_control`
-evidence. A different mode while armed gives control to the flight controller.
+heartbeat modes with the command it received and reports whether Atlas is
+`in_control`. During a commanded mode transition, the prior observed Atlas mode
+remains valid until the requested mode is observed. An unrelated mode still
+shows takeover immediately. A different mode while armed gives control to the flight controller.
 Guided mode hands control back. Handback samples rules, starts a tracked Hold,
 and ends that tick before rule selection. The app calls `Vehicle.tick(now)`;
 the driver owns its heartbeat interval.
