@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The nine scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The ten scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -116,3 +116,11 @@ condition duration against archived position acquisition times, the Core respons
 reports, and the final disarmed measurement.
 These checks prove simulated behavior only. The remaining scenario list above
 is still the conformance target.
+
+The request-answer scenario submits a policy with duplicate priorities that Core
+can deliver but the Asset refuses. It checks that retained settings reach Core
+with the request ID. After an operator Fail-safe starts a response, it sends an
+ordinary Task and a cancel while the simulated network delays outgoing reports.
+Core must receive failed Task evidence answering both requests, without the Task
+entering the held queue. The takeover scenario also checks the refused Task's
+request ID. These delays affect only the network around the real parts.

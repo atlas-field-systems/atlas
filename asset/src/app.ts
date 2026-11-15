@@ -7,7 +7,7 @@ import {
   type Room,
 } from "@atlas/sdk";
 import { loadPackagedProtocol } from "@atlas/protocol";
-import { initial, reduce, type Event, type Effect } from "./control.ts";
+import { initial, reduce, refusal, type Event, type Effect } from "./control.ts";
 import { fresh, type Vehicle, type Measurements } from "./vehicle.ts";
 import { ardupilot } from "./ardupilot.ts";
 import { createLog } from "./logging.ts";
@@ -59,6 +59,10 @@ export async function startApp(
   function apply(effect: Effect) {
     log.record({ kind: "effect", effect });
     switch (effect.kind) {
+      case "settings":
+        report([{ type: "report.settings", asset_id: running!.asset_id,
+          time: clock.now(), request_id: effect.request_id, settings: effect.settings }]);
+        break;
       case "diagnostic":
         break;
       case "vehicle":
@@ -135,6 +139,7 @@ export async function startApp(
     current,
     queue: config.description.commands.length
       ? {
+          refuse: request => refusal(state, request),
           runNow: (task, request_id) =>
             dispatch({ kind: "task", task, request_id, now: clock.now() }),
           stop: (id, because) => {
@@ -154,16 +159,6 @@ export async function startApp(
         request_id,
         now: clock.now(),
       });
-      if (running)
-        report([
-          {
-            type: "report.settings",
-            asset_id: running.asset_id,
-            time: clock.now(),
-            request_id,
-            settings: state.settings,
-          },
-        ]);
     },
   });
   if (!result.ok) {

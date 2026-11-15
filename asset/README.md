@@ -54,9 +54,13 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- Subsystem failsafe conditions, complete rule re-arming, priority and fallback cases, and all override answers
-  need implementation or simulation coverage.
-- Queue cancellation and updates during failsafe, place updates while paused, and end-to-end live policy refusal answers need completion.
+- Subsystem failsafe conditions still need implementation and simulation coverage.
+  The request matrix now checks ordinary, paused, failsafe, override, and
+  flight-controller phases, including queued cancels and updates and paused place
+  updates. Contract coverage checks priority, Hold and pause re-arming, lower
+  critical levels, and the single critical fallback. SITL checks request answers
+  during a response, flight-controller refusal, and invalid live policy answers.
+  This does not complete the wider equipment-failure scenario matrix.
 - The driver does not yet recover an equipment TCP connection. Position is
   gated on GPS fix and EKF position validity. Refusal and timeout coverage
   still needs the full equipment-failure scenario matrix. ACKs received before

@@ -72,3 +72,14 @@ unique rule IDs and priorities, declared subsystem references, supported respons
 and Protocol parameter shapes. Rejection
 keeps all current settings and timing records. The IP settings handler reports
 those retained settings with the request ID.
+
+Before the SDK changes queue state, its optional `QueueHost.refuse` callback
+asks the Asset whether to admit the request. The Asset uses the same phase
+check as execution. A refused Task ends failed immediately, without entering
+the held queue or superseding earlier work. Refused cancels and updates leave
+the queue unchanged. The helper answers them with current Task or queue evidence
+and the request ID. Known final Task outcomes remain in memory for refused
+cancel answers. Cancels accepted before Task delivery keep their original
+answer even if the Asset enters failsafe state before delivery.
+Settings answers are reducer effects, including retained settings on refusal,
+so the IP adapter sends the decision with the request ID.

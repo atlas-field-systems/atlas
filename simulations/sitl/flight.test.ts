@@ -26,6 +26,7 @@ async function equipmentPort() {
 }
 
 for (const scenario of [
+  "requests",
   "boundary",
   "takeover",
   "flight",
@@ -127,7 +128,9 @@ for (const scenario of [
       let buffered = "";
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
+      let reportGate: Promise<void> | undefined;
       const assetFetch: typeof fetch = async (input, init) => {
+        if (new URL(String(input)).pathname.endsWith("/reports")) await reportGate;
         const response = await fetch(input, {
           ...init,
           signal: AbortSignal.any([
@@ -234,6 +237,47 @@ for (const scenario of [
       const app = await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "requests") {
+        const invalid = value(await admin.call("changeSettings", {
+          params: { asset_id: app.asset_id }, body: { settings: { failsafe_policy: [
+            ...config.initial_settings.failsafe_policy!,
+            { rule_id: "BAD", priority: 99, conditions: [{ kind: "airborne" }],
+              response: { kind: "land" } },
+          ] } },
+        }));
+        assert.ok("event_id" in invalid);
+        await until(() => events.some(e => e.kind === "report.settings" && e.record.request_id === invalid.event_id));
+        const answer = events.find(e => e.kind === "report.settings" && e.record.request_id === invalid.event_id);
+        assert.ok(answer?.kind === "report.settings");
+        assert.deepEqual(answer.record.settings.failsafe_policy, config.initial_settings.failsafe_policy);
+        value(await admin.call("sendTasks", {
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 10, altitude_reference: "launch" } }] },
+        }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+        value(await admin.call("sendTasks", {
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "failsafe" }], now: true },
+        }));
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.task_state === "active"));
+        let release!: () => void;
+        reportGate = new Promise<void>(resolve => { release = resolve; });
+        const task = value(await admin.call("sendTasks", {
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "hold" }] },
+        }));
+        assert.ok("task_ids" in task);
+        const cancel = value(await admin.call("cancel", {
+          params: { asset_id: app.asset_id, task_id: task.task_ids[0] },
+        }));
+        assert.ok("event_id" in cancel);
+        release();
+        reportGate = undefined;
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.request_id === cancel.event_id && e.record.task_state === "failed"));
+        assert.ok("task_ids" in task && "event_id" in task);
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === task.task_ids[0] && e.record.task_state === "failed" && e.record.request_id === task.event_id));
+        assert.equal(events.some(e => e.kind === "report.status" && e.record.kind === "queue" && e.record.task_ids.includes(task.task_ids[0])), false);
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.task_state === "completed"));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
       if (scenario === "takeover") {
         value(await admin.call("sendTasks", {
           params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 10, altitude_reference: "launch" } }] },
@@ -252,8 +296,8 @@ for (const scenario of [
         const refused = value(await admin.call("sendTasks", {
           params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "hold" }] },
         }));
-        assert.ok("task_ids" in refused);
-        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === refused.task_ids[0] && e.record.task_state === "failed" && e.record.explanation === "flight controller is in control"));
+        assert.ok("task_ids" in refused && "event_id" in refused);
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === refused.task_ids[0] && e.record.task_state === "failed" && e.record.explanation === "flight controller is in control" && e.record.request_id === refused.event_id));
         await mode(4);
         await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control));
         await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.response?.kind === "hold" && e.record.task_state === "completed"));

@@ -1,4 +1,4 @@
-import type { Task } from "@atlas/sdk";
+import type { Task, QueueRequest } from "@atlas/sdk";
 import type {
   ComponentsSettings,
   ComponentsFailsafeRule,
@@ -71,11 +71,18 @@ export type Effect =
       status: "active" | "completed" | "failed" | "cancelled";
       explanation?: string;
     }
+  | { kind: "settings"; settings: ComponentsSettings; request_id: number }
   | { kind: "override"; request_id: number }
   | { kind: "autopilot"; in_control: boolean }
   | { kind: "clear" }
   | { kind: "shutdown" }
   | { kind: "diagnostic"; explanation: string };
+export function refusal(state: State, request: QueueRequest): string | undefined {
+  if (state.phase === "flight_controller") return "flight controller is in control";
+  if (state.phase === "ordinary") return;
+  if (request.kind === "task" && request.task.now && isOverride(request.task.kind)) return;
+  return "failsafe locks ordinary work";
+}
 export function initial(config: Config, now: number): State {
   const idle: { since: number | null } = { since: now };
   return {
@@ -332,19 +339,9 @@ export function reduce(
     }
     case "task": {
       const task = event.task;
-      if (
-        state.phase === "flight_controller" ||
-        (state.phase !== "ordinary" && !(task.now && isOverride(task.kind)))
-      ) {
-        effects.push({
-          kind: "task",
-          task,
-          status: "failed",
-          explanation:
-            state.phase === "flight_controller"
-              ? "flight controller is in control"
-              : "failsafe locks ordinary work",
-        });
+      const explanation = refusal(state, { kind: "task", task });
+      if (explanation !== undefined) {
+        effects.push({ kind: "task", task, status: "failed", explanation });
         break;
       }
       if (task.kind === "settings") {
@@ -571,5 +568,7 @@ export function reduce(
       break;
     }
   }
+  if (event.kind === "settings" && event.request_id !== undefined)
+    effects.push({ kind: "settings", settings: state.settings, request_id: event.request_id });
   return { state, effects };
 }

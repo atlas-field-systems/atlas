@@ -156,3 +156,105 @@ for (const defect of ["priority", "identity", "subsystem"] as const)
     const result = reduce(state, { kind: "settings", now: 0, request_id: 11, settings: { failsafe_policy: policy } }, config);
     assert.deepEqual(result.state.settings, state.settings);
   });
+
+for (const priority of [40, 50, 60])
+  test(`docs/failsafes.md: priority ${priority} versus a running priority 50 response`, async () => {
+    const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+    const state = initial(config, 0);
+    state.settings = { ...state.settings, failsafe_policy: [
+      { rule_id: "FIRST", priority: 50, conditions: [{ kind: "commanded" }], response: { kind: "land" } },
+      { rule_id: "NEXT", priority, conditions: [{ kind: "battery_below", battery_percent: 30 }], response: { kind: "land" } },
+    ] };
+    state.measurements.position = { value: { latitude: 0.1, longitude: 0.1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, source: "gps", time: 0 };
+    state.measurements.armed = { value: true, source: "vehicle", time: 0 };
+    const running = reduce(state, { kind: "task", now: 0, task: { kind: "failsafe", asset_id: "A", task_id: 1, requested_by: "OP", time: 0, now: true } }, config).state;
+    running.measurements.battery = { value: 20, source: "vehicle", time: 1 };
+    const result = reduce(running, { kind: "tick", now: 1, hasWork: false }, config);
+    assert.equal(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "NEXT" && e.status === "active"), priority > 50);
+    assert.equal(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "FIRST" && e.status === "cancelled"), priority > 50);
+  });
+
+for (const override of ["hold", "pause"] as const)
+  test(`docs/failsafes.md: ${override} re-arms contact and boundary rules and a lower critical level fires`, async () => {
+    const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+    let state = initial(config, 0);
+    state.settings = { ...state.settings, link_loss_after_s: 1, failsafe_policy: [
+      { rule_id: "CONTACT", priority: 50, conditions: [{ kind: "contact_lost" }], response: { kind: "land" } },
+      { rule_id: "AREA", priority: 60, conditions: [{ kind: "outside_area", area: [{ latitude: 0, longitude: 0 }, { latitude: 0, longitude: 1 }, { latitude: 1, longitude: 0 }] }], response: { kind: "land" } },
+      { rule_id: "LOW", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 5, critical: true }], response: { kind: "land" } },
+    ] };
+    state.measurements.position = { value: { latitude: 0.1, longitude: 0.1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, source: "gps", time: 0 };
+    state.measurements.armed = { value: true, source: "vehicle", time: 0 };
+    state = reduce(state, { kind: "tick", now: 1000, hasWork: false }, config).state;
+    const applyOverride = (now: number) => {
+      state = reduce(state, override === "hold"
+        ? { kind: "task", now, task: { kind: "hold", now: true, asset_id: "A", task_id: now, requested_by: "OP", time: now } }
+        : { kind: "settings", now, settings: { run_state: "paused" } }, config).state;
+    };
+    applyOverride(1001);
+    state = reduce(state, { kind: "contact", contact: { open: true, last_heard: 1002 } }, config).state;
+    state = reduce(state, { kind: "tick", now: 1002, hasWork: false }, config).state;
+    let result = reduce(state, { kind: "tick", now: 2002, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "CONTACT" && e.status === "active"));
+    state = result.state;
+    applyOverride(2003);
+    state.measurements.position = { value: { latitude: 2, longitude: 2 }, source: "gps", time: 2004 };
+    result = reduce(state, { kind: "tick", now: 2004, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "AREA" && e.status === "active"));
+    state = result.state;
+    applyOverride(2005);
+    state.measurements.battery = { value: 4, source: "vehicle", time: 2006 };
+    result = reduce(state, { kind: "tick", now: 2006, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "LOW" && e.status === "active"));
+  });
+
+test("docs/failsafes.md: simultaneous critical rules select the higher priority and failures never retry", async () => {
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  let state = initial(config, 0);
+  state.settings = { ...state.settings, failsafe_policy: [
+    { rule_id: "LOW", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } },
+    { rule_id: "HIGH", priority: 20, conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } },
+  ] };
+  state.measurements.position = { value: { latitude: 0.1, longitude: 0.1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, source: "gps", time: 0 };
+  state.measurements.battery = { value: 5, source: "vehicle", time: 0 };
+  state.measurements.armed = { value: true, source: "vehicle", time: 0 };
+  const result = reduce(state, { kind: "tick", now: 0, hasWork: false }, config);
+  assert.deepEqual(result.effects.filter(e => e.kind === "response" && e.status === "active").map(e => e.kind === "response" && e.rule?.rule_id), ["HIGH"]);
+  state = result.state;
+  state.measurements.position = { value: { latitude: 0.1, longitude: 0.1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, source: "gps", time: 0 };
+  state.measurements.battery = { value: 50, source: "vehicle", time: 1 };
+  state = reduce(state, { kind: "command_failed", execution_id: state.commandId, now: 1, explanation: "refused" }, config).state;
+  for (const now of [2, 3]) {
+    const next = reduce(state, { kind: "tick", now, hasWork: false }, config);
+    assert.equal(next.effects.some(e => e.kind === "response" && e.status === "active"), false);
+    state = next.state;
+  }
+});
+
+for (const critical of [false, true])
+  for (const action of ["land", "return_to_home"] as const)
+    for (const stillCritical of [false, true])
+      test(`docs/failsafes.md: ${action} failure, critical=${critical}, still below=${stillCritical} falls back only once`, async () => {
+        const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+        let state = initial(config, 0);
+        state.settings = { ...state.settings, home_position: { latitude: 1, longitude: 1 }, failsafe_policy: [
+          { rule_id: "BAT", priority: 50, conditions: [{ kind: "battery_below", battery_percent: 10, critical }], response: { kind: action } },
+        ] };
+        state.measurements = {
+          position: { value: { latitude: 2, longitude: 2, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, source: "gps", time: 0 },
+          armed: { value: true, source: "vehicle", time: 0 },
+          battery: { value: 5, source: "vehicle", time: 0 },
+        };
+        state = reduce(state, { kind: "tick", now: 0, hasWork: false }, config).state;
+        state.measurements.battery = { value: stillCritical ? 5 : 50, source: "vehicle", time: 1 };
+        const failed = reduce(state, { kind: "command_failed", execution_id: state.commandId, now: 1, explanation: "equipment refused" }, config);
+        assert.equal(failed.effects.some(e => e.kind === "response" && e.status === "active" && e.action.kind === "return_to_home"), critical && stillCritical && action === "land");
+        state = failed.state;
+        if (state.execution)
+          state = reduce(state, { kind: "command_failed", execution_id: state.commandId, now: 2, explanation: "fallback refused" }, config).state;
+        for (const now of [3, 4]) {
+          const tick = reduce(state, { kind: "tick", now, hasWork: false }, config);
+          assert.equal(tick.effects.some(e => e.kind === "response" && e.status === "active"), false);
+          state = tick.state;
+        }
+      });
