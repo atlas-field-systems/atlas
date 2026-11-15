@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { follow, type AtlasEvent } from "@atlas/sdk";
-import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset, plugin } from "../src/actors.ts";
+import { plugin } from "../src/actors.ts";
+import { assetApp } from "../src/asset-app.ts";
 import { value } from "../src/world.ts";
 
 scenario({
@@ -17,8 +17,11 @@ scenario({
     const stream = follow(w.admin, { after: 0 }, (e) => {
       events.push(e);
     });
-    const asset = await ipAsset(w);
-    const asset_id = asset.session.asset_id;
+    const asset = await assetApp(w, { equipment: "ardupilot", config: {
+      description: { commands: ["takeoff", "move_to", "land", "hold", "return_to_home", "failsafe"], reports: ["status", "settings", "telemetry", "battery", "failsafe"], settings: ["lights", "run_state"] },
+      initial_settings: { run_state: "paused", failsafe_policy: [{ rule_id: "CB", priority: 99, conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } }] },
+    } });
+    const asset_id = asset.asset_id;
     await w.settle();
     assert.ok(
       w.network.traffic.some(
@@ -26,7 +29,7 @@ scenario({
           t.caller === "asset" &&
           t.path === `/entities/assets/${asset_id}/reports`,
       ),
-      "startup step 3 sends an empty report batch even when no state is known",
+      "startup step 3 sends a report batch",
     );
     w.network.once("admin", `/tasks/${asset_id}`, { kind: "loseResponse" });
     const sent = value(
@@ -42,6 +45,8 @@ scenario({
       [1],
       "one Task created despite lost acknowledgment",
     );
+    await w.until(() => events.some(e => e.kind === "report.status" && e.record.kind === "queue" && e.record.request_id === sent.event_id));
+    w.network.once("asset", `/entities/assets/${asset_id}/reports`, { kind: "loseResponse" });
     w.network.once("admin", `/entities/assets/${asset_id}/settings`, {
       kind: "loseResponse",
     });
@@ -64,27 +69,7 @@ scenario({
       ),
     );
     await w.settle();
-    w.network.once("asset", `/entities/assets/${asset_id}/reports`, {
-      kind: "loseResponse",
-    });
-    value(
-      await w.complete(
-        asset.client.call("sendReports", {
-          params: { asset_id },
-          body: {
-            reports: [
-              {
-                type: "report.settings",
-                time: w.clock.now(),
-                asset_id,
-                settings: { lights: "on" },
-                request_id: settings.event_id,
-              },
-            ],
-          },
-        }),
-      ),
-    );
+    await w.until(() => events.some(e => e.kind === "report.settings" && e.record.request_id === settings.event_id));
     w.network.once("admin", "/entities/geofeatures", { kind: "loseResponse" });
     const place = value(
       await w.complete(
@@ -213,7 +198,7 @@ scenario({
     assert.equal(
       events.filter(
         (e) =>
-          e.kind === "report.settings" && e.record.settings.lights === "on",
+          e.kind === "report.settings" && e.record.request_id === settings.event_id,
       ).length,
       1,
       "same report batch is not stored twice",
@@ -257,7 +242,7 @@ scenario({
       assert.equal(refused.error, "idempotency_conflict");
     }
     p.session.stop();
-    asset.session.stop();
+    await asset.stop();
     stream.stop();
   },
 });
