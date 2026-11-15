@@ -39,6 +39,7 @@ scenario({
       const x = new common.ExtendedSysState(); Object.assign(x, { vtolState: 0, landedState: 1 }); out(x);
     };
     server.on("connection", (socket: Socket) => {
+      socket.on("error", () => {});
       peer = socket;
       const reader = socket.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
       reader.on("data", (packet: MavLinkPacket) => {
