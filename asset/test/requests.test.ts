@@ -6,14 +6,14 @@ import { parseConfig } from "../src/config.ts";
 import { initial, reduce, refusal, type Event, type Effect } from "../src/control.ts";
 
 const phases = ["ordinary", "paused", "failsafe", "override", "flight_controller"] as const;
-const requests = ["task", "now", "cancel queued", "cancel running", "update", "settings", "pause", "resume", "land", "return_to_home", "hold", "failsafe"] as const;
-type Outcome = "queue" | "run" | "cancel" | "update" | "apply" | "refuse";
+const requests = ["task", "now", "cancel queued", "cancel running", "update", "settings", "pause", "resume", "land", "return_to_home", "hold", "failsafe", "settings task"] as const;
+type Outcome = "queue" | "run" | "cancel" | "update" | "apply" | "refuse" | "complete";
 const table: Record<typeof phases[number], Outcome[]> = {
-  ordinary: ["queue", "run", "cancel", "cancel", "update", "apply", "apply", "apply", "run", "run", "run", "run"],
-  paused: ["queue", "run", "cancel", "cancel", "update", "apply", "apply", "apply", "run", "run", "run", "run"],
-  failsafe: ["refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "apply", "apply", "run", "run", "run", "refuse"],
-  override: ["refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "apply", "apply", "run", "run", "run", "refuse"],
-  flight_controller: ["refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse"],
+  ordinary: ["queue", "run", "cancel", "cancel", "update", "apply", "apply", "apply", "run", "run", "run", "run", "complete"],
+  paused: ["queue", "run", "cancel", "cancel", "update", "apply", "apply", "apply", "run", "run", "run", "run", "complete"],
+  failsafe: ["refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "apply", "apply", "run", "run", "run", "refuse", "refuse"],
+  override: ["refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "apply", "apply", "run", "run", "run", "refuse", "refuse"],
+  flight_controller: ["refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse", "refuse"],
 };
 
 for (const phase of phases)
@@ -70,7 +70,9 @@ for (const phase of phases)
         else if (request === "update")
           q.apply({ kind: "tasks.updated", event_id: 42, record: [{ ...task, destination: { latitude: 3, longitude: 3 } }] });
         else {
-          const next: Task = request === "task" || request === "now"
+          const next: Task = request === "settings task"
+            ? { ...task, task_id: 3, kind: "settings", settings: { link_loss_after_s: 50 }, now: true }
+            : request === "task" || request === "now"
             ? { ...task, task_id: 3, now: request === "now" }
             : { ...task, task_id: 3, kind: request, now: true };
           q.apply({ kind: "tasks.requested", event_id: 42, record: [next] });
@@ -83,6 +85,13 @@ for (const phase of phases)
           if (!["cancel queued", "cancel running", "update"].includes(request))
             assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === 3 && r.task_state === "failed" && r.request_id === 42));
         } else if (outcome === "queue") assert.deepEqual(q.held(), [2, 3]);
+        else if (outcome === "complete") {
+          assert.equal(state.execution, null);
+          assert.equal(state.settings.link_loss_after_s, 50);
+          assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === 1 && r.task_state === "cancelled"));
+          assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === 3 && r.task_state === "completed"));
+          assert.ok(effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
+        }
         else if (outcome === "run") assert.ok(effects.some(e => e.kind === "vehicle"));
         else if (outcome === "cancel") assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_state === "cancelled" && r.request_id === 42));
         else if (outcome === "update") {

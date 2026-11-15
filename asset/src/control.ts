@@ -345,6 +345,12 @@ export function reduce(
         break;
       }
       if (task.kind === "settings") {
+        const current = work(state);
+        if (current) {
+          finish(current, "cancelled");
+          state.execution = null;
+          effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: { kind: "hold", mode: 4 } });
+        }
         const changed = reduce(
           state,
           {

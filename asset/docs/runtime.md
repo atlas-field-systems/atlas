@@ -81,5 +81,7 @@ the queue unchanged. The helper answers them with current Task or queue evidence
 and the request ID. Known final Task outcomes remain in memory for refused
 cancel answers. Cancels accepted before Task delivery keep their original
 answer even if the Asset enters failsafe state before delivery.
+An immediate settings Task ends the superseded execution and holds movement
+before applying its settings.
 Settings answers are reducer effects, including retained settings on refusal,
 so the IP adapter sends the decision with the request ID.
