@@ -52,6 +52,7 @@ export interface ClientOptions<C extends Credential> {
   heartbeatMs?: number;
 }
 export type About = {
+  stream_keepalive_s: number;
   run_id: number;
   definitions_hash: string;
   core_version: string;

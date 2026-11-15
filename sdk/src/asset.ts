@@ -389,6 +389,9 @@ export async function startAsset(
     connected = await client.connect();
   }
   if (!connected.ok) return connected;
+  const threshold = options.settings().link_loss_after_s;
+  if (threshold !== undefined && threshold <= connected.value.stream_keepalive_s)
+    return { ok: false as const, error: "refused" as const, explanation: "initial_settings.link_loss_after_s must exceed Core stream_keepalive_s" };
   const registered = await known(
     client.call("register", { body: options.description }),
   );

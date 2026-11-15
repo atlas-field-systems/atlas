@@ -29,7 +29,7 @@ Accounts may call every operator route.
   [hash recipe](../../protocol/docs/decisions.md#definitions-hash). Core refuses
   a missing or different hash with `409 definitions_mismatch`. `GET /about`
   needs no credential and
-  returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
+  returns `core_version`, `protocol_version`, `definitions_hash`, `run_id`, and `stream_keepalive_s`. The event
   stream alone takes the hash as `?definitions=`, because browsers cannot set headers on it. Other requests require the header, except `/about` and the debug log.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
   that hash differs, Core records the mismatch as described above.

@@ -94,7 +94,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   let writing: Promise<void> | undefined;
   let evidence = Promise.resolve();
   let evidencePending = 0;
-  let gap: Gap | undefined;
+  const gaps = new Map<string, Gap>();
   let bytes = 0, part = 0, fileBytes = 0, captureId = 0;
   const sanitize = (value: unknown) => JSON.parse(JSON.stringify(value, (key, item) => {
     if (/password|credential|authorization|cookie|token|asset_key|secret|api.?key/i.test(key)) return "[removed]";
@@ -102,7 +102,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     return item;
   }));
   function retain(path: string, value: unknown) {
-    if (path === "history.jsonl" && evidencePending >= config.log_queue_limit) { drop(clock.now(), "history queue full"); return; }
+    if (evidencePending >= config.log_queue_limit) { drop(clock.now(), path === "history.jsonl" ? "history queue full" : "report history queue full"); return; }
     const line = JSON.stringify(sanitize(value)) + "\n";
     if (path === "history.jsonl") {
       const size = Buffer.byteLength(line);
@@ -116,18 +116,17 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     }).finally(() => { evidencePending--; });
   }
   function drop(time: number, reason: string, count = 1) {
-    if (gap && gap.reason !== reason) {
-      const previous = gap;
-      evidence = evidence.then(() => appendFile(join(directory, "gaps.jsonl"), JSON.stringify(previous) + "\n")).catch(error => {
-        process.stderr.write(`Asset gap write failed: ${error}\n`);
-      });
-      gap = undefined;
-    }
-    gap ??= { start: time, end: time, reason, dropped: 0 };
+    const gap = gaps.get(reason) ?? { start: time, end: time, reason, dropped: 0 };
     gap.end = time;
     gap.dropped += count;
+    gaps.set(reason, gap);
   }
   function record(value: unknown) {
+    if (sealed) return;
+    try { recordDiagnostic(value); }
+    catch { drop(clock.now(), "diagnostic serialization failure"); }
+  }
+  function recordDiagnostic(value: unknown) {
     if (sealed) return;
     const safe = sanitize(value);
     const kind = String(safe.kind ?? safe.name ?? "diagnostic");
@@ -148,7 +147,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   }
   async function persistGap() {
     await evidence;
-    if (gap) await writeFile(join(directory, "gap.json"), JSON.stringify(gap)).catch(() => {});
+    if (gaps.size) await writeFile(join(directory, "gaps.jsonl"), [...gaps.values()].map(gap => JSON.stringify(gap) + "\n").join("")).catch(() => {});
   }
   async function drain() {
     while (pending.length) {
@@ -166,6 +165,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   record({ kind: "startup", time: start, config: inspectConfig(config) });
   return {
     record,
+    gap: drop,
     identify(asset_id: string) {
       operation.asset_id = asset_id;
       evidence = evidence.then(() => writeFile(join(directory, "operation.json"), JSON.stringify(operation))).catch(error => {
@@ -173,7 +173,11 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
         drop(clock.now(), "evidence write failure");
       });
     },
-    report(value: unknown) { if (!sealed) retain("reports/history.jsonl", value); },
+    report(value: unknown) {
+      if (sealed) return;
+      try { retain("reports/history.jsonl", value); }
+      catch { drop(clock.now(), "report serialization failure"); }
+    },
     async capture(file: { name: string; bytes: Uint8Array }) {
       const name = `files/${++captureId}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       await mkdir(join(directory, "files"), { recursive: true });

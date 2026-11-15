@@ -65,8 +65,7 @@ not changes to the behavior specified in the linked pages:
   Peripheral captures currently attempt upload over IP.
 - Gimbal control and reports, Point At execution, and lights are not built.
 - Report history is retained locally, but historical telemetry catch-up is not
-  implemented as a separate delivery lane. Its disk write queue and reports
-  waiting before registration are not yet bounded.
+  implemented as a separate delivery lane.
 - Failsafe shutdown for a non-flying Asset whose equipment reports movement
   stopped is not built. The current shutdown check requires disarmed and grounded
   vehicle measurements.

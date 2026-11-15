@@ -86,8 +86,7 @@ export function refusal(state: State, request: QueueRequest): string | undefined
   return "failsafe locks ordinary work";
 }
 export function canPullTask(state: State): boolean {
-  return !state.execution && state.phase !== "stopping" &&
-    (state.phase !== "ordinary" || state.settings.run_state !== "paused");
+  return !state.execution && state.phase === "ordinary" && state.settings.run_state !== "paused";
 }
 export function initial(config: Config, now: number): State {
   const idle: { since: number | null } = { since: now };

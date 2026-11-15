@@ -25,6 +25,11 @@ missing or incompatible options without moving equipment. The same check runs in
 CI without hardware. Flying configurations require a critical battery rule.
 The app loads one local JSON file.
 
+For the IP link, startup refuses `initial_settings.link_loss_after_s` when it
+is at or below Core's keepalive interval. The SDK reads the interval from
+Core before registration; inspection alone cannot check a remote Core.
+See [Core contact](../core/docs/api.md#contact).
+
 ## Inspect a configuration
 
 With Node 24, run `npm ci` in Protocol, Core, the SDK, and Asset, in that order.
@@ -42,7 +47,7 @@ seconds, and GCS system ID, `simulated` with a stationary position, or
 The [peripheral interface](docs/runtime.md#reporting-only-equipment) carries GPS
 samples, detector Observations, and captured files.
 `safe_action` is the built-in failsafe response. `control_tick_s` sets the
-control-loop interval. `log_queue_limit` bounds queued diagnostics.
+control-loop interval. `log_queue_limit` bounds each local diagnostic, evidence-write, and pre-registration report queue.
 The app uses Protocol's validator for all shared values.
 
 The command registry in `src/commands.ts` owns executable kinds, preparation,

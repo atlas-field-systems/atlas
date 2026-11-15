@@ -263,3 +263,32 @@ absolute horizontal position estimate from EKF. Hold uses a position target at
 the measured location with zero velocity in Guided. Each equipment command
 supersedes the preceding operation. Its promise waits for its own command
 acknowledgements and commanded-mode heartbeat; a refusal rejects that operation.
+
+
+## Control-loop failure containment and queue bounds
+
+The control tick catches equipment tick failures and always schedules its next
+iteration unless stopped. Diagnostics contain serialization and filtering errors
+at the writer boundary and count the failed record as a gap. Equipment errors
+produce `control_failed` diagnostics. Logging cannot escape through dispatch
+before its error handling. The reducer owns the queue-pull predicate; it permits
+a pull only without an execution in ordinary, unpaused operation.
+
+The IP handshake exposes Core's configured `stream_keepalive_s` in `/about`.
+The SDK compares initial link-loss settings after connecting and before
+registration, refusing a threshold at or below that interval. Equipment control
+continues while the handshake is pending. Startup refusal uses the normal
+resource cleanup and failed-operation archive.
+
+`log_queue_limit` also bounds pre-registration reports and the evidence write
+queue. The app keeps the oldest waiting reports and refuses newer additions
+when full, counting each refused addition as a pre-registration report gap.
+It still offers each acquisition to local report history. Report-history copies
+have their own gap reason when the evidence writer is full. Dropping a history
+copy never removes an admitted waiting report from the app or SDK outbox.
+Report history remains independent of diagnostic filtering and byte rotation.
+
+Gap accumulation keeps one count and first-to-last interval per failure reason,
+rather than queuing disk writes on every reason change. Persistence writes that
+bounded set after draining and at shutdown. The intervals may include time
+between separate occurrences of the same failure reason.

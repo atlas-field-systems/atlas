@@ -55,7 +55,10 @@ export async function startApp(
     function report(reports: LocalReport[]) {
       if (!running) {
         for (const value of reports) log.report(value);
-        pendingReports.push(...reports);
+        for (const value of reports) {
+          if (pendingReports.length < config.log_queue_limit) pendingReports.push(value);
+          else log.gap(clock.now(), "pre-registration report queue full");
+        }
         return;
       }
       const { asset_id } = running;
@@ -65,8 +68,8 @@ export async function startApp(
     }
     function dispatch(event: Event) {
       if (stopped) return;
-      log.record({ kind: "input", event });
       try {
+        log.record({ kind: "input", event });
         const result = reduce(state, event, config);
         state = result.state;
         for (const effect of result.effects) apply(effect);
@@ -256,8 +259,8 @@ export async function startApp(
     running.link.onContact((contact) => dispatch({ kind: "contact", contact }));
     function tick() {
       if (stopped) return;
-      vehicle.tick(clock.now());
       try {
+        vehicle.tick(clock.now());
         const before = state.settings;
         dispatch({
           kind: "tick",
