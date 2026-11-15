@@ -279,3 +279,18 @@ for (const kind of ["land", "return_to_home"] as const)
       state = result.state;
     }
   });
+
+test("docs/failsafes.md: subsystem thresholds use fresh evidence and unknown never triggers", async () => {
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.initial_settings.failsafe_policy = [{ rule_id: "GPS", priority: 50,
+    conditions: [{ kind: "subsystem", subsystem_id: "GPS", trigger_condition: "degraded" }], response: { kind: "land" } }];
+  for (const condition of ["unknown", "healthy", "degraded", "faulted"] as const) {
+    for (const stale of [false, true]) {
+      const state = initial(config, 0);
+      Object.assign(state.measurements, { armed: { value: true, source: "equipment", time: 0 }, position: { value: { latitude: 1, longitude: 1 }, source: "equipment", time: 0 }, subsystems: { GPS: { value: { condition }, source: "equipment", time: 0 } } });
+      const result = reduce(state, { kind: "tick", now: stale ? 6000 : 0, hasWork: false }, config);
+      assert.equal(result.effects.some(e => e.kind === "response" && e.status === "active"),
+        !stale && (condition === "degraded" || condition === "faulted"), `${condition}, stale=${stale}`);
+    }
+  }
+});

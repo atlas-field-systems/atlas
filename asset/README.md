@@ -54,7 +54,8 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- Subsystem failsafe conditions still need implementation and simulation coverage.
+- GPS and flight-controller subsystem conditions and configured subsystem rules are implemented.
+  SITL disables GPS and checks the condition at Core and a configured Land response.
   The request matrix now checks ordinary, paused, failsafe, override, and
   flight-controller phases, including queued cancels and updates and paused place
   updates. Contract coverage checks priority, Hold and pause re-arming, lower

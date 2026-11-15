@@ -1,6 +1,6 @@
 # Subsystem conditions
 
-Selected behavior, not implemented. The Asset chooses which subsystems it
+Selected behavior; the ArduPilot driver implements GPS and flight-controller conditions. The Asset chooses which subsystems it
 reports and when. Protocol defines the
 [subsystem report](../../protocol/docs/decisions.md#reports).
 

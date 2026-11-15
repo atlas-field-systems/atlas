@@ -127,7 +127,17 @@ export async function startApp(
         break;
     }
   }
+  const pendingSubsystems: Array<Omit<Extract<Report, { type: "report.status" }> & { kind: "subsystem" }, "asset_id">> = [];
   vehicle.start((measurements) => {
+    for (const [id, sample] of Object.entries(measurements.subsystems ?? {})) {
+      const previous = state.measurements.subsystems?.[id];
+      if (sample.time === null || !config.description.subsystems?.some(s => s.subsystem_id === id) ||
+          (previous?.value.condition === sample.value.condition && previous?.value.explanation === sample.value.explanation)) continue;
+      const change = { type: "report.status" as const, kind: "subsystem" as const,
+        time: sample.time, subsystem_id: id, ...sample.value };
+      if (running) report([{ ...change, asset_id: running.asset_id }]);
+      else pendingSubsystems.push(change);
+    }
     dispatch({ kind: "measurements", measurements });
     running?.outbox.changed();
   });
@@ -167,6 +177,7 @@ export async function startApp(
     throw new Error(result.explanation);
   }
   running = result.value;
+  report(pendingSubsystems.map(r => ({ ...r, asset_id: running!.asset_id })));
   running.outbox.onBlocked((failure) => {
     log.record({ kind: "outbox_blocked", time: clock.now(), failure });
     process.stderr.write(`Asset outbox blocked: ${failure.error}: ${failure.explanation}\n`);

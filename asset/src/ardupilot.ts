@@ -11,7 +11,7 @@ import {
 } from "node-mavlink";
 import type { Clock } from "@atlas/sdk";
 import type { Config } from "./config.ts";
-import type { Vehicle, Measurements, VehicleCommand } from "./vehicle.ts";
+import type { Vehicle, Measurements, VehicleCommand, Subsystem } from "./vehicle.ts";
 
 export function ardupilot(
   config: Extract<Config["equipment"], { kind: "ardupilot" }>,
@@ -91,6 +91,10 @@ export function ardupilot(
     Object.assign(m, { targetSystem, baseMode: 1, customMode });
     return write(m);
   }
+  function subsystem(key: "gps" | "flight_controller", value: Subsystem) {
+    const id = config.subsystems?.[key];
+    if (id) observe({ subsystems: { [id]: { value, time: clock.now(), source: "ardupilot" } } });
+  }
   function packet(packet: MavLinkPacket) {
     if (packet.header.compid !== 1) return;
     targetSystem = packet.header.sysid;
@@ -104,6 +108,7 @@ export function ardupilot(
     if (id === minimal.Heartbeat.MSG_ID) {
       const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
       for (const cb of listeners) cb(id, m);
+      subsystem("flight_controller", { condition: "healthy" });
       const armed = Boolean(m.baseMode & 128);
       observedMode = m.customMode;
       if (observedMode === expectedMode) transitionFrom = null;
@@ -119,6 +124,7 @@ export function ardupilot(
     } else if (id === common.GpsRawInt.MSG_ID) {
       const m = packet.protocol.data(packet.payload, common.GpsRawInt);
       gpsFixed = m.fixType >= 3;
+      subsystem("gps", gpsFixed ? { condition: "healthy" } : { condition: "faulted", explanation: "GPS has no 3D fix" });
     } else if (id === common.GlobalPositionInt.MSG_ID) {
       if (!gpsFixed || !positionEstimated) return;
       const m = packet.protocol.data(packet.payload, common.GlobalPositionInt);

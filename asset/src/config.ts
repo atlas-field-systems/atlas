@@ -36,6 +36,7 @@ const schema = z
         port: z.int().min(1).max(65535),
         system_id: z.int().min(1).max(255),
         heartbeat_s: positive,
+        subsystems: z.strictObject({ gps: z.string().optional(), flight_controller: z.string().optional() }).optional(),
       }),
       z.strictObject({
         kind: z.literal("simulated"),
@@ -118,6 +119,13 @@ const schema = z
     if (c.description.commands.some(isCommand)) {
       if (c.default_ground_speed_mps === undefined) fail(["default_ground_speed_mps"], "required for movement");
       if (c.max_ground_speed_mps === undefined) fail(["max_ground_speed_mps"], "required for movement");
+    }
+    if (c.equipment.kind === "ardupilot") {
+      const ids = Object.values(c.equipment.subsystems ?? {});
+      if (new Set(ids).size !== ids.length) fail(["equipment", "subsystems"], "duplicate subsystem mapping");
+      for (const id of ids)
+        if (!c.description.subsystems?.some(s => s.subsystem_id === id))
+          fail(["equipment", "subsystems"], `undeclared subsystem ${id}`);
     }
     const identities = new Set<string>();
     const priorities = new Set<number>();

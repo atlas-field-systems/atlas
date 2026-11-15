@@ -1,10 +1,12 @@
-import type { ComponentsPosition } from "@atlas/protocol/types";
+import type { ComponentsPosition, RecordsReportStatusSubsystem } from "@atlas/protocol/types";
 export type Measurement<T> = {
   value: T;
   source: string | null;
   time: number | null;
 };
+export type Subsystem = Pick<RecordsReportStatusSubsystem, "condition" | "explanation">;
 export interface Measurements {
+  subsystems?: Record<string, Measurement<Subsystem>>;
   position?: Measurement<ComponentsPosition>;
   battery?: Measurement<number>;
   armed?: Measurement<boolean>;

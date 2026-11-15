@@ -85,3 +85,20 @@ An immediate settings Task ends the superseded execution and holds movement
 before applying its settings.
 Settings answers are reducer effects, including retained settings on refusal,
 so the IP adapter sends the decision with the request ID.
+
+## Subsystem evidence
+
+The ArduPilot equipment configuration maps `gps` and `flight_controller` to
+declared subsystem IDs. The configuration validator rejects undeclared or
+duplicate mappings. GPS_RAW_INT with a 3D fix reports healthy; without one it
+reports faulted with an explanation. A flight-controller heartbeat reports
+healthy for the controller's communications function. These mappings do not
+claim that all vehicle equipment is healthy.
+
+Local subsystem samples retain their driver source and acquisition time. Each
+new sample refreshes local evidence for rule evaluation. A changed condition or
+explanation queues a report with that sample's time, including changes acquired
+before Core registration. Unchanged samples produce no condition report. The
+Protocol subsystem report carries no source field; source remains in local
+diagnostics. Retries retain the report's original time. Subsystem rules use the
+existing per-condition timing records and measurement freshness limit.

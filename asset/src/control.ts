@@ -261,8 +261,11 @@ export function reduce(
           holds = position !== undefined && outsideBoundary(position, c);
           break;
         }
-        case "subsystem":
-          holds = false;
+        case "subsystem": {
+          const condition = get(state.measurements.subsystems?.[c.subsystem_id])?.condition;
+          holds = condition === "faulted" || (c.trigger_condition === "degraded" && condition === "degraded");
+          break;
+        }
       }
       const timer = record.conditions[key] ??= c.kind === "idle" ? state.idle : { since: null };
       if (c.kind !== "idle") timer.since = holds ? (timer.since ?? now) : null;
@@ -288,7 +291,7 @@ export function reduce(
   if (state.phase === "stopping") return { state, effects };
   switch (event.kind) {
     case "measurements":
-      state.measurements = { ...state.measurements, ...event.measurements };
+      state.measurements = { ...state.measurements, ...event.measurements, subsystems: { ...state.measurements.subsystems, ...event.measurements.subsystems } };
       return { state, effects };
     case "contact":
       if (event.contact.last_heard !== null)

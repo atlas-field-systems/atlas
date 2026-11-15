@@ -26,6 +26,7 @@ async function equipmentPort() {
 }
 
 for (const scenario of [
+  "subsystem",
   "requests",
   "boundary",
   "takeover",
@@ -174,6 +175,7 @@ for (const scenario of [
           { status: response.status, headers: response.headers },
         );
       };
+      const example = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
       const config = parseConfig({
         ...JSON.parse(
           await readFile(
@@ -181,18 +183,28 @@ for (const scenario of [
             "utf8",
           ),
         ),
+        description: { ...example.description, subsystems: [{ subsystem_id: "GPS", label: "GPS receiver" }] },
         equipment: {
           kind: "ardupilot",
           host: "127.0.0.1",
           port: equipment,
           system_id: 255,
           heartbeat_s: 0.2,
+          subsystems: { gps: "GPS" },
         },
         asset_key: issued.key,
         link: { core_url: core.url },
         log_directory: join(root, "asset"),
         archive_directory: join(root, "archives"),
       });
+      config.description.subsystems = [{ subsystem_id: "GPS", label: "GPS receiver" }];
+      if (scenario === "subsystem") {
+        config.initial_settings.failsafe_policy!.push({
+          rule_id: "GPS", priority: 50,
+          conditions: [{ kind: "subsystem", subsystem_id: "GPS", trigger_condition: "degraded" }, { kind: "airborne" }],
+          response: { kind: "land" },
+        });
+      }
       if (scenario === "boundary")
         config.initial_settings.failsafe_policy!.push({
           rule_id: "AREA", priority: 50,
@@ -237,6 +249,24 @@ for (const scenario of [
       const app = await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "subsystem") {
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.condition === "healthy"));
+        value(await admin.call("sendTasks", {
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 5, altitude_reference: "launch" } }] },
+        }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+        const pilot = connect({ host: "127.0.0.1", port: pilotPort });
+        cleanup.push(() => { pilot.destroy(); });
+        await once(pilot, "connect");
+        const disable = new common.ParamSet();
+        Object.assign(disable, { targetSystem: 1, targetComponent: 1, paramId: "SIM_GPS1_ENABLE", paramValue: 0, paramType: 9 });
+        const disabledAt = Date.now();
+        await send(pilot, disable, new MavLinkProtocolV2(254, 190));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.subsystem_id === "GPS" && e.record.condition === "faulted" && e.record.time >= disabledAt));
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "GPS" && e.record.task_state === "completed"));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
       if (scenario === "requests") {
         const invalid = value(await admin.call("changeSettings", {
           params: { asset_id: app.asset_id }, body: { settings: { failsafe_policy: [

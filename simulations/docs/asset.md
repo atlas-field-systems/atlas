@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The ten scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The eleven scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -124,3 +124,6 @@ ordinary Task and a cancel while the simulated network delays outgoing reports.
 Core must receive failed Task evidence answering both requests, without the Task
 entering the held queue. The takeover scenario also checks the refused Task's
 request ID. These delays affect only the network around the real parts.
+
+The subsystem scenario disables SITL GPS through `SIM_GPS1_ENABLE`. Core must
+receive a fresh faulted GPS condition and the configured subsystem rule must land.
