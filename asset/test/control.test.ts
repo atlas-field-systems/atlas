@@ -730,3 +730,37 @@ for (const step of [0, 1, 2]) for (const reason of ["refused", "timeout"]) {
     assert.equal(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"), step < 2);
   });
 }
+
+test("docs/failsafes.md: a Task completing on its first tick starts a fresh idle interval", async () => {
+  const { config } = await setup();
+  config.initial_settings.failsafe_policy = [{ rule_id: "IDLE", priority: 1,
+    conditions: [{ kind: "idle", for_s: 5 }], response: { kind: "return_to_home" } }];
+  let state = initial(config, 0);
+  state.measurements = {
+    position: { value: { latitude: 1, longitude: 1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, source: "vehicle", time: 4000 },
+    armed: { value: true, source: "vehicle", time: 4000 },
+    speed: { value: 0, source: "vehicle", time: 4000 },
+  };
+  state = reduce(state, { kind: "task", task: hold, now: 4000 }, config).state;
+  const done = reduce(state, { kind: "tick", now: 4100, hasWork: false }, config);
+  assert.ok(done.effects.some(e => e.kind === "task" && e.status === "completed"));
+  state = reduce(done.state, { kind: "tick", now: 5000, hasWork: false }, config).state;
+  assert.equal(state.phase, "ordinary");
+  assert.equal(reduce(state, { kind: "tick", now: 9099, hasWork: false }, config).state.phase, "ordinary");
+  assert.equal(reduce(state, { kind: "tick", now: 9100, hasWork: false }, config).state.phase, "failsafe");
+});
+
+test("docs/README.md: Takeoff near ground cannot complete before observed flight", async () => {
+  const { config, state: start } = await setup();
+  const task = { ...hold, kind: "takeoff", target_altitude: { altitude_m: 0.25, altitude_reference: "launch" } } as const;
+  start.measurements.position!.value.altitudes![0]!.altitude_m = 0;
+  start.measurements.armed!.value = false;
+  start.measurements.airborne!.value = false;
+  const active = reduce(start, { kind: "task", task, now: 0 }, config).state;
+  const ground = reduce(active, { kind: "tick", now: 100, hasWork: false }, config);
+  assert.equal(ground.effects.some(e => e.kind === "task" && e.status === "completed"), false);
+  const armed = reduce(ground.state, { kind: "measurements", measurements: { armed: { value: true, source: "vehicle", time: 100 } } }, config).state;
+  assert.equal(reduce(armed, { kind: "tick", now: 200, hasWork: false }, config).effects.some(e => e.kind === "task" && e.status === "completed"), false);
+  const flying = reduce(armed, { kind: "measurements", measurements: { airborne: { value: true, source: "vehicle", time: 200 } } }, config).state;
+  assert.ok(reduce(flying, { kind: "tick", now: 300, hasWork: false }, config).effects.some(e => e.kind === "task" && e.status === "completed"));
+});

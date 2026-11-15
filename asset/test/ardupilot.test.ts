@@ -222,3 +222,49 @@ test("docs/failsafes.md: observed Land survives delayed critical battery evidenc
   }
   assert.equal(await correction.promise, 9);
 });
+
+for (const vz of [-300, 300]) test(`docs/README.md: Hold waits for vertical motion ${vz} to stop`, { timeout: 5000 }, async t => {
+  const { ardupilotmega } = await import("node-mavlink");
+  const { readFile } = await import("node:fs/promises");
+  const { parseConfig } = await import("../src/config.ts");
+  const { initial, reduce } = await import("../src/control.ts");
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  const server = createServer();
+  server.on("connection", socket => socket.on("error", () => {}));
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const connected = once(server, "connection");
+  const clock = { ...systemClock, now: () => 0 };
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, clock);
+  let state = initial(config, 0);
+  let observed = Promise.withResolvers<void>();
+  vehicle.start(measurements => {
+    state = reduce(state, { kind: "measurements", measurements }, config).state;
+    if (measurements.speed) observed.resolve();
+  });
+  const [peer] = await connected;
+  t.after(() => { vehicle.stop(); peer.destroy(); server.close(); });
+  const protocol = new MavLinkProtocolV2(1, 1);
+  const hb = new minimal.Heartbeat();
+  Object.assign(hb, { type: 2, autopilot: 3, baseMode: 129, customMode: 4, systemStatus: 4, mavlinkVersion: 3 });
+  await send(peer, hb, protocol);
+  const gps = new common.GpsRawInt(); Object.assign(gps, { fixType: 3 }); await send(peer, gps, protocol);
+  const ekf = new ardupilotmega.EkfStatusReport(); Object.assign(ekf, { flags: 16 }); await send(peer, ekf, protocol);
+  const position = new common.GlobalPositionInt();
+  Object.assign(position, { lat: 10000000, lon: 10000000, relativeAlt: 5000, vx: 0, vy: 0, vz });
+  await send(peer, position, protocol);
+  await observed.promise;
+  const task = { kind: "hold", task_id: 1, asset_id: "A", requested_by: "OP", time: 0 } as const;
+  state = reduce(state, { kind: "task", task, now: 0 }, config).state;
+  const moving = reduce(state, { kind: "tick", now: 100, hasWork: false }, config);
+  assert.equal(moving.effects.some(e => e.kind === "task" && e.status === "completed"), false);
+  assert.ok(moving.state.execution);
+  observed = Promise.withResolvers<void>();
+  position.vz = 0;
+  await send(peer, position, protocol);
+  await observed.promise;
+  const stopped = reduce(state, { kind: "tick", now: 200, hasWork: false }, config);
+  assert.ok(stopped.effects.some(e => e.kind === "task" && e.status === "completed"));
+});

@@ -60,3 +60,24 @@ test("config.md: takeoff capability defines flying equipment independent of enti
   input.initial_settings.failsafe_policy = [];
   assert.throws(() => parseConfig(input), /critical battery/);
 });
+
+for (const kind of ["gpsd", "peripheral"]) test(`config.md: ${kind} acquisition cannot advertise movement`, async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  input.equipment = { kind, host: "127.0.0.1", port: 2947, max_message_bytes: 1024, reconnect_s: 1 };
+  assert.throws(() => parseConfig(input), /acquisition-only equipment/);
+});
+
+for (const profile of ["completion_tolerances", "command_timeouts"]) test(`config.md: movement requires the internal Hold ${profile}`, async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  input.description.commands = input.description.commands.filter((kind: string) => kind !== "hold");
+  delete input[profile].hold;
+  assert.throws(() => parseConfig(input), new RegExp(`${profile}[\\s\\S]*hold`));
+});
+
+test("config.md: inspection removes URL credentials", async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  input.link.core_url = "https://operator:example-secret@example.com";
+  const inspected = inspectConfig(parseConfig(input));
+  assert.equal(new URL(inspected.link.core_url).username, "");
+  assert.equal(new URL(inspected.link.core_url).password, "");
+});
