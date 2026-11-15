@@ -1678,3 +1678,11 @@ test("PR53-16 slow stream deadline destroys its socket [api.md#the-event-log-and
     await h.close();
   }
 });
+
+test("config.md: keepalive interval must fit the system clock timer", async () => {
+  const { resolveConfig } = await import("../src/config.ts");
+  assert.equal(resolveConfig({ stream_keepalive_s: 2147483.647 }).ok, true);
+  const result = resolveConfig({ stream_keepalive_s: 2147483.648 });
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.ok(result.problems.some(problem => problem.key === "stream_keepalive_s"));
+});
