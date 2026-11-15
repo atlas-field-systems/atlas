@@ -190,7 +190,9 @@ incomplete event and resumes after its last fully handled `event_id`.
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
   how a page recovers after a refresh or in a new tab.
 - Core streams from the `events` table. When a reader cannot keep up, Core closes
-  its stream and the reader resumes from its last `event_id`.
+  its stream and the reader resumes from its last `event_id`. Event and keepalive
+  writes both stop on transport backpressure. A drain resumes output; without a
+  drain within 30 seconds, Core terminates the connection.
 - **The cursor is the duplicate check.** A reader handles each `event_id` once and
   resumes after the last one it handled, so nothing is missed or repeated.
 

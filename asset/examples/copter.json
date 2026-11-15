@@ -2,7 +2,7 @@
   "asset_key": "replace-with-provisioned-key",
   "link": {"core_url": "http://127.0.0.1:8443"},
   "description": {"entity_type": "drone", "commands": ["takeoff", "move_to", "land", "hold", "return_to_home", "failsafe"], "reports": ["telemetry", "battery", "status", "settings", "failsafe"], "settings": ["run_state", "home_position", "failsafe_policy", "link_loss_after_s"]},
-  "equipment": {"kind": "ardupilot", "host": "127.0.0.1", "port": 5760, "system_id": 255, "heartbeat_s": 1},
+  "equipment": {"kind": "ardupilot", "host": "127.0.0.1", "port": 5760, "system_id": 255, "heartbeat_s": 1, "stream_rate_hz": 5, "extended_state_interval_us": 200000},
   "initial_settings": {"run_state": "running", "link_loss_after_s": 12, "failsafe_policy": [{"rule_id": "LB", "priority": 10, "conditions": [{"kind": "battery_below", "battery_percent": 35}], "response": {"kind": "return_to_home"}}, {"rule_id": "CB", "priority": 99, "conditions": [{"kind": "battery_below", "battery_percent": 10, "critical": true}], "response": {"kind": "land"}}]},
   "safe_action": {"kind": "return_to_home"},
   "completion_tolerances": {

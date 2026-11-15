@@ -81,3 +81,19 @@ test("config.md: inspection removes URL credentials", async () => {
   assert.equal(new URL(inspected.link.core_url).username, "");
   assert.equal(new URL(inspected.link.core_url).password, "");
 });
+
+test("config.md: ArduPilot observation rates have defaults and enforce wire limits", async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  delete input.equipment.stream_rate_hz;
+  delete input.equipment.extended_state_interval_us;
+  const defaults = parseConfig(input).equipment;
+  assert.equal(defaults.kind, "ardupilot");
+  if (defaults.kind !== "ardupilot") throw new Error("expected ArduPilot");
+  assert.equal(defaults.stream_rate_hz, 5);
+  assert.equal(defaults.extended_state_interval_us, 200000);
+  for (const [field, invalid] of [
+    ["stream_rate_hz", [0, -1, 1.5, 65536]],
+    ["extended_state_interval_us", [0, -1, 1.5, 2147483648]],
+  ] as const) for (const value of invalid)
+    assert.throws(() => parseConfig({ ...input, equipment: { ...input.equipment, [field]: value } }), new RegExp(field));
+});

@@ -86,6 +86,13 @@ The configured safe action is unused when no commands are listed.
 | `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Required positive integers; starting points 64 MiB per file and 2 GiB per operation, about 17 hours at full detail (estimated from SITL runs at about 115 MB an hour); overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
 | `archive_directory` | [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) destination | Copied off by hand; the app never deletes archives |
 
+ArduPilot equipment also accepts `stream_rate_hz`, an integer from 1 through
+65535 for the requested telemetry stream rate, default 5 Hz, and
+`extended_state_interval_us`, an integer from 1 through 2147483647 for the
+requested EXTENDED_SYS_STATE interval, default 200000 microseconds. Inspection
+shows these defaults when omitted. These are requested cadences; the controller
+may deliver samples at a different rate.
+
 Equipment-specific options belong with their equipment driver or module.
 [Failsafes](docs/failsafes.md) owns the failsafe policy, and
 [logging](docs/logging.md) owns what is recorded.
