@@ -60,3 +60,15 @@ not changes to the behavior specified in the linked pages:
 - Peripheral hardware adapters and radio transport have not been checked on
   hardware. The [peripheral interface](docs/runtime.md#reporting-only-equipment)
   accepts equipment output over local TCP. GPS acquisition uses gpsd.
+
+- Capture Task execution and per-link file-selection policy are not built.
+  Peripheral captures currently attempt upload over IP.
+- Gimbal control and reports, Point At execution, and lights are not built.
+- Report history is retained locally, but historical telemetry catch-up is not
+  implemented as a separate delivery lane. Its disk write queue and reports
+  waiting before registration are not yet bounded.
+- Failsafe shutdown for a non-flying Asset whose equipment reports movement
+  stopped is not built. The current shutdown check requires disarmed and grounded
+  vehicle measurements.
+- Configurable module loading and movement-profile selection are not built.
+  Executable movement currently supports the copter command family only.

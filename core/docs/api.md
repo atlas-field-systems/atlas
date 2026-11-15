@@ -65,6 +65,7 @@ Accounts may call every operator route.
 | `409 definitions_mismatch` | Missing or different definitions hash |
 | `409 asset_offline`, `plugin_offline` | Recipient is offline |
 | `409 no_critical_battery_rule` | Flying Asset has no critical battery rule |
+| `409 invalid_link_loss` | An Asset link-loss setting does not exceed Core stream keepalive |
 | `409 queue_full` | The request exceeds the reported queue cap |
 | `409 not_supported` | Command, setting, camera, or action is not declared |
 | `409 task_ended`, `call_settled` | Task ended or Plugin call was already answered or dropped |
@@ -194,6 +195,11 @@ incomplete event and resumes after its last fully handled `event_id`.
   resumes after the last one it handled, so nothing is missed or repeated.
 
 ## Operator requests
+
+Core refuses an Asset's `link_loss_after_s` settings request at or below its
+configured `stream_keepalive_s` with `409 invalid_link_loss`, including a settings
+Task. This check also applies to radio Assets carried by a gateway, even though
+their Fieldlink supplies contact timing.
 
 Within a run, the next Task after 9999 is refused with `409 task_ids_exhausted`.
 Cancel for an unknown Task is `404 not_found`; cancel for an ended Task is
@@ -423,8 +429,7 @@ Asset on its own side and speaks to Core only by `asset_id`.
 
 ## Contact
 
-Core refuses a `link_loss_after_s` settings change at or below its configured
-`stream_keepalive_s` with `409 invalid_link_loss`, including a settings Task.
+[Operator request admission](#operator-requests) owns link-loss settings refusal.
 The [Core configuration](../config.md) owns the keepalive interval.
 
 Stored contact records describe transitions. An online record keeps the time

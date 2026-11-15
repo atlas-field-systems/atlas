@@ -1,6 +1,6 @@
 # Asset configuration
 
-Configuration inspection is implemented; equipment execution is in progress. Configuration
+[Asset status](README.md) owns implementation status. Configuration
 selects the Asset's [modules and equipment drivers](docs/assets.md#modules-and-equipment-drivers)
 and how it reaches Core.
 
@@ -23,7 +23,7 @@ command shows the effective configuration with secrets removed: modules,
 equipment, supported commands, reporting policy, and enabled failsafes. It names
 missing or incompatible options without moving equipment. The same check runs in
 CI without hardware. Flying configurations require a critical battery rule.
-The proposal is to load one local file.
+The app loads one local JSON file.
 
 ## Inspect a configuration
 
@@ -57,25 +57,25 @@ initial settings. The configured safe action is unused when no commands are list
 
 | Option | Purpose | Notes |
 | --- | --- | --- |
-| `asset_key` | Credential | For an Asset on IP, an admin [creates it in Core](../core/docs/api.md#accounts-and-provisioning) and copies it here. There is no enrollment key and no configured `asset_id`: Core assigns one when the Asset [registers](../core/docs/api.md#asset-and-gateway-calls) each run. An Asset behind a gateway has no `asset_key`; it learns its `asset_id` from its gateway |
-| `link` | How the Asset reaches Core: a Core URL for the SDK client on IP, or a Fieldlink and its radio | See [communications](docs/communications.md) |
-| `modules`, `equipment` | Behavior modules, movement profiles, equipment drivers, and their connections | Built-in modules are never silently overridden |
-| `commands` | The supported commands, listed outright | Sent in the Asset's description |
-| `position` | Own position source, or a configured stationary position | Missing values stay unknown |
-| `initial_settings` | Starting values for supported live settings | An explicit home takes precedence over automatic home. Includes the starting `failsafe_policy` |
-| `startup_behavior` | Acquisition, reporting, and initial equipment behavior | Example setups report at once and wait for movement Tasks |
-| `completion_tolerances`, `command_timeouts` | How close counts as done, and how long a command may run before its Task fails | Per command; defaults are tuned in SITL |
-| `default_ground_speed_mps` | Move To speed when none is requested | Required for movement, nonnegative and no greater than `max_ground_speed_mps`; chosen for the equipment |
-| `max_ground_speed_mps` | Safe maximum horizontal speed | Required for movement, positive and chosen for the equipment; [Move To caps faster requests](docs/README.md#move-to-speed) |
-
-| `measurement_stale_after_s` | Age at which a measurement counts as unknown to [failsafe conditions](docs/failsafes.md#configure-conditions-as-well-as-responses) | Proposed default 5 |
-| `final_report_wait_s` | How long the app waits for Core to acknowledge its final reports before it [shuts itself down](docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation) | Proposed default 30 |
-| `reporting` | Which reports to send from local state, and how often | No mandatory periodic health snapshots |
-| `log_level` | Detail of app, SDK client, and Fieldlink diagnostics | Proposed prototype default is `trace` |
-| `log_directory` | Local diagnostic files | Works while Core is unreachable |
-| `log_message_content` | Request and report content in trace records | Proposed on for the prototype, credentials removed |
-| `log_file_limit_bytes`, `log_total_limit_bytes` | Rotation and the most one operation's diagnostics may use | Past the total, records are counted as a [gap](docs/logging.md#when-logging-cannot-keep-up) |
-| `archive_directory` | Where the Asset writes its [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) at shutdown | Copied off by hand. The app never deletes from it |
+| `asset_key` | Core credential | An admin [provisions the key](../core/docs/api.md#accounts-and-provisioning); Core assigns the Asset ID |
+| `link.core_url` | Core URL | The implemented link is IP through the SDK |
+| `description` | Protocol registration body | Lists reports, commands, settings, cameras, and subsystems supported by this configuration |
+| `equipment` | Equipment kind and connection | Options for each kind are listed above |
+| `initial_settings` | Starting live settings | Explicit home precedes automatic home; includes the configured failsafe policy |
+| `safe_action` | Built-in failsafe response | Used when Fail-safe finds no applicable configured rule |
+| `completion_tolerances`, `command_timeouts` | Completion limits and timeout seconds per command | Required for listed executable commands |
+| `default_ground_speed_mps` | Speed when none is requested | Required for movement; nonnegative and at most the maximum |
+| `max_ground_speed_mps` | Maximum horizontal speed | Required for movement; positive; [faster requests are capped](docs/README.md#move-to-speed) |
+| `measurement_stale_after_s` | Maximum measurement age | Required positive seconds |
+| `final_report_wait_s` | Final acknowledgement wait | Required nonnegative seconds |
+| `control_tick_s` | Control interval | Required positive seconds |
+| `reporting.heartbeat_s` | Report heartbeat interval | Required positive seconds |
+| `log_level` | Diagnostic detail | Required `trace`, `debug`, `info`, `warn`, or `error` |
+| `log_directory` | Local operation records | Works while Core is unreachable |
+| `log_message_content` | Trace request and report bodies | Required boolean; credentials removed |
+| `log_queue_limit` | Diagnostic queue capacity | Required positive integer |
+| `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Required positive integers; overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
+| `archive_directory` | [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) destination | Copied off by hand; the app never deletes archives |
 
 Equipment-specific options belong with their equipment driver or module.
 [Failsafes](docs/failsafes.md) owns the failsafe policy, and

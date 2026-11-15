@@ -6,13 +6,13 @@ This repository holds every part of it, one folder each:
 - [atlas/](atlas/): the Charter, what Atlas is for and how its parts fit together, and the
   [decision log](atlas/decision-log.md) of the owner's decisions. Start here.
 - [protocol/](protocol/): the shared records and the one validator.
-- [sdk/](sdk/): the client for the Core API. Docs only so far.
+- [sdk/](sdk/): the client for the Core API. Built.
 - [core/](core/): Atlas Core, the server, and the [Core API](core/docs/api.md). Built.
-- [asset/](asset/): how an Asset behaves. Planning.
+- [asset/](asset/): the Asset app. See its [implementation status](asset/README.md).
 - [command-interface/](command-interface/): the operator interface. Planning.
 - [gateway/](gateway/): the gateway app, which installs and runs a Fieldlink. Planning.
 - [fieldlink/](fieldlink/): the Fieldlinks, each holding both ends of a field link. Planning.
-- [simulations/](simulations/): the parts run together in a simulated world, as end-to-end tests. Planning.
+- [simulations/](simulations/): the parts run together in a simulated world, as end-to-end tests. Built for Core, the SDK, and the initial Asset IP runtime.
 
 The Charter and the Protocol viewer are published at
 https://atlas-field-systems.github.io/atlas/ (the viewer is under `protocol/`).

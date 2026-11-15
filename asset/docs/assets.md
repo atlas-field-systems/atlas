@@ -118,7 +118,7 @@ The app starts dependencies before their consumers, stops them in reverse order,
 and cleans up after a partial startup. Modules can start before their equipment
 is ready, so [connection readiness](README.md#start-and-connect) stays separate.
 
-A standard Linux service starts the app on boot and shuts it down in order. It
+A standard Linux service starts the app when requested and shuts it down in order. It
 never restarts the app on its own: an app that fails in flight
 [stays down](failsafes.md#if-the-app-fails-in-flight)
 ([an operation runs without planned restarts](../../atlas/using-atlas.md#an-operation-runs-without-planned-restarts)).
@@ -185,11 +185,7 @@ controller. [Preparation and arming](README.md#prepare-and-take-off) are part of
 that execution. Configured failsafe responses use the same execution as ordinary
 work.
 
-The ArduPilot TCP driver publishes position only with a 3D GPS fix and an
-absolute horizontal position estimate from EKF. Hold uses a position target at
-the measured location with zero velocity in Guided. Each equipment command
-supersedes the preceding operation. Its promise waits for its own command
-acknowledgements and commanded-mode heartbeat; a refusal rejects that operation.
+[Runtime](runtime.md#movement-execution) owns the ArduPilot driver details.
 
 Copters share one command family. Fixed-wing aircraft are not part of the
 current design ([decision log](../../atlas/decision-log.md#operations-and-setup)).

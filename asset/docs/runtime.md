@@ -239,3 +239,27 @@ Recovery keeps a torn report line byte for byte and lists it as an incomplete
 line in the gap evidence. It does not turn that line into a report or discard
 the operation. Identity-evidence write failures are logged as gaps without
 rejecting the equipment or Core control path.
+
+## Movement execution
+
+The initial copter driver uses Guided position targets for transit and Land mode
+for descent and disarming. Land and Return to home follow their
+[Protocol command definitions](../../protocol/README.md).
+The app resolves the position copy supplied by Core, the Atlas home setting,
+and the configured speed when execution starts. An unresolved named place fails
+with an explanation. Transit uses the configured default ground speed, capped
+at the configured maximum.
+
+The command registry advances through observed altitude, destination, and landing
+steps. A Land without a destination or transit altitude starts descent at once.
+A transit without a specified altitude snapshots the current launch altitude.
+The initial ArduPilot driver refuses altitude references it cannot execute;
+it never substitutes another reference. Position targets carry the resolved
+destination and transit altitude to the driver. Return to home does not select
+ArduPilot RTL. The flight controller's independent RTL protection stays separate.
+
+The ArduPilot TCP driver publishes position only with a 3D GPS fix and an
+absolute horizontal position estimate from EKF. Hold uses a position target at
+the measured location with zero velocity in Guided. Each equipment command
+supersedes the preceding operation. Its promise waits for its own command
+acknowledgements and commanded-mode heartbeat; a refusal rejects that operation.

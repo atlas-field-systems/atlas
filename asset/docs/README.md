@@ -93,21 +93,11 @@ it never exceeds the limit. [Configuration](../config.md) owns both values.
 
 ### Movement execution
 
-The initial copter driver uses Guided position targets for transit and Land mode
-for descent and disarming. Land and Return to home follow their
-[Protocol command definitions](../../protocol/README.md).
-The app resolves the position copy supplied by Core, the Atlas home setting,
-and the configured speed when execution starts. An unresolved named place fails
-with an explanation. Transit uses the configured default ground speed, capped
-at the configured maximum.
-
-The command registry advances through observed altitude, destination, and landing
-steps. A Land without a destination or transit altitude starts descent at once.
-A transit without a specified altitude snapshots the current launch altitude.
-The initial ArduPilot driver refuses altitude references it cannot execute;
-it never substitutes another reference. Position targets carry the resolved
-destination and transit altitude to the driver. Return to home does not select
-ArduPilot RTL. The flight controller's independent RTL protection stays separate.
+Land and Return to home reach the requested place before descending. Without a
+transit altitude, they keep the altitude at which they began. Land with neither
+a destination nor a transit altitude descends where the Asset is. An unresolved
+place or an unsupported altitude reference fails with an explanation.
+[Runtime](runtime.md#movement-execution) owns equipment execution.
 
 ### The queue
 
@@ -130,7 +120,7 @@ starts again, whether it reappears in a repeated event or after a reconnect.
 Another attempt needs a new Task.
 
 An Asset with no Task to run waits in place for work, with its platform hold. A
-copter that finishes its last Task in the air loiters there until an operator
+copter that finishes its last Task in the air hovers there until an operator
 sends more. An empty queue is ordinary, and no
 Task has to follow another. Only a
 [configured failsafe rule](failsafes.md#configure-conditions-as-well-as-responses)
@@ -170,7 +160,7 @@ takeoff.
 ### Pause
 
 Pause is a setting, not a Task. It suspends current movement with a
-platform-specific hold: copters stop and loiter in place, and ground vehicles
+platform-specific hold: copters stop and hover in place, and ground vehicles
 brake and stop. A paused Asset does not advance its
 queue, though a Task sent with `now` still runs.
 
