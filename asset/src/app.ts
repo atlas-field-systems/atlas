@@ -9,7 +9,7 @@ import {
 } from "@atlas/sdk";
 import { readFile } from "node:fs/promises";
 import { loadPackagedProtocol } from "@atlas/protocol";
-import { initial, reduce, refusal, type Event, type Effect } from "./control.ts";
+import { initial, reduce, refusal, canPullTask, type Event, type Effect } from "./control.ts";
 import { fresh, type Vehicle, type Measurements } from "./vehicle.ts";
 import { peripheral } from "./peripheral.ts";
 import { ardupilot } from "./ardupilot.ts";
@@ -272,11 +272,7 @@ export async function startApp(
               settings: state.settings,
             },
           ]);
-        if (
-          !state.execution &&
-          state.phase !== "stopping" &&
-          (state.phase !== "ordinary" || state.settings.run_state !== "paused")
-        ) {
+        if (canPullTask(state)) {
           const task = running?.queue?.next();
           if (task) dispatch({ kind: "task", task, now: clock.now() });
         }

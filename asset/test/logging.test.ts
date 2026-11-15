@@ -179,3 +179,32 @@ test("docs/logging.md: summary diagnostics obey the total limit while report his
   assert.match(strFromU8(zip["reports/history.jsonl"]), /completed/);
   assert.match(strFromU8(zip["summary.md"]), /total limit/);
 });
+
+test("docs/logging.md: malformed diagnostics cannot escape into equipment control", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-invalid-log-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  const log = await createLog(config, 1000);
+  assert.doesNotThrow(() => log.record({ toJSON() { throw new Error("bad diagnostic"); } }));
+  log.record({ kind: "survived" });
+  const zip = unzipSync(await readFile(await log.close("A", "stopped")));
+  assert.match(strFromU8(zip["summary.md"]), /diagnostic serialization failure/);
+});
+
+test("docs/logging.md: report history queue is bounded and lists every dropped copy", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-report-bound-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  config.log_queue_limit = 2;
+  const log = await createLog(config, 1000);
+  for (let i = 0; i < 20; i++) log.report({ type: "report.status", kind: "task", time: i, task_id: i });
+  const zip = unzipSync(await readFile(await log.close("A", "stopped")));
+  const kept = strFromU8(zip["reports/history.jsonl"]).trim().split("\n").length;
+  assert.ok(kept <= 2);
+  const manifest = JSON.parse(strFromU8(zip["manifest.json"]));
+  assert.equal(manifest.gaps.filter((g: { reason: string }) => g.reason === "report history queue full").reduce((n: number, g: { dropped: number }) => n + g.dropped, 0), 20 - kept);
+});

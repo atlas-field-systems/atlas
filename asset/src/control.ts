@@ -85,6 +85,10 @@ export function refusal(state: State, request: QueueRequest): string | undefined
   if (request.kind === "task" && request.task.now && isOverride(request.task.kind)) return;
   return "failsafe locks ordinary work";
 }
+export function canPullTask(state: State): boolean {
+  return !state.execution && state.phase !== "stopping" &&
+    (state.phase !== "ordinary" || state.settings.run_state !== "paused");
+}
 export function initial(config: Config, now: number): State {
   const idle: { since: number | null } = { since: now };
   return {

@@ -127,3 +127,78 @@ scenario({
     assert.equal((await readdir(join(w.root, "asset-logs"))).length, 1);
   },
 });
+
+for (const threshold of [6, 7, 8]) scenario({
+  name: `Asset startup compares link-loss ${threshold}s with Core keepalive 7s`,
+  checks: ["core/docs/api.md#contact"],
+  config: { stream_keepalive_s: 7 },
+  async run(w) {
+    const key = value(await w.complete(w.admin.call("createAssetKey")));
+    assert.ok("key" in key);
+    const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
+    const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
+      initial_settings: { ...raw.initial_settings, link_loss_after_s: threshold },
+      equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
+      log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
+    const result = await w.complete(startApp(config, { clock: w.clock, fetch: w.network.fetchFor("app") })
+      .then(app => ({ app }), error => ({ error })));
+    if ("app" in result) {
+      await w.complete(result.app.stop());
+      assert.ok(threshold > 7, "startup must refuse a threshold at or below Core keepalive");
+    } else {
+      assert.ok(threshold <= 7);
+      assert.match(String(result.error), /link_loss_after_s.*stream_keepalive_s/);
+    }
+  },
+});
+
+scenario({
+  name: "Asset bounds pre-registration reports and archives their gap",
+  checks: ["asset/docs/logging.md#when-logging-cannot-keep-up"],
+  async run(w) {
+    const key = value(await w.complete(w.admin.call("createAssetKey")));
+    assert.ok("key" in key);
+    const server = createServer();
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    w.onClose(() => { server.close(); });
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const connected = once(server, "connection");
+    const raw = JSON.parse(await readFile(new URL("../../asset/examples/tracker.json", import.meta.url), "utf8"));
+    const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url }, log_queue_limit: 2,
+      description: { commands: [], reports: ["observation"] }, initial_settings: {},
+      equipment: { kind: "peripheral", host: "127.0.0.1", port: address.port, max_message_bytes: 65536, reconnect_s: 1 },
+      log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
+    w.network.cut("app");
+    const attempting = Promise.withResolvers<void>();
+    const net = w.network.fetchFor("app");
+    const start = w.clock.now();
+    const starting = startApp(config, { clock: { now: () => w.clock.now(), after: (ms, fn) => w.clock.after(Math.ceil(ms), fn) }, fetch: (input, init) => { attempting.resolve(); return net(input, init); } });
+    await w.complete(attempting.promise);
+    const [peer] = await connected;
+    w.onClose(() => peer.destroy());
+    const operation = join(config.log_directory, String(start), "reports", "history.jsonl");
+    for (let i = 0; i < 10; i++) {
+      peer.write(JSON.stringify({ kind: "observation", source: "detector", observation: {
+      type: "report.observation", kind: "coordinates", observation_id: String(i), time: w.clock.now(), position: { latitude: 1, longitude: 2 },
+      } }) + "\n");
+      let acquired = false;
+      for (let attempt = 0; attempt < 100 && !acquired; attempt++) {
+        const history = await readFile(operation, "utf8").catch(() => "");
+        acquired = history.includes(`"observation_id":"${i}"`);
+        if (!acquired) await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      assert.ok(acquired, `the peripheral acquired observation ${i} before Core registration`);
+    }
+    await w.advance(1000);
+    w.network.heal("app");
+    const app = await w.complete(starting);
+    await w.advance(1000);
+    const zip = unzipSync(await readFile(await w.complete(app.stop())));
+    const manifest = JSON.parse(strFromU8(zip["manifest.json"]));
+    const gap = manifest.gaps.find((g: { reason: string }) => g.reason === "pre-registration report queue full");
+    assert.equal(gap?.dropped, 8);
+    assert.equal(w.events.filter(e => e.kind === "report.observation").length, 2);
+  },
+});

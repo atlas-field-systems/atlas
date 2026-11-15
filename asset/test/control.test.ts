@@ -703,3 +703,17 @@ test("docs/README.md: active Move To update applies its new speed", async () => 
   const result = reduce(state, { kind: "update", task: { ...task, ground_speed_mps: 2 }, now: 1 }, config);
   assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "move_to" && e.command.speed === 2));
 });
+
+
+test("docs/README.md and docs/failsafes.md: queue pull requires ordinary unpaused operation", async () => {
+  const { canPullTask } = await import("../src/control.ts");
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  for (const phase of ["ordinary", "failsafe", "flight_controller", "stopping"] as const) {
+    for (const run_state of ["running", "paused"] as const) {
+      const state = initial(config, 0);
+      state.phase = phase;
+      state.settings.run_state = run_state;
+      assert.equal(canPullTask(state), phase === "ordinary" && run_state !== "paused", `${phase}, ${run_state}`);
+    }
+  }
+});
