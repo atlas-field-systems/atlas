@@ -93,3 +93,10 @@ test("the link asks with its room; live reports, then current state, then histor
   rest.settle({ ok: true });
   assert.equal(outbox.take({ bytes: 0, size: room.size }), undefined);
 });
+
+test("final failsafe response reports must arrive [sdk/docs/asset.md#the-asset-link]", () => {
+  const outbox = createOutbox({ now: () => 0, after: () => ({ cancel() {} }) });
+  void outbox.add([{ type: "report.failsafe", kind: "response", time: 1, asset_id: "A", rule_id: "LINK", task_state: "completed", response: { kind: "land" } }]);
+  assert.equal(outbox.take({ bytes: Infinity, size: () => 1 })?.priority, "must_arrive");
+  outbox.stop();
+});

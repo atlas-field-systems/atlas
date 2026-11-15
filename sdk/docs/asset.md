@@ -87,15 +87,15 @@ asks.
   settled, so a resent batch never changes. On IP the link resends it with the
   same key until it gets a `200`.
 - **Acknowledged.** `settle({ok: true})` drops the batch's reports. Final Task
-  reports (`completed`, `failed`, `cancelled`) and answers stay in the outbox
+  and failsafe-response reports (`completed`, `failed`, `cancelled`) and answers stay in the outbox
   until then, across reconnects. Other reports keep their original times when
   sent after a gap. Which of them to keep during a gap is the
   [Asset's choice](../../asset/docs/communications.md#report-from-local-state).
 - **Lost.** `settle` with `lost` means the link gave up on the batch. Its added
   reports are offered again in the next batch, and current state is read
   afresh.
-- **Must arrive.** A batch is `must_arrive` when it holds a final Task report or
-  answers a request, and `can_skip` otherwise.
+- **Must arrive.** A batch is `must_arrive` when it holds a final Task or failsafe-response
+  report or answers a request, and `can_skip` otherwise.
 - A report answering a request carries `request_id`, the request's `event_id`.
 - After `heartbeatMs` ([configuration](../config.md)) with nothing sent, the next
   `take` returns an empty batch, so Core keeps the Asset

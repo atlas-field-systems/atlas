@@ -55,7 +55,8 @@ const mustArrive = (r: Report) =>
   ("request_id" in r && r.request_id !== undefined) ||
   (r.type === "report.status" &&
     r.kind === "task" &&
-    r.task_state !== "active");
+    r.task_state !== "active") ||
+  (r.type === "report.failsafe" && r.kind === "response" && r.task_state !== "active");
 const batchLimit = 1000;
 export function createOutbox(
   clock: Clock,
