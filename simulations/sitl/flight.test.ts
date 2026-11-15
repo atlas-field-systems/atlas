@@ -15,6 +15,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { startApp, parseConfig } from "@atlas/asset";
 import { spawnCore } from "../src/core-process.ts";
 import { value } from "../src/world.ts";
+import { closeAll } from "../src/cleanup.ts";
 import { equipmentWire } from "../src/equipment-wire.ts";
 import { checkAssetArchive } from "../src/asset-archive.ts";
 
@@ -56,9 +57,7 @@ for (const scenario of [
     { timeout: 180000 },
     async (t) => {
       const cleanup: Array<() => unknown | Promise<unknown>> = [];
-      t.after(async () => {
-        for (const close of cleanup.reverse()) await close();
-      });
+      t.after(() => closeAll(cleanup));
       const root = await mkdtemp(join(tmpdir(), "atlas-sitl-flight-"));
       console.log(`Evidence: ${root}`);
       const cache = resolve(
@@ -414,6 +413,10 @@ for (const scenario of [
         const protocol = new MavLinkProtocolV2(254, 190);
         const samples: Array<{ time: number; mode: number; armed: boolean; status: number; battery: number }> = [];
         const parameters = new Map<string, number>();
+        t.after(async () => {
+          await writeFile(join(root, "battery-layers.json"), JSON.stringify({ parameters: Object.fromEntries(parameters), samples }, null, 2));
+          await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        });
         let vehicleMode = -1, armed = false, battery = 100;
         pilot.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser()).on("data", packet => {
           if (packet.header.compid !== 1) return;
@@ -483,8 +486,6 @@ for (const scenario of [
         const position = events.findLast(e => e.kind === "report.telemetry");
         assert.ok(position?.kind === "report.telemetry");
         assert.ok(Math.abs(position.record.position.latitude + 35.363261) * 111195 > 10, "critical protection lands before reaching home");
-        await writeFile(join(root, "battery-layers.json"), JSON.stringify({ parameters: Object.fromEntries(parameters), samples }, null, 2));
-        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
         console.log(JSON.stringify({ scenario, takeover: takeover.time, finalPosition: position.record.position }));
         return;
       }

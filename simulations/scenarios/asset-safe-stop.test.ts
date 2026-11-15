@@ -27,7 +27,11 @@ for (const failure of ["disconnect", "settings"] as const) scenario({
     const protocol = new MavLinkProtocolV2(1, 1);
     let mode = 4;
     let takeoverArmed = false;
-    let connections = 0;
+    const connectionTimes: number[] = [];
+    let lastHeartbeat = 0;
+    let disconnectedAt = 0;
+    let heartbeatBeforeDisconnect = 0;
+    let holdAt = 0;
     const targets: number[] = [];
     let takeoverSent = false;
     let peer: Socket | undefined;
@@ -44,11 +48,11 @@ for (const failure of ["disconnect", "settings"] as const) scenario({
     server.on("connection", (socket: Socket) => {
       socket.on("error", () => {});
       peer = socket;
-      connections++;
+      connectionTimes.push(w.clock.now());
       const reader = socket.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
       reader.on("data", (packet: MavLinkPacket) => {
         const id = packet.header.msgid;
-        if (id === minimal.Heartbeat.MSG_ID) { telemetry(); return; }
+        if (id === minimal.Heartbeat.MSG_ID) { lastHeartbeat = w.clock.now(); telemetry(); return; }
         if (id === common.SetMode.MSG_ID) {
           const m = packet.protocol.data(packet.payload, common.SetMode);
           mode = m.customMode;
@@ -58,8 +62,11 @@ for (const failure of ["disconnect", "settings"] as const) scenario({
         if (id === common.SetPositionTargetGlobalInt.MSG_ID) {
           const target = packet.protocol.data(packet.payload, common.SetPositionTargetGlobalInt);
           targets.push(target.latInt);
+          if (takeoverSent && target.latInt === -353632620) holdAt = w.clock.now();
           if (failure === "disconnect" && takeoverArmed && !takeoverSent) {
             takeoverSent = true;
+            disconnectedAt = w.clock.now();
+            heartbeatBeforeDisconnect = lastHeartbeat;
             socket.destroy();
           }
         }
@@ -86,11 +93,16 @@ for (const failure of ["disconnect", "settings"] as const) scenario({
         await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_state === "failed" && e.record.task_id === tasks.task_ids[0]));
         await w.complete(w.admin.call("cancel", { params: { asset_id: app.asset_id, task_id: 1 } }));
       }
-      await w.advance(2500);
-      await new Promise(r => setTimeout(r, 100));
-      await w.advance(1000);
+      await w.until(() => targets.slice(1).includes(-353632620));
       assert.ok(targets.slice(1).includes(-353632620), "a Hold target reaches equipment after failed work");
-      if (failure === "disconnect") assert.ok(connections > 1, "equipment reconnects before the five-second GCS timeout");
+      if (failure === "disconnect") {
+        const reconnect = connectionTimes[1];
+        assert.ok(reconnect !== undefined && reconnect >= disconnectedAt);
+        assert.ok(disconnectedAt >= heartbeatBeforeDisconnect && heartbeatBeforeDisconnect > 0);
+        assert.ok(reconnect - heartbeatBeforeDisconnect < 5000, "reconnect precedes the GCS deadline");
+        assert.ok(holdAt >= reconnect && holdAt - heartbeatBeforeDisconnect < 5000, "Hold reaches equipment before the GCS deadline");
+        w.trace.inputs.push({ heartbeatBeforeDisconnect, disconnectedAt, reconnect, holdAt });
+      }
       assert.ok(w.events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && (e.record.task_state === "failed" || e.record.task_state === "cancelled")));
     } finally {
       await w.complete(app.stop());

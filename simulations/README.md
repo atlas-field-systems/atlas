@@ -17,7 +17,7 @@ it.
 | Real                                              | Simulated                                                                                               |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Core, with its SQLite storage and event log       | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
-| The SDK, used by every simulated caller           | Scripted callers in SDK contract scenarios ([simulated Assets](#simulated-assets))                              |
+| The SDK, used by every simulated caller           | Scripted operators, gateways, and Plugins in SDK contract scenarios                              |
 | Protocol's definitions and its one validator      | Time, so minutes of contact rules run in milliseconds                                                   |
 | The initial Asset IP runtime | Equipment and vehicles, including ArduPilot SITL                                                 |
 |                                                   | Faults in the host: a full disk, a Core crash, a deliberate stop                                        |
@@ -45,15 +45,24 @@ and kill or stop it.
 
 ## Simulated Assets
 
-Until the [Asset app](../asset/README.md) exists, a simulated Asset is a script
-built on the SDK's [Asset helpers](../sdk/docs/asset.md): the startup sequence,
-the report outbox, and the queue helper. It does only what its scenario tells
-it, such as "report Task 2 completed" or "go silent for 60 s". It makes no
-decision of its own, so it never becomes a second Asset app that drifts from
-the real one. Scripted Assets are temporary. When the Asset app exists, every
-simulation that uses one is reworked to run the real Asset app with simulated
-equipment ([Asset simulations](docs/asset.md)), and the scripted Assets are
-deleted.
+Asset behavior scenarios run the [real Asset app](../asset/README.md) with
+simulated equipment ([Asset simulations](docs/asset.md)). Scripted operators,
+gateways, and Plugins are other callers; they do not replace the Asset app.
+
+Migration is incomplete: the following SDK and Core contract suites still script
+Assets, using SDK helpers or direct Asset calls. They test caller contracts,
+not the real app's equipment behavior. They remain to be reworked under the
+[owner's decision](../atlas/decision-log.md#build-and-test):
+
+`admission`, `asset-rejoin`, `client-fences`, `current-state`, `everything`,
+`full-disk`, `gateways`, `helper-lifecycles`, `lost-responses`, `offline`,
+`open-reads`, `picture-recovery`, `places`, `reports-gap`, `restarts`,
+`review-regressions`, `review2-regressions`, `run-change`, `stream-contact`,
+`tasks-link`, `wrong-clocks` under `scenarios/`, and
+`faults/core-and-sdk.test.ts`. Each scenario filename ends in `.test.ts`.
+These scripts do only what their scenario requests and make no equipment
+control decisions. They are temporary; replacement runs the app against
+simulated equipment and removes the corresponding scripted Asset.
 
 ## Two kinds of eval
 
@@ -114,7 +123,9 @@ scenario uses a separate Core process and the real clock. ZIP checks require `un
 
 Scenarios check their documentation anchors before running. A failed run writes
 its trace, seed, assertion or cleanup error, and Core `logs/` under `.runs/`.
-A failed final Reset preserves the temporary world directory and reports Core's
+SITL cleanup attempts every registered resource in reverse order and reports collected
+failures after all callbacks finish. A failed final Reset preserves the temporary
+world directory and reports Core's
 explanation. Node's test runner runs TypeScript directly. Each scenario supplies a name,
 documentation anchors, and an asynchronous script. Seeded workloads run seeds
 64, 100, and 121. `ATLAS_SEED=64 npm test` replays that fault seed alongside the

@@ -44,11 +44,18 @@ scenario({
       for (const detector of [false, true]) {
         const key = value(await w.complete(w.admin.call("createAssetKey")));
         assert.ok("key" in key);
+        let watched = false;
         let send: ((input: unknown) => void) | undefined;
         const server = createServer(socket => {
           sockets.add(socket);
+          let input = "";
           socket.on("data", data => {
-            if (!detector) assert.match(data.toString(), /WATCH=.*"enable":true.*"json":true/);
+            input += data.toString();
+            const newline = input.indexOf("\n");
+            if (!detector && !watched && newline >= 0) {
+              assert.match(input.slice(0, newline), /^\?WATCH=.*"enable":true.*"json":true.*;$/);
+              watched = true;
+            }
           });
           send = input => socket.write(JSON.stringify(input) + "\n");
         });
@@ -63,7 +70,7 @@ scenario({
           log_directory: join(w.root, `peripheral-${detector}`), archive_directory: join(w.root, "archives") });
         const app = await w.complete(startApp(config, { clock: w.clock, fetch: w.network.fetchFor(`peripheral-${detector}`) }));
         apps.push(app);
-        await w.until(() => send !== undefined);
+        await w.until(() => send !== undefined && (detector || watched));
         send!(detector ? { kind: "position", time: w.clock.now(), source: "GPS", valid: true, position: { latitude: 3, longitude: 4 } }
           : { class: "TPV", device: "/dev/gps", mode: 2, time: new Date(w.clock.now()).toISOString(), lat: 3, lon: 4 });
         await w.until(() => w.events.some(e => e.kind === "report.telemetry" && e.record.asset_id === app.asset_id));

@@ -182,7 +182,8 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 Events stream. Each message has `id: <event_id>`, `event: <kind>`, and the event
 as `data`. Every parameter is optional. `asset_id` narrows a stream of every
 event to one Asset. A browser that reconnects sends `Last-Event-ID`, and Core
-resumes after it. Core sends a `: alive` comment every 10 s.
+resumes after it. Core sends a `: alive` comment every `stream_keepalive_s`
+([Core configuration](../config.md)).
 Core closes streams by terminating their connection; a reader discards any
 incomplete event and resumes after its last fully handled `event_id`.
 
