@@ -8,8 +8,8 @@ import { scenario } from "../src/scenario.ts";
 import { value } from "../src/world.ts";
 import { startApp, parseConfig } from "../../asset/src/index.ts";
 
-scenario({
-  name: "radio failsafe persists when no heartbeat exposes its RTL transition",
+for (const options of [0, 4]) scenario({
+  name: `radio failsafe persists without its RTL heartbeat, FS_OPTIONS=${options}`,
   checks: ["asset/docs/failsafes.md#while-the-flight-controller-is-in-control"],
   async run(w) {
     const server = createServer();
@@ -48,7 +48,7 @@ scenario({
         const id = packet.header.msgid;
         if (id === common.ParamRequestRead.MSG_ID) {
           const request = packet.protocol.data(packet.payload, common.ParamRequestRead);
-          const values: Record<string, number> = { FS_THR_ENABLE: 1, FS_OPTIONS: 0, FLTMODE_CH: 5, FLTMODE1: 4, FLTMODE2: 0, FLTMODE3: 5, FLTMODE4: 2, FLTMODE5: 6, FLTMODE6: 9 };
+          const values: Record<string, number> = { FS_THR_ENABLE: 1, FS_OPTIONS: options, FLTMODE_CH: 5, FLTMODE1: 4, FLTMODE2: 0, FLTMODE3: 5, FLTMODE4: 2, FLTMODE5: 6, FLTMODE6: 9 };
           if (request.paramId in values) { const m = new common.ParamValue(); Object.assign(m, { paramId: request.paramId, paramValue: values[request.paramId], paramType: 9, paramCount: 7, paramIndex: 0 }); out(m); }
           return;
         }
@@ -87,8 +87,8 @@ scenario({
       for (let i = 0; i < 6; i++) { await new Promise(r => setTimeout(r, 60)); await w.advance(1000); }
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");
-      assert.equal(mode, 6, "Atlas restores the pilot mode after its late Guided request");
-      assert.deepEqual(writes.filter(s => s.endsWith("pilotArmed=true")), ["SET_MODE 6 pilotArmed=true"], "only the corrective mode selection is sent");
+      assert.equal(mode, options === 4 ? 4 : 6, "Atlas restores the pilot mode after its late Guided request");
+      assert.deepEqual(writes.filter(s => s.endsWith("pilotArmed=true")), options === 4 ? [] : ["SET_MODE 6 pilotArmed=true"], "only the corrective mode selection is sent");
       pilotArmed = false; mode = 2; hb();
       await new Promise(r => setTimeout(r, 60)); await w.advance(1000);
       mode = 4; hb();

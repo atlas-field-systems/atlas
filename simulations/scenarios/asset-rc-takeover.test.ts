@@ -58,7 +58,7 @@ scenario({
           writes.push(`SET_MODE ${m.customMode} pilotArmed=${pilotArmed}`);
           if (m.customMode === 9) landing = true;
           if (landing && m.customMode === 4 && !pilotArmed) {
-            pilotArmed = true; mode = 5;
+            pilotArmed = true; mode = 4; hb(); rc(); mode = 5;
             setTimeout(() => { mode = m.customMode; hb(); rc(); }, 30);
             return;
           }
@@ -88,7 +88,7 @@ scenario({
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");
       assert.equal(mode, 5, "Atlas restores the pilot mode after its late Guided request");
-      assert.deepEqual(writes.filter(s => s.endsWith("pilotArmed=true")), ["SET_MODE 5 pilotArmed=true"], "only the corrective mode selection is sent");
+      assert.deepEqual(writes.filter(s => s.endsWith("pilotArmed=true")), ["SET_MODE 5 pilotArmed=true", "SET_MODE 5 pilotArmed=true"], "only the corrective mode selection is sent");
       mode = 2; hb();
       await new Promise(r => setTimeout(r, 60)); await w.advance(1000);
       mode = 4; hb();
