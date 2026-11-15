@@ -15,6 +15,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { startApp, parseConfig } from "@atlas/asset";
 import { spawnCore } from "../src/core-process.ts";
 import { value } from "../src/world.ts";
+import { equipmentWire } from "../src/equipment-wire.ts";
 import { checkAssetArchive } from "../src/asset-archive.ts";
 
 async function equipmentPort() {
@@ -188,6 +189,8 @@ for (const scenario of [
         );
       };
       let hiddenBatteryMode = 6;
+      let criticalReleasedAt = Infinity;
+      const batteryWire: unknown[] = [];
       const equipmentPeers = new Set<Socket>();
       let blocked = scenario === "equipment-startup";
       let failEquipment = false;
@@ -219,6 +222,11 @@ for (const scenario of [
             parser.once("data", packet => {
               if (packet.header.msgid === minimal.Heartbeat.MSG_ID &&
                   packet.protocol.data(packet.payload, minimal.Heartbeat).customMode === hiddenBatteryMode) return;
+              if (packet.header.msgid === common.BatteryStatus.MSG_ID &&
+                  packet.protocol.data(packet.payload, common.BatteryStatus).chargeState === common.MavBatteryChargeState.CRITICAL) {
+                if (criticalReleasedAt === Infinity) criticalReleasedAt = Date.now() + 1500;
+                if (Date.now() < criticalReleasedAt) return;
+              }
               peer.write(frame.buffer);
             });
             parser.write(frame);
@@ -260,6 +268,15 @@ for (const scenario of [
       const proxyAddress = proxy.address();
       assert.ok(proxyAddress && typeof proxyAddress !== "string");
       proxyPort = proxyAddress.port;
+      if (scenario === "battery-layers") {
+        cleanup.push(equipmentWire(proxyPort, (direction, packet) => {
+          const id = packet.header.msgid;
+          if (id === minimal.Heartbeat.MSG_ID) batteryWire.push({ time: Date.now(), direction, heartbeat: packet.protocol.data(packet.payload, minimal.Heartbeat).customMode });
+          if (id === common.BatteryStatus.MSG_ID) batteryWire.push({ time: Date.now(), direction, chargeState: packet.protocol.data(packet.payload, common.BatteryStatus).chargeState });
+          if (id === common.SetMode.MSG_ID) batteryWire.push({ time: Date.now(), direction, selected: packet.protocol.data(packet.payload, common.SetMode).customMode });
+        }));
+        cleanup.push(() => writeFile(join(root, "battery-wire.json"), JSON.stringify(batteryWire, null, 2)));
+      }
       cleanup.push(async () => { for (const peer of equipmentPeers) peer.destroy(); await new Promise<void>(resolve => proxy.close(() => resolve())); });
       const example = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
       const config = parseConfig({
