@@ -223,3 +223,8 @@ This history uses a separate disk writer, independent of diagnostic filtering
 and rotation. It is never replayed into a later operation. SDK diagnostic gap
 counts enter the operation's gap list with their reported local time; the SDK
 supplies no earlier bound for those lost events.
+
+Recovery keeps a torn report line byte for byte and lists it as an incomplete
+line in the gap evidence. It does not turn that line into a report or discard
+the operation. Identity-evidence write failures are logged as gaps without
+rejecting the equipment or Core control path.

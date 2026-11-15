@@ -49,7 +49,7 @@ scenario({
     } });
     await w.complete(connecting.promise);
     await w.advance(2000);
-    const directory = join(config.log_directory, String(start));
+    const directory = join(config.log_directory, String(start), "diagnostics");
     let diagnostics = "";
     for (let attempt = 0; attempt < 100; attempt++) {
       const names = await readdir(directory);

@@ -35,7 +35,12 @@ async function archive(directory: string, end: number, reason: string, normal: b
     await writeFile(join(directory, "summary.md"), `Operation ${operation.start} to ${end}. ${reason}.\n${normal ? "Ended normally." : "the app stopped unexpectedly; this record may be incomplete"}\n\nTasks, failsafes, overrides and contact changes follow in local order.\n`);
     await lines(join(directory, "history.jsonl"), async line => { await appendFile(join(directory, "summary.md"), `${line}\n`); });
     await lines(join(directory, "reports/history.jsonl"), async line => {
-      const report = JSON.parse(line);
+      let report;
+      try { report = JSON.parse(line); }
+      catch {
+        gaps.push({ start: operation.start, end, dropped: 1, reason: "incomplete report line; original bytes retained" });
+        return;
+      }
       if (report.type === "report.failsafe" || report.type === "report.status")
         await appendFile(join(directory, "summary.md"), `Report ${line}\n`);
     });

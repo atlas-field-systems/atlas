@@ -145,3 +145,21 @@ test("docs/logging.md: an identity diagnostic write failure never becomes an unh
   const zip = unzipSync(await readFile(await log.close("A", "stopped")));
   assert.match(strFromU8(zip["summary.md"]), /evidence write failure/);
 });
+
+test("docs/logging.md: crash recovery preserves a torn final report line as incomplete evidence", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-torn-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  await createLog(config, 1000);
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(join(config.log_directory, "1000", "reports", "history.jsonl"), '{"type":"report.status","task_id":');
+  const next = await createLog(config, 2000);
+  await next.close("B", "stopped");
+  const names = await readdir(config.archive_directory);
+  assert.equal(names.length, 2);
+  const recovered = unzipSync(await readFile(join(config.archive_directory, names.find(name => name.includes("unregistered"))!)));
+  assert.equal(strFromU8(recovered["reports/history.jsonl"]), '{"type":"report.status","task_id":');
+  assert.match(strFromU8(recovered["summary.md"]), /incomplete report line/);
+});
