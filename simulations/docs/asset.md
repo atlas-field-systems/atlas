@@ -154,7 +154,9 @@ both Assets and the Observation. A file with a place must appear as an Object
 linked to that place. A refused capture must remain in the Asset's Reset ZIP.
 
 The armed-startup scenario arms SITL in Loiter before starting the app. It
-checks watch-only reporting and refusal of an immediate Land request.
+checks watch-only reporting and refusal of an immediate Land request. This
+scenario disables SITL ground auto-disarm so the vehicle stays armed while
+the request is delivered; otherwise auto-disarm correctly shuts the app down.
 
 The takeover scenarios interrupt Move To and an Atlas failsafe response. They
 check cancellation, refused immediate Tasks, cancels and settings answers,

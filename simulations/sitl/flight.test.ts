@@ -62,7 +62,7 @@ for (const scenario of [
         join(homedir(), ".cache/atlas-sitl");
       await writeFile(
         join(root, "flight.parm"),
-        `FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
+        `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\nFS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
       );
       const equipment = await equipmentPort();
       const pilotPort = await equipmentPort();
