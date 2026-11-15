@@ -35,6 +35,7 @@ failure should re-arm protection like Hold remains an owner question.
 
 The equipment driver has one abortable command generation. A replacement aborts
 the prior generation. Command ACKs are ignored until that invocation's write
-completes, and an aborted generation cannot send its next step. MAVLink ACKs
-carry a command ID but no invocation ID, so an old ACK arriving after the new
-write completes cannot be distinguished from the new command's ACK.
+completes. Cancellation is checked before mode and acknowledged command writes
+and after their acknowledgements. MAVLink ACKs carry a command ID but no
+invocation ID, so an old ACK arriving after the new write completes cannot be
+distinguished from the new command's ACK.
