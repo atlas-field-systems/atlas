@@ -22,6 +22,7 @@ The [first-flight story](../atlas/first-flight.md) describes the workflow.
 - [Configuration](config.md) and [logging](docs/logging.md): local options and diagnostic evidence.
 - [Core API](../core/docs/api.md): how the Asset talks to Core.
 - [Protocol](../protocol/README.md): the shared records.
+- [Runtime](docs/runtime.md): execution state and equipment control.
 - AI agents: read [AGENTS.md](AGENTS.md).
 
 ## Run the initial app
@@ -41,7 +42,7 @@ ordering and report retries. A configured stationary equipment driver supplies
 one position. The [SITL scenarios](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
 check Hold followed by Move To, pause/resume, Land now during Move To,
 low battery, loss of the Core path, idle with a missing predecessor, Land at a position,
-and Return to an operator-set Atlas home. They check Core reports and archived
+Return to an operator-set Atlas home, and external flight-controller takeover and handback. They check Core reports and archived
 measurements; they do not establish full conformance.
 
 ## Implementation gaps
@@ -49,15 +50,8 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- The control state now separates phase, execution, override, and per-rule
-  matching state. Commanded activation overrides pause, repeated settings do not
-  reissue movement, and suspended time does not consume the command timeout.
-  Critical fallback retains its rule and priority. Hold and pause sample current
-  conditions when re-arming. Idle detection uses the SDK queue's startable work,
-  including while paused, rather than every held Task. Boundary and subsystem
-  conditions and boundary durations remain incomplete.
 - Current-state offers, duplicate active Task reports,
-  flight-controller request refusal, blocked outbox/session diagnostics,
+  blocked outbox/session diagnostics,
   vehicle ticks, and log sealing still need completion.
 - Boundary and subsystem failsafe conditions, complete rule re-arming, priority and fallback cases, and all override answers
   need implementation or simulation coverage.
@@ -68,5 +62,5 @@ not changes to the behavior specified in the linked pages:
 - The reporting-only path does not yet support empty settings, continuing
   stationary measurements, GPS peripherals, detector Observations, or files.
 - Startup failure cleanup, local protection before Core joins, service
-  installation, and flight-controller takeover need more work and scenarios.
+  installation, and more flight-controller takeover scenarios remain.
 - [Logging gaps](docs/logging.md#implementation-status) remain.

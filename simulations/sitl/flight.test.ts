@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { connect } from "node:net";
+import { send, common, MavLinkProtocolV2 } from "node-mavlink";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
@@ -13,6 +15,7 @@ import { spawnCore } from "../src/core-process.ts";
 import { value } from "../src/world.ts";
 
 for (const scenario of [
+  "takeover",
   "flight",
   "battery",
   "link",
@@ -45,6 +48,8 @@ for (const scenario of [
           "30",
           "--serial0",
           "tcp:6060",
+          "--serial1",
+          "tcp:6061",
           "--model",
           "+",
           "--speedup",
@@ -203,6 +208,35 @@ for (const scenario of [
       const app = await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "takeover") {
+        value(await admin.call("sendTasks", {
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 10, altitude_reference: "launch" } }] },
+        }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+        const pilot = connect({ host: "127.0.0.1", port: 6061 });
+        cleanup.push(() => { pilot.destroy(); });
+        await new Promise<void>((resolve, reject) => { pilot.once("connect", resolve); pilot.once("error", reject); });
+        const mode = async (customMode: number) => {
+          const message = new common.SetMode();
+          Object.assign(message, { targetSystem: 1, baseMode: 1, customMode });
+          await send(pilot, message, new MavLinkProtocolV2(254, 190));
+        };
+        await mode(5);
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
+        const refused = value(await admin.call("sendTasks", {
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "hold" }] },
+        }));
+        assert.ok("task_ids" in refused);
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === refused.task_ids[0] && e.record.task_state === "failed" && e.record.explanation === "flight controller is in control"));
+        await mode(4);
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control));
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.response?.kind === "hold" && e.record.task_state === "completed"));
+        assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id), false);
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "land" }], now: true } }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_state === "completed" && e.record.task_id === refused.task_ids[0] + 1));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
       if (scenario === "land-position" || scenario === "atlas-home") {
         const target = { latitude: -35.36295, longitude: 149.16523 };
         if (scenario === "atlas-home")

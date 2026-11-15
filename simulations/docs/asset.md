@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The seven scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The eight scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Destination landing and Return to home each end with Core telemetry within
 3 metres of the requested position and an archived disarmed measurement. Return
 to home first sets Atlas home away from the arming point. Both specify a transit
@@ -111,14 +111,3 @@ suppress the configured idle response. Each scenario prints its temporary eviden
 Core archives and SITL output. Asset shutdown writes its own verified archive.
 These checks prove simulated behavior only. The remaining scenario list above
 is still the conformance target.
-
-## Command registry checkpoint
-
-On 2026-11-15, runtime commit `c808ee46` passed all seven SITL scenarios three
-consecutive times. Test-runner durations were 150.175 s, 148.712 s, and 148.238 s.
-The retained destination scenarios first failed on `f3be4581`: final Core
-positions were 34.559 m and 34.571 m from the requested Land position and Atlas
-home respectively, despite disarming. Both now satisfy the destination and
-disarming checks above. This evidence covers the command registry round in
-[draft PR 62](https://github.com/atlas-field-systems/atlas/pull/62), not the full
-scenario list or real equipment.

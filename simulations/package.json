@@ -10,7 +10,8 @@
     "@atlas/asset": "file:../asset",
     "@atlas/core": "file:../core",
     "@atlas/protocol": "file:../protocol",
-    "@atlas/sdk": "file:../sdk"
+    "@atlas/sdk": "file:../sdk",
+    "node-mavlink": "^2.3.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

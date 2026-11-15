@@ -203,14 +203,6 @@ does not establish a landing. The one exception is a
 [critical battery rule](#an-override-with-hold-or-pause-re-arms-protection),
 whose failed response falls back to Return to home while the battery is still critical.
 
-The runtime stores the phase separately from the active execution and operator
-override. Each execution tracks suspended time, which does not consume its
-command timeout. Repeating the current run state does not reissue movement. A
-critical fallback keeps the failed response's rule and priority and is marked
-as a fallback, so a later failure cannot start another return. Command failure
-and timeout replace the failed maneuver with a hold unless a critical fallback
-starts instead. These are runtime mechanisms for the outcomes above.
-
 ## Lock ordinary work for the rest of the operation
 
 Failsafe state lasts for the rest of the operation, including after a successful
@@ -254,10 +246,6 @@ response Task. A condition that already holds at the override, such as a
 battery still below the rule's percentage, fires again only after it stops
 holding and holds again. The Asset stays in failsafe state throughout; re-arming
 never cancels it. A Land or Return to home override re-arms nothing.
-
-The runtime samples rule conditions when Hold or pause takes effect, including
-measurements received since the last control tick. It keeps each matching
-rule's existing condition start time.
 
 **A critical battery level always fires.** A rule whose battery condition is
 marked critical fires whenever the battery is below that level, whatever its

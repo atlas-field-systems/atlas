@@ -149,6 +149,9 @@ it. The helper holds the Asset's Tasks and hands them to the app.
 - **Clearing.** `clear()` reports every held Task `cancelled`. The app calls it when a command fails or a failsafe starts, as
   in [failsafes](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
+The queue passes the Core event ID as the second argument to `runNow`, so the
+Asset can name an immediate override request in its failsafe report.
+
 Settings requests are not Tasks unless they arrive as one. The helper passes
 `settings.requested` events to the app in event order; the app applies them and
 sends `report.settings` with the request's `request_id`.
@@ -199,6 +202,3 @@ before waiting for its acknowledgement. Only a batch already out may go
 first; reopening the stream does not wait for retained history to drain.
 Reports keep emission order within each lane and batch. Priority marks a batch,
 never reorders its reports.
-
-The queue passes the Core event ID as the second argument to `runNow`, so the
-Asset can name an immediate override request in its failsafe report.
