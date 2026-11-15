@@ -36,9 +36,9 @@ const position = (c: Context): ComponentsPosition | undefined =>
 const tolerance = (
   c: Context,
 ): { horizontal_m: number; altitude_m: number; stopped_mps: number } =>
-  c.config.completion_tolerances[c.execution.kind];
+  c.config.completion_tolerances[c.execution.kind]!;
 const timeout = (c: Context): number =>
-  c.config.command_timeouts[c.execution.kind];
+  c.config.command_timeouts[c.execution.kind]!;
 function at(c: Context, target: ComponentsPosition): boolean {
   const p = position(c);
   return Boolean(
@@ -72,9 +72,9 @@ function landed(c: Context) {
 function speed(p: Preparation): number {
   return Math.min(
     p.action.kind === "move_to"
-      ? (p.action.ground_speed_mps ?? p.config.default_ground_speed_mps)
-      : p.config.default_ground_speed_mps,
-    p.config.max_ground_speed_mps,
+      ? (p.action.ground_speed_mps ?? (p.config.default_ground_speed_mps ?? 0))
+      : (p.config.default_ground_speed_mps ?? 0),
+    (p.config.max_ground_speed_mps ?? Infinity),
   );
 }
 function transit(p: Preparation, destination: ComponentsPosition): Resolved {
@@ -99,6 +99,7 @@ function move(c: Context) {
   };
 }
 const landing = {
+  mode: 9,
   command: (c: Context) => ({
     kind: "land" as const,
     destination: c.execution.destination,
@@ -108,6 +109,7 @@ const landing = {
 };
 const transitSteps = [
   {
+    mode: 4,
     command: (c: Context) => {
       const p = position(c);
       if (!p || !c.execution.transit_altitude)
@@ -127,7 +129,7 @@ const transitSteps = [
       );
     },
   },
-  { command: move, complete: atDestination },
+  { mode: 4, command: move, complete: atDestination },
   landing,
 ] as const;
 export const commands = {
@@ -135,6 +137,7 @@ export const commands = {
     prepare: (p: Preparation): Resolved => ({ speed: speed(p) }),
     steps: [
       {
+        mode: 4,
         command: (c: Context) => {
           if (c.execution.action.kind !== "takeoff")
             throw new Error("invalid Takeoff execution");
@@ -172,7 +175,7 @@ export const commands = {
       if (!altitudes?.length) throw new Error("current altitude unavailable");
       return { destination: { ...destination, altitudes }, speed: speed(p) };
     },
-    steps: [{ command: move, complete: atDestination }],
+    steps: [{ mode: 4, command: move, complete: atDestination }],
     timeout,
     response: true,
     override: false,
@@ -198,6 +201,7 @@ export const commands = {
     },
     steps: [
       {
+        mode: 4,
         command: (c: Context) => ({
           ...transitSteps[0]!.command(c),
           kind: "return_to_home" as const,
@@ -217,6 +221,7 @@ export const commands = {
     prepare: (p: Preparation): Resolved => ({ speed: speed(p) }),
     steps: [
       {
+        mode: 4,
         command: () => ({ kind: "hold" as const }),
         complete: (c: Context): boolean => {
           const v = fresh(
@@ -232,15 +237,6 @@ export const commands = {
     response: true,
     override: true,
   },
-  failsafe: {
-    prepare: (): Resolved => {
-      throw new Error("Fail-safe must activate a policy response");
-    },
-    steps: [],
-    timeout,
-    response: false,
-    override: false,
-  },
 } as const;
 export type CommandKind = keyof typeof commands;
 type StepCommand = ReturnType<
@@ -248,7 +244,7 @@ type StepCommand = ReturnType<
 >;
 export type VehicleCommand = {
   [K in CommandKind]: Extract<StepCommand, { kind: K }>;
-}[CommandKind];
+}[CommandKind] & { mode: number };
 export type OverrideKind = {
   [K in CommandKind]: (typeof commands)[K]["override"] extends true ? K : never;
 }[CommandKind];
@@ -291,7 +287,7 @@ export function prepare(
 export function vehicleStep(c: Context): VehicleCommand {
   const step = commands[c.execution.kind].steps[c.execution.step];
   if (!step) throw new Error("vehicle step unavailable");
-  return step.command(c);
+  return { ...step.command(c), mode: step.mode };
 }
 export function progress(c: Context): "running" | "next" | "completed" {
   const steps = commands[c.execution.kind].steps;

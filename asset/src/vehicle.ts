@@ -9,7 +9,7 @@ export interface Measurements {
   battery?: Measurement<number>;
   armed?: Measurement<boolean>;
   airborne?: Measurement<boolean>;
-  guided?: Measurement<boolean>;
+  mode?: Measurement<number>;
   speed?: Measurement<number>;
 }
 export type { VehicleCommand } from "./commands.ts";

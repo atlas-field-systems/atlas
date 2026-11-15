@@ -21,20 +21,6 @@ test("config.md: inspection validates Protocol values without equipment access a
   );
 });
 
-test("config.md: link loss must exceed the configured Core keepalive interval", async () => {
-  const input = JSON.parse(
-    await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"),
-  );
-  assert.throws(
-    () =>
-      parseConfig({
-        ...input,
-        initial_settings: { ...input.initial_settings, link_loss_after_s: 10 },
-      }),
-    /keepalive/,
-  );
-});
-
 test("config.md: flying equipment requires a critical battery rule", async () => {
   const input = JSON.parse(
     await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"),
@@ -55,4 +41,22 @@ test("config.md: inspection names a missing per-command completion tolerance", a
   );
   delete input.completion_tolerances.land;
   assert.throws(() => parseConfig(input), /completion_tolerances[\s\S]*land/);
+});
+
+test("config.md: reporting-only configuration needs no movement settings", async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  input.description = { commands: [], reports: ["telemetry"] };
+  input.initial_settings = {};
+  delete input.completion_tolerances;
+  delete input.command_timeouts;
+  delete input.default_ground_speed_mps;
+  delete input.max_ground_speed_mps;
+  assert.doesNotThrow(() => parseConfig(input));
+});
+
+test("config.md: takeoff capability defines flying equipment independent of entity type", async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  delete input.description.entity_type;
+  input.initial_settings.failsafe_policy = [];
+  assert.throws(() => parseConfig(input), /critical battery/);
 });

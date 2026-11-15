@@ -548,7 +548,7 @@ for (const condition of ["battery", "contact"] as const)
     state.settings.failsafe_policy = [{ rule_id: "NEW", priority: 50,
       conditions: condition === "battery" ? [{ kind: "battery_below", battery_percent: 30 }] : [{ kind: "contact_lost" }],
       response: { kind: "land" } }];
-    state.measurements.guided = { value: true, source: "vehicle", time: 12000 };
+    state.measurements.mode = { value: 4, source: "vehicle", time: 12000 };
     state.measurements.position!.time = 12000;
     state.measurements.armed!.time = 12000;
     state.measurements.battery = { value: 20, source: "vehicle", time: 12000 };
@@ -581,4 +581,28 @@ test("docs/failsafes.md: repeated running is not an override", async () => {
   state.settings.run_state = "running";
   const result = reduce(state, { kind: "settings", settings: { run_state: "running" }, now: 0, request_id: 42 }, config);
   assert.equal(result.effects.some(e => e.kind === "override"), false);
+});
+
+test("docs/failsafes.md: unexpected raw mode during a pending Land gives control to the flight controller", async () => {
+  const { config, state: start } = await setup();
+  const state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
+  state.measurements.mode = { value: 6, source: "vehicle", time: 1 };
+  const result = reduce(state, { kind: "tick", now: 1, hasWork: true }, config);
+  assert.equal(result.state.phase, "flight_controller");
+  assert.equal(result.effects.some(e => e.kind === "vehicle"), false);
+  const refused = reduce(result.state, { kind: "task", task: hold, now: 2 }, config);
+  assert.ok(refused.effects.some(e => e.kind === "task" && e.status === "failed" && e.explanation === "flight controller is in control"));
+});
+
+test("docs/README.md: updating a descending Land preserves transit height, speed and start time", async () => {
+  const { config, state: start } = await setup();
+  const task = { ...hold, kind: "land", landing_position: { latitude: 2, longitude: 2 } } as const;
+  const state = reduce(start, { kind: "task", task, now: 0 }, config).state;
+  state.execution!.execution.step = 2;
+  state.measurements.position!.value.altitudes = [{ altitude_m: 2, altitude_reference: "launch" }];
+  const result = reduce(state, { kind: "update", task: { ...task, landing_position: { latitude: 3, longitude: 3 } }, now: 1 }, config);
+  assert.equal(result.state.execution!.execution.transit_altitude?.altitude_m, 5);
+  assert.equal(result.state.execution!.execution.step, 1);
+  assert.equal(result.state.execution!.execution.started, 0);
+  assert.equal(result.state.execution!.execution.speed, state.execution!.execution.speed);
 });

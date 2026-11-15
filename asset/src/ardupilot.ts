@@ -26,8 +26,6 @@ export function ardupilot(
   let altitude = 0;
   let gpsFixed = false;
   let positionEstimated = false;
-  let expectedMode: number | null = null;
-  let awaitingMode = false;
   let operation: AbortController | undefined;
   const listeners = new Set<(id: number, value: unknown) => void>();
   function wait<T>(
@@ -84,8 +82,6 @@ export function ardupilot(
     return write(m);
   }
   function mode(customMode: number) {
-    expectedMode = customMode;
-    awaitingMode = true;
     const m = new common.SetMode();
     Object.assign(m, { targetSystem, baseMode: 1, customMode });
     return write(m);
@@ -103,14 +99,7 @@ export function ardupilot(
     if (id === minimal.Heartbeat.MSG_ID) {
       const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
       for (const cb of listeners) cb(id, m);
-      if (m.customMode === expectedMode) awaitingMode = false;
-      if (!awaitingMode && m.customMode === 4) expectedMode = 4;
-      observe({
-        armed: stamp(Boolean(m.baseMode & 128)),
-        ...(!awaitingMode && expectedMode !== null
-          ? { guided: stamp(m.customMode === expectedMode) }
-          : {}),
-      });
+      observe({ armed: stamp(Boolean(m.baseMode & 128)), mode: stamp(m.customMode) });
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
         packet.payload,
@@ -244,14 +233,14 @@ export function ardupilot(
         case "takeoff":
           if (c.altitude.altitude_reference !== "launch")
             throw new Error("ArduPilot Takeoff requires launch altitude");
-          await selectMode(4);
+          await selectMode(c.mode);
           await acknowledged(400, [1]);
           signal.throwIfAborted();
           await acknowledged(22, [0, 0, 0, 0, 0, 0, c.altitude.altitude_m]);
           return;
         case "return_to_home":
         case "move_to": {
-          await selectMode(4);
+          await selectMode(c.mode);
           const m = new common.SetPositionTargetGlobalInt();
           const height = c.position.altitudes?.find(
             (a) => a.altitude_reference === "launch",
@@ -274,7 +263,7 @@ export function ardupilot(
         case "hold": {
           if (!location)
             throw new Error("current position unavailable for Hold");
-          await selectMode(4);
+          await selectMode(c.mode);
           const m = new common.SetPositionTargetGlobalInt();
           Object.assign(m, {
             targetSystem,
@@ -292,7 +281,7 @@ export function ardupilot(
           return;
         }
         case "land":
-          await selectMode(9);
+          await selectMode(c.mode);
           return;
       }
     },

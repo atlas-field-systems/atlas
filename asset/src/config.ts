@@ -27,7 +27,6 @@ const schema = z
     asset_key: z.string().min(1),
     link: z.strictObject({
       core_url: z.url(),
-      stream_keepalive_s: positive.default(10),
     }),
     description: shared<P["requests.asset"]>("requests.asset"),
     equipment: z.discriminatedUnion("kind", [
@@ -51,9 +50,10 @@ const schema = z
         ),
       }),
     ]),
-    initial_settings: shared<ComponentsSettings>(
-      "requests.settings",
-      (settings) => ({ settings }),
+    initial_settings: z.custom<ComponentsSettings>(
+      (value) => protocol.check("requests.settings", { settings: value }).ok ||
+        (value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0),
+      "invalid requests.settings",
     ),
     safe_action: shared<ComponentsFailsafeResponse>(
       "report.failsafe",
@@ -66,17 +66,17 @@ const schema = z
         response,
       }),
     ),
-    completion_tolerances: z.record(
+    completion_tolerances: z.partialRecord(
       command,
       z.strictObject({
         horizontal_m: nonnegative,
         altitude_m: nonnegative,
         stopped_mps: nonnegative,
       }),
-    ),
-    command_timeouts: z.record(command, positive),
-    default_ground_speed_mps: nonnegative,
-    max_ground_speed_mps: positive,
+    ).default({}),
+    command_timeouts: z.partialRecord(command, positive).default({}),
+    default_ground_speed_mps: nonnegative.optional(),
+    max_ground_speed_mps: positive.optional(),
     measurement_stale_after_s: positive,
     final_report_wait_s: nonnegative,
     control_tick_s: positive,
@@ -93,7 +93,7 @@ const schema = z
     const fail = (path: string[], message: string) =>
       ctx.addIssue({ code: "custom", path, message });
     if (
-      c.description.entity_type === "drone" &&
+      c.description.commands.includes("takeoff") &&
       !(c.initial_settings.failsafe_policy ?? []).some((r) =>
         r.conditions.some(
           (condition) =>
@@ -105,20 +105,21 @@ const schema = z
         ["initial_settings", "failsafe_policy"],
         "flying equipment requires a critical battery rule",
       );
-    if (
-      c.initial_settings.link_loss_after_s !== undefined &&
-      c.initial_settings.link_loss_after_s <= c.link.stream_keepalive_s
-    )
-      fail(
-        ["initial_settings", "link_loss_after_s"],
-        "must exceed Core stream_keepalive_s",
-      );
-    if (c.default_ground_speed_mps > c.max_ground_speed_mps)
+    if ((c.default_ground_speed_mps ?? 0) > (c.max_ground_speed_mps ?? Infinity))
       fail(["default_ground_speed_mps"], "exceeds max_ground_speed_mps");
     for (const kind of c.description.commands) {
-      if (!isCommand(kind))
+      if (kind !== "failsafe" && !isCommand(kind))
         fail(["description", "commands"], `unsupported command ${kind}`);
+      if (isCommand(kind)) {
+        if (!c.completion_tolerances[kind]) fail(["completion_tolerances", kind], "required for movement");
+        if (!c.command_timeouts[kind]) fail(["command_timeouts", kind], "required for movement");
+      }
     }
+    if (c.description.commands.some(isCommand)) {
+      if (c.default_ground_speed_mps === undefined) fail(["default_ground_speed_mps"], "required for movement");
+      if (c.max_ground_speed_mps === undefined) fail(["max_ground_speed_mps"], "required for movement");
+    }
+    if (!c.description.commands.length) return;
     for (const response of [
       c.safe_action,
       ...(c.initial_settings.failsafe_policy ?? []).map((r) => r.response),

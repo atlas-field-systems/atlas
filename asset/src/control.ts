@@ -40,6 +40,8 @@ export interface State {
   settings: ComponentsSettings;
   contact: { open: boolean; last_heard: number | null };
   commandId: number;
+  commandedMode: number | null;
+  commandedAt: number;
   lastHeard: number;
   idleSince: number;
 }
@@ -92,6 +94,8 @@ export function initial(config: Config, now: number): State {
     settings: config.initial_settings,
     contact: { open: false, last_heard: now },
     commandId: 0,
+    commandedMode: null,
+    commandedAt: now,
     lastHeard: now,
     idleSince: now,
   };
@@ -184,7 +188,7 @@ export function reduce(
     if (state.override?.kind === "land" || state.override?.kind === "return_to_home") state.override = null;
     if (criticalFallback(rule, action, now, fallback))
       activate({ kind: "return_to_home" }, rule, now, true);
-    else effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: { kind: "hold" } });
+    else effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: { kind: "hold", mode: 4 } });
   }
   function criticalFallback(
     rule: ComponentsFailsafeRule | null,
@@ -295,7 +299,13 @@ export function reduce(
       )
         break;
       try {
-        const execution = prepare(event.task, state.settings, state.measurements, event.now, config);
+        const action = event.task.kind === "land" || event.task.kind === "return_to_home"
+          ? { ...event.task, transit_altitude: w.execution.transit_altitude }
+          : event.task;
+        const execution = prepare(action, state.settings, state.measurements, event.now, config);
+        execution.speed = w.execution.speed;
+        if (event.task.kind === "land" || event.task.kind === "return_to_home")
+          execution.step = Math.min(w.execution.step, 1);
         execution.started = w.execution.started;
         const updated = { ...w, task: event.task, execution };
         if (updated.pausedAt === null) {
@@ -315,7 +325,7 @@ export function reduce(
         effects.push({
           kind: "vehicle",
           execution_id: ++state.commandId,
-          command: { kind: "hold" },
+          command: { kind: "hold", mode: 4 },
         });
         state.execution = null;
       }
@@ -399,7 +409,7 @@ export function reduce(
         effects.push({
           kind: "vehicle",
           execution_id: ++state.commandId,
-          command: { kind: "hold" },
+          command: { kind: "hold", mode: 4 },
         });
         if (state.phase === "failsafe") {
           state.override = { kind: "pause", request_id: event.request_id };
@@ -438,7 +448,10 @@ export function reduce(
         const p = get(state.measurements.position);
         if (p) state.settings = { ...state.settings, home_position: p };
       }
-      const controlled = get(state.measurements.guided);
+      const mode = get(state.measurements.mode);
+      const controlled = mode === undefined || state.commandedMode === null ||
+        (state.measurements.mode?.time ?? 0) <= state.commandedAt
+        ? undefined : mode === state.commandedMode;
       if (
         controlled === false &&
         get(state.measurements.armed) === true &&
@@ -455,7 +468,7 @@ export function reduce(
         );
       }
       if (state.phase === "flight_controller") {
-        if (controlled === true) {
+        if (mode === 4) {
           state.phase = "failsafe";
           state.override = { kind: "hold" };
           rearm(event.now);
@@ -565,6 +578,10 @@ export function reduce(
       }
       break;
     }
+  }
+  for (const effect of effects) if (effect.kind === "vehicle") {
+    state.commandedMode = effect.command.mode;
+    if ("now" in event) state.commandedAt = event.now;
   }
   return { state, effects };
 }
