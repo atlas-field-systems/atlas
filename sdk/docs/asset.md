@@ -198,3 +198,6 @@ before waiting for its acknowledgement. Only a batch already out may go
 first; reopening the stream does not wait for retained history to drain.
 Reports keep emission order within each lane and batch. Priority marks a batch,
 never reorders its reports.
+
+The queue passes the Core event ID as the second argument to `runNow`, so the
+Asset can name an immediate override request in its failsafe report.

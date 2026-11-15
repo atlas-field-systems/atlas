@@ -451,3 +451,33 @@ test("docs/failsafes.md: preparation failure stops superseded movement and criti
     ),
   );
 });
+
+test("docs/failsafes.md: override reports name the Hold and pause requests", async () => {
+  const { config, state: start } = await setup();
+  let state = reduce(
+    start,
+    { kind: "task", task: { ...hold, kind: "failsafe" }, now: 0 },
+    config,
+  ).state;
+  const held = reduce(
+    state,
+    { kind: "task", task: hold, now: 1, request_id: 42 },
+    config,
+  );
+  assert.ok(
+    held.effects.some((e) => e.kind === "override" && e.request_id === 42),
+  );
+  const paused = reduce(
+    held.state,
+    {
+      kind: "settings",
+      settings: { run_state: "paused" },
+      now: 2,
+      request_id: 43,
+    },
+    config,
+  );
+  assert.ok(
+    paused.effects.some((e) => e.kind === "override" && e.request_id === 43),
+  );
+});

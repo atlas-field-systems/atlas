@@ -52,7 +52,7 @@ not changes to the behavior specified in the linked pages:
   matching state. Commanded activation overrides pause, repeated settings do not
   reissue movement, and suspended time does not consume the command timeout.
   Critical fallback retains its rule and priority. Boundary and subsystem
-  condition durations, request correlation for Task overrides, and identifying
+  condition durations and identifying
   idle from startable work rather than every held Task remain incomplete.
 - The command registry still duplicates command kinds and uses shared
   completion tolerances. Current-state offers, duplicate active Task reports,

@@ -23,7 +23,7 @@ export type AssetEvent =
     };
 export interface QueueHost {
   ready?(): void;
-  runNow(task: Task): void;
+  runNow(task: Task, request_id: number): void;
   stop(task_id: number, because: "cancel" | "now" | "dropped"): void;
   update(task: Task): void;
 }
@@ -332,7 +332,8 @@ export function createQueue(
           break;
         case "runNow":
           emit("task.handed", { task_id: e.task.task_id });
-          o.host.runNow(e.task);
+          if (input.kind === "tasks.requested")
+            o.host.runNow(e.task, input.event_id);
           break;
         case "update":
           o.host.update(e.task);

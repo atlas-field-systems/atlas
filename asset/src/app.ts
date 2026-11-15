@@ -65,6 +65,17 @@ export async function startApp(
           }),
         );
         break;
+      case "override":
+        report([
+          {
+            type: "report.failsafe",
+            kind: "override",
+            asset_id: running!.asset_id,
+            time: clock.now(),
+            request_id: effect.request_id,
+          },
+        ]);
+        break;
       case "autopilot":
         report([
           {
@@ -168,7 +179,8 @@ export async function startApp(
     current,
     queue: config.description.commands.length
       ? {
-          runNow: (task) => dispatch({ kind: "task", task, now: clock.now() }),
+          runNow: (task, request_id) =>
+            dispatch({ kind: "task", task, request_id, now: clock.now() }),
           stop: (id, because) => {
             if (because !== "now")
               dispatch({ kind: "cancel", id, now: clock.now() });

@@ -69,6 +69,7 @@ export type Effect =
       status: "active" | "completed" | "failed" | "cancelled";
       explanation?: string;
     }
+  | { kind: "override"; request_id: number }
   | { kind: "autopilot"; in_control: boolean }
   | { kind: "clear" }
   | { kind: "shutdown" };
@@ -359,6 +360,8 @@ export function reduce(
         const current = work(state);
         if (current) finish(current, "cancelled");
         if (state.phase === "failsafe") {
+          if (event.request_id !== undefined)
+            effects.push({ kind: "override", request_id: event.request_id });
           if (
             task.kind === "hold" ||
             task.kind === "land" ||
@@ -378,6 +381,8 @@ export function reduce(
         Object.keys(event.settings).some((k) => k !== "run_state")
       )
         break;
+      if (state.phase === "failsafe" && event.request_id !== undefined)
+        effects.push({ kind: "override", request_id: event.request_id });
       const wasPaused = state.settings.run_state === "paused";
       state.settings = { ...state.settings, ...event.settings };
       const paused = state.settings.run_state === "paused";

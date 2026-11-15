@@ -261,3 +261,35 @@ for (const mode of ["stop", "runNow"] as const) {
     assert.deepEqual(last.task_ids, q.held());
   });
 }
+
+test("asset/docs/failsafes.md: the now callback identifies the request for an override report", () => {
+  const requests: unknown[] = [];
+  const q = createQueue({
+    last_task_id: 0,
+    asset_id: "A",
+    clock: { now: () => 0, after: () => ({ cancel() {} }) },
+    emit() {},
+    host: {
+      runNow(...args) {
+        requests.push(args.at(1));
+      },
+      stop() {},
+      update() {},
+    },
+  });
+  q.apply({
+    kind: "tasks.requested",
+    event_id: 42,
+    record: [
+      {
+        kind: "hold",
+        task_id: 1,
+        asset_id: "A",
+        requested_by: "OP",
+        time: 0,
+        now: true,
+      },
+    ],
+  });
+  assert.deepEqual(requests, [42]);
+});
