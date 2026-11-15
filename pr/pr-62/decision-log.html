@@ -379,6 +379,18 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-15</td>
+<td>When a pilot or the flight controller takes a flying Asset out of Atlas&#39;s mode and a request Atlas had already sent puts it back, the vehicle must not stay in Atlas&#39;s mode. Atlas switches it back to the mode it was taken into and only watches.</td>
+<td>Flight-controller takeover.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-15</td>
+<td>When a flying Asset&#39;s command fails or times out, the Asset stops moving and hovers where it is. A landing that fails keeps descending.</td>
+<td>Command failures and timeouts, flying Assets.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks">Failsafes</a></td>
+</tr>
+<tr>
 <td>2026-11-13</td>
 <td>A failsafe response may be any command the Asset supports except Fail-safe. Atlas does not limit responses to protective commands; it trusts the operator to choose a sensible one.</td>
 <td>Failsafe responses.</td>
