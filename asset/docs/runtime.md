@@ -8,8 +8,8 @@ override. Each execution tracks suspended time, which does not consume its
 command timeout. Repeating the current run state does not reissue movement. A
 critical fallback keeps the failed response's rule and priority and is marked
 as a fallback, so a later failure cannot start another return. Command failure
-and timeout share one failure path. Land failure and a Return to home failure
-during its Land-mode descent never insert Hold; the
+and timeout share one failure path. Land and Return to home failures
+during their Land-mode descent never insert Hold; the
 existing critical fallback still applies. Other failures insert Hold unless the
 critical fallback starts.
 
