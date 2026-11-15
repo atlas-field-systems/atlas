@@ -174,7 +174,7 @@ export async function startApp(
       }).catch(error => log.record({ kind: "file_failed", name: file.name, explanation: String(error) }));
     }
     const vehicle = config.equipment.kind === "ardupilot"
-      ? ardupilot(config.equipment, clock, log.record)
+      ? ardupilot({ ...config.equipment, measurement_stale_after_s: config.measurement_stale_after_s }, clock, log.record)
       : (config.equipment.kind === "peripheral" || config.equipment.kind === "gpsd")
         ? peripheral(config.equipment, clock, {
             diagnostic: log.record,
@@ -212,7 +212,7 @@ export async function startApp(
       settings: () => state.settings,
       current,
       onReports: reports => { for (const value of reports) log.report(value); },
-      queue: config.description.commands.length
+      queue: config.description.commands.length || config.description.settings?.length
         ? {
             refuse: request => {
               const reason = refusal(state, request);

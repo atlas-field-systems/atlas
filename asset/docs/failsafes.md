@@ -49,9 +49,11 @@ Tasks that arrive after the clear run normally, even if the operator sent them
 to follow the failed work; the operator cancels any that no longer make sense.
 
 When a flying Asset's command fails or times out, it stops moving and hovers
-where it is. A landing that fails keeps descending. Neither the failure nor the
-cancellation enters failsafe state or starts another maneuver. An Atlas response
-starts only when a configured rule matches.
+where it is. Land or Return to home keeps descending if it fails after descent
+has started; a failure before descent stops movement and hovers. Neither the
+failure nor the cancellation enters failsafe state. The existing
+[critical-battery fallback](#an-override-with-hold-or-pause-re-arms-protection)
+still applies. Otherwise, an Atlas response starts only when a configured rule matches.
 
 ## Independent flight-controller protections
 

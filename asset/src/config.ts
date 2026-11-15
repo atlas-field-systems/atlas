@@ -64,7 +64,7 @@ const schema = z
       (value) => protocol.check("requests.settings", { settings: value }).ok ||
         (value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0),
       "invalid requests.settings",
-    ),
+    ).optional(),
     safe_action: shared<ComponentsFailsafeResponse>(
       "report.failsafe",
       (response) => ({
@@ -98,6 +98,13 @@ const schema = z
     log_file_limit_bytes: z.int().positive(),
     log_total_limit_bytes: z.int().positive(),
     archive_directory: z.string().min(1),
+  })
+  .transform((c, ctx) => {
+    if (c.initial_settings === undefined &&
+      (c.description.commands.length || c.description.settings?.length)) {
+      ctx.addIssue({ code: "custom", path: ["initial_settings"], message: "required for control-capable equipment" });
+    }
+    return { ...c, initial_settings: c.initial_settings ?? {} };
   })
   .superRefine((c, ctx) => {
     const fail = (path: string[], message: string) =>

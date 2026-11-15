@@ -79,3 +79,28 @@ scenario({
     } finally { await w.complete(app.stop()); }
   },
 });
+
+for (const change of [{ link_loss_after_s: 25 }])
+  scenario({
+    name: `settings-only Asset executes queued settings Task and reports ${JSON.stringify(change)} to Core`,
+    checks: ["asset/docs/logging.md#record-decisions-and-observed-equipment-behavior"],
+    async run(w) {
+      const key = value(await w.complete(w.admin.call("createAssetKey")));
+      assert.ok("key" in key);
+      const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
+      const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
+        description: { commands: [], reports: ["settings", "status"], settings: ["link_loss_after_s"] },
+        initial_settings: { link_loss_after_s: 12 },
+        equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
+        log_directory: join(w.root, "logs"), archive_directory: join(w.root, "archives") });
+      const clock = { now: () => w.clock.now(), after: (ms: number, fn: () => void) => w.clock.after(Math.ceil(ms), fn) };
+      const app = await w.complete(startApp(config, { clock, fetch: w.network.fetchFor("app") }));
+      try {
+        await w.advance(1000);
+        const sent = value(await w.complete(w.admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "settings", settings: change }] } })));
+        await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === sent.task_ids[0] && e.record.task_state === "completed"));
+        await w.advance(15000);
+        assert.equal(w.events.filter(e => e.kind === "report.settings" && Object.entries(change).every(([k, v]) => Reflect.get(e.record.settings, k) === v)).length, 1);
+      } finally { await w.complete(app.stop()); }
+    },
+  });
