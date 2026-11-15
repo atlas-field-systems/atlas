@@ -4,9 +4,12 @@ import { parseConfig, startApp } from "@atlas/asset";
 import type { Clock } from "@atlas/sdk";
 import { value, type World } from "./world.ts";
 
+import { ardupilotPeer } from "./ardupilot-peer.ts";
+
 type Config = ReturnType<typeof parseConfig>;
 export interface AssetAppOptions {
   name?: string;
+  equipment?: "ardupilot";
   clock?: Clock;
   config?: Partial<Omit<Config, "asset_key" | "link" | "log_directory" | "archive_directory">>;
 }
@@ -19,9 +22,10 @@ export async function assetApp(w: World, options: AssetAppOptions = {}) {
   if (!("key" in issued)) throw new Error("Issuance returned no key");
   const raw: unknown = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
   const defaults = parseConfig(raw);
+  const equipment = options.equipment === "ardupilot" ? await ardupilotPeer(w) : undefined;
   let config = parseConfig({
     ...defaults,
-    equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
+    equipment: equipment?.config ?? { kind: "simulated", position: { latitude: 1, longitude: 2 } },
     ...options.config,
     asset_key: issued.key,
     link: { core_url: w.core.url },
@@ -39,11 +43,12 @@ export async function assetApp(w: World, options: AssetAppOptions = {}) {
   async function stop() { return w.complete(app.stop()); }
   w.onClose(async () => { await stop(); });
   return {
+    equipment,
     get config() { return config; },
     get asset_id() { return app.asset_id; },
     get done() { return app.done; },
     stop,
-    async restart(next: Omit<AssetAppOptions, "name"> = {}) {
+    async restart(next: Omit<AssetAppOptions, "name" | "equipment"> = {}) {
       await stop();
       clock = next.clock ?? clock;
       config = parseConfig({ ...config, ...next.config });
