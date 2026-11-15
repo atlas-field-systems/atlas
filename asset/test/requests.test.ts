@@ -98,7 +98,7 @@ for (const phase of phases)
         }
         else if (outcome === "run") {
           assert.ok(effects.some(e => e.kind === "vehicle"));
-          assert.equal(state.execution?.execution.kind, request === "now" ? "move_to" : request === "failsafe" ? "land" : request);
+          assert.equal(state.execution?.execution.kind, request === "now" ? "move_to" : request === "failsafe" ? "return_to_home" : request);
           assert.deepEqual(q.held(), []);
           for (const id of [1, 2])
             assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === id && r.task_state === "cancelled"));

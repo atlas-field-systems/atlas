@@ -38,10 +38,11 @@ export function ardupilot(
   let handback: { mode: number | null; phase: "late_guided" | "restoring" | "await_other_mode" } | undefined;
   let lastHeartbeat = -Infinity;
   const parameters = new Map<string, number>();
-  const modeParameters = ["FLTMODE_CH", "FLTMODE1", "FLTMODE2", "FLTMODE3", "FLTMODE4", "FLTMODE5", "FLTMODE6", "FS_THR_ENABLE", "FS_OPTIONS"];
+  const modeParameters = ["FLTMODE_CH", "FLTMODE1", "FLTMODE2", "FLTMODE3", "FLTMODE4", "FLTMODE5", "FLTMODE6", "FS_THR_ENABLE", "FS_OPTIONS", "BATT_FS_LOW_ACT", "BATT_FS_CRT_ACT"];
   let switchPosition: number | undefined;
   let protectionActive = false;
   let radioFailed = false;
+  let batteryAction: "BATT_FS_LOW_ACT" | "BATT_FS_CRT_ACT" | undefined;
   const listeners = new Set<(id: number, value: unknown) => void>();
   function wait<T>(
     signal: AbortSignal,
@@ -133,10 +134,12 @@ export function ardupilot(
         inControl = false;
         const action = parameters.get("FS_THR_ENABLE");
         const options = parameters.get("FS_OPTIONS");
+        const batteryMode = batteryAction === undefined ? undefined : parameters.get(batteryAction) === 1 ? 9 : parameters.get(batteryAction) === 2 ? 6 : undefined;
         const radioMode = radioFailed && options !== undefined && !(options & 4)
           ? action === 1 ? 6 : action === 3 ? 9 : undefined
           : undefined;
         if (m.customMode !== 4) handback = { mode: m.customMode, phase: "late_guided" };
+        else if (batteryMode !== undefined) handback = { mode: batteryMode, phase: "late_guided" };
         else if (radioMode !== undefined && (!handback || handback.mode === null)) handback = { mode: radioMode, phase: "late_guided" };
         handback ??= { mode: null, phase: "await_other_mode" };
         restoreMode();
@@ -206,6 +209,13 @@ export function ardupilot(
         }),
         speed: stamp(Math.hypot(m.vx, m.vy) / 100),
       });
+    } else if (id === common.BatteryStatus.MSG_ID) {
+      const m = packet.protocol.data(packet.payload, common.BatteryStatus);
+      if (m.id === 0) {
+        if (m.chargeState === common.MavBatteryChargeState.CRITICAL) batteryAction = "BATT_FS_CRT_ACT";
+        else if (m.chargeState === common.MavBatteryChargeState.LOW && batteryAction !== "BATT_FS_CRT_ACT") batteryAction = "BATT_FS_LOW_ACT";
+        else if (m.chargeState === common.MavBatteryChargeState.OK) batteryAction = undefined;
+      }
     } else if (id === common.SysStatus.MSG_ID) {
       const m = packet.protocol.data(packet.payload, common.SysStatus);
       radioFailed = Boolean(m.onboardControlSensorsEnabled & 65536) && !(m.onboardControlSensorsHealth & 65536);

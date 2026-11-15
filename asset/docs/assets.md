@@ -43,6 +43,30 @@ The movement module's copter profile carries out the
 [Takeoff, Move To, Land workflow](../../atlas/first-flight.md). ArduPilot handles
 flight control and stabilization.
 
+The Copter 4.7.2 setup uses these parameters for the
+[starting protections](failsafes.md#independent-flight-controller-protections).
+Capacity thresholds are remaining mAh, not percentages. Set `BATT_CAPACITY` to
+the measured pack capacity and scale both thresholds with it. With a 3300 mAh
+pack the setup is:
+
+| Parameter | Value | Purpose |
+| --- | --- | --- |
+| `MAV_GCS_SYSID` | 255 | The Asset app's GCS system ID on this build |
+| `FS_GCS_ENABLE` | 1 | RTL on GCS loss |
+| `FS_GCS_TIMEOUT` | 5 | Seconds without the app heartbeat |
+| `FS_OPTIONS` | 0 | No continue-flight exemptions |
+| `BATT_CAPACITY` | 3300 | Pack capacity in mAh |
+| `BATT_LOW_MAH` | 495 | 15% remaining |
+| `BATT_CRT_MAH` | 330 | 10% remaining |
+| `BATT_FS_LOW_ACT` | 2 | RTL |
+| `BATT_FS_CRT_ACT` | 1 | Land |
+| `BATT_LOW_VOLT`, `BATT_CRT_VOLT` | 0 | Capacity-only starting thresholds |
+
+The battery monitor must measure consumed charge. The SITL setup uses
+`BATT_MONITOR=4`; actual sensor calibration and hardware checks remain part of
+flight preparation. The app reads protection actions but never configures the
+controller. The simulation reads these parameters back from the pinned build.
+
 ### Fixed camera turret
 
 A turret reports Observations produced by its own detection software; Atlas does

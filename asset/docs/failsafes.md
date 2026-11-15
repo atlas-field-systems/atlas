@@ -347,9 +347,8 @@ restarting idle or contact timers.
   observations without a lasting pilot-switch change. If no protection remains
   active, Atlas cannot tell that control was taken away. Such a vehicle can
   remain in Atlas's mode without a deliberate handback.
-- An active flight-controller protection keeps Atlas watching. If Atlas never
-  observes the protection's chosen mode, and the protection does not identify
-  its action, Atlas cannot yet restore that mode. Radio protection configured
-  to return home or land is covered; other protection actions still need
-  equipment checks before first flight.
+- Protection actions other than radio Return to home or Land and primary-battery
+  Return to home or critical Land still need equipment checks for restoration
+  when Atlas never observed their mode. A critical heartbeat alone cannot
+  identify the action to restore.
 

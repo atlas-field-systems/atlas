@@ -57,8 +57,11 @@ but unhealthy RC-receiver flag identifies radio loss. The driver reads
 FS_THR_ENABLE and FS_OPTIONS at connection. For ordinary RTL and Land radio
 protection, without the continue-Guided option, it restores the configured mode
 even if no heartbeat showed it. Otherwise it restores the protection's mode
-when observed. An active protection never permits handback. A critical
-heartbeat does not identify which protection fired or the selected mode;
+when observed. The driver also reads `BATT_FS_LOW_ACT` and `BATT_FS_CRT_ACT`. Primary
+BATTERY_STATUS charge state identifies low or critical battery protection. With
+RTL or Land actions it restores the selected mode after late Guided, including
+critical Land superseding low-battery RTL. An active protection never permits
+handback. A critical heartbeat does not identify which protection fired or the selected mode;
 [remaining limits](failsafes.md#open) stay explicit.
 Handback samples rules, starts a tracked Hold,
 and ends that tick before rule selection. The app calls `Vehicle.tick(now)`;

@@ -28,6 +28,7 @@ async function equipmentPort() {
 }
 
 for (const scenario of [
+  "battery-layers",
   "failsafe-signal",
   "rc-late-guided",
   "armed-startup",
@@ -64,7 +65,7 @@ for (const scenario of [
         join(homedir(), ".cache/atlas-sitl");
       await writeFile(
         join(root, "flight.parm"),
-        `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\n${scenario === "rc-late-guided" ? "FLTMODE1 4\nFLTMODE4 5\n" : ""}${["subsystem", "takeover", "takeover-response"].includes(scenario) ? "FS_EKF_THRESH 0\n" : ""}FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
+        `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\n${scenario === "rc-late-guided" ? "FLTMODE1 4\nFLTMODE4 5\n" : ""}${["subsystem", "takeover", "takeover-response"].includes(scenario) ? "FS_EKF_THRESH 0\n" : ""}FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nMAV_GCS_SYSID 255\nFS_OPTIONS 0\nBATT_CAPACITY ${scenario === "battery" ? 100 : scenario === "battery-layers" ? 1000 : 3300}\nBATT_LOW_MAH ${scenario === "battery" ? 15 : scenario === "battery-layers" ? 150 : 495}\nBATT_CRT_MAH ${scenario === "battery" ? 10 : scenario === "battery-layers" ? 100 : 330}\nBATT_LOW_VOLT 0\nBATT_CRT_VOLT 0\nBATT_FS_LOW_ACT 2\nBATT_FS_CRT_ACT 1\n`,
       );
       const equipment = await equipmentPort();
       const pilotPort = await equipmentPort();
@@ -186,6 +187,7 @@ for (const scenario of [
           { status: response.status, headers: response.headers },
         );
       };
+      let hiddenBatteryMode = 6;
       const equipmentPeers = new Set<Socket>();
       let blocked = scenario === "equipment-startup";
       let failEquipment = false;
@@ -211,7 +213,17 @@ for (const scenario of [
         upstream.on("error", () => peer.destroy());
         upstream.on("close", () => { equipmentPeers.delete(upstream); peer.destroy(); });
         peer.on("close", () => upstream.destroy());
-        upstream.pipe(peer);
+        if (scenario === "battery-layers") {
+          const parser = new MavLinkPacketParser();
+          upstream.pipe(new MavLinkPacketSplitter()).on("data", frame => {
+            parser.once("data", packet => {
+              if (packet.header.msgid === minimal.Heartbeat.MSG_ID &&
+                  packet.protocol.data(packet.payload, minimal.Heartbeat).customMode === hiddenBatteryMode) return;
+              peer.write(frame.buffer);
+            });
+            parser.write(frame);
+          });
+        } else upstream.pipe(peer);
         const splitter = peer.pipe(new MavLinkPacketSplitter());
         const parser = new MavLinkPacketParser();
         splitter.on("data", frame => {
@@ -373,6 +385,87 @@ for (const scenario of [
         return;
       }
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "battery-layers") {
+        const pilot = connect({ host: "127.0.0.1", port: pilotPort });
+        pilot.on("error", () => {});
+        cleanup.push(() => { pilot.destroy(); });
+        await once(pilot, "connect");
+        const protocol = new MavLinkProtocolV2(254, 190);
+        const samples: Array<{ time: number; mode: number; armed: boolean; status: number; battery: number }> = [];
+        const parameters = new Map<string, number>();
+        let vehicleMode = -1, armed = false, battery = 100;
+        pilot.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser()).on("data", packet => {
+          if (packet.header.compid !== 1) return;
+          if (packet.header.msgid === minimal.Heartbeat.MSG_ID) {
+            const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
+            vehicleMode = m.customMode; armed = Boolean(m.baseMode & 128);
+            samples.push({ time: Date.now(), mode: vehicleMode, armed, status: m.systemStatus, battery });
+          }
+          if (packet.header.msgid === common.SysStatus.MSG_ID) battery = packet.protocol.data(packet.payload, common.SysStatus).batteryRemaining;
+          if (packet.header.msgid === common.ParamValue.MSG_ID) {
+            const m = packet.protocol.data(packet.payload, common.ParamValue);
+            parameters.set(m.paramId, m.paramValue);
+          }
+        });
+        const streams = new common.RequestDataStream();
+        Object.assign(streams, { targetSystem: 1, targetComponent: 1, reqStreamId: 0, reqMessageRate: 10, startStop: 1 });
+        await send(pilot, streams, protocol);
+        const expected = { FS_GCS_ENABLE: 1, FS_GCS_TIMEOUT: 5, MAV_GCS_SYSID: 255, FS_OPTIONS: 0,
+          BATT_CAPACITY: 1000, BATT_LOW_MAH: 150, BATT_CRT_MAH: 100,
+          BATT_LOW_VOLT: 0, BATT_CRT_VOLT: 0, BATT_FS_LOW_ACT: 2, BATT_FS_CRT_ACT: 1 };
+        for (const paramId of Object.keys(expected)) {
+          const request = new common.ParamRequestRead();
+          Object.assign(request, { targetSystem: 1, targetComponent: 1, paramId, paramIndex: -1 });
+          await send(pilot, request, protocol);
+          await delay(100);
+        }
+        await delay(1000);
+        assert.deepEqual(Object.keys(expected).filter(name => !parameters.has(name)), [], "parameters accepted by Copter 4.7.2");
+        for (const [name, expectedValue] of Object.entries(expected)) assert.equal(parameters.get(name), expectedValue, name);
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [
+          { kind: "takeoff", target_altitude: { altitude_m: 30, altitude_reference: "launch" } },
+          { kind: "move_to", destination: { latitude: -35.35, longitude: 149.16523 } },
+        ] } }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 2 && e.record.task_state === "active"));
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "LB" && e.record.task_state === "active"));
+        const response = events.find(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "LB" && e.record.task_state === "active");
+        assert.ok(response?.kind === "report.failsafe" && response.record.kind === "response" && response.record.response?.kind === "return_to_home");
+        assert.ok(events.some(e => e.kind === "report.battery" && e.record.battery_percent < 35));
+        await until(() => vehicleMode === 6);
+        assert.ok(battery <= 15, "independent RTL starts at low capacity");
+        const lateGuided = async (selected: number) => {
+          const m = new common.SetMode();
+          Object.assign(m, { targetSystem: 1, baseMode: 1, customMode: 4 });
+          const start = samples.length;
+          await send(pilot, m, protocol);
+          await until(() => samples.slice(start).some(s => s.mode === 4));
+          await delay(500);
+          assert.equal(vehicleMode, selected, "battery protection restores its mode after Guided");
+        };
+        await lateGuided(6);
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
+        const takeover = events.find(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control)!;
+        const returnLatitudes = events.flatMap(e => e.kind === "report.telemetry" && e.record.time > response.record.time && e.record.time < takeover.time ? [e.record.position.latitude] : []);
+        assert.ok(returnLatitudes.length > 1);
+        assert.ok((Math.max(...returnLatitudes) - returnLatitudes.at(-1)!) * 111195 > 5, "Atlas travels toward home before controller takeover");
+        hiddenBatteryMode = 9;
+        await until(() => vehicleMode === 9);
+        assert.ok(battery <= 10, "independent Land starts at critical capacity");
+        await lateGuided(9);
+        hiddenBatteryMode = -1;
+        await until(() => !armed);
+        assert.ok(events.some(e => e.kind === "report.battery" && e.record.battery_percent < 15));
+        assert.ok(events.some(e => e.kind === "report.battery" && e.record.battery_percent < 10));
+        assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.time > takeover.time && e.record.task_state === "active"), false, "Atlas only watches after takeover");
+        assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false);
+        const position = events.findLast(e => e.kind === "report.telemetry");
+        assert.ok(position?.kind === "report.telemetry");
+        assert.ok(Math.abs(position.record.position.latitude + 35.363261) * 111195 > 10, "critical protection lands before reaching home");
+        await writeFile(join(root, "battery-layers.json"), JSON.stringify({ parameters: Object.fromEntries(parameters), samples }, null, 2));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        console.log(JSON.stringify({ scenario, takeover: takeover.time, finalPosition: position.record.position }));
+        return;
+      }
       if (scenario === "armed-startup") {
         await delay(1000);
         assert.ok(events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control), "armed Loiter before any Atlas command must be watch only");

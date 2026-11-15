@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The twenty scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The twenty-one scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -145,6 +145,17 @@ Each run saves both cut times and telemetry times in `equipment-cut.json`. After
 restoration, telemetry must resume with new acquisition times. The flight
 controller retains its GCS failsafe throughout.
 
+The battery-layering scenario uses the [quadcopter setup](../../asset/docs/assets.md#ardupilot-quadcopter)
+with a 1000 mAh simulated pack and proportionate remaining-charge thresholds.
+It flies Move To away from home, requires Atlas's low-battery return, then
+flight-controller RTL and critical Land, with Core reporting takeover and no
+new Atlas response. It reads the protection parameters back from SITL and
+injects Guided during both battery protections to check mode restoration. A TCP
+proxy hides each protection's first mode from the app, so recovery must use the
+reported battery protection rather than an earlier mode observation.
+`battery-layers.json` retains controller samples and parameter replies;
+`events.json` retains the Core sequence. Simulated results prove no hardware behavior.
+
 ## Reporting-only Core scenarios
 
 `scenarios/reporting-assets.test.ts` runs the real Asset app and Core without
@@ -192,4 +203,4 @@ Loiter, then injects Guided externally. It checks restoration to Loiter without
 handback. The radio scenario activates SIM_RC_FAIL, observes RTL and critical
 system status, then injects Guided. Critical status persists and Atlas restores
 RTL. Both save their vehicle observations beside Core events. These checks do
-not prove other flight-controller protections or radio hardware.
+not prove radio hardware.
