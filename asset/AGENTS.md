@@ -12,4 +12,4 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
   [Core API](../core/docs/api.md). Link to those rules; do not copy them.
   Local configuration and diagnostic records belong here, in
   [config.md](config.md) and [logging](docs/logging.md).
-- Planning only: no code until the owner asks. Do not merge without the developer's approval.
+- The owner started the build of the real Asset app on 2026-11-15. Do not merge without the developer's approval.

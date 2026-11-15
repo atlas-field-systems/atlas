@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { runAsset, type AssetLink } from "../src/asset.ts";
+import {
+  createOutbox,
+  runAsset,
+  type AssetLink,
+  type Batch,
+} from "../src/asset.ts";
 
 test("stop interrupts an idle AssetLink read and closes its iterator [sdk/docs/asset.md#running-over-any-link]", async () => {
   let returned = 0;
@@ -21,11 +26,13 @@ test("stop interrupts an idle AssetLink read and closes its iterator [sdk/docs/a
         },
       }),
     }),
-    async sendReports() {
-      return { ok: true };
+    serve(source) {
+      const answer = () =>
+        source.take({ bytes: Infinity, size: () => 0 })?.settle({ ok: true });
+      answer();
+      return source.onWaiting(answer);
     },
     onContact: () => () => {},
-    capacity: () => undefined,
     async storeFile() {
       throw new Error("unused");
     },
@@ -47,4 +54,42 @@ test("stop interrupts an idle AssetLink read and closes its iterator [sdk/docs/a
   for (let i = 0; i < 20; i++) await Promise.resolve();
   assert.deepEqual(end, { reason: "stopped" });
   assert.equal(returned, 1);
+});
+
+test("the link asks with its room; live reports, then current state, then history, and a lost batch is offered again [sdk/docs/asset.md#the-asset-link]", async () => {
+  const report = (time: number) =>
+    ({
+      type: "report.status",
+      time,
+      asset_id: "A",
+      kind: "subsystem",
+      subsystem_id: "GPS",
+      condition: "healthy",
+    }) as const;
+  const room = { bytes: 2, size: (r: unknown[]) => r.length };
+  let current = 0;
+  const outbox = createOutbox(
+    { now: () => 0, after: () => ({ cancel() {} }) },
+    10000,
+    undefined,
+    undefined,
+    ({ bytes }) => (bytes > 0 ? [report(1000 + current++)] : []),
+  );
+  const times = (b?: Batch) => b?.reports.map((r) => r.time);
+  void outbox.add([report(3), report(4), report(5)]);
+  void outbox.add([report(1)], "retained");
+  const first = outbox.take(room);
+  assert.deepEqual(times(first), [3, 4]);
+  assert.equal(outbox.take(room), undefined, "one batch in flight");
+  first!.settle({ ok: false, error: "lost", explanation: "no ack" });
+  const again = outbox.take(room)!;
+  assert.deepEqual(times(again), [3, 4], "lost reports are offered again");
+  again.settle({ ok: true });
+  const next = outbox.take(room)!;
+  assert.deepEqual(times(next), [5, 1000], "current state fills the room");
+  next.settle({ ok: true });
+  const rest = outbox.take({ bytes: 0, size: room.size })!;
+  assert.deepEqual(times(rest), [1], "history goes when nothing live waits");
+  rest.settle({ ok: true });
+  assert.equal(outbox.take({ bytes: 0, size: room.size }), undefined);
 });

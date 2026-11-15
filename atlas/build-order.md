@@ -32,8 +32,8 @@ built. Until then the owner judges Atlas from simulation results.
    after it was made.
 2. **How much does the radio really carry?** Atlas uses a slow link's
    airtime [fully and efficiently](scale.md#use-slow-links-fully-and-efficiently),
-   so the Asset and the Fieldlink need to know how much airtime they have to
-   spend. What Meshtastic carries in practice, after its relays and
+   so the Fieldlink needs to know how much airtime it has to spend before it
+   [asks the Asset for reports](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state). What Meshtastic carries in practice, after its relays and
    acknowledgements, is
    [not known yet](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet).
    A faster radio setting carries more over a shorter range. Only a

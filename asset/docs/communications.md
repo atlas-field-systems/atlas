@@ -33,10 +33,13 @@ The module hands each request to the responsible module once, in event order,
 and keeps the last `event_id` it handled so a reconnect
 [resumes after it](../../core/docs/api.md#the-event-log-and-live-stream).
 
-Reports go in batches. The module keeps each batch, including every final Task
-report, until it is acknowledged, and resends it under the same idempotency key
-until then. Through a Fieldlink, the Fieldlink acknowledges end to end. Retained
-history catches up through the same calls, with original times.
+Reports go in batches, and the link asks for each one
+([below](#report-from-local-state)). Every final Task report and every answer
+to a request is kept until it is acknowledged. On IP the link resends a batch
+under the same idempotency key until Core answers. Through a Fieldlink, the
+Fieldlink acknowledges end to end, and a batch it gives up on is offered again
+in the next one. Retained history catches up through the same calls, with
+original times.
 
 ## Contact
 
@@ -51,12 +54,19 @@ Behavior modules and equipment drivers update the
 [Asset's local state](assets.md#local-state-and-data-flow). The communications
 module reads it and chooses which reports to send. On a slow link it fills the
 airtime it has with the most useful data, as
-[Scale](../../atlas/scale.md#use-slow-links-fully-and-efficiently) sets out:
+[Scale](../../atlas/scale.md#use-slow-links-fully-and-efficiently) sets out.
 
-- **One waiting slot per item, newest value wins.** Position, battery, each
-  subsystem, and each Observation hold only their latest unsent value. A newer
-  value replaces an older one that has not gone out, so the link never carries
-  data that is already out of date.
+**The link asks.** Whenever the link has room to send, it asks the Asset for up
+to that much. The Asset answers with its most important waiting reports that
+fit, and tells the link which must arrive. How much room the link offers
+depends on the link and on how good it is right now: a quiet, strong link asks
+often and for more, and a busy or weak one asks less. The Asset never has to
+guess the link's speed, and reports never pile up behind a busy radio. On IP
+the link asks for everything at once.
+
+- **Current state is read when the link asks.** Position, battery, each
+  subsystem, and each Observation are built from local state at the moment the
+  link asks, so the link never carries data that is already out of date.
 - **Most important first.** Task outcomes and answers to requests go first and
   must arrive. Then changes that matter, such as a failsafe, a fault, or a new
   or moved Observation. Then current telemetry. Retained history goes last,
@@ -89,10 +99,4 @@ Atlas assumes an Asset connects to Wi-Fi during startup or setup.
 
 - The exact order within each priority, and what counts as a change that matters
   for each kind of report.
-- **Proposal:** the link asks the Asset for up to a given number of bytes
-  whenever it has airtime to spend, and the Asset answers with its most
-  important waiting reports. Today the [Asset link](../../sdk/docs/asset.md#the-asset-link)
-  works the other way: the Asset sends batches and reads a capacity figure.
-  Asking fills each chance to transmit without piling reports up behind a busy
-  radio. It would change the SDK's Asset link and needs the owner's agreement.
 - How several links, and relaying for peers, fit behind the one interface.

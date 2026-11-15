@@ -423,5 +423,10 @@
     "phrase": "\\b(telemetry|reports?)( rate)?( is)? (about )?every 15 seconds\\b|\\bcarry the fleet\\b",
     "why": "Slow links have no fixed telemetry rate; an Asset reports as often as free airtime allows.",
     "example": "The telemetry rate is about every 15 seconds on LoRa."
+  },
+  {
+    "phrase": "\\bcapacity\\(\\)|\\breads? a capacity figure\\b|\\bby the capacity (its|the) link reports\\b|\\bresolves sendReports\\b|\\bsaying how much the link can carry now\\b",
+    "why": "The Asset link asks the Asset for reports when it has room; the Asset no longer pushes batches or reads a capacity figure.",
+    "example": "The Asset judges by the capacity its link reports."
   }
 ]

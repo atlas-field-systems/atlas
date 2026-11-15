@@ -37,6 +37,11 @@ sends over the radio only what each Asset does not already have.
 ## Not designed yet
 
 - The compact encoding, frame size, retry timing, and contact timing.
+- How the Fieldlink works out how much room it has before it
+  [asks the Asset for reports](../../asset/docs/communications.md#report-from-local-state).
+  Meshtastic firmware reports how full its send queue is and how busy the
+  channel is, and a packet's airtime follows from the radio settings. Which of
+  these it uses waits for the bench measurement.
 - How much the link carries in practice, measured with two radios on the bench
   ([Build order](../../atlas/build-order.md#the-radio-is-measured-during-the-build)).
 
