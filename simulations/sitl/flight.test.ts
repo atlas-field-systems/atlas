@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { connect } from "node:net";
+import { connect, createServer } from "node:net";
+import { once } from "node:events";
 import { send, common, MavLinkProtocolV2 } from "node-mavlink";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
@@ -13,6 +14,16 @@ import { unzipSync, strFromU8 } from "fflate";
 import { startApp, parseConfig } from "@atlas/asset";
 import { spawnCore } from "../src/core-process.ts";
 import { value } from "../src/world.ts";
+
+async function equipmentPort() {
+  const reservation = createServer();
+  reservation.listen(0, "127.0.0.1");
+  await once(reservation, "listening");
+  const address = reservation.address();
+  assert.ok(address && typeof address !== "string");
+  await new Promise<void>((resolve, reject) => reservation.close(error => error ? reject(error) : resolve()));
+  return address.port;
+}
 
 for (const scenario of [
   "takeover",
@@ -41,15 +52,17 @@ for (const scenario of [
         join(root, "flight.parm"),
         `FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
       );
+      const equipment = await equipmentPort();
+      const pilotPort = await equipmentPort();
       const sitl = spawn(
         join(cache, "arducopter"),
         [
           "--instance",
           "30",
           "--serial0",
-          "tcp:6060",
+          `tcp:${equipment}`,
           "--serial1",
-          "tcp:6061",
+          `tcp:${pilotPort}`,
           "--model",
           "+",
           "--speedup",
@@ -61,6 +74,7 @@ for (const scenario of [
         ],
         { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
       );
+      const exited = once(sitl, "close");
       let diagnostics = "";
       sitl.stdout.on("data", (b) => {
         diagnostics += b;
@@ -70,6 +84,7 @@ for (const scenario of [
       });
       cleanup.push(async () => {
         sitl.kill("SIGKILL");
+        await exited;
         await writeFile(join(root, "sitl.log"), diagnostics);
       });
       await delay(1000);
@@ -165,7 +180,7 @@ for (const scenario of [
         equipment: {
           kind: "ardupilot",
           host: "127.0.0.1",
-          port: 6060,
+          port: equipment,
           system_id: 255,
           heartbeat_s: 0.2,
         },
@@ -213,7 +228,7 @@ for (const scenario of [
           params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 10, altitude_reference: "launch" } }] },
         }));
         await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
-        const pilot = connect({ host: "127.0.0.1", port: 6061 });
+        const pilot = connect({ host: "127.0.0.1", port: pilotPort });
         cleanup.push(() => { pilot.destroy(); });
         await new Promise<void>((resolve, reject) => { pilot.once("connect", resolve); pilot.once("error", reject); });
         const mode = async (customMode: number) => {

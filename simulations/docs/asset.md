@@ -97,6 +97,8 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 instead of silently changing the test equipment.
 
 The eight scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+Each scenario allocates equipment TCP ports from the operating system instead
+of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
 3 metres of the requested position and an archived disarmed measurement. Return
 to home first sets Atlas home away from the arming point. Both specify a transit
