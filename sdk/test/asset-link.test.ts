@@ -164,3 +164,24 @@ test("overflow drops retained history before live reports [sdk/docs/asset.md#the
   assert.equal(outbox.take({ bytes: Infinity, size: () => 0 })!.reports[0].time, 1);
   outbox.stop();
 });
+
+test("blocked additions leave no acknowledgement waits [sdk/docs/asset.md#running-over-any-link]", async () => {
+  const { createHook } = await import("node:async_hooks");
+  const outbox = createOutbox({ now: () => 0, after: () => ({ cancel() {} }) });
+  const report = { type: "report.failsafe", kind: "autopilot", asset_id: "A", time: 1, in_control: true } as const;
+  void outbox.add([report]);
+  outbox.take({ bytes: Infinity, size: () => 0 })!.settle({ ok: false, error: "refused", explanation: "refused by Core" });
+  const pending = new Set<number>();
+  const hook = createHook({
+    init(id, type) { if (type === "PROMISE") pending.add(id); },
+    promiseResolve(id) { pending.delete(id); },
+  });
+  let added: Promise<void>;
+  hook.enable();
+  try { added = outbox.add([report]); }
+  finally { hook.disable(); }
+  try {
+    await added;
+    assert.equal(pending.size, 0, "blocked additions must not retain unresolved acknowledgement promises");
+  } finally { outbox.stop(); }
+});
