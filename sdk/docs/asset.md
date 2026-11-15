@@ -149,6 +149,13 @@ it. The helper holds the Asset's Tasks and hands them to the app.
 - **Clearing.** `clear()` reports every held Task `cancelled`. The app calls it when a command fails or a failsafe starts, as
   in [failsafes](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks).
 
+`QueueHost.refuse(request)` is optional. It returns an explanation to refuse
+a Task, cancel, or update before queue mutation. The app owns that decision,
+including its [failsafe execution lock](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation).
+A refused new Task is reported failed with the request ID. A refused cancel
+returns the known Task state or queue; a refused update returns the queue.
+Previously accepted cancels and `now` supersession still apply to late delivery.
+
 The queue passes the Core event ID as the second argument to `runNow`, so the
 Asset can name an immediate override request in its failsafe report.
 

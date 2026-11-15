@@ -310,3 +310,68 @@ test("peek observes exactly the work next can start without changing reports [sd
   f.q.finish(1, "completed");
   assert.equal(f.q.peek()?.task_id, 2);
 });
+
+for (const request of ["task", "cancel", "update"] as const)
+  test(`asset/docs/failsafes.md: app refusal of ${request} answers without changing work`, () => {
+    const reports: Report[] = [];
+    let locked = false;
+    const task: Task = { kind: "hold", time: 0, asset_id: "A", task_id: 1, requested_by: "OP" };
+    const q = createQueue({
+      last_task_id: 0, asset_id: "A",
+      clock: { now: () => 0, after: () => ({ cancel() {} }) },
+      emit: report => reports.push(report),
+      host: {
+        ...{ refuse: () => locked ? "failsafe locks ordinary work" : undefined },
+        runNow() { assert.fail("refused work must not run"); },
+        stop() { assert.fail("refused cancel must not stop work"); },
+        update() { assert.fail("refused update must not change work"); },
+      },
+    });
+    q.apply({ kind: "tasks.requested", event_id: 1, record: [task] });
+    locked = true;
+    reports.length = 0;
+    if (request === "task")
+      q.apply({ kind: "tasks.requested", event_id: 42, record: [{ ...task, task_id: 2, now: true }] });
+    else if (request === "cancel")
+      q.apply({ kind: "cancel.requested", event_id: 42, record: { task_id: 1, time: 0, asset_id: "A", requested_by: "OP" } });
+    else
+      q.apply({ kind: "tasks.updated", event_id: 42, record: [{ ...task, kind: "land" }] });
+    assert.deepEqual(q.held(), [1]);
+    assert.ok(reports.some(r => "request_id" in r && r.request_id === 42));
+    if (request === "task")
+      assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === 2 && r.task_state === "failed" && r.request_id === 42));
+    else if (request === "cancel")
+      assert.ok(reports.some(r => r.type === "report.status" && r.kind === "queue" && r.request_id === 42 && r.task_ids.includes(1)));
+    else assert.equal(q.next()?.kind, "hold");
+  });
+
+test("asset/docs/failsafes.md: refused cancel answers an ended Task with its current state", () => {
+  const reports: Report[] = [];
+  let locked = false;
+  const q = createQueue({
+    last_task_id: 0, asset_id: "A",
+    clock: { now: () => 0, after: () => ({ cancel() {} }) }, emit: r => reports.push(r),
+    host: { refuse: () => locked ? "failsafe" : undefined, runNow() {}, stop() {}, update() {} },
+  });
+  q.apply({ kind: "tasks.requested", event_id: 1, record: [{ kind: "hold", task_id: 1, asset_id: "A", time: 0, requested_by: "OP" }] });
+  q.next();
+  q.finish(1, "completed");
+  locked = true;
+  reports.length = 0;
+  q.apply({ kind: "cancel.requested", event_id: 42, record: { task_id: 1, asset_id: "A", time: 1, requested_by: "OP" } });
+  assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_state === "completed" && r.request_id === 42));
+});
+
+test("docs/asset.md: a cancel accepted before the Task still answers after the app locks work", () => {
+  const reports: Report[] = [];
+  let locked = false;
+  const q = createQueue({
+    last_task_id: 0, asset_id: "A", emit: r => reports.push(r),
+    clock: { now: () => 0, after: () => ({ cancel() {} }) },
+    host: { refuse: () => locked ? "failsafe" : undefined, runNow() {}, stop() {}, update() {} },
+  });
+  q.apply({ kind: "cancel.requested", event_id: 41, record: { task_id: 1, asset_id: "A", time: 0, requested_by: "OP" } });
+  locked = true;
+  q.apply({ kind: "tasks.requested", event_id: 42, record: [{ kind: "hold", task_id: 1, asset_id: "A", time: 0, requested_by: "OP" }] });
+  assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_state === "cancelled" && r.request_id === 41));
+});

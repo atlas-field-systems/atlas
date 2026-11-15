@@ -21,7 +21,11 @@ export type AssetEvent =
       event_id: number;
       record: ProtocolTypes["settings_change"];
     };
+export type QueueRequest =
+  | { kind: "task"; task: Task }
+  | { kind: "cancel" | "update" };
 export interface QueueHost {
+  refuse?(request: QueueRequest): string | undefined;
   ready?(): void;
   runNow(task: Task, request_id: number): void;
   stop(task_id: number, because: "cancel" | "now" | "dropped"): void;
@@ -34,7 +38,7 @@ type Slot =
   | { at: "stopping"; task: Task; requests: number[] }
   | { at: "cancel_first"; requests: number[] }
   | { at: "pending_update"; task: Task }
-  | { at: "ended"; lateFinish?: true };
+  | { at: "ended"; lateFinish?: true; outcome?: FinishState; fields?: FinishFields };
 type State = {
   floor: number;
   supersededBelow: number;
@@ -96,6 +100,7 @@ function reduce(
   input: Input,
   asset_id: string,
   time: number,
+  refuse: QueueHost["refuse"],
 ): { state: State; effects: Effect[] } {
   const slots = new Map(previous.slots);
   const s = { ...previous, slots };
@@ -128,7 +133,7 @@ function reduce(
         ...fields,
         ...(request_id === undefined ? {} : { request_id }),
       });
-    slots.set(id, { at: "ended" });
+    slots.set(id, { at: "ended", outcome: state, fields });
   };
   switch (input.kind) {
     case "tasks.requested":
@@ -152,6 +157,11 @@ function reduce(
         }
         if (id < s.supersededBelow) {
           final(id, "cancelled");
+          continue;
+        }
+        const explanation = refuse?.({ kind: "task", task });
+        if (explanation !== undefined) {
+          final(id, "failed", [input.event_id], { explanation });
           continue;
         }
         if (task.now) {
@@ -182,6 +192,10 @@ function reduce(
       queue(input.event_id);
       break;
     case "tasks.updated":
+      if (refuse?.({ kind: "update" }) !== undefined) {
+        queue(input.event_id);
+        break;
+      }
       for (const task of input.record) {
         const slot = slots.get(task.task_id);
         if (
@@ -205,6 +219,16 @@ function reduce(
       const id = input.record.task_id,
         slot = slots.get(id),
         request = input.event_id;
+      if (refuse?.({ kind: "cancel" }) !== undefined) {
+        if (slot?.at === "running" || slot?.at === "stopping")
+          report({ type: "report.status", asset_id, time, kind: "task",
+            task_id: id, task_state: "active", request_id: request });
+        else if (slot?.at === "ended" && slot.outcome)
+          report({ type: "report.status", asset_id, time, kind: "task",
+            task_id: id, task_state: slot.outcome, ...slot.fields, request_id: request });
+        else queue(request);
+        break;
+      }
       if (id <= s.floor || slot?.at === "ended") queue(request);
       else if (slot?.at === "held") {
         final(id, "cancelled", [request]);
@@ -303,7 +327,7 @@ export function createQueue(
     slots: new Map(),
   };
   function apply(input: Input): Task | undefined {
-    const result = reduce(state, input, o.asset_id, o.clock.now());
+    const result = reduce(state, input, o.asset_id, o.clock.now(), o.host.refuse);
     if (input.kind === "tasks.requested" || input.kind === "tasks.updated") {
       const changed =
         JSON.stringify([...state.slots]) !==

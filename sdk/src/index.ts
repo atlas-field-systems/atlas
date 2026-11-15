@@ -22,6 +22,7 @@ export type {
   Report,
   AssetEvent,
   QueueHost,
+  QueueRequest,
   FinishFields,
   Queue,
 } from "./queue.ts";
