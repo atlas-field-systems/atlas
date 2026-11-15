@@ -68,7 +68,9 @@ even if no heartbeat showed it. Otherwise it restores the protection's mode
 when observed. The driver also reads `BATT_FS_LOW_ACT` and `BATT_FS_CRT_ACT`. Primary
 BATTERY_STATUS charge state identifies low or critical battery protection. With
 RTL or Land actions it restores the selected mode after late Guided, including
-critical Land superseding low-battery RTL. An active protection never permits
+critical Land superseding low-battery RTL. The driver uses charge-state evidence
+received on its own equipment connection. A separate observer can see Land before
+that connection receives the critical charge-state report. An active protection never permits
 handback. A critical heartbeat does not identify which protection fired or the selected mode;
 [remaining limits](failsafes.md#open) stay explicit.
 Handback samples rules, starts a tracked Hold,

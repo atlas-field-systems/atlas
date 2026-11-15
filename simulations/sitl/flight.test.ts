@@ -190,6 +190,7 @@ for (const scenario of [
       };
       let hiddenBatteryMode = 6;
       let criticalReleasedAt = Infinity;
+      let receivedChargeState = common.MavBatteryChargeState.UNDEFINED;
       const batteryWire: unknown[] = [];
       const equipmentPeers = new Set<Socket>();
       let blocked = scenario === "equipment-startup";
@@ -272,7 +273,10 @@ for (const scenario of [
         cleanup.push(equipmentWire(proxyPort, (direction, packet) => {
           const id = packet.header.msgid;
           if (id === minimal.Heartbeat.MSG_ID) batteryWire.push({ time: Date.now(), direction, heartbeat: packet.protocol.data(packet.payload, minimal.Heartbeat).customMode });
-          if (id === common.BatteryStatus.MSG_ID) batteryWire.push({ time: Date.now(), direction, chargeState: packet.protocol.data(packet.payload, common.BatteryStatus).chargeState });
+          if (id === common.BatteryStatus.MSG_ID && direction === "received") {
+            receivedChargeState = packet.protocol.data(packet.payload, common.BatteryStatus).chargeState;
+            batteryWire.push({ time: Date.now(), direction, chargeState: receivedChargeState });
+          }
           if (id === common.SetMode.MSG_ID) batteryWire.push({ time: Date.now(), direction, selected: packet.protocol.data(packet.payload, common.SetMode).customMode });
         }));
         cleanup.push(() => writeFile(join(root, "battery-wire.json"), JSON.stringify(batteryWire, null, 2)));
@@ -451,6 +455,7 @@ for (const scenario of [
         await until(() => vehicleMode === 6);
         assert.ok(battery <= 15, "independent RTL starts at low capacity");
         const lateGuided = async (selected: number) => {
+          await until(() => receivedChargeState === (selected === 9 ? common.MavBatteryChargeState.CRITICAL : common.MavBatteryChargeState.LOW));
           const m = new common.SetMode();
           Object.assign(m, { targetSystem: 1, baseMode: 1, customMode: 4 });
           const start = samples.length;
