@@ -184,7 +184,7 @@ export const commands = {
       if (p.action.geofeature_id && !p.action.landing_position)
         throw new Error("Land place has no position copy");
       if (!p.action.landing_position && !p.action.transit_altitude)
-        return { destination: p.position, speed: speed(p), initialStep: 2 };
+        return { speed: speed(p), initialStep: 2 };
       return transit(p, p.action.landing_position ?? p.position);
     },
     steps: transitSteps,
@@ -258,19 +258,14 @@ export function prepare(
 ): Execution {
   if (!isCommand(action.kind))
     throw new Error(`unsupported command ${action.kind}`);
-  const p = fresh(measurements.position, now, config.measurement_stale_after_s);
-  if (
-    !p ||
-    fresh(measurements.armed, now, config.measurement_stale_after_s) ===
-      undefined
-  )
+  if (fresh(measurements.armed, now, config.measurement_stale_after_s) === undefined)
     throw new Error("current vehicle state unavailable");
-  const resolved = commands[action.kind].prepare({
-    action,
-    settings,
-    position: p,
-    config,
-  });
+  if (action.kind === "land" && !action.geofeature_id &&
+      !action.landing_position && !action.transit_altitude)
+    return { action, kind: "land", started: now, step: 2, speed: 0 };
+  const p = fresh(measurements.position, now, config.measurement_stale_after_s);
+  if (!p) throw new Error("current vehicle state unavailable");
+  const resolved = commands[action.kind].prepare({ action, settings, position: p, config });
   return {
     action,
     kind: action.kind,

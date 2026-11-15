@@ -97,3 +97,11 @@ test("config.md: ArduPilot observation rates have defaults and enforce wire limi
   ] as const) for (const value of invalid)
     assert.throws(() => parseConfig({ ...input, equipment: { ...input.equipment, [field]: value } }), new RegExp(field));
 });
+
+test("config.md: reporting-only initial settings may be omitted but control settings remain required", async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  delete input.initial_settings;
+  assert.throws(() => parseConfig(input), /initial_settings/);
+  input.description = { commands: [], reports: ["telemetry"] };
+  assert.deepEqual(parseConfig(input).initial_settings, {});
+});

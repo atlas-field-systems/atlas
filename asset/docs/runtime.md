@@ -194,7 +194,9 @@ evidence. A later connection cannot replace an earlier capture owner.
 ## Reporting-only equipment
 
 A reporting-only configuration lists no commands and omits supported settings.
-Its initial settings are empty. It has no SDK queue. Automatic home acquisition
+Its initial settings may be omitted and normalize to empty. It has no SDK queue.
+An Asset that advertises supported settings has a queue for settings Tasks even
+when it advertises no commands. Automatic home acquisition
 runs only when the description advertises home. The stationary driver publishes
 the configured installation position on each control tick while the installation
 remains configured.
@@ -305,7 +307,10 @@ at the configured maximum.
 
 The command registry advances through observed altitude, destination, and landing
 steps. Takeoff completion requires fresh armed and airborne evidence as well as
-the target altitude. A Land without a destination or transit altitude starts descent at once.
+the target altitude. A Land without a destination or transit altitude starts
+descent at once. It requires fresh armed state, but no position. The driver only
+selects Land mode.
+Completion uses fresh disarmed and grounded evidence, without coordinates.
 A transit without a specified altitude snapshots the current launch altitude.
 The initial ArduPilot driver refuses altitude references it cannot execute;
 it never substitutes another reference. Position targets carry the resolved
@@ -314,8 +319,13 @@ ArduPilot RTL. The flight controller's independent RTL protection stays separate
 
 The ArduPilot TCP driver publishes position only with a 3D GPS fix and an
 absolute horizontal position estimate from EKF. Hold uses a position target at
-the measured location with zero velocity in Guided. Its stopped measurement
-uses the magnitude of all three velocity axes, including vertical motion.
+the measured location with zero velocity in Guided. The driver checks the local
+position acquisition time before selecting Guided and again before writing the
+target. A position older than `measurement_stale_after_s`, or no position, refuses
+Hold without sending a coordinate target. It does not select a different braking
+mode: the safe-stop intent waits for fresh equipment evidence and retries Hold,
+while the controller's independent protections remain responsible for link loss.
+Its stopped measurement uses the magnitude of all three velocity axes, including vertical motion.
 Each equipment command supersedes the preceding operation. Its promise waits for its own command
 acknowledgements and commanded-mode heartbeat; a refusal rejects that operation.
 

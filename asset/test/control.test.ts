@@ -764,3 +764,42 @@ test("docs/README.md: Takeoff near ground cannot complete before observed flight
   const flying = reduce(armed, { kind: "measurements", measurements: { airborne: { value: true, source: "vehicle", time: 200 } } }, config).state;
   assert.ok(reduce(flying, { kind: "tick", now: 300, hasWork: false }, config).effects.some(e => e.kind === "task" && e.status === "completed"));
 });
+
+for (const cancellation of ["cancel", "settings"] as const) test(`docs/runtime.md: ${cancellation} retries a refused stop and blocks work until fresh stopped evidence`, async () => {
+  const { canPullTask } = await import("../src/control.ts");
+  const { config, state: start } = await setup();
+  const active = reduce(start, { kind: "task", task: { ...hold, kind: "move_to", destination: { latitude: 2, longitude: 2 } }, now: 0 }, config).state;
+  let result = reduce(active, cancellation === "cancel"
+    ? { kind: "cancel", id: hold.task_id, now: 1 }
+    : { kind: "task", task: { ...hold, task_id: 2, kind: "settings", settings: { link_loss_after_s: 25 } }, now: 1 }, config);
+  assert.equal(result.state.execution, null);
+  assert.equal(canPullTask(result.state), false);
+  result = reduce(result.state, { kind: "command_failed", execution_id: result.state.commandId, explanation: "link interrupted", now: 2 }, config);
+  result.state.measurements.connected = { value: true, source: "vehicle", time: 3 };
+  result = reduce(result.state, { kind: "tick", now: 3, hasWork: true }, config);
+  assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
+  result = reduce(result.state, { kind: "command_accepted", execution_id: result.state.commandId, now: 4 }, config);
+  result.state.measurements.speed = { value: 0, source: "vehicle", time: 3 };
+  result = reduce(result.state, { kind: "tick", now: 5, hasWork: true }, config);
+  assert.equal(canPullTask(result.state), false);
+  result.state.measurements.speed = { value: 0, source: "vehicle", time: 6 };
+  result = reduce(result.state, { kind: "tick", now: 6, hasWork: true }, config);
+  assert.equal(canPullTask(result.state), true);
+});
+
+for (const source of ["operator", "critical"] as const) test(`docs/failsafes.md: ${source} in-place Land starts and completes without GPS`, async () => {
+  const { config, state } = await setup();
+  if (source === "operator") state.measurements.position!.time = -config.measurement_stale_after_s * 1000 - 1;
+  else delete state.measurements.position;
+  state.settings.failsafe_policy = [{ rule_id: "CB", priority: 90, conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } }];
+  state.measurements.battery = { value: 5, source: "vehicle", time: 0 };
+  let result = reduce(state, source === "operator"
+    ? { kind: "task", task: { ...hold, kind: "land" }, now: 0 }
+    : { kind: "tick", now: 0, hasWork: false }, config);
+  assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "land"));
+  assert.equal(result.state.execution?.execution.step, 2);
+  result.state.measurements.armed = { value: false, source: "vehicle", time: 1 };
+  result.state.measurements.airborne = { value: false, source: "vehicle", time: 1 };
+  result = reduce(result.state, { kind: "tick", now: 1, hasWork: false }, config);
+  assert.ok(result.effects.some(e => (e.kind === "task" || e.kind === "response") && e.status === "completed"));
+});

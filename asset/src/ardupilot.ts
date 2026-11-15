@@ -14,7 +14,7 @@ import type { Config } from "./config.ts";
 import type { Vehicle, Measurements, VehicleCommand, Subsystem } from "./vehicle.ts";
 
 export function ardupilot(
-  config: Extract<Config["equipment"], { kind: "ardupilot" }>,
+  config: Extract<Config["equipment"], { kind: "ardupilot" }> & Pick<Config, "measurement_stale_after_s">,
   clock: Clock,
   diagnostic: (value: unknown) => void = () => {},
 ): Vehicle {
@@ -24,7 +24,7 @@ export function ardupilot(
   let observe: (m: Measurements) => void = () => {};
   let targetSystem = 1,
     targetComponent = 1;
-  let location: { latitude: number; longitude: number } | undefined;
+  let location: { latitude: number; longitude: number; time: number } | undefined;
   let altitude = 0;
   let gpsFixed = false;
   let positionEstimated = false;
@@ -104,8 +104,13 @@ export function ardupilot(
   }
   function restoreMode() {
     if (observedMode !== 4 || !handback || handback.mode === null || handback.phase === "restoring") return;
+    const restoreTo = handback.mode;
     handback.phase = "restoring";
-    void mode(handback.mode).catch(diagnostic);
+    const restoring = handback;
+    void mode(restoreTo).catch(error => {
+      if (handback === restoring) restoring.phase = "late_guided";
+      diagnostic(error);
+    });
   }
   function subsystem(key: "gps" | "flight_controller", value: Subsystem) {
     const id = config.subsystems?.[key];
@@ -197,7 +202,7 @@ export function ardupilot(
       if (!gpsFixed || !positionEstimated) return;
       const m = packet.protocol.data(packet.payload, common.GlobalPositionInt);
       altitude = m.relativeAlt / 1000;
-      location = { latitude: m.lat / 1e7, longitude: m.lon / 1e7 };
+      location = { latitude: m.lat / 1e7, longitude: m.lon / 1e7, time: clock.now() };
       observe({
         position: stamp({
           latitude: m.lat / 1e7,
@@ -402,9 +407,11 @@ export function ardupilot(
           return;
         }
         case "hold": {
-          if (!location)
+          if (!location || clock.now() - location.time > config.measurement_stale_after_s * 1000)
             throw new Error("current position unavailable for Hold");
           await selectMode(c.mode);
+          if (!location || clock.now() - location.time > config.measurement_stale_after_s * 1000)
+            throw new Error("current position unavailable for Hold");
           const m = new common.SetPositionTargetGlobalInt();
           Object.assign(m, {
             targetSystem,

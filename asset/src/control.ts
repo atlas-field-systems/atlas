@@ -368,11 +368,7 @@ export function reduce(
       const w = state.execution;
       if (w?.task?.task_id === event.id && state.phase === "ordinary") {
         finish(w, "cancelled");
-        effects.push({
-          kind: "vehicle",
-          execution_id: ++state.commandId,
-          command: holdCommand(),
-        });
+        stop(event.now);
         state.execution = null;
       }
       break;
@@ -397,7 +393,7 @@ export function reduce(
         if (current) {
           finish(current, "cancelled");
           state.execution = null;
-          effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
+          stop(event.now);
         }
         const changed = reduce(
           state,
