@@ -9,5 +9,10 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "scenarios/**/*.ts", "faults/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "scenarios/**/*.ts",
+    "faults/**/*.ts",
+    "sitl/**/*.ts"
+  ]
 }

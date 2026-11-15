@@ -2,7 +2,8 @@
 
 The Asset app keeps its own state, reports what it observes, and carries out
 supported work through configurable [modules and equipment drivers](assets.md).
-This is the selected plan. No runtime exists yet.
+This is the selected behavior. The [implementation status](../README.md#implementation-gaps)
+lists what the initial runtime does not yet implement.
 
 Protocol owns the records named here: the description, Task, settings change,
 and cancel, and the subsystem, task, queue, telemetry, battery, settings, gimbal, and

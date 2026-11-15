@@ -3,7 +3,7 @@
 The Asset app evaluates equipment, contact, and work state locally. It controls
 the response, and reports and logs the trigger, the selected rule, and the
 observed outcome. Contact comes from the [communications module](communications.md#contact).
-No Asset runtime is built yet. Terms are in the [Atlas glossary](../../GLOSSARY.md).
+The initial runtime is incomplete; see its [implementation gaps](../README.md#implementation-gaps). Terms are in the [Atlas glossary](../../GLOSSARY.md).
 
 ## No rules are enabled by default
 

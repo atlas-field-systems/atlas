@@ -1,7 +1,7 @@
 # Asset communications
 
 The communications module carries requests from Core to the Asset's modules, and
-reports back. This behavior is planned, not implemented.
+reports back. The initial IP implementation runs; see its [implementation gaps](../README.md#implementation-gaps).
 
 ## One interface for every link
 

@@ -79,3 +79,29 @@ Each checks behavior its [Asset page](../../asset/docs/README.md) owns.
 - Eval thresholds, such as how close and how fast counts as a pass in SITL.
 - Scenarios for several links and congestion, once the gateway and Fieldlink
   designs exist.
+
+## Run the initial SITL scenarios
+
+Use Node 24 and install dependencies with `npm ci` in Protocol, Core, the SDK,
+Asset, and Simulations, in that order. From the repository root run:
+
+```sh
+node simulations/scripts/fetch-sitl.mjs
+cd simulations
+node --test sitl/flight.test.ts
+```
+
+The downloader pins official Copter 4.7.2 and its default copter parameters by
+SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
+`ATLAS_SITL_DIRECTORY` to use another download directory. A changed stable
+binary fails verification instead of silently changing the test equipment.
+
+The scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+SITL runs at five times real time, so its configured GCS heartbeat interval is
+0.2 wall seconds. Flight-controller GCS failsafe remains enabled. Low battery
+uses SITL's battery consumption with a smaller configured battery capacity.
+Core-path loss aborts the Asset's HTTP connection while its equipment TCP link
+continues. Each scenario prints its temporary evidence directory, including
+Core archives and SITL output. Asset shutdown writes its own verified archive.
+These checks prove simulated behavior only. The remaining scenario list above
+is still the conformance target.
