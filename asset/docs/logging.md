@@ -2,8 +2,8 @@
 
 The Asset records detailed evidence locally for the whole operation, including
 while it has no contact with Core. It collects its own app and equipment events
-and the diagnostics of its SDK client or Fieldlink. The initial diagnostic writer and verified ZIP export run, with the
-[implementation gaps below](#implementation-status).
+and the diagnostics of its SDK client or Fieldlink. The IP runtime writes and
+verifies its operation ZIP, including recovery after an unexpected stop.
 
 ## Record decisions and observed equipment behavior
 
@@ -94,19 +94,3 @@ regardless.
 ## Open
 
 - Default rotation and total limits.
-
-## Implementation status
-
-The initial runtime writes a bounded diagnostic queue to rotated JSONL files,
-counts dropped records, and exports a ZIP with configuration, diagnostics,
-summary, and a manifest. It verifies every manifest entry before renaming the
-ZIP and removing the local directory. A failed ZIP keeps that directory.
-
-Captured peripheral files are retained separately and included in `files/`,
-including files refused by Core.
-
-The full record described above is not complete. Separate retained reports, versions and definitions hash, detailed gap intervals, crash recovery,
-and the no-retry marker for failed archives still need implementation.
-`log_level` and `log_message_content` are parsed but do not yet filter records.
-Diagnostic reads and ZIP construction currently use memory proportional to the
-operation's retained files. A streaming archive writer is still needed.
