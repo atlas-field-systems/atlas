@@ -247,8 +247,16 @@ export function reduce(
       }
     });
   }
-  function rearm() {
-    for (const r of Object.values(state.rules)) r.armed = true;
+  function rearm(now: number) {
+    for (const rule of state.settings.failsafe_policy ?? []) {
+      const prior = state.rules[rule.rule_id];
+      const holds = matches(rule, now);
+      state.rules[rule.rule_id] = {
+        holds,
+        armed: true,
+        since: holds ? (prior?.since ?? now) : null,
+      };
+    }
   }
   function issue(w: Work, now: number) {
     state.commandId++;
@@ -368,7 +376,7 @@ export function reduce(
             task.kind === "return_to_home"
           )
             state.override = { kind: task.kind, request_id: event.request_id };
-          if (task.kind === "hold") rearm();
+          if (task.kind === "hold") rearm(event.now);
         }
         start(task, task, null, event.now);
       }
@@ -396,7 +404,7 @@ export function reduce(
         });
         if (state.phase === "failsafe") {
           state.override = { kind: "pause", request_id: event.request_id };
-          rearm();
+          rearm(event.now);
         }
       } else if (!paused && wasPaused) {
         if (state.override?.kind === "pause") state.override = null;
@@ -461,7 +469,7 @@ export function reduce(
         if (controlled === true) {
           state.phase = "failsafe";
           state.override = { kind: "hold" };
-          rearm();
+          rearm(event.now);
           effects.push(
             { kind: "autopilot", in_control: false },
             {

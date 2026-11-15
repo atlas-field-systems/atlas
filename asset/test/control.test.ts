@@ -481,3 +481,40 @@ test("docs/failsafes.md: override reports name the Hold and pause requests", asy
     paused.effects.some((e) => e.kind === "override" && e.request_id === 43),
   );
 });
+
+for (const override of ["hold", "pause"] as const)
+  test(`docs/failsafes.md: ${override} preserves a condition already true between ticks`, async () => {
+    const { config, state: start } = await setup();
+    start.settings.failsafe_policy = [{
+      rule_id: "LB",
+      priority: 50,
+      conditions: [{ kind: "battery_below", battery_percent: 30 }],
+      response: { kind: "land" },
+    }];
+    start.measurements.battery = { value: 50, source: "vehicle", time: 0 };
+    let state = reduce(start, {
+      kind: "task", task: { ...hold, kind: "failsafe" }, now: 0,
+    }, config).state;
+    state = reduce(state, { kind: "tick", now: 1, hasWork: false }, config).state;
+    state = reduce(state, {
+      kind: "measurements",
+      measurements: { battery: { value: 20, source: "vehicle", time: 2 } },
+    }, config).state;
+    state = reduce(state, override === "hold"
+      ? { kind: "task", task: hold, now: 3 }
+      : { kind: "settings", settings: { run_state: "paused" }, now: 3 }, config).state;
+    const held = reduce(state, { kind: "tick", now: 4, hasWork: false }, config);
+    assert.equal(held.effects.some(e => e.kind === "response" && e.status === "active"), false,
+      "an already-true noncritical condition must not replace the override");
+    state = reduce(held.state, {
+      kind: "measurements",
+      measurements: { battery: { value: 50, source: "vehicle", time: 5 } },
+    }, config).state;
+    state = reduce(state, { kind: "tick", now: 5, hasWork: false }, config).state;
+    state = reduce(state, {
+      kind: "measurements",
+      measurements: { battery: { value: 20, source: "vehicle", time: 6 } },
+    }, config).state;
+    const fired = reduce(state, { kind: "tick", now: 6, hasWork: false }, config);
+    assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "LB" && e.status === "active"));
+  });

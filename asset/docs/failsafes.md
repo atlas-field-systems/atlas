@@ -255,6 +255,10 @@ battery still below the rule's percentage, fires again only after it stops
 holding and holds again. The Asset stays in failsafe state throughout; re-arming
 never cancels it. A Land or Return to home override re-arms nothing.
 
+The runtime samples rule conditions when Hold or pause takes effect, including
+measurements received since the last control tick. It keeps each matching
+rule's existing condition start time.
+
 **A critical battery level always fires.** A rule whose battery condition is
 marked critical fires whenever the battery is below that level, whatever its
 priority and whether or not it fired before. A Hold now or pause override never
