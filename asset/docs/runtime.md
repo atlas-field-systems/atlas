@@ -174,3 +174,22 @@ coordinates establish position. Mode 3 can supply MSL altitude. Missing time or
 device stays unknown, and a lost fix clears the local sample. Other gpsd message
 classes do not change position. The tracker example uses this driver. Hardware
 GPS receivers and detector hardware integrations have not been verified.
+
+## Startup resources
+
+Equipment acquisition and the control tick start independently of Core registration.
+Configured rules can therefore select responses before Core is reachable. Local
+reports wait without an Asset ID and receive Core's assigned identity when
+registration succeeds. Their acquisition times stay unchanged. They do not enter
+the diagnostic queue.
+
+Startup records each acquired resource's cleanup and releases resources in reverse
+order on refusal or error. It then seals diagnostics and exports the failed
+startup operation. Before registration supplies an identity, its archive uses
+`unregistered` in the filename. This is a local archive label, never an Asset ID.
+An archive failure is printed and the local records remain.
+
+The CLI installs signal handlers before registration. An AbortSignal stops pending
+startup as well as an established app. A local failsafe that safely stops before
+registration also ends startup and releases its resources. Late registration
+completion cannot leave a running session behind.
