@@ -1,6 +1,6 @@
 # Asset simulations
 
-How the [Asset app](../../asset/README.md) is simulated, once it is built. The
+How the [Asset app](../../asset/README.md) is simulated. The
 [Simulations README](../README.md) owns the shared rules: real parts, a
 simulated world, repeatable runs, and every failure kept as a simulation.
 
@@ -111,3 +111,14 @@ suppress the configured idle response. Each scenario prints its temporary eviden
 Core archives and SITL output. Asset shutdown writes its own verified archive.
 These checks prove simulated behavior only. The remaining scenario list above
 is still the conformance target.
+
+## Command registry checkpoint
+
+On 2026-11-15, runtime commit `c808ee46` passed all seven SITL scenarios three
+consecutive times. Test-runner durations were 150.175 s, 148.712 s, and 148.238 s.
+The retained destination scenarios first failed on `f3be4581`: final Core
+positions were 34.559 m and 34.571 m from the requested Land position and Atlas
+home respectively, despite disarming. Both now satisfy the destination and
+disarming checks above. This evidence covers the command registry round in
+[draft PR 62](https://github.com/atlas-field-systems/atlas/pull/62), not the full
+scenario list or real equipment.
