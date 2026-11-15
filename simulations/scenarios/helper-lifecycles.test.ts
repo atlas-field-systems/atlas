@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { startAsset, startPlugin, type Reply, type Report } from "@atlas/sdk";
+import { assetApp } from "../src/asset-app.ts";
 import { scenario } from "../src/scenario.ts";
 import { description } from "../src/actors.ts";
 import { value, type World } from "../src/world.ts";
@@ -17,6 +18,7 @@ async function assetClient(w: World, name: string) {
   return w.client(name, { kind: "asset", key: key.key });
 }
 scenario({
+  // SDK contract: the app does not expose an asynchronous settings consumer.
   name: "IP Asset close discards Tasks behind an asynchronous settings handler",
   checks: ["sdk/docs/asset.md#running-over-any-link"],
   async run(w) {
@@ -84,6 +86,7 @@ scenario({
   },
 });
 scenario({
+  // SDK contract: the app does not expose a throwing settings consumer.
   name: "IP Asset propagates a settings consumer error and stops reporting",
   checks: ["sdk/docs/asset.md#running-over-any-link"],
   async run(w) {
@@ -129,14 +132,8 @@ scenario({
   name: "Asset retries an unanswered initial about and registers once",
   checks: ["sdk/docs/asset.md#startup-on-ip"],
   async run(w) {
-    const c = await assetClient(w, "initial-loss");
     w.network.once("initial-loss", "/about", { kind: "loseResponse" });
-    const s = value(
-      await w.complete(
-        startAsset(c, { clock: w.clock, description, settings: () => ({}) }),
-      ),
-    );
-    w.onClose(() => s.stop());
+    await assetApp(w, { name: "initial-loss" });
     assert.ok(
       w.network.traffic.filter(
         (t) => t.caller === "initial-loss" && t.path === "/about",
@@ -304,6 +301,7 @@ scenario({
   },
 });
 scenario({
+  // SDK contract: explicit retained-lane injection and gated consumers are SDK caller behavior.
   name: "Asset reconnect sends current settings before retained history and reopens without draining it",
   checks: ["core/docs/api.md#asset-and-gateway-calls"],
   async run(w) {
