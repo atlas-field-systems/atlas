@@ -423,6 +423,10 @@ Asset on its own side and speaks to Core only by `asset_id`.
 
 ## Contact
 
+Core refuses a `link_loss_after_s` settings change at or below its configured
+`stream_keepalive_s` with `409 invalid_link_loss`, including a settings Task.
+The [Core configuration](../config.md) owns the keepalive interval.
+
 Stored contact records describe transitions. An online record keeps the time
 of the online transition, rather than every later heartbeat. Offline records
 keep the last-heard time.

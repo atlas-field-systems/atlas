@@ -728,3 +728,17 @@ test("two gateways on one Core each carry only their own radio Assets (Scale, Se
     await h.stop();
   }
 });
+
+test("api.md#contact: Core refuses link loss settings at or below its keepalive, including settings Tasks", async () => {
+  const h = await startHarness(simulatedClock(), { stream_keepalive_s: 7 });
+  try {
+    const a = await asset(h, { ...description, settings: [...description.settings, "link_loss_after_s"] });
+    for (const seconds of [6, 7, 8]) {
+      const settings = { link_loss_after_s: seconds };
+      const changed = await h.call("PATCH", `/entities/assets/${a.id}/settings`, { cookie: h.admin, body: { settings } });
+      const queued = await task(h, a.id, { tasks: [{ kind: "settings", settings }] });
+      assert.equal(changed.status, seconds <= 7 ? 409 : 202);
+      assert.equal(queued.status, seconds <= 7 ? 409 : 202);
+    }
+  } finally { await h.close(); }
+});

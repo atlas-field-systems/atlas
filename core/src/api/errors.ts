@@ -5,6 +5,7 @@ export const REFUSALS = {
   not_found: 404,
   asset_ids_exhausted: 409, // api.md
   definitions_mismatch: 409, // api.md
+  invalid_link_loss: 409,
   no_critical_battery_rule: 409, // api.md
   queue_full: 409, // api.md
   asset_offline: 409,
