@@ -19,8 +19,8 @@ even when a sibling is false. Each rule stores
 one timer per condition. Idle timers reference the same operation-wide idle
 interval, so adding a rule does not restart elapsed idle time. Cloning the
 timing records preserves these shared references. Idle intervals begin on the
-first idle sample;
-contact loss uses the last heard time. Re-arming preserves condition timers.
+first idle sample and end when execution starts, including work that completes
+on its first progress check. Contact loss uses the last heard time. Re-arming preserves condition timers.
 The command registry declares whether an override re-arms protection or stands
 until its execution ends. Command timeouts come directly from configuration.
 
@@ -109,7 +109,8 @@ invocation ID, so an old ACK arriving after the new write completes cannot be
 distinguished from the new command's ACK.
 
 Boundary evaluation projects polygon vertices into metres around the current
-position, unwraps longitudes at the antimeridian, and uses ray casting for
+position, unwraps each longitude relative to the preceding vertex to preserve
+polygon continuity at the antimeridian, and uses ray casting for
 containment and the nearest segment for the distance margin. Height limits
 compare only matching altitude references. The existing per-condition timer
 measures continuous violation; a fresh inside sample or stale position clears it.
@@ -297,7 +298,8 @@ with an explanation. Transit uses the configured default ground speed, capped
 at the configured maximum.
 
 The command registry advances through observed altitude, destination, and landing
-steps. A Land without a destination or transit altitude starts descent at once.
+steps. Takeoff completion requires fresh armed and airborne evidence as well as
+the target altitude. A Land without a destination or transit altitude starts descent at once.
 A transit without a specified altitude snapshots the current launch altitude.
 The initial ArduPilot driver refuses altitude references it cannot execute;
 it never substitutes another reference. Position targets carry the resolved
@@ -306,8 +308,9 @@ ArduPilot RTL. The flight controller's independent RTL protection stays separate
 
 The ArduPilot TCP driver publishes position only with a 3D GPS fix and an
 absolute horizontal position estimate from EKF. Hold uses a position target at
-the measured location with zero velocity in Guided. Each equipment command
-supersedes the preceding operation. Its promise waits for its own command
+the measured location with zero velocity in Guided. Its stopped measurement
+uses the magnitude of all three velocity axes, including vertical motion.
+Each equipment command supersedes the preceding operation. Its promise waits for its own command
 acknowledgements and commanded-mode heartbeat; a refusal rejects that operation.
 
 

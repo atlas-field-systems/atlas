@@ -35,7 +35,7 @@ See [Core contact](../core/docs/api.md#contact).
 With Node 24, run `npm ci` in Protocol, Core, the SDK, and Asset, in that order.
 From `asset/`, run `node src/main.ts inspect examples/copter.json`.
 The command reads one JSON file, validates it, prints the effective configuration
-with `asset_key` removed, and exits without opening equipment or Core. Invalid
+with `asset_key` and URL credentials removed, and exits without opening equipment or Core. Invalid
 configuration exits with status 1 and names the affected options.
 
 The [copter example](examples/copter.json) is the implemented format. It requires
@@ -57,7 +57,10 @@ command requires a `completion_tolerances` object with `horizontal_m`, `altitude
 and `stopped_mps`, and a positive `command_timeouts` value in seconds.
 Fail-safe activates a policy response and has no execution entry or movement
 configuration. A reporting-only Asset needs neither movement configuration nor
-initial settings. The configured safe action is unused when no commands are listed.
+initial settings. Movement also requires the Hold tolerance and timeout even when
+Hold is not advertised, because handback and command failures use it internally.
+Acquisition-only `gpsd` and `peripheral` equipment cannot advertise movement commands.
+The configured safe action is unused when no commands are listed.
 
 ## Options
 

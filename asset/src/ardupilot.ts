@@ -207,7 +207,7 @@ export function ardupilot(
             { altitude_m: m.alt / 1000, altitude_reference: "msl" },
           ],
         }),
-        speed: stamp(Math.hypot(m.vx, m.vy) / 100),
+        speed: stamp(Math.hypot(m.vx, m.vy, m.vz) / 100),
       });
     } else if (id === common.BatteryStatus.MSG_ID) {
       const m = packet.protocol.data(packet.payload, common.BatteryStatus);

@@ -327,7 +327,7 @@ export function createQueue(
     slots: new Map(),
   };
   function apply(input: Input): Task | undefined {
-    const result = reduce(state, input, o.asset_id, o.clock.now(), o.host.refuse);
+    const result = reduce(state, input, o.asset_id, o.clock.now(), request => o.host.refuse?.(request));
     if (input.kind === "tasks.requested" || input.kind === "tasks.updated") {
       const changed =
         JSON.stringify([...state.slots]) !==

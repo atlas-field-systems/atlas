@@ -30,6 +30,7 @@ scenario({
     let takeoverSent = false;
     const setModes: Array<{ mode: number; afterTakeover: boolean }> = [];
     const commands: Array<{ command: number; afterTakeover: boolean }> = [];
+    const targets: Array<{ afterTakeover: boolean }> = [];
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
     const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode: mode, systemStatus: 4, mavlinkVersion: 3 }); out(m); };
@@ -55,6 +56,8 @@ scenario({
           hb();
           return;
         }
+        if (id === common.SetPositionTargetGlobalInt.MSG_ID)
+          targets.push({ afterTakeover: takeoverSent });
         if (id === common.CommandLong.MSG_ID) {
           const m = packet.protocol.data(packet.payload, common.CommandLong);
           commands.push({ command: m.command, afterTakeover: takeoverSent });
@@ -76,12 +79,18 @@ scenario({
       takeoverArmed = true;
       value(await w.complete(w.admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "move_to", destination: { latitude: -35.362, longitude: 149.16523 } }] } })));
       await w.until(() => takeoverSent);
+      await w.until(() => w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
+      assert.ok(peer);
+      const late = new common.CommandAck();
+      Object.assign(late, { command: 178, result: 0, progress: 0, resultParam2: 0, targetSystem: 255, targetComponent: 190 });
+      await send(peer, late, protocol);
       await w.advance(3000);
       await new Promise(r => setTimeout(r, 200));
       await w.advance(2000);
       assert.equal(setModes.some(s => s.afterTakeover && s.mode === 4), false, "Atlas must not select Guided after takeover");
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.ok(w.events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_state === "cancelled"));
+      assert.equal(targets.some(target => target.afterTakeover), false, "a late successful speed ACK cannot release a position target after takeover");
       assert.equal(mode, 6);
       assert.equal(commands.some(c => c.afterTakeover && c.command === 178), false);
     } finally {

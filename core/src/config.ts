@@ -80,6 +80,8 @@ export function resolveConfig(
   ] as const)
     if (!Number.isFinite(config[key]) || config[key] <= 0)
       fail(key, "must be positive");
+  if (config.stream_keepalive_s * 1000 > 2147483647)
+    fail("stream_keepalive_s", "must not exceed 2147483.647 seconds");
   for (const key of [
     "listen_address",
     "data_directory",

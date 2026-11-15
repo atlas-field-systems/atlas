@@ -124,6 +124,10 @@ const schema = z
       }
     }
     if (c.description.commands.some(isCommand)) {
+      if (c.equipment.kind === "gpsd" || c.equipment.kind === "peripheral")
+        fail(["description", "commands"], "acquisition-only equipment cannot execute movement");
+      if (!c.completion_tolerances.hold) fail(["completion_tolerances", "hold"], "required for internal Hold");
+      if (!c.command_timeouts.hold) fail(["command_timeouts", "hold"], "required for internal Hold");
       if (c.default_ground_speed_mps === undefined) fail(["default_ground_speed_mps"], "required for movement");
       if (c.max_ground_speed_mps === undefined) fail(["max_ground_speed_mps"], "required for movement");
     }
@@ -170,5 +174,8 @@ export async function readConfig(path: string): Promise<Config> {
   return parseConfig(JSON.parse(await readFile(path, "utf8")));
 }
 export function inspectConfig(config: Config) {
-  return { ...config, asset_key: "[removed]" };
+  const core = new URL(config.link.core_url);
+  core.username = "";
+  core.password = "";
+  return { ...config, asset_key: "[removed]", link: { ...config.link, core_url: core.href } };
 }

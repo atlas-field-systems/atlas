@@ -150,6 +150,7 @@ export function reduce(
         now,
         config,
       );
+      state.idle.since = null;
       state.execution = {
         execution,
         task,

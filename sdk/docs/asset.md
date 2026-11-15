@@ -213,7 +213,7 @@ never reorders its reports.
 The outbox retains at most 1,024 queued ordinary reports across both lanes,
 excluding reports in the current in-flight batch. Overflow drops the oldest
 ordinary retained reports first, then ordinary live reports. Request answers,
-final Task reports, all failsafe reports, and non-healthy subsystem reports are
+final Task reports, all failsafe reports, and subsystem condition reports are
 never dropped by this bound and make their batch must-arrive.
 Protected evidence can exceed the limit. Each drop settles any acknowledgement
 wait for that report and emits `reports.gap` with a dropped count. Consumers
@@ -224,3 +224,7 @@ acknowledgement waits.
 
 After connecting and before registration, `startAsset` refuses an initial
 `link_loss_after_s` at or below Core's advertised `stream_keepalive_s`.
+
+Report recording failures, including rejected asynchronous `onReports` callbacks,
+emit `reports.recording_failed` without stopping report delivery. Queue host
+methods retain their receiver, including `refuse`.

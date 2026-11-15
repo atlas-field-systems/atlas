@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile, readdir } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { createClient, systemClock, follow, type AtlasEvent } from "@atlas/sdk";
 import { loadPackagedProtocol } from "@atlas/protocol";
@@ -61,9 +61,9 @@ for (const scenario of [
       });
       const root = await mkdtemp(join(tmpdir(), "atlas-sitl-flight-"));
       console.log(`Evidence: ${root}`);
-      const cache =
-        process.env.ATLAS_SITL_DIRECTORY ??
-        join(homedir(), ".cache/atlas-sitl");
+      const cache = resolve(
+        process.env.ATLAS_SITL_DIRECTORY ?? join(homedir(), ".cache/atlas-sitl"),
+      );
       await writeFile(
         join(root, "flight.parm"),
         `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\n${scenario === "rc-late-guided" ? "FLTMODE1 4\nFLTMODE4 5\n" : ""}${["subsystem", "takeover", "takeover-response"].includes(scenario) ? "FS_EKF_THRESH 0\n" : ""}FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nMAV_GCS_SYSID 255\nFS_OPTIONS 0\nBATT_CAPACITY ${scenario === "battery" ? 100 : scenario === "battery-layers" ? 1000 : 3300}\nBATT_LOW_MAH ${scenario === "battery" ? 15 : scenario === "battery-layers" ? 150 : 495}\nBATT_CRT_MAH ${scenario === "battery" ? 10 : scenario === "battery-layers" ? 100 : 330}\nBATT_LOW_VOLT 0\nBATT_CRT_VOLT 0\nBATT_FS_LOW_ACT 2\nBATT_FS_CRT_ACT 1\n`,

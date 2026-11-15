@@ -57,7 +57,7 @@ const mustArrive = (r: Report) =>
     r.kind === "task" &&
     r.task_state !== "active") ||
   r.type === "report.failsafe" ||
-  (r.type === "report.status" && r.kind === "subsystem" && r.condition !== "healthy");
+  (r.type === "report.status" && r.kind === "subsystem");
 const batchLimit = 1000;
 export function createOutbox(
   clock: Clock,
@@ -65,11 +65,12 @@ export function createOutbox(
   observer?: Observer,
   emit = diagnostics(clock, observer),
   current?: (room: Room) => Report[],
-  onReports?: (reports: Report[]) => void,
+  onReports?: (reports: Report[]) => void | Promise<void>,
 ) {
   function recorded(reports: Report[]) {
-    try { onReports?.(structuredClone(reports)); }
-    catch { emit("reports.recording_failed", { count: reports.length }); }
+    const failed = () => emit("reports.recording_failed", { count: reports.length });
+    try { onReports?.(structuredClone(reports))?.catch(failed); }
+    catch { failed(); }
   }
   const live: Report[] = [],
     retained: Report[] = [];
@@ -259,7 +260,7 @@ export interface AssetOptions {
   observer?: Observer;
   queue?: QueueHost;
   current?(room: Room): Report[];
-  onReports?(reports: Report[]): void;
+  onReports?(reports: Report[]): void | Promise<void>;
   settings(): P["report.settings"]["settings"];
   onSettings?(
     settings: P["settings_change"],

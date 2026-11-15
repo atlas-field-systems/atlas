@@ -5,10 +5,14 @@ type Boundary = Extract<ComponentsFailsafeCondition, { kind: "outside_area" }>;
 export function outsideBoundary(position: ComponentsPosition, condition: Boundary) {
   const rad = Math.PI / 180;
   const scale = 6371000 * rad;
-  const points = condition.area.map(p => ({
-    x: ((p.longitude - position.longitude + 540) % 360 - 180) * scale * Math.cos(position.latitude * rad),
-    y: (p.latitude - position.latitude) * scale,
-  }));
+  let longitude = position.longitude;
+  const points = condition.area.map(p => {
+    longitude += ((p.longitude - longitude + 180) % 360 + 360) % 360 - 180;
+    return {
+      x: (longitude - position.longitude) * scale * Math.cos(position.latitude * rad),
+      y: (p.latitude - position.latitude) * scale,
+    };
+  });
   let inside = false;
   let nearest = Infinity;
   for (let i = 0; i < points.length; i++) {

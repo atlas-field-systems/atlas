@@ -93,7 +93,8 @@ node --test sitl/flight.test.ts
 
 The downloader pins official Copter 4.7.2 and its default copter parameters by
 SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
-`ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
+`ATLAS_SITL_DIRECTORY` to use another download directory. Relative paths resolve
+from the caller's working directory before SITL changes to its evidence directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
 The twenty-one scenarios run the real Asset, SDK, Protocol, and a separate Core process.

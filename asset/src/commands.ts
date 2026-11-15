@@ -148,6 +148,8 @@ export const commands = {
           const p = position(c);
           return (
             !!p &&
+            fresh(c.measurements.armed, c.now, c.config.measurement_stale_after_s) === true &&
+            fresh(c.measurements.airborne, c.now, c.config.measurement_stale_after_s) === true &&
             c.execution.action.kind === "takeoff" &&
             at(c, { ...p, altitudes: [c.execution.action.target_altitude] })
           );

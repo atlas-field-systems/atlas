@@ -156,16 +156,17 @@ the tracker and quadcopter. No custom Raspberry Pi image is planned.
 
 ### Install the IP app as a Linux service
 
-Use Node 24 at `/usr/bin/node`. Install this repository's `protocol/`, `sdk/`,
-and `asset/` directories together under `/opt/atlas`. From the repository root,
+Use Node 24 at `/usr/bin/node`. Install this repository's `protocol/`, `core/`,
+`sdk/`, and `asset/` directories together under `/opt/atlas`. From the repository root,
 run these commands. Repeating them updates the installed files and dependencies.
 Stop an existing service before replacing its files.
 
 ```sh
 getent passwd atlas-asset || sudo useradd --system --home-dir /var/lib/atlas-asset --shell /usr/sbin/nologin atlas-asset
 sudo install -d /opt/atlas /etc/atlas
-sudo cp -a protocol sdk asset /opt/atlas/
+sudo cp -a protocol core sdk asset /opt/atlas/
 sudo npm ci --prefix /opt/atlas/protocol
+sudo npm ci --prefix /opt/atlas/core
 sudo npm ci --prefix /opt/atlas/sdk
 sudo npm ci --prefix /opt/atlas/asset
 sudo install -m 0644 asset/atlas-asset.service /etc/systemd/system/atlas-asset.service
