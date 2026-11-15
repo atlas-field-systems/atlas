@@ -183,7 +183,7 @@ export function reduce(
     else effects.push({ kind: "response", rule, action, status: "failed", explanation });
     effects.push({ kind: "clear" });
     const failedStandingOverride = state.override === "stand" || state.execution?.override === "stand";
-    const descendingHome = action.kind === "return_to_home" && state.execution?.execution.step === 2;
+    const descending = (action.kind === "land" || action.kind === "return_to_home") && state.execution?.execution.step === 2;
     state.execution = null;
     if (failedStandingOverride) {
       state.override = "rearm";
@@ -191,7 +191,7 @@ export function reduce(
     }
     if (criticalFallback(rule, action, now, fallback))
       activate({ kind: "return_to_home" }, rule, now, true);
-    else if (action.kind !== "land" && !descendingHome) effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
+    else if (!descending) effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
   }
   function criticalFallback(
     rule: ComponentsFailsafeRule | null,

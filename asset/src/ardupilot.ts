@@ -139,7 +139,7 @@ export function ardupilot(
           ? action === 1 ? 6 : action === 3 ? 9 : undefined
           : undefined;
         if (m.customMode !== 4) handback = { mode: m.customMode, phase: "late_guided" };
-        else if (batteryMode !== undefined && handback?.mode !== batteryMode) handback = { mode: batteryMode, phase: "late_guided" };
+        else if (batteryMode !== undefined && (!handback || handback.mode === null || (batteryAction === "BATT_FS_CRT_ACT" && batteryMode === 9 && handback.mode !== 9))) handback = { mode: batteryMode, phase: "late_guided" };
         else if (radioMode !== undefined && (!handback || handback.mode === null)) handback = { mode: radioMode, phase: "late_guided" };
         handback ??= { mode: null, phase: "await_other_mode" };
         restoreMode();
