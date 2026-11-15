@@ -270,11 +270,11 @@ export function ardupilot(
         targetSystem,
         targetComponent,
         reqStreamId: 0,
-        reqMessageRate: 5,
+        reqMessageRate: config.stream_rate_hz,
         startStop: 1,
       });
       void write(rates)
-        .then(() => command(511, [245, 200000]))
+        .then(() => command(511, [245, config.extended_state_interval_us]))
         .catch((e) => {
           operation?.abort(e);
         });

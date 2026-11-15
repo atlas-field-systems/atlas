@@ -16,7 +16,7 @@ test("docs/failsafes.md: flight-controller takeover remains visible while Land c
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const connected = once(server, "connection");
-  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 1 }, systemClock);
   t.after(() => vehicle.stop());
   let receive: (measurements: Measurements) => void = () => {};
   vehicle.start(m => receive(m));
@@ -50,7 +50,7 @@ for (const staleResult of [0, 2]) test(`docs/runtime.md: stale ACK result ${stal
   assert.ok(address && typeof address !== "string");
   const connected = once(server, "connection");
   let ackSeen = () => {};
-  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock, value => {
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 1 }, systemClock, value => {
     if (value instanceof common.CommandAck && value.command === 178) ackSeen();
   });
   t.after(() => vehicle.stop());
@@ -110,7 +110,7 @@ test("docs/README.md: equipment TCP loss rejects a pending command and reconnect
   await once(server, "listening");
   const address = server.address();
   assert.ok(address && typeof address !== "string");
-  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 0.01 }, systemClock);
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 0.01 }, systemClock);
   t.after(() => { vehicle.stop(); for (const peer of peers) peer.destroy(); server.close(); });
   const connection = once(server, "connection");
   vehicle.start(() => {});
@@ -136,7 +136,7 @@ test("docs/failsafes.md: armed RTL before the first Atlas command is watch only"
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const connection = once(server, "connection");
-  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 1 }, systemClock);
   const observed = Promise.withResolvers<Measurements>();
   vehicle.start(m => { if (m.in_control) observed.resolve(m); });
   const [peer] = await connection;
@@ -155,7 +155,7 @@ for (const modes of [[4, 6], [0]] as const) test(`docs/failsafes.md: takeover du
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const connection = once(server, "connection");
-  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 1 }, systemClock);
   const first = Promise.withResolvers<void>();
   vehicle.start(m => { if (m.armed?.value === false) first.resolve(); });
   const [peer] = await connection;
@@ -194,7 +194,7 @@ test("docs/failsafes.md: observed Land survives delayed critical battery evidenc
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const connected = once(server, "connection");
-  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 1 }, systemClock);
   t.after(() => vehicle.stop());
   vehicle.start(() => {});
   [peer] = await connected;
@@ -237,7 +237,7 @@ for (const vz of [-300, 300]) test(`docs/README.md: Hold waits for vertical moti
   assert.ok(address && typeof address !== "string");
   const connected = once(server, "connection");
   const clock = { ...systemClock, now: () => 0 };
-  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, clock);
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 1 }, clock);
   let state = initial(config, 0);
   let observed = Promise.withResolvers<void>();
   vehicle.start(measurements => {
@@ -267,4 +267,40 @@ for (const vz of [-300, 300]) test(`docs/README.md: Hold waits for vertical moti
   await observed.promise;
   const stopped = reduce(state, { kind: "tick", now: 200, hasWork: false }, config);
   assert.ok(stopped.effects.some(e => e.kind === "task" && e.status === "completed"));
+});
+
+test("config.md: ArduPilot sends the configured observation rates to equipment", { timeout: 5000 }, async t => {
+  const { parseConfig } = await import("../src/config.ts");
+  const { readFile } = await import("node:fs/promises");
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  const server = createServer();
+  let peer: Socket | undefined;
+  t.after(() => { peer?.destroy(); server.close(); });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  input.equipment = { ...input.equipment, port: address.port, stream_rate_hz: 7, extended_state_interval_us: 400000 };
+  const config = parseConfig(input).equipment;
+  assert.ok(config.kind === "ardupilot");
+  const connected = once(server, "connection");
+  const driver = ardupilot(config, systemClock);
+  t.after(() => driver.stop());
+  driver.start(() => {});
+  [peer] = await connected;
+  assert.ok(peer);
+  peer.on("error", () => {});
+  const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
+  const rates = Promise.withResolvers<number>();
+  const interval = Promise.withResolvers<number>();
+  reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
+    if (packet.header.msgid === common.RequestDataStream.MSG_ID)
+      rates.resolve(packet.protocol.data(packet.payload, common.RequestDataStream).reqMessageRate);
+    if (packet.header.msgid === common.CommandLong.MSG_ID) {
+      const message = packet.protocol.data(packet.payload, common.CommandLong);
+      if (message.command === 511 && message._param1 === 245) interval.resolve(message._param2);
+    }
+  });
+  assert.equal(await rates.promise, 7);
+  assert.equal(await interval.promise, 400000);
 });

@@ -36,6 +36,8 @@ const schema = z
         port: z.int().min(1).max(65535),
         system_id: z.int().min(1).max(255),
         heartbeat_s: positive,
+        stream_rate_hz: z.int().min(1).max(65535).default(5),
+        extended_state_interval_us: z.int().min(1).max(2147483647).default(200000),
         subsystems: z.strictObject({ gps: z.string().optional(), flight_controller: z.string().optional() }).optional(),
       }),
       z.strictObject({

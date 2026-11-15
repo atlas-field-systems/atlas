@@ -113,7 +113,10 @@ export function startStreams(store: Store, clock: Clock, keepaliveMs: number): S
       });
       const alive = () => {
         if (closed) return;
-        if (!blocked) res.write(": alive\n\n");
+        if (!blocked && !res.write(": alive\n\n")) {
+          blocked = true;
+          deadline = clock.after(30000, close);
+        }
         keepalive = clock.after(keepaliveMs, alive);
       };
       res.writeHead(200, {

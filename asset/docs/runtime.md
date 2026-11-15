@@ -171,7 +171,8 @@ subsequent report builds retain those acquisition times.
 
 The ArduPilot driver retries a closed TCP connection from its normal control
 tick, using the configured equipment heartbeat interval between attempts. Each
-connection has a new MAVLink parser and requests telemetry streams again. Close
+connection has a new MAVLink parser and requests telemetry streams again, using
+the observation rates in [equipment configuration](../config.md#options). Close
 clears the driver's GPS validity and cached Hold position, aborts the pending
 command, and records that equipment is unavailable. Existing measurements keep
 their acquisition times and expire normally. Subsystem conditions become unknown
@@ -184,6 +185,11 @@ replays the command. The Core contact path continues independently. The flight
 controller's own GCS failsafe remains enabled and may take over while the
 equipment link is down. On return, the existing mode-ownership handling observes
 that takeover; it does not claim that Atlas performed the vehicle's response.
+
+Peripheral reconnects retain every unfinished connection reader, including a
+reader awaiting a captured-file write after its socket closes. Shutdown destroys
+the current socket and awaits all retained readers before sealing operation
+evidence. A later connection cannot replace an earlier capture owner.
 
 ## Reporting-only equipment
 

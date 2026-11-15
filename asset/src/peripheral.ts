@@ -33,7 +33,7 @@ export function peripheral(
   let observe: (value: Measurements) => void;
   let stopped = false;
   let retryAt = 0;
-  let reading: Promise<void> | undefined;
+  const readers = new Set<Promise<void>>();
   function connect() {
     const connection = createConnection({ host: config.host, port: config.port });
     socket = connection;
@@ -41,7 +41,7 @@ export function peripheral(
     output.diagnostic({ kind: "peripheral_connecting", time: clock.now() });
     connection.on("error", error => output.diagnostic({ kind: "peripheral_error", time: clock.now(), explanation: error.message }));
     connection.on("close", () => { if (socket === connection) socket = undefined; retryAt = clock.now() + config.reconnect_s * 1000; });
-    reading = (async () => {
+    const reading = (async () => {
       let pending = Buffer.alloc(0);
       for await (const chunk of connection) {
         pending = Buffer.concat([pending, Buffer.from(chunk)]);
@@ -77,13 +77,14 @@ export function peripheral(
     })().catch(error => {
       output.diagnostic({ kind: "peripheral_failed", time: clock.now(), explanation: String(error) });
       connection.destroy();
-    });
+    }).finally(() => readers.delete(reading));
+    readers.add(reading);
   }
   return {
     start(callback) { observe = callback; connect(); },
     tick(now) { if (!stopped && !socket && now >= retryAt) connect(); },
     async command() { throw new Error("acquisition equipment does not move"); },
     abortCommand() {},
-    async stop() { stopped = true; socket?.destroy(); await reading; },
+    async stop() { stopped = true; socket?.destroy(); await Promise.all(readers); },
   };
 }
