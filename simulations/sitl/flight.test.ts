@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { connect, createServer, Socket } from "node:net";
 import { once } from "node:events";
-import { send, common, MavLinkPacketSplitter, MavLinkPacketParser, MavLinkProtocolV2 } from "node-mavlink";
+import { send, common, minimal, MavLinkPacketSplitter, MavLinkPacketParser, MavLinkProtocolV2 } from "node-mavlink";
+import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
@@ -34,6 +35,8 @@ for (const scenario of [
   "requests",
   "boundary",
   "takeover",
+  "takeover-response",
+  "crash",
   "flight",
   "battery",
   "link",
@@ -308,7 +311,29 @@ for (const scenario of [
         events.push(event);
       });
       cleanup.push(() => audit.stop());
-      const app = await startApp(config, { fetch: assetFetch });
+      const launchProcess = async () => {
+        const path = join(root, "asset-config.json");
+        await writeFile(path, JSON.stringify(config));
+        const child = spawn(process.execPath, [fileURLToPath(new URL("../../asset/src/main.ts", import.meta.url)), "run", path], { stdio: ["ignore", "pipe", "pipe"] });
+        const closed = once(child, "close");
+        let output = "";
+        child.stdout.on("data", chunk => { output += chunk; });
+        child.stderr.on("data", chunk => { diagnostics += chunk; });
+        cleanup.push(async () => {
+          if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
+          await closed;
+        });
+        await until(() => output.includes("asset_id") || child.exitCode !== null);
+        assert.equal(child.exitCode, null, diagnostics);
+        const { asset_id } = JSON.parse(output.trim());
+        assert.equal(typeof asset_id, "string");
+        return { asset_id: String(asset_id), child, closed, stop: async () => {
+          if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
+          await closed;
+          return "";
+        } };
+      };
+      const app = scenario === "crash" ? await launchProcess() : await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
       if (scenario === "equipment-startup") {
         await until(() => events.some(e => e.kind === "report.settings"));
@@ -409,32 +434,125 @@ for (const scenario of [
         await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
         return;
       }
-      if (scenario === "takeover") {
-        value(await admin.call("sendTasks", {
-          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 10, altitude_reference: "launch" } }] },
-        }));
-        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+      if (scenario === "crash") {
+        assert.ok("child" in app);
         const pilot = connect({ host: "127.0.0.1", port: pilotPort });
         cleanup.push(() => { pilot.destroy(); });
-        await new Promise<void>((resolve, reject) => { pilot.once("connect", resolve); pilot.once("error", reject); });
+        await once(pilot, "connect");
+        const samples: Array<{ time: number; mode: number; armed: boolean }> = [];
+        let position: { latitude: number; longitude: number } | undefined;
+        pilot.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser()).on("data", packet => {
+          if (packet.header.msgid === minimal.Heartbeat.MSG_ID) {
+            const heartbeat = packet.protocol.data(packet.payload, minimal.Heartbeat);
+            samples.push({ time: Date.now(), mode: heartbeat.customMode, armed: !!(heartbeat.baseMode & 128) });
+          }
+          if (packet.header.msgid === common.GlobalPositionInt.MSG_ID) {
+            const p = packet.protocol.data(packet.payload, common.GlobalPositionInt);
+            position = { latitude: p.lat / 1e7, longitude: p.lon / 1e7 };
+          }
+        });
+        const streams = new common.RequestDataStream();
+        Object.assign(streams, { targetSystem: 1, targetComponent: 1, reqStreamId: 0, reqMessageRate: 10, startStop: 1 });
+        await send(pilot, streams, new MavLinkProtocolV2(254, 190));
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [
+          { kind: "takeoff", target_altitude: { altitude_m: 10, altitude_reference: "launch" } },
+          { kind: "move_to", destination: { latitude: -35.3618, longitude: 149.16523 } },
+          { kind: "hold" },
+        ] } }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 2 && e.record.task_state === "active"));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "queue" && e.record.task_ids.includes(3)));
+        const killedAt = Date.now();
+        app.child.kill("SIGKILL");
+        await app.closed;
+        assert.equal(app.child.signalCode, "SIGKILL");
+        await until(() => events.some(e => e.kind === "asset.contact" && e.record.asset_id === app.asset_id && e.record.contact === "offline"));
+        await until(() => samples.some(s => s.time > killedAt && s.mode === 6));
+        const rtl = samples.find(s => s.time > killedAt && s.mode === 6)!;
+        assert.ok(rtl.time >= killedAt + 600, "GCS timeout precedes independent RTL at five times real time");
+        assert.equal(samples.some(s => s.time <= killedAt && s.mode === 6), false);
+        await until(() => samples.at(-1)?.armed === false);
+        assert.ok(position);
+        assert.ok(Math.hypot((position.latitude + 35.363261) * 111195, (position.longitude - 149.165230) * 90700) < 3, "independent RTL lands at the arming home");
+        assert.equal(app.child.signalCode, "SIGKILL", "the app stays down throughout RTL");
+        const restartedAt = Date.now();
+        const restarted = await launchProcess();
+        assert.equal(restarted.asset_id, app.asset_id);
+        await until(() => [2, 3].every(id => events.some(e => e.kind === "task.dropped" && e.record.task_id === id)));
+        await until(() => events.some(e => e.kind === "report.telemetry" && e.record.time >= restartedAt));
+        assert.equal(events.some(e => e.kind === "report.status" && e.record.kind === "task" && [2, 3].includes(e.record.task_id) && e.record.time >= restartedAt), false, "restart never resumes or invents outcomes for earlier work");
+        assert.equal(events.filter(e => e.kind === "asset.registered").length, 1);
+        await restarted.stop();
+        await writeFile(join(root, "crash.json"), JSON.stringify({ killedAt, restartedAt, samples, position }, null, 2));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
+      if (scenario === "takeover" || scenario === "takeover-response") {
+        value(await admin.call("sendTasks", {
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 15, altitude_reference: "launch" } }] },
+        }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+        const policy = value(await admin.call("changeSettings", { params: { asset_id: app.asset_id }, body: { settings: { failsafe_policy: [
+          ...config.initial_settings.failsafe_policy!,
+          { rule_id: "GPS", priority: 50, conditions: [{ kind: "subsystem", subsystem_id: "GPS", trigger_condition: "degraded" }], response: { kind: "land" } },
+          { rule_id: "CMD", priority: 80, conditions: [{ kind: "commanded" }], response: { kind: "land", landing_position: { latitude: -35.362, longitude: 149.16523 } } },
+        ] } } }));
+        assert.ok("event_id" in policy);
+        await until(() => events.some(e => e.kind === "report.settings" && e.record.request_id === policy.event_id));
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: scenario === "takeover-response" ? [{ kind: "failsafe" }] : [{ kind: "move_to", destination: { latitude: -35.362, longitude: 149.16523 } }, { kind: "hold" }], now: scenario === "takeover-response" } }));
+        await until(() => events.some(e => scenario === "takeover-response"
+          ? e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "CMD" && e.record.task_state === "active"
+          : e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 2 && e.record.task_state === "active"));
+        await until(() => events.some(e => e.kind === "report.telemetry" && e.record.position.latitude > -35.36320));
+        const pilot = connect({ host: "127.0.0.1", port: pilotPort });
+        cleanup.push(() => { pilot.destroy(); });
+        await once(pilot, "connect");
         const mode = async (customMode: number) => {
           const message = new common.SetMode();
           Object.assign(message, { targetSystem: 1, baseMode: 1, customMode });
           await send(pilot, message, new MavLinkProtocolV2(254, 190));
         };
+        const gps = async (enabled: number) => {
+          const message = new common.ParamSet();
+          Object.assign(message, { targetSystem: 1, targetComponent: 1, paramId: "SIM_GPS1_ENABLE", paramValue: enabled, paramType: 9 });
+          await send(pilot, message, new MavLinkProtocolV2(254, 190));
+        };
         await mode(5);
         await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
+        await until(() => events.some(e => scenario === "takeover-response"
+          ? e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "CMD" && e.record.task_state === "cancelled"
+          : e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 2 && e.record.task_state === "cancelled"));
+        if (scenario === "takeover")
+          await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 3 && e.record.task_state === "cancelled"));
+        const responseCount = events.filter(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id && e.record.task_state === "active").length;
+        let release!: () => void;
+        reportGate = new Promise<void>(resolve => { release = resolve; });
         const refused = value(await admin.call("sendTasks", {
-          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "hold" }] },
+          params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "land" }], now: true },
         }));
         assert.ok("task_ids" in refused && "event_id" in refused);
+        const cancel = value(await admin.call("cancel", { params: { asset_id: app.asset_id, task_id: refused.task_ids[0] } }));
+        assert.ok("event_id" in cancel);
+        release();
+        reportGate = undefined;
         await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === refused.task_ids[0] && e.record.task_state === "failed" && e.record.explanation === "flight controller is in control" && e.record.request_id === refused.event_id));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === refused.task_ids[0] && e.record.request_id === cancel.event_id && e.record.task_state === "failed"));
+        const setting = value(await admin.call("changeSettings", { params: { asset_id: app.asset_id }, body: { settings: { run_state: "paused" } } }));
+        assert.ok("event_id" in setting);
+        await until(() => events.some(e => e.kind === "report.settings" && e.record.request_id === setting.event_id && e.record.settings.run_state === "running"));
+        const disabledAt = Date.now();
+        await gps(0);
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.condition === "faulted" && e.record.time >= disabledAt));
+        await delay(500);
+        assert.equal(events.filter(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id && e.record.task_state === "active").length, responseCount, "no Atlas rule fires under flight-controller control");
+        const restoredAt = Date.now();
+        await gps(1);
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.condition === "healthy" && e.record.time >= restoredAt));
         await mode(4);
         await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control));
         await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.response?.kind === "hold" && e.record.task_state === "completed"));
-        assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id), false);
-        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "land" }], now: true } }));
-        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_state === "completed" && e.record.task_id === refused.task_ids[0] + 1));
+        assert.equal(events.filter(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id && e.record.task_state === "active").length, responseCount, "handback holds with rules re-armed");
+        await gps(0);
+        await until(() => events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "GPS" && e.record.task_state === "completed"));
         await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
         return;
       }

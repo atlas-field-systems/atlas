@@ -5,7 +5,7 @@ Core, keeps its own state, reports what it observes, and carries out supported
 work. A reporting-only Asset needs no equipment-control commands, task queue, or
 live settings.
 
-**Initial IP runtime built; field operation not verified.** Copter execution runs against ArduPilot SITL.
+**IP runtime and crash lifecycle verified in SITL; logging incomplete.** Copter execution runs against ArduPilot SITL.
 Reporting-only acquisition runs against real Core with simulated peripherals.
 The documented behavior remains the target; this implementation is incomplete. The first setup runs on a Raspberry Pi on
 the ground that acts as the companion computer for an ArduPilot quadcopter over
@@ -55,7 +55,6 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- More flight-controller takeover and app crash scenarios remain.
 - The Linux service unit passes systemd validation. Installation, boot, and
   shutdown on a Raspberry Pi have not been verified.
 - [Logging gaps](docs/logging.md#implementation-status) remain.

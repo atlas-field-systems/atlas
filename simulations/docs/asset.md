@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The fifteen scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The seventeen scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -152,3 +152,19 @@ production GPS driver. A detector peripheral supplies position, an Observation,
 and files over the production acquisition interface. Core's picture must show
 both Assets and the Observation. A file with a place must appear as an Object
 linked to that place. A refused capture must remain in the Asset's Reset ZIP.
+
+The takeover scenarios interrupt Move To and an Atlas failsafe response. They
+check cancellation, refused immediate Tasks, cancels and settings answers,
+watch-only behavior while a GPS condition matches, Guided handback Hold, and
+a lower-priority GPS rule firing after fresh healthy then faulted evidence.
+The critical battery rule remains configured throughout.
+
+The crash scenario runs the production CLI in a separate process. It sends
+SIGKILL during Move To with a successor held in the queue. Core must show the
+Asset offline. A separate MAVLink connection observes RTL after the configured
+GCS timeout, then disarming within 3 metres of the arming home. This observer
+sends no GCS heartbeat. Only after landing does the scenario start the CLI
+again with its original key. Core must keep the same identity, mark unfinished
+Tasks dropped without a final outcome, and receive fresh telemetry without
+resuming earlier work. Each run retains `crash.json` with the kill time,
+restart time, heartbeat modes, armed state, and landing position.
