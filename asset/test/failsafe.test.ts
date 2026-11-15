@@ -4,7 +4,8 @@ import { readFile } from "node:fs/promises";
 import { parseConfig } from "../src/config.ts";
 import { initial, reduce, type State } from "../src/control.ts";
 
-test("docs/failsafes.md: critical battery replaces Hold immediately, then failed critical Land falls back once", async () => {
+for (const override of ["hold", "pause"] as const)
+  test(`docs/failsafes.md: critical battery replaces ${override} immediately, then failed critical Land falls back once`, async () => {
   const config = parseConfig(
     JSON.parse(
       await readFile(
@@ -37,7 +38,7 @@ test("docs/failsafes.md: critical battery replaces Hold immediately, then failed
   state = reduce(state, { kind: "tick", now: 0, hasWork: false }, config).state;
   state = reduce(
     state,
-    {
+    override === "pause" ? { kind: "settings", settings: { run_state: "paused" }, now: 1 } : {
       kind: "task",
       now: 1,
       task: {
