@@ -586,8 +586,7 @@ test("docs/failsafes.md: repeated running is not an override", async () => {
 test("docs/failsafes.md: unexpected raw mode during a pending Land gives control to the flight controller", async () => {
   const { config, state: start } = await setup();
   const state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
-  state.measurements.in_control = { value: false, source: "vehicle", time: 1 };
-  const result = reduce(state, { kind: "tick", now: 1, hasWork: true }, config);
+  const result = reduce(state, { kind: "measurements", measurements: { in_control: { value: false, source: "vehicle", time: 1 } } }, config);
   assert.equal(result.state.phase, "flight_controller");
   assert.equal(result.effects.some(e => e.kind === "vehicle"), false);
   const refused = reduce(result.state, { kind: "task", task: hold, now: 2 }, config);

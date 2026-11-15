@@ -145,9 +145,10 @@ test("docs/failsafes.md: armed RTL before the first Atlas command is watch only"
   Object.assign(heartbeat, { type: 2, autopilot: 3, baseMode: 129, customMode: 6, systemStatus: 4, mavlinkVersion: 3 });
   await send(peer, heartbeat, new MavLinkProtocolV2(1, 1));
   assert.equal((await observed.promise).in_control?.value, false);
+  await assert.rejects(vehicle.command({ kind: "land", mode: 9, destination: undefined, transit_altitude: undefined }), /flight controller is in control/);
 });
 
-test("docs/failsafes.md: takeover after Guided confirmation aborts Takeoff before arm", { timeout: 5000 }, async t => {
+for (const modes of [[4, 6], [0]] as const) test(`docs/failsafes.md: takeover during Guided selection (${modes}) aborts Takeoff before arm`, { timeout: 5000 }, async t => {
   const server = createServer();
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -155,9 +156,14 @@ test("docs/failsafes.md: takeover after Guided confirmation aborts Takeoff befor
   assert.ok(address && typeof address !== "string");
   const connection = once(server, "connection");
   const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
-  vehicle.start(() => {});
+  const first = Promise.withResolvers<void>();
+  vehicle.start(m => { if (m.armed?.value === false) first.resolve(); });
   const [peer] = await connection;
   t.after(() => { vehicle.stop(); peer.destroy(); server.close(); });
+  const disarmed = new minimal.Heartbeat();
+  Object.assign(disarmed, { type: 2, autopilot: 3, baseMode: 1, customMode: 0, systemStatus: 4, mavlinkVersion: 3 });
+  await send(peer, disarmed, new MavLinkProtocolV2(1, 1));
+  await first.promise;
   const writes: number[] = [];
   const protocol = new MavLinkProtocolV2(1, 1);
   const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
@@ -165,7 +171,7 @@ test("docs/failsafes.md: takeover after Guided confirmation aborts Takeoff befor
     if (packet.header.msgid === common.CommandLong.MSG_ID) writes.push(packet.protocol.data(packet.payload, common.CommandLong).command);
     if (packet.header.msgid === common.SetMode.MSG_ID) {
       peer.cork();
-      for (const customMode of [4, 6]) {
+      for (const customMode of modes) {
         const m = new minimal.Heartbeat();
         Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode, systemStatus: 4, mavlinkVersion: 3 });
         void send(peer, m, protocol);
