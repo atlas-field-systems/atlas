@@ -376,7 +376,10 @@ failures in their descent step leave descent running.
 Operation metadata and gap snapshots are written to a sibling `.partial` file
 and renamed after the write completes. A failed replacement removes the temporary
 file and leaves the prior snapshot readable. Identity updates share the evidence
-write queue. Shutdown waits for that queue before replacing the final metadata.
+write queue. Identity persistence returns its caught completion promise. Shutdown
+waits for that queue before replacing the final metadata. If the final gap
+snapshot cannot be written, shutdown refuses archive construction and retains
+the operation directory. Runtime gap persistence remains non-blocking for control.
 These replacements protect against interrupted writes; they do not promise
 power-loss durability beyond the filesystem's guarantees.
 

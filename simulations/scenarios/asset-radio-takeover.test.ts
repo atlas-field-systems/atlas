@@ -4,6 +4,7 @@ import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { minimal, common, ardupilotmega, MavLinkPacketParser, MavLinkPacketSplitter, MavLinkProtocolV2, send, type MavLinkPacket } from "node-mavlink";
+import { equipmentWire } from "../src/equipment-wire.ts";
 import { scenario } from "../src/scenario.ts";
 import { value } from "../src/world.ts";
 import { startApp, parseConfig } from "../../asset/src/index.ts";
@@ -24,12 +25,25 @@ for (const options of [0, 4]) scenario({
     const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
       equipment: { ...raw.equipment, port: address.port },
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
+    let observedMode = -1;
+    let lateGuidedReceived = false;
+    const receivedModes: number[] = [];
+    let unsolicitedRtlHeartbeats = 0;
+    w.onClose(equipmentWire(address.port, (direction, packet) => {
+      if (direction === "received" && packet.header.msgid === minimal.Heartbeat.MSG_ID) {
+        observedMode = packet.protocol.data(packet.payload, minimal.Heartbeat).customMode;
+        receivedModes.push(observedMode);
+        if (observedMode === 4 && pilotArmed) lateGuidedReceived = true;
+        if (observedMode === 6 && !writes.includes("SET_MODE 6 pilotArmed=true")) unsolicitedRtlHeartbeats++;
+      }
+    }));
     const protocol = new MavLinkProtocolV2(1, 1);
     let mode = 4, armed = true, pilotArmed = false, landing = false;
     const writes: string[] = [];
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
-    const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: armed ? 129 : 1, customMode: mode, systemStatus: pilotArmed ? 5 : 4, mavlinkVersion: 3 }); out(m); };
+    let hideTransition = false;
+    const hb = () => { if (hideTransition) return; const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: armed ? 129 : 1, customMode: mode, systemStatus: pilotArmed ? 5 : 4, mavlinkVersion: 3 }); out(m); };
     const rc = () => { const m = new common.RcChannels(); Object.assign(m, { chancount: 8, chan5Raw: 1000 }); out(m); };
     const telemetry = () => {
       rc();
@@ -59,7 +73,8 @@ for (const options of [0, 4]) scenario({
           if (m.customMode === 9) landing = true;
           if (landing && m.customMode === 4 && !pilotArmed) {
             pilotArmed = true; mode = 6;
-            setTimeout(() => { mode = m.customMode; telemetry(); }, 30);
+            hideTransition = true;
+            w.clock.after(30, () => { mode = m.customMode; hideTransition = false; telemetry(); });
             return;
           }
           mode = m.customMode; hb();
@@ -84,15 +99,20 @@ for (const options of [0, 4]) scenario({
       await w.advance(500);
       value(await w.complete(w.admin.call("cancel", { params: { asset_id: app.asset_id, task_id: 1 } })));
       await w.until(() => pilotArmed);
-      for (let i = 0; i < 6; i++) { await new Promise(r => setTimeout(r, 60)); await w.advance(1000); }
+      await w.until(() => lateGuidedReceived);
+      await w.advance(6000);
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");
+      assert.equal(unsolicitedRtlHeartbeats, 0, "no RTL heartbeat escaped before corrective mode selection");
+      assert.equal(receivedModes.includes(6), options !== 4, "RTL heartbeat appears only after Atlas explicitly restores RTL");
       assert.equal(mode, options === 4 ? 4 : 6, "Atlas restores the pilot mode after its late Guided request");
       assert.deepEqual(writes.filter(s => s.endsWith("pilotArmed=true")), options === 4 ? [] : ["SET_MODE 6 pilotArmed=true"], "only the corrective mode selection is sent");
       pilotArmed = false; mode = 2; hb();
-      await new Promise(r => setTimeout(r, 60)); await w.advance(1000);
+      await w.until(() => observedMode === mode);
+      await w.advance(1000);
       mode = 4; hb();
-      await new Promise(r => setTimeout(r, 60)); await w.advance(1000);
+      await w.until(() => observedMode === mode);
+      await w.advance(1000);
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), "a fresh mode cycle hands control back");
     } finally {
       await w.complete(app.stop());

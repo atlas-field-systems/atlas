@@ -163,7 +163,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   }
   async function persistGap() {
     await evidence;
-    if (gaps.size) await replaceFile(join(directory, "gaps.jsonl"), [...gaps.values()].map(gap => JSON.stringify(gap) + "\n").join("")).catch(() => {});
+    if (gaps.size) await replaceFile(join(directory, "gaps.jsonl"), [...gaps.values()].map(gap => JSON.stringify(gap) + "\n").join(""));
   }
   async function drain() {
     while (pending.length) {
@@ -171,12 +171,13 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
       const size = Buffer.byteLength(item.line);
       if (bytes + size > config.log_total_limit_bytes) { drop(item.time, "total limit"); continue; }
       if (fileBytes + size > config.log_file_limit_bytes) { part++; fileBytes = 0; }
+      bytes += size;
       try {
         await appendFile(join(directory, "diagnostics", `diagnostics-${part}.jsonl`), item.line);
-        bytes += size; fileBytes += size;
-      } catch { drop(item.time, "diagnostic write failure"); }
+        fileBytes += size;
+      } catch { bytes -= size; drop(item.time, "diagnostic write failure"); }
     }
-    await persistGap();
+    await persistGap().catch(() => {});
   }
   record({ kind: "startup", time: start, config: inspectConfig(config) });
   return {
@@ -188,6 +189,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
         process.stderr.write(`Asset identity evidence write failed: ${error}\n`);
         drop(clock.now(), "evidence write failure");
       });
+      return evidence;
     },
     report(value: unknown) {
       if (sealed) return;

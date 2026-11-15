@@ -132,8 +132,9 @@ test("docs/logging.md: an identity diagnostic write failure never becomes an unh
   const { mkdir } = await import("node:fs/promises");
   await rm(operation);
   await mkdir(operation);
-  log.identify("A");
-  await new Promise(resolve => setTimeout(resolve, 50));
+  const identified = log.identify("A");
+  assert.ok(identified instanceof Promise, "identity persistence exposes its caught completion");
+  await identified;
   await rm(operation, { recursive: true });
   const zip = unzipSync(await readFile(await log.close("A", "stopped")));
   assert.match(strFromU8(zip["summary.md"]), /evidence write failure/);
@@ -200,4 +201,36 @@ test("docs/logging.md: report history queue is bounded and lists every dropped c
   assert.ok(kept <= 2);
   const manifest = JSON.parse(strFromU8(zip["manifest.json"]));
   assert.equal(manifest.gaps.filter((g: { reason: string }) => g.reason === "report history queue full").reduce((n: number, g: { dropped: number }) => n + g.dropped, 0), 20 - kept);
+});
+
+
+test("docs/logging.md: shutdown retains records when the gap snapshot cannot be written", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-gap-failure-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  const log = await createLog(config, 1000);
+  const { mkdir } = await import("node:fs/promises");
+  await mkdir(join(config.log_directory, "1000", "gaps.jsonl.partial"));
+  log.gap(1500, "lost evidence", 3);
+  await assert.rejects(log.close("A", "stopped"));
+  assert.ok((await readdir(config.log_directory)).includes("1000"));
+});
+
+test("docs/logging.md: in-flight diagnostics reserve capacity before concurrent evidence", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-reservation-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  config.log_level = "error";
+  config.log_total_limit_bytes = 100000;
+  const log = await createLog(config, 1000);
+  log.record({ kind: "large", level: "error", payload: "x".repeat(60000) });
+  log.record({ kind: "effect", effect: { payload: "y".repeat(60000) } });
+  const zip = unzipSync(await readFile(await log.close("A", "stopped")));
+  const retained = Object.entries(zip).filter(([name]) => name.startsWith("diagnostics/") || name === "history.jsonl").reduce((size, [, data]) => size + data.length, 0);
+  assert.ok(retained <= config.log_total_limit_bytes, `${retained} exceeds total limit`);
+  assert.match(strFromU8(zip["summary.md"]), /total limit/);
 });
