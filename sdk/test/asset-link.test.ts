@@ -137,3 +137,30 @@ test("bounded ordinary evidence preserves finals, in-flight batches and acknowle
   await outbox.flush();
   outbox.stop();
 });
+
+test("takeover, faults and active responses survive overflow [sdk/docs/asset.md#the-asset-link]", () => {
+  const outbox = createOutbox({ now: () => 0, after: () => ({ cancel() {} }) });
+  const essential = [
+    { type: "report.failsafe", kind: "autopilot", asset_id: "A", time: 1, in_control: true },
+    { type: "report.status", kind: "subsystem", asset_id: "A", time: 2, subsystem_id: "GPS", condition: "faulted", explanation: "no fix" },
+    { type: "report.failsafe", kind: "response", asset_id: "A", time: 3, response: { kind: "land" }, task_state: "active" },
+  ] as const;
+  void outbox.add([...essential]);
+  for (let time = 4; time < 1100; time++) void outbox.add([{ type: "report.battery", asset_id: "A", time, battery_percent: 50 }]);
+  const reports = outbox.take({ bytes: Infinity, size: () => 0 })!.reports;
+  for (const report of essential) assert.ok(reports.some(r => JSON.stringify(r) === JSON.stringify(report)), JSON.stringify(report));
+  assert.equal(outbox.take({ bytes: Infinity, size: () => 0 }), undefined);
+  outbox.stop();
+});
+
+test("overflow drops retained history before live reports [sdk/docs/asset.md#the-asset-link]", () => {
+  const outbox = createOutbox({ now: () => 0, after: () => ({ cancel() {} }) });
+  const sample = (time: number) => ({ type: "report.battery", asset_id: "A", time, battery_percent: 50 }) as const;
+  void outbox.add([sample(2000)]);
+  void outbox.add(Array.from({ length: 1024 }, (_, i) => sample(i)), "retained");
+  const first = outbox.take({ bytes: Infinity, size: () => 0 })!;
+  assert.deepEqual(first.reports, [sample(2000)]);
+  first.settle({ ok: true });
+  assert.equal(outbox.take({ bytes: Infinity, size: () => 0 })!.reports[0].time, 1);
+  outbox.stop();
+});
