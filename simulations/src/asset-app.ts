@@ -19,7 +19,7 @@ export async function assetApp(w: World, options: AssetAppOptions = {}) {
   if (!("key" in issued)) throw new Error("Issuance returned no key");
   const raw: unknown = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
   const defaults = parseConfig(raw);
-  const config = parseConfig({
+  let config = parseConfig({
     ...defaults,
     equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
     ...options.config,
@@ -39,13 +39,14 @@ export async function assetApp(w: World, options: AssetAppOptions = {}) {
   async function stop() { return w.complete(app.stop()); }
   w.onClose(async () => { await stop(); });
   return {
-    config,
+    get config() { return config; },
     get asset_id() { return app.asset_id; },
     get done() { return app.done; },
     stop,
-    async restart(nextClock: Clock = clock) {
+    async restart(next: Omit<AssetAppOptions, "name"> = {}) {
       await stop();
-      clock = nextClock;
+      clock = next.clock ?? clock;
+      config = parseConfig({ ...config, ...next.config });
       app = await start();
     },
     // A separate SDK reader exercises public read permissions; the app owns writes.
