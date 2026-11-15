@@ -26,6 +26,7 @@ scenario({
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
     const protocol = new MavLinkProtocolV2(1, 1);
     let mode = 4, armed = true, pilotArmed = false, landing = false;
+    let lateGuided = false;
     const writes: string[] = [];
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
@@ -59,10 +60,13 @@ scenario({
           if (m.customMode === 9) landing = true;
           if (landing && m.customMode === 4 && !pilotArmed) {
             pilotArmed = true; mode = 4; hb(); rc(); mode = 5;
-            setTimeout(() => { mode = m.customMode; hb(); rc(); }, 30);
+            lateGuided = true;
             return;
           }
           mode = m.customMode; hb();
+          if (lateGuided && m.customMode === 5) {
+            lateGuided = false; mode = 4; hb(); rc();
+          }
           return;
         }
         if (id === common.CommandLong.MSG_ID) {
