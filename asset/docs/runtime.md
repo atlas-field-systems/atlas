@@ -193,3 +193,26 @@ The CLI installs signal handlers before registration. An AbortSignal stops pendi
 startup as well as an established app. A local failsafe that safely stops before
 registration also ends startup and releases its resources. Late registration
 completion cannot leave a running session behind.
+
+## Operation evidence
+
+Each operation uses its start time as a local directory name. `operation.json`
+keeps its start, registered identity and archive destination. A background scan
+exports earlier operation directories without restoring requests or reports into
+the new session. Shutdown waits for that scan. An `archive-failed.json` marker
+is written before archive construction and remains on failure or interruption.
+Later starts skip that directory. The operator handles its retained records.
+
+ZIP entries stream from disk using stored ZIP entries and bounded stream chunks.
+Verification streams the ZIP back and checks every payload and the manifest
+before final rename. The manifest inventories payloads and excludes itself.
+The summary renders the local Task, failsafe, override and contact timeline.
+Versions come from the installed packages. The IP runtime records no Fieldlink
+version because it loads no Fieldlink.
+
+Diagnostic levels rank trace, debug, info, warn, then error. Inputs, effects,
+Observations and report contents are trace. Failures and blocked outboxes are
+errors. Losses and gaps are warnings. Other events default to info. A caller can
+set an explicit level. Disabling message content removes request, response,
+event, effect and report bodies from diagnostics. Report history remains separate.
+Credential fields and the configured Asset key are removed before persistence.
