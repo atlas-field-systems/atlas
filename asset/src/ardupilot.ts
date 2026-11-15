@@ -32,6 +32,7 @@ export function ardupilot(
   let expectedMode: number | null = null;
   let observedMode: number | null = null;
   let transitionFrom: number | null = null;
+  let observedArmed = false;
   let inControl = true;
   let lastHeartbeat = -Infinity;
   const listeners = new Set<(id: number, value: unknown) => void>();
@@ -109,15 +110,17 @@ export function ardupilot(
     const id = packet.header.msgid;
     if (id === minimal.Heartbeat.MSG_ID) {
       const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
-      for (const cb of listeners) cb(id, m);
       subsystem("flight_controller", { condition: "healthy" });
       const armed = Boolean(m.baseMode & 128);
+      if (armed && !observedArmed) transitionFrom = null;
+      observedArmed = armed;
       observedMode = m.customMode;
       if (observedMode === expectedMode) transitionFrom = null;
       if (!inControl) inControl = m.customMode === 4;
       else if (armed) inControl = m.customMode === (expectedMode ?? 4) || (expectedMode !== null && m.customMode === transitionFrom);
       if (!inControl) operation?.abort(new Error("flight controller is in control"));
       observe({ armed: stamp(armed), in_control: stamp(inControl), connected: stamp(true) });
+      for (const cb of listeners) cb(id, m);
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
         packet.payload,
@@ -221,6 +224,7 @@ export function ardupilot(
       });
     },
     async command(c: VehicleCommand) {
+      if (!inControl) throw new Error("flight controller is in control");
       if (!socket?.writable) throw new Error("flight controller unavailable");
       transitionFrom = inControl ? observedMode : null;
       expectedMode = c.mode;

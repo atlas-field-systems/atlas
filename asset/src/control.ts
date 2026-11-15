@@ -183,6 +183,7 @@ export function reduce(
     else effects.push({ kind: "response", rule, action, status: "failed", explanation });
     effects.push({ kind: "clear" });
     const failedStandingOverride = state.override === "stand" || state.execution?.override === "stand";
+    const descendingHome = action.kind === "return_to_home" && state.execution?.execution.step === 2;
     state.execution = null;
     if (failedStandingOverride) {
       state.override = "rearm";
@@ -190,7 +191,7 @@ export function reduce(
     }
     if (criticalFallback(rule, action, now, fallback))
       activate({ kind: "return_to_home" }, rule, now, true);
-    else if (action.kind !== "land") effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
+    else if (action.kind !== "land" && !descendingHome) effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
   }
   function criticalFallback(
     rule: ComponentsFailsafeRule | null,
@@ -302,6 +303,21 @@ export function reduce(
   switch (event.kind) {
     case "measurements":
       state.measurements = { ...state.measurements, ...event.measurements, subsystems: { ...state.measurements.subsystems, ...event.measurements.subsystems } };
+      if (
+        event.measurements.in_control?.value === false &&
+        state.measurements.armed?.value === true &&
+        state.phase !== "flight_controller"
+      ) {
+        const interrupted = state.execution;
+        if (interrupted) finish(interrupted, "cancelled");
+        state.phase = "flight_controller";
+        state.execution = null;
+        state.override = null;
+        effects.push(
+          { kind: "clear" },
+          { kind: "autopilot", in_control: true },
+        );
+      }
       return { state, effects };
     case "contact":
       if (event.contact.last_heard !== null)
@@ -481,21 +497,6 @@ export function reduce(
         if (p) state.settings = { ...state.settings, home_position: p };
       }
       const controlled = get(state.measurements.in_control);
-      if (
-        controlled === false &&
-        get(state.measurements.armed) === true &&
-        state.phase !== "flight_controller"
-      ) {
-        const interrupted = state.execution;
-        if (interrupted) finish(interrupted, "cancelled");
-        state.phase = "flight_controller";
-        state.execution = null;
-        state.override = null;
-        effects.push(
-          { kind: "clear" },
-          { kind: "autopilot", in_control: true },
-        );
-      }
       if (state.phase === "flight_controller") {
         if (controlled === true) {
           state.phase = "failsafe";

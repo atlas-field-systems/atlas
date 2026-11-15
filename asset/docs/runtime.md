@@ -8,7 +8,8 @@ override. Each execution tracks suspended time, which does not consume its
 command timeout. Repeating the current run state does not reissue movement. A
 critical fallback keeps the failed response's rule and priority and is marked
 as a fallback, so a later failure cannot start another return. Command failure
-and timeout share one failure path. Land failure never inserts Hold; the
+and timeout share one failure path. Land failure and a Return to home failure
+during its Land-mode descent never insert Hold; the
 existing critical fallback still applies. The unresolved outcome for other
 commands is in [failsafes](failsafes.md#open).
 
@@ -26,10 +27,14 @@ until its execution ends. Command timeouts come directly from configuration.
 Every registry step names its equipment mode. The ArduPilot driver compares
 heartbeat modes with the command it received and reports whether Atlas is
 `in_control`. During a commanded mode transition, the prior observed Atlas mode
-remains valid until the requested mode is observed. An unrelated mode still
+remains valid until the requested mode is observed, provided the vehicle was
+already armed. Arming in the previous disarmed mode does not authorize Atlas
+control. An unrelated mode still
 shows takeover immediately. Before the first command, only Guided counts as Atlas control while armed;
 a disarmed vehicle remains eligible for Takeoff. A different mode while armed
-gives control to the flight controller.
+gives control to the flight controller. The reducer enters watch-only state on
+the measurement itself, before a rejected command can run failure handling.
+The driver also refuses new movement commands while it reports no control.
 Guided mode hands control back. Handback samples rules, starts a tracked Hold,
 and ends that tick before rule selection. The app calls `Vehicle.tick(now)`;
 the driver owns its heartbeat interval.

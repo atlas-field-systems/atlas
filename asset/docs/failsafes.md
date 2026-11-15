@@ -325,7 +325,9 @@ restarting idle or contact timers.
 - After a command other than Land fails or times out, should the Asset stop
   moving and hover in place? The runtime currently does this unless a critical
   fallback starts. This is a question for the owner, not a selected failsafe
-  outcome. A failed Land never becomes Hold.
+  outcome. A failed Land never becomes Hold. The same question includes Return
+  to home failing or timing out during its Land-mode descent; the runtime keeps
+  landing instead of inserting Hold. This adds no new failsafe decision.
 
 - Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
   failsafe levels, are tuned in [SITL](../../simulations/docs/asset.md) before the first flight.
