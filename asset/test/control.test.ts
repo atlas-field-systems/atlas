@@ -518,3 +518,67 @@ for (const override of ["hold", "pause"] as const)
     const fired = reduce(state, { kind: "tick", now: 6, hasWork: false }, config);
     assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "LB" && e.status === "active"));
   });
+
+test("docs/README.md: an unresolved place update keeps the prior execution and records why", async () => {
+  const { config, state: start } = await setup();
+  const task = { ...hold, kind: "move_to", destination: { latitude: 2, longitude: 2 } } as const;
+  const state = reduce(start, { kind: "task", task, now: 0 }, config).state;
+  const result = reduce(state, { kind: "update", task: { ...task, destination: undefined }, now: 1 }, config);
+  assert.deepEqual(result.state.execution, state.execution);
+  assert.ok(result.effects.some(e => e.kind === "diagnostic" && e.explanation.includes("destination unavailable")));
+  assert.equal(result.effects.some(e => e.kind === "task"), false);
+});
+
+test("docs/failsafes.md: stale position on resuming Return to home fails safely", async () => {
+  const { config, state: start } = await setup();
+  start.settings.home_position = { latitude: 2, longitude: 2 };
+  let state = reduce(start, { kind: "task", task: { ...hold, kind: "return_to_home" }, now: 0 }, config).state;
+  state = reduce(state, { kind: "settings", settings: { run_state: "paused" }, now: 1 }, config).state;
+  const result = reduce(state, { kind: "settings", settings: { run_state: "running" }, now: 100000 }, config);
+  assert.equal(result.state.execution, null);
+  assert.ok(result.effects.some(e => e.kind === "task" && e.status === "failed" && e.explanation?.includes("transit altitude unavailable")));
+  assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
+});
+
+for (const condition of ["battery", "contact"] as const)
+  test(`docs/failsafes.md: handback samples ${condition} before selecting rules and tracks Hold refusal`, async () => {
+    const { config, state } = await setup();
+    state.phase = "flight_controller";
+    state.settings.link_loss_after_s = 12;
+    state.settings.failsafe_policy = [{ rule_id: "NEW", priority: 50,
+      conditions: condition === "battery" ? [{ kind: "battery_below", battery_percent: 30 }] : [{ kind: "contact_lost" }],
+      response: { kind: "land" } }];
+    state.measurements.guided = { value: true, source: "vehicle", time: 12000 };
+    state.measurements.position!.time = 12000;
+    state.measurements.armed!.time = 12000;
+    state.measurements.battery = { value: 20, source: "vehicle", time: 12000 };
+    const result = reduce(state, { kind: "tick", now: 12000, hasWork: false }, config);
+    assert.equal(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "NEW"), false);
+    assert.equal(result.state.execution?.execution.kind, "hold");
+    const failed = reduce(result.state, { kind: "command_failed", execution_id: result.state.commandId, explanation: "Hold refused", now: 12001 }, config);
+    assert.ok(failed.effects.some(e => e.kind === "response" && e.status === "failed" && e.explanation === "Hold refused"));
+    const next = reduce(result.state, { kind: "tick", now: 12001, hasWork: false }, config);
+    assert.equal(next.effects.some(e => e.kind === "response" && e.rule?.rule_id === "NEW"), false);
+  });
+
+for (const kind of ["land", "return_to_home"] as const)
+  test(`docs/failsafes.md: failed ${kind} override allows a later critical rule`, async () => {
+    const { config, state: start } = await setup();
+    start.settings.home_position = { latitude: 2, longitude: 2 };
+    start.phase = "failsafe";
+    start.settings.failsafe_policy = [{ rule_id: "CB", priority: 90,
+      conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } }];
+    let state = reduce(start, { kind: "task", task: { ...hold, kind }, now: 0 }, config).state;
+    state = reduce(state, { kind: "command_failed", execution_id: state.commandId, explanation: "refused", now: 1 }, config).state;
+    state.measurements.battery = { value: 5, source: "vehicle", time: 2 };
+    const result = reduce(state, { kind: "tick", now: 2, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "CB" && e.status === "active"));
+  });
+
+test("docs/failsafes.md: repeated running is not an override", async () => {
+  const { config, state } = await setup();
+  state.phase = "failsafe";
+  state.settings.run_state = "running";
+  const result = reduce(state, { kind: "settings", settings: { run_state: "running" }, now: 0, request_id: 42 }, config);
+  assert.equal(result.effects.some(e => e.kind === "override"), false);
+});

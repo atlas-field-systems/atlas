@@ -48,13 +48,19 @@ export async function startApp(
   function dispatch(event: Event) {
     if (stopped) return;
     log.record({ kind: "input", event });
-    const result = reduce(state, event, config);
-    state = result.state;
-    for (const effect of result.effects) apply(effect);
+    try {
+      const result = reduce(state, event, config);
+      state = result.state;
+      for (const effect of result.effects) apply(effect);
+    } catch (error) {
+      log.record({ kind: "control_failed", time: clock.now(), explanation: error instanceof Error ? error.message : String(error) });
+    }
   }
   function apply(effect: Effect) {
     log.record({ kind: "effect", effect });
     switch (effect.kind) {
+      case "diagnostic":
+        break;
       case "vehicle":
         void vehicle.command(effect.command).catch((e) =>
           dispatch({

@@ -10,6 +10,10 @@ try {
   else {
     const app = await startApp(config);
     process.stdout.write(`${JSON.stringify({ asset_id: app.asset_id })}\n`);
+    void app.done.catch((error) => {
+      process.stderr.write(`${error}\n`);
+      process.exitCode = 1;
+    });
     for (const signal of ["SIGINT", "SIGTERM"] as const)
       process.once(signal, () => {
         void app.stop().catch((error) => {

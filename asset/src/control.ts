@@ -17,7 +17,7 @@ import {
 import { fresh, type Measurements, type VehicleCommand } from "./vehicle.ts";
 type Work = {
   execution: Execution;
-  operationId: number;
+  override: OverrideKind | null;
   pausedAt: number | null;
   pausedMs: number;
   task: Task | null;
@@ -80,7 +80,8 @@ export type Effect =
   | { kind: "override"; request_id: number }
   | { kind: "autopilot"; in_control: boolean }
   | { kind: "clear" }
-  | { kind: "shutdown" };
+  | { kind: "shutdown" }
+  | { kind: "diagnostic"; explanation: string };
 export function initial(config: Config, now: number): State {
   return {
     phase: "ordinary",
@@ -115,6 +116,7 @@ export function reduce(
     status: "completed" | "failed" | "cancelled",
     explanation?: string,
   ) {
+    if (w.override && w.override !== "hold") state.override = null;
     if (w.task)
       effects.push({ kind: "task", task: w.task, status, explanation });
     else
@@ -145,7 +147,7 @@ export function reduce(
         execution,
         task,
         rule,
-        operationId: state.commandId + 1,
+        override: state.phase === "failsafe" && task && isOverride(task.kind) ? task.kind : null,
         pausedAt: null,
         pausedMs: 0,
         fallback,
@@ -163,29 +165,26 @@ export function reduce(
         }),
       });
     } catch (error) {
-      const explanation =
-        error instanceof Error ? error.message : "command failed";
-      if (task)
-        effects.push({ kind: "task", task, status: "failed", explanation });
-      else
-        effects.push({
-          kind: "response",
-          rule,
-          action,
-          status: "failed",
-          explanation,
-        });
-      effects.push({ kind: "clear" });
-      state.execution = null;
-      if (criticalFallback(rule, action, now, fallback))
-        activate({ kind: "return_to_home" }, rule, now, true);
-      else
-        effects.push({
-          kind: "vehicle",
-          execution_id: ++state.commandId,
-          command: { kind: "hold" },
-        });
+      failed(action, task, rule, now, fallback, error);
     }
+  }
+  function failed(
+    action: ComponentsFailsafeResponse,
+    task: Task | null,
+    rule: ComponentsFailsafeRule | null,
+    now: number,
+    fallback: boolean,
+    error: unknown,
+  ) {
+    const explanation = error instanceof Error ? error.message : "command failed";
+    if (task) effects.push({ kind: "task", task, status: "failed", explanation });
+    else effects.push({ kind: "response", rule, action, status: "failed", explanation });
+    effects.push({ kind: "clear" });
+    state.execution = null;
+    if (state.override?.kind === "land" || state.override?.kind === "return_to_home") state.override = null;
+    if (criticalFallback(rule, action, now, fallback))
+      activate({ kind: "return_to_home" }, rule, now, true);
+    else effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: { kind: "hold" } });
   }
   function criticalFallback(
     rule: ComponentsFailsafeRule | null,
@@ -267,18 +266,13 @@ export function reduce(
     }
   }
   function issue(w: Work, now: number) {
-    state.commandId++;
-    state.execution = { ...w, operationId: state.commandId };
-    effects.push({
-      kind: "vehicle",
-      execution_id: state.commandId,
-      command: vehicleStep({
-        execution: w.execution,
-        measurements: state.measurements,
-        config,
-        now,
-      }),
-    });
+    try {
+      const command = vehicleStep({ execution: w.execution, measurements: state.measurements, config, now });
+      state.execution = w;
+      effects.push({ kind: "vehicle", execution_id: ++state.commandId, command });
+    } catch (error) {
+      failed(w.execution.action, w.task, w.rule, now, w.fallback, error);
+    }
   }
   if (state.phase === "stopping") return { state, effects };
   switch (event.kind) {
@@ -300,17 +294,18 @@ export function reduce(
         event.task.kind === "failsafe"
       )
         break;
-      const execution = prepare(
-        event.task,
-        state.settings,
-        state.measurements,
-        event.now,
-        config,
-      );
-      execution.started = w.execution.started;
-      const updated = { ...w, task: event.task, execution };
-      state.execution = updated;
-      if (updated.pausedAt === null) issue(updated, event.now);
+      try {
+        const execution = prepare(event.task, state.settings, state.measurements, event.now, config);
+        execution.started = w.execution.started;
+        const updated = { ...w, task: event.task, execution };
+        if (updated.pausedAt === null) {
+          const command = vehicleStep({ execution, measurements: state.measurements, config, now: event.now });
+          effects.push({ kind: "vehicle", execution_id: ++state.commandId, command });
+        }
+        state.execution = updated;
+      } catch (error) {
+        effects.push({ kind: "diagnostic", explanation: error instanceof Error ? error.message : String(error) });
+      }
       break;
     }
     case "cancel": {
@@ -392,7 +387,8 @@ export function reduce(
         Object.keys(event.settings).some((k) => k !== "run_state")
       )
         break;
-      if (state.phase === "failsafe" && event.request_id !== undefined)
+      if (state.phase === "failsafe" && event.request_id !== undefined &&
+        event.settings.run_state !== undefined && event.settings.run_state !== state.settings.run_state)
         effects.push({ kind: "override", request_id: event.request_id });
       const wasPaused = state.settings.run_state === "paused";
       state.settings = { ...state.settings, ...event.settings };
@@ -431,17 +427,7 @@ export function reduce(
         break;
       const w = work(state);
       if (!w) break;
-      finish(w, "failed", event.explanation);
-      effects.push({ kind: "clear" });
-      state.execution = null;
-      if (criticalFallback(w.rule, w.execution.action, event.now, w.fallback))
-        activate({ kind: "return_to_home" }, w.rule, event.now, true);
-      if (!state.execution)
-        effects.push({
-          kind: "vehicle",
-          execution_id: ++state.commandId,
-          command: { kind: "hold" },
-        });
+      failed(w.execution.action, w.task, w.rule, event.now, w.fallback, new Error(event.explanation));
       break;
     }
     case "tick": {
@@ -473,14 +459,9 @@ export function reduce(
           state.phase = "failsafe";
           state.override = { kind: "hold" };
           rearm(event.now);
-          effects.push(
-            { kind: "autopilot", in_control: false },
-            {
-              kind: "vehicle",
-              execution_id: ++state.commandId,
-              command: { kind: "hold" },
-            },
-          );
+          effects.push({ kind: "autopilot", in_control: false });
+          start({ kind: "hold" }, null, null, now);
+          break;
         } else {
           if (
             get(state.measurements.armed) === false &&
@@ -528,6 +509,7 @@ export function reduce(
         }
       }
       if (event.hasWork || work(state)) state.idleSince = now;
+      const started = new Set<string>();
       const matching = (state.settings.failsafe_policy ?? [])
         .filter((r) => {
           const holds =
@@ -538,6 +520,7 @@ export function reduce(
             armed: true,
             since: null,
           };
+          if (holds && !prior.holds) started.add(r.rule_id);
           state.rules[r.rule_id] = {
             holds,
             armed: holds ? prior.armed : true,
@@ -557,13 +540,13 @@ export function reduce(
         critical ??
         matching.find(
           (r) =>
-            state.rules[r.rule_id]!.armed && !previous.rules[r.rule_id]?.holds,
+            started.has(r.rule_id),
         );
       for (const r of matching) state.rules[r.rule_id]!.armed = false;
       const current = work(state);
       const protectedOverride =
-        state.override?.kind === "land" ||
-        state.override?.kind === "return_to_home";
+        current?.override === "land" ||
+        current?.override === "return_to_home";
       if (
         candidate &&
         !protectedOverride &&
