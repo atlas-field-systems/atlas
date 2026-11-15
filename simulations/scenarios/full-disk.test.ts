@@ -6,8 +6,8 @@ import { promisify } from "node:util";
 import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { startAsset } from "@atlas/sdk";
-import { description, ipAsset } from "../src/actors.ts";
+import { assetApp } from "../src/asset-app.ts";
+import { reportingPeripheral } from "../src/peripheral.ts";
 import { value } from "../src/world.ts";
 import { createWorld } from "../src/world.ts";
 const execute = promisify(execFile);
@@ -35,13 +35,10 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
   let filler: Awaited<ReturnType<typeof open>> | undefined;
   try {
     w = await createWorld({ data_directory: join(mount, "data") });
-    const issued = value(await w.complete(w.admin.call("createAssetKey")));
-    assert.ok("key" in issued);
-    const asset = w.client("full-disk-asset", {
-      kind: "asset",
-      key: issued.key,
-    });
-    const files = await ipAsset(w, "files");
+    const files = await reportingPeripheral(w, { name: "files" });
+    const startup = await assetApp(w, { name: "full-disk-asset" });
+    await startup.stop();
+    const attempts = w.network.traffic.length;
     filler = await open(join(mount, "fill"), "w");
     try {
       while (true) await filler.write(new Uint8Array(65536));
@@ -56,46 +53,22 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
     assert.ok(
       !result.ok && result.status === 507 && result.error === "storage_full",
     );
-    const before = w.clock.now();
-    const startup = await w.complete(
-      startAsset(asset, {
-        clock: w.clock,
-        description,
-        settings: () => ({}),
-      }),
-    );
-    assert.ok(
-      !startup.ok &&
-        "status" in startup &&
-        startup.status === 507 &&
-        startup.error === "storage_full",
-    );
-    assert.equal(
-      w.clock.now(),
-      before,
-      "a definitive refusal returns without retrying",
-    );
-    assert.equal(
-      w.network.traffic.filter(
-        (t) => t.caller === "full-disk-asset" && t.path === "/entities/assets",
-      ).length,
-      1,
-    );
+    await assert.rejects(() => startup.restart(), /Core could not store the change/);
+    const startupTraffic = w.network.traffic.slice(attempts).filter(t => t.caller === "full-disk-asset");
+    assert.equal(startupTraffic.length, 1, "a definitive startup refusal is not retried");
+    assert.equal(startupTraffic[0].status, 507);
+    assert.ok(JSON.stringify(startupTraffic[0].response).includes("storage_full"));
     for (const place of [
       undefined,
       { kind: "point" as const, position: { latitude: 1, longitude: 2 } },
     ]) {
-      const stored = await w.complete(
-        files.session.link.storeFile({
-          name: "capture.txt",
-          contentType: "text/plain",
-          bytes: new TextEncoder().encode("field evidence"),
-          place,
-        }),
-      );
-      assert.ok(
-        !stored.ok && stored.status === 507 && stored.error === "storage_full",
-      );
+      const count = w.network.traffic.length;
+      files.send({ kind: "file", name: "capture.txt", contentType: "text/plain",
+        base64: Buffer.from("field evidence").toString("base64"), place });
+      await w.until(() => w!.network.traffic.slice(count).some(t =>
+        t.caller === "files" && t.status === 507));
+      const refused = w.network.traffic.slice(count).find(t => t.caller === "files" && t.status === 507);
+      assert.ok(JSON.stringify(refused?.response).includes("storage_full"));
     }
     assert.equal(
       w.network.traffic.filter(
