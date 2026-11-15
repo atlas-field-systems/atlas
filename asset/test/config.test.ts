@@ -48,3 +48,11 @@ test("config.md: flying equipment requires a critical battery rule", async () =>
     /critical battery/,
   );
 });
+
+test("config.md: inspection names a missing per-command completion tolerance", async () => {
+  const input = JSON.parse(
+    await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"),
+  );
+  delete input.completion_tolerances.land;
+  assert.throws(() => parseConfig(input), /completion_tolerances[\s\S]*land/);
+});

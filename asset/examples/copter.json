@@ -5,7 +5,14 @@
   "equipment": {"kind": "ardupilot", "host": "127.0.0.1", "port": 5760, "system_id": 255, "heartbeat_s": 1},
   "initial_settings": {"run_state": "running", "link_loss_after_s": 12, "failsafe_policy": [{"rule_id": "CB", "priority": 99, "conditions": [{"kind": "battery_below", "battery_percent": 10, "critical": true}], "response": {"kind": "land"}}]},
   "safe_action": {"kind": "land"},
-  "completion_tolerances": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3},
+  "completion_tolerances": {
+    "takeoff": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3},
+    "move_to": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3},
+    "land": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3},
+    "hold": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3},
+    "return_to_home": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3},
+    "failsafe": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3}
+  },
   "command_timeouts": {"takeoff": 60, "move_to": 120, "land": 120, "hold": 10, "return_to_home": 180, "failsafe": 10},
   "default_ground_speed_mps": 3, "max_ground_speed_mps": 8,
   "measurement_stale_after_s": 5, "final_report_wait_s": 30, "control_tick_s": 0.1,

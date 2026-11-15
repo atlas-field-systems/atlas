@@ -5,7 +5,15 @@ import type {
   ComponentsFailsafeResponse,
 } from "@atlas/protocol/types";
 import type { Config } from "./config.ts";
-import { commands, prepare, type Execution } from "./commands.ts";
+import {
+  commands,
+  isOverride,
+  prepare,
+  vehicleStep,
+  progress,
+  type Execution,
+  type OverrideKind,
+} from "./commands.ts";
 import { fresh, type Measurements, type VehicleCommand } from "./vehicle.ts";
 type Work = {
   execution: Execution;
@@ -17,7 +25,7 @@ type Work = {
   fallback: boolean;
 };
 type Override = {
-  kind: "hold" | "pause" | "land" | "return_to_home";
+  kind: OverrideKind | "pause";
   request_id?: number;
 };
 export interface State {
@@ -147,7 +155,7 @@ export function reduce(
       effects.push({
         kind: "vehicle",
         execution_id: ++state.commandId,
-        command: commands[execution.action.kind].start({
+        command: vehicleStep({
           execution,
           measurements: state.measurements,
           config,
@@ -264,7 +272,7 @@ export function reduce(
     effects.push({
       kind: "vehicle",
       execution_id: state.commandId,
-      command: commands[w.execution.action.kind].start({
+      command: vehicleStep({
         execution: w.execution,
         measurements: state.measurements,
         config,
@@ -322,8 +330,7 @@ export function reduce(
       const task = event.task;
       if (
         state.phase === "flight_controller" ||
-        (state.phase !== "ordinary" &&
-          !(task.now && ["land", "hold", "return_to_home"].includes(task.kind)))
+        (state.phase !== "ordinary" && !(task.now && isOverride(task.kind)))
       ) {
         effects.push({
           kind: "task",
@@ -370,11 +377,7 @@ export function reduce(
         if (state.phase === "failsafe") {
           if (event.request_id !== undefined)
             effects.push({ kind: "override", request_id: event.request_id });
-          if (
-            task.kind === "hold" ||
-            task.kind === "land" ||
-            task.kind === "return_to_home"
-          )
+          if (isOverride(task.kind))
             state.override = { kind: task.kind, request_id: event.request_id };
           if (task.kind === "hold") rearm(event.now);
         }
@@ -497,12 +500,18 @@ export function reduce(
           config,
           now,
         };
-        if (commands[w.execution.action.kind].complete(ctx)) {
+        const result = progress(ctx);
+        if (result === "next") {
+          issue(
+            { ...w, execution: { ...w.execution, step: w.execution.step + 1 } },
+            now,
+          );
+        } else if (result === "completed") {
           finish(w, "completed");
           state.execution = null;
         } else if (
           now - w.execution.started - w.pausedMs >
-          config.command_timeouts[w.execution.action.kind] * 1000
+          commands[w.execution.kind].timeout(ctx) * 1000
         ) {
           const failed = reduce(
             state,

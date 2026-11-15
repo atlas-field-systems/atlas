@@ -45,6 +45,14 @@ The app uses Protocol's validator for all shared values.
 (default 10 seconds). Set it to match Core configuration. Inspection refuses an
 initial `link_loss_after_s` at or below that interval without contacting Core.
 
+The command registry in `src/commands.ts` owns supported kinds, preparation,
+vehicle steps, observed progress, timeouts, and failsafe eligibility. Configuration
+inspection derives its command keys from that registry. Each key requires its own
+`completion_tolerances` object with `horizontal_m`, `altitude_m`, and `stopped_mps`,
+and a positive `command_timeouts` value in seconds. Inspection names a missing
+command entry. Fail-safe activates policy rather than issuing a vehicle operation;
+its tolerance entry is required for a uniform configuration shape.
+
 ## Options
 
 | Option | Purpose | Notes |

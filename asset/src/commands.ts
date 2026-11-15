@@ -2,63 +2,28 @@ import type {
   ComponentsFailsafeResponse,
   ComponentsPosition,
   ComponentsSettings,
+  ComponentsAltitude,
 } from "@atlas/protocol/types";
 import type { Config } from "./config.ts";
-import {
-  distance,
-  fresh,
-  type Measurements,
-  type VehicleCommand,
-} from "./vehicle.ts";
-export type Action = Extract<
-  ComponentsFailsafeResponse,
-  { kind: "takeoff" | "move_to" | "land" | "hold" | "return_to_home" }
->;
-export interface Execution {
-  action: Action;
-  started: number;
+import { distance, fresh, type Measurements } from "./vehicle.ts";
+
+type Preparation = {
+  action: ComponentsFailsafeResponse;
+  settings: ComponentsSettings;
+  position: ComponentsPosition;
+  config: Config;
+};
+type Resolved = {
+  initialStep?: number;
   destination?: ComponentsPosition;
-}
-export function prepare(
-  action: ComponentsFailsafeResponse,
-  settings: ComponentsSettings,
-  measurements: Measurements,
-  now: number,
-  config: Config,
-): Execution {
-  if (
-    !["takeoff", "move_to", "land", "hold", "return_to_home"].includes(
-      action.kind,
-    )
-  )
-    throw new Error(`unsupported command ${action.kind}`);
-  const position = fresh(
-    measurements.position,
-    now,
-    config.measurement_stale_after_s,
-  );
-  if (
-    !position ||
-    fresh(measurements.armed, now, config.measurement_stale_after_s) ===
-      undefined
-  )
-    throw new Error("current vehicle state unavailable");
-  switch (action.kind) {
-    case "takeoff":
-      return { action, started: now };
-    case "move_to":
-      if (!action.destination) throw new Error("Move To has no destination");
-      return { action, started: now, destination: action.destination };
-    case "return_to_home":
-      if (!settings.home_position) throw new Error("home unavailable");
-      return { action, started: now, destination: settings.home_position };
-    case "land":
-      return { action, started: now, destination: action.landing_position };
-    case "hold":
-      return { action, started: now };
-    default:
-      throw new Error(`unsupported command ${action.kind}`);
-  }
+  transit_altitude?: ComponentsAltitude;
+  speed: number;
+};
+export interface Execution extends Resolved {
+  kind: CommandKind;
+  action: ComponentsFailsafeResponse;
+  started: number;
+  step: number;
 }
 type Context = {
   execution: Execution;
@@ -66,26 +31,32 @@ type Context = {
   config: Config;
   now: number;
 };
-const position = (c: Context) =>
+const position = (c: Context): ComponentsPosition | undefined =>
   fresh(c.measurements.position, c.now, c.config.measurement_stale_after_s);
-function atDestination(c: Context) {
-  const p = position(c),
-    target = c.execution.destination;
+const tolerance = (
+  c: Context,
+): { horizontal_m: number; altitude_m: number; stopped_mps: number } =>
+  c.config.completion_tolerances[c.execution.kind];
+const timeout = (c: Context): number =>
+  c.config.command_timeouts[c.execution.kind];
+function at(c: Context, target: ComponentsPosition): boolean {
+  const p = position(c);
   return Boolean(
     p &&
-    target &&
-    distance(p, target) <= c.config.completion_tolerances.horizontal_m &&
+    distance(p, target) <= tolerance(c).horizontal_m &&
     (target.altitudes ?? []).every((a) => {
       const actual = p.altitudes?.find(
         (b) => b.altitude_reference === a.altitude_reference,
       );
       return (
         actual &&
-        Math.abs(actual.altitude_m - a.altitude_m) <=
-          c.config.completion_tolerances.altitude_m
+        Math.abs(actual.altitude_m - a.altitude_m) <= tolerance(c).altitude_m
       );
     }),
   );
+}
+function atDestination(c: Context) {
+  return !!c.execution.destination && at(c, c.execution.destination);
 }
 function landed(c: Context) {
   return (
@@ -98,62 +69,232 @@ function landed(c: Context) {
     ) === false
   );
 }
-export const commands: Record<
-  Action["kind"],
-  { start(c: Context): VehicleCommand; complete(c: Context): boolean }
-> = {
-  takeoff: {
-    start: (c) => {
-      if (c.execution.action.kind !== "takeoff")
-        throw new Error("wrong execution");
-      return { kind: "takeoff", altitude: c.execution.action.target_altitude };
-    },
-    complete: (c) => {
-      if (c.execution.action.kind !== "takeoff") return false;
-      const target = c.execution.action.target_altitude;
-      const actual = position(c)?.altitudes?.find(
-        (a) => a.altitude_reference === target.altitude_reference,
-      );
-      return Boolean(
-        actual &&
-        Math.abs(actual.altitude_m - target.altitude_m) <=
-          c.config.completion_tolerances.altitude_m,
-      );
-    },
-  },
-  move_to: {
-    start: (c) => {
-      if (!c.execution.destination || c.execution.action.kind !== "move_to")
-        throw new Error("destination unavailable");
+function speed(p: Preparation): number {
+  return Math.min(
+    p.action.kind === "move_to"
+      ? (p.action.ground_speed_mps ?? p.config.default_ground_speed_mps)
+      : p.config.default_ground_speed_mps,
+    p.config.max_ground_speed_mps,
+  );
+}
+function transit(p: Preparation, destination: ComponentsPosition): Resolved {
+  const altitude =
+    "transit_altitude" in p.action ? p.action.transit_altitude : undefined;
+  const height =
+    altitude ??
+    p.position.altitudes?.find((a) => a.altitude_reference === "launch");
+  if (!height) throw new Error("current transit altitude unavailable");
+  return {
+    destination: { ...destination, altitudes: [height] },
+    transit_altitude: height,
+    speed: speed(p),
+  };
+}
+function move(c: Context) {
+  if (!c.execution.destination) throw new Error("destination unavailable");
+  return {
+    kind: "move_to" as const,
+    position: c.execution.destination,
+    speed: c.execution.speed,
+  };
+}
+const landing = {
+  command: (c: Context) => ({
+    kind: "land" as const,
+    destination: c.execution.destination,
+    transit_altitude: c.execution.transit_altitude,
+  }),
+  complete: landed,
+};
+const transitSteps = [
+  {
+    command: (c: Context) => {
+      const p = position(c);
+      if (!p || !c.execution.transit_altitude)
+        throw new Error("transit altitude unavailable");
       return {
-        kind: "move_to",
-        position: c.execution.destination,
-        speed: Math.min(
-          c.execution.action.ground_speed_mps ??
-            c.config.default_ground_speed_mps,
-          c.config.max_ground_speed_mps,
-        ),
+        kind: "move_to" as const,
+        position: { ...p, altitudes: [c.execution.transit_altitude] },
+        speed: c.execution.speed,
       };
     },
-    complete: atDestination,
-  },
-  land: { start: () => ({ kind: "land" }), complete: landed },
-  return_to_home: {
-    start: () => ({ kind: "return_to_home" }),
-    complete: landed,
-  },
-  hold: {
-    start: () => ({ kind: "hold" }),
-    complete: (c) => {
-      const speed = fresh(
-        c.measurements.speed,
-        c.now,
-        c.config.measurement_stale_after_s,
-      );
+    complete: (c: Context): boolean => {
+      const p = position(c);
       return (
-        speed !== undefined &&
-        speed <= c.config.completion_tolerances.stopped_mps
+        !!p &&
+        !!c.execution.transit_altitude &&
+        at(c, { ...p, altitudes: [c.execution.transit_altitude] })
       );
     },
   },
-};
+  { command: move, complete: atDestination },
+  landing,
+] as const;
+export const commands = {
+  takeoff: {
+    prepare: (p: Preparation): Resolved => ({ speed: speed(p) }),
+    steps: [
+      {
+        command: (c: Context) => {
+          if (c.execution.action.kind !== "takeoff")
+            throw new Error("invalid Takeoff execution");
+          return {
+            kind: "takeoff" as const,
+            altitude: c.execution.action.target_altitude,
+          };
+        },
+        complete: (c: Context): boolean => {
+          const p = position(c);
+          return (
+            !!p &&
+            c.execution.action.kind === "takeoff" &&
+            at(c, { ...p, altitudes: [c.execution.action.target_altitude] })
+          );
+        },
+      },
+    ],
+    timeout,
+    response: true,
+    override: false,
+  },
+  move_to: {
+    prepare: (p: Preparation): Resolved => {
+      if (p.action.kind !== "move_to" || !p.action.destination)
+        throw new Error(
+          "Move To destination unavailable; a named place must include Core's position copy",
+        );
+      const destination = p.action.destination;
+      const altitudes = destination.altitudes?.length
+        ? destination.altitudes
+        : p.position.altitudes?.filter(
+            (a) => a.altitude_reference === "launch",
+          );
+      if (!altitudes?.length) throw new Error("current altitude unavailable");
+      return { destination: { ...destination, altitudes }, speed: speed(p) };
+    },
+    steps: [{ command: move, complete: atDestination }],
+    timeout,
+    response: true,
+    override: false,
+  },
+  land: {
+    prepare: (p: Preparation): Resolved => {
+      if (p.action.kind !== "land") throw new Error("invalid Land execution");
+      if (p.action.geofeature_id && !p.action.landing_position)
+        throw new Error("Land place has no position copy");
+      if (!p.action.landing_position && !p.action.transit_altitude)
+        return { destination: p.position, speed: speed(p), initialStep: 2 };
+      return transit(p, p.action.landing_position ?? p.position);
+    },
+    steps: transitSteps,
+    timeout,
+    response: true,
+    override: true,
+  },
+  return_to_home: {
+    prepare: (p: Preparation): Resolved => {
+      if (!p.settings.home_position) throw new Error("home unavailable");
+      return transit(p, p.settings.home_position);
+    },
+    steps: [
+      {
+        command: (c: Context) => ({
+          ...transitSteps[0]!.command(c),
+          kind: "return_to_home" as const,
+          destination: c.execution.destination,
+          transit_altitude: c.execution.transit_altitude,
+        }),
+        complete: transitSteps[0]!.complete,
+      },
+      transitSteps[1]!,
+      landing,
+    ],
+    timeout,
+    response: true,
+    override: true,
+  },
+  hold: {
+    prepare: (p: Preparation): Resolved => ({ speed: speed(p) }),
+    steps: [
+      {
+        command: () => ({ kind: "hold" as const }),
+        complete: (c: Context): boolean => {
+          const v = fresh(
+            c.measurements.speed,
+            c.now,
+            c.config.measurement_stale_after_s,
+          );
+          return v !== undefined && v <= tolerance(c).stopped_mps;
+        },
+      },
+    ],
+    timeout,
+    response: true,
+    override: true,
+  },
+  failsafe: {
+    prepare: (): Resolved => {
+      throw new Error("Fail-safe must activate a policy response");
+    },
+    steps: [],
+    timeout,
+    response: false,
+    override: false,
+  },
+} as const;
+export type CommandKind = keyof typeof commands;
+type StepCommand = ReturnType<
+  (typeof commands)[CommandKind]["steps"][number]["command"]
+>;
+export type VehicleCommand = {
+  [K in CommandKind]: Extract<StepCommand, { kind: K }>;
+}[CommandKind];
+export type OverrideKind = {
+  [K in CommandKind]: (typeof commands)[K]["override"] extends true ? K : never;
+}[CommandKind];
+export function isOverride(kind: string): kind is OverrideKind {
+  return isCommand(kind) && commands[kind].override;
+}
+export function isCommand(kind: string): kind is CommandKind {
+  return Object.hasOwn(commands, kind);
+}
+export function prepare(
+  action: ComponentsFailsafeResponse,
+  settings: ComponentsSettings,
+  measurements: Measurements,
+  now: number,
+  config: Config,
+): Execution {
+  if (!isCommand(action.kind))
+    throw new Error(`unsupported command ${action.kind}`);
+  const p = fresh(measurements.position, now, config.measurement_stale_after_s);
+  if (
+    !p ||
+    fresh(measurements.armed, now, config.measurement_stale_after_s) ===
+      undefined
+  )
+    throw new Error("current vehicle state unavailable");
+  const resolved = commands[action.kind].prepare({
+    action,
+    settings,
+    position: p,
+    config,
+  });
+  return {
+    action,
+    kind: action.kind,
+    started: now,
+    ...resolved,
+    step: resolved.initialStep ?? 0,
+  };
+}
+export function vehicleStep(c: Context): VehicleCommand {
+  const step = commands[c.execution.kind].steps[c.execution.step];
+  if (!step) throw new Error("vehicle step unavailable");
+  return step.command(c);
+}
+export function progress(c: Context): "running" | "next" | "completed" {
+  const steps = commands[c.execution.kind].steps;
+  if (!steps[c.execution.step]?.complete(c)) return "running";
+  return c.execution.step + 1 < steps.length ? "next" : "completed";
+}

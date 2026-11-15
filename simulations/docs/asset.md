@@ -96,7 +96,11 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The seven scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+Destination landing and Return to home each end with Core telemetry within
+3 metres of the requested position and an archived disarmed measurement. Return
+to home first sets Atlas home away from the arming point. Both specify a transit
+altitude above takeoff altitude.
 SITL runs at five times real time, so its configured GCS heartbeat interval is
 0.2 wall seconds. Flight-controller GCS failsafe remains enabled. Low battery
 uses SITL's battery consumption with a smaller configured battery capacity.

@@ -1,3 +1,4 @@
+import { commands, isCommand } from "./commands.ts";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { loadPackagedProtocol } from "@atlas/protocol";
@@ -20,14 +21,7 @@ function shared<T>(
 }
 const positive = z.number().finite().positive();
 const nonnegative = z.number().finite().nonnegative();
-const command = z.enum([
-  "takeoff",
-  "move_to",
-  "land",
-  "hold",
-  "return_to_home",
-  "failsafe",
-]);
+const command = z.enum(Object.keys(commands).filter(isCommand));
 const schema = z
   .strictObject({
     asset_key: z.string().min(1),
@@ -72,11 +66,14 @@ const schema = z
         response,
       }),
     ),
-    completion_tolerances: z.strictObject({
-      horizontal_m: nonnegative,
-      altitude_m: nonnegative,
-      stopped_mps: nonnegative,
-    }),
+    completion_tolerances: z.record(
+      command,
+      z.strictObject({
+        horizontal_m: nonnegative,
+        altitude_m: nonnegative,
+        stopped_mps: nonnegative,
+      }),
+    ),
     command_timeouts: z.record(command, positive),
     default_ground_speed_mps: nonnegative,
     max_ground_speed_mps: positive,
@@ -119,14 +116,18 @@ const schema = z
     if (c.default_ground_speed_mps > c.max_ground_speed_mps)
       fail(["default_ground_speed_mps"], "exceeds max_ground_speed_mps");
     for (const kind of c.description.commands) {
-      if (!command.safeParse(kind).success)
+      if (!isCommand(kind))
         fail(["description", "commands"], `unsupported command ${kind}`);
     }
     for (const response of [
       c.safe_action,
       ...(c.initial_settings.failsafe_policy ?? []).map((r) => r.response),
     ]) {
-      if (!c.description.commands.includes(response.kind))
+      if (
+        !isCommand(response.kind) ||
+        !commands[response.kind].response ||
+        !c.description.commands.includes(response.kind)
+      )
         fail(
           ["initial_settings"],
           `response ${response.kind} is not supported`,

@@ -249,6 +249,7 @@ export function ardupilot(
           signal.throwIfAborted();
           await acknowledged(22, [0, 0, 0, 0, 0, 0, c.altitude.altitude_m]);
           return;
+        case "return_to_home":
         case "move_to": {
           await selectMode(4);
           const m = new common.SetPositionTargetGlobalInt();
@@ -292,9 +293,6 @@ export function ardupilot(
         }
         case "land":
           await selectMode(9);
-          return;
-        case "return_to_home":
-          await selectMode(6);
           return;
       }
     },

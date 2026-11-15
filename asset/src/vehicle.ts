@@ -1,7 +1,4 @@
-import type {
-  ComponentsPosition,
-  ComponentsAltitude,
-} from "@atlas/protocol/types";
+import type { ComponentsPosition } from "@atlas/protocol/types";
 export type Measurement<T> = {
   value: T;
   source: string | null;
@@ -15,10 +12,8 @@ export interface Measurements {
   guided?: Measurement<boolean>;
   speed?: Measurement<number>;
 }
-export type VehicleCommand =
-  | { kind: "takeoff"; altitude: ComponentsAltitude }
-  | { kind: "move_to"; position: ComponentsPosition; speed: number }
-  | { kind: "land" | "hold" | "return_to_home" };
+export type { VehicleCommand } from "./commands.ts";
+import type { VehicleCommand } from "./commands.ts";
 export interface Vehicle {
   start(observe: (measurements: Measurements) => void): void;
   heartbeat(): void;

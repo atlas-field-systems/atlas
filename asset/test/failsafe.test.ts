@@ -21,7 +21,11 @@ test("docs/failsafes.md: critical battery replaces Hold immediately, then failed
     },
     measurements: {
       position: {
-        value: { latitude: 1, longitude: 1 },
+        value: {
+          latitude: 1,
+          longitude: 1,
+          altitudes: [{ altitude_m: 5, altitude_reference: "launch" }],
+        },
         source: "vehicle",
         time: 0,
       },

@@ -91,6 +91,24 @@ A Move To without a requested speed uses the Asset's configured default. The
 Asset caps a request above its configured safe maximum at that maximum, so
 it never exceeds the limit. [Configuration](../config.md) owns both values.
 
+### Movement execution
+
+The initial copter driver uses Guided position targets for transit and Land mode
+for descent and disarming. Land and Return to home follow their
+[Protocol command definitions](../../protocol/README.md).
+The app resolves the position copy supplied by Core, the Atlas home setting,
+and the configured speed when execution starts. An unresolved named place fails
+with an explanation. Transit uses the configured default ground speed, capped
+at the configured maximum.
+
+The command registry advances through observed altitude, destination, and landing
+steps. A Land without a destination or transit altitude starts descent at once.
+A transit without a specified altitude snapshots the current launch altitude.
+The initial ArduPilot driver refuses altitude references it cannot execute;
+it never substitutes another reference. Position targets carry the resolved
+destination and transit altitude to the driver. Return to home does not select
+ArduPilot RTL. The flight controller's independent RTL protection stays separate.
+
 ### The queue
 
 The Asset holds its own queue: the Tasks it has received and not started. Core

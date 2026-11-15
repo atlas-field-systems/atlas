@@ -57,7 +57,7 @@ test("docs/README.md: updating active work changes its destination without finis
   let state = initial(config, 0);
   state.measurements = {
     position: {
-      value: { latitude: 1, longitude: 1 },
+      value: { latitude: 1, longitude: 1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] },
       source: "vehicle",
       time: 0,
     },
@@ -107,7 +107,7 @@ test("docs/failsafes.md: an old equipment refusal cannot fail superseding work",
   let state = initial(config, 0);
   state.measurements = {
     position: {
-      value: { latitude: 1, longitude: 1 },
+      value: { latitude: 1, longitude: 1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] },
       source: "vehicle",
       time: 0,
     },
@@ -154,7 +154,7 @@ async function setup() {
   let state = initial(config, 0);
   state.measurements = {
     position: {
-      value: { latitude: 1, longitude: 1 },
+      value: { latitude: 1, longitude: 1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] },
       source: "vehicle",
       time: 0,
     },
