@@ -716,3 +716,17 @@ test("docs/README.md and docs/failsafes.md: queue pull requires ordinary unpause
     }
   }
 });
+
+for (const step of [0, 1, 2]) for (const reason of ["refused", "timeout"]) {
+  test(`docs/failsafes.md: Land ${reason} at step ${step} stops only before descent`, async () => {
+    const { config, state: start } = await setup();
+    let state = reduce(start, { kind: "task", task: { ...hold, kind: "land", landing_position: { latitude: 2, longitude: 2 }, transit_altitude: { altitude_m: 10, altitude_reference: "launch" } }, now: 0 }, config).state;
+    assert.ok(state.execution);
+    state.execution.execution.step = step;
+    const now = reason === "timeout" ? 120001 : 1;
+    for (const m of Object.values(state.measurements)) if (m && "time" in m) m.time = now;
+    const result = reduce(state, reason === "timeout" ? { kind: "tick", now, hasWork: false } : { kind: "command_failed", now, execution_id: state.commandId, explanation: "equipment refused" }, config);
+    assert.ok(result.effects.some(e => e.kind === "task" && e.status === "failed"));
+    assert.equal(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"), step < 2);
+  });
+}

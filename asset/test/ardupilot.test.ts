@@ -184,3 +184,40 @@ for (const modes of [[4, 6], [0]] as const) test(`docs/failsafes.md: takeover du
   assert.equal(writes.includes(400), false);
   assert.equal(writes.includes(22), false);
 });
+
+test("docs/failsafes.md: observed Land survives delayed critical battery evidence", { timeout: 5000 }, async (t) => {
+  const server = createServer();
+  let peer: Socket | undefined;
+  t.after(() => { peer?.destroy(); server.close(); });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const connected = once(server, "connection");
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
+  t.after(() => vehicle.stop());
+  vehicle.start(() => {});
+  [peer] = await connected;
+  peer.on("error", () => {});
+  const protocol = new MavLinkProtocolV2(1, 1);
+  const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
+  const correction = Promise.withResolvers<number>();
+  reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
+    if (packet.header.msgid === common.SetMode.MSG_ID)
+      correction.resolve(packet.protocol.data(packet.payload, common.SetMode).customMode);
+  });
+  for (const [paramId, paramValue] of [["BATT_FS_LOW_ACT", 2], ["BATT_FS_CRT_ACT", 1]] as const) {
+    const m = new common.ParamValue();
+    Object.assign(m, { paramId, paramValue, paramType: 9, paramCount: 2, paramIndex: 0 });
+    await send(peer, m, protocol);
+  }
+  const battery = new common.BatteryStatus();
+  Object.assign(battery, { id: 0, chargeState: common.MavBatteryChargeState.LOW });
+  await send(peer, battery, protocol);
+  for (const customMode of [6, 9, 4]) {
+    const m = new minimal.Heartbeat();
+    Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode, systemStatus: 5, mavlinkVersion: 3 });
+    await send(peer, m, protocol);
+  }
+  assert.equal(await correction.promise, 9);
+});
