@@ -104,6 +104,7 @@ export async function startApp(
           ]);
           break;
         case "autopilot":
+          if (effect.in_control) vehicle.abortCommand();
           report([
             {
               type: "report.failsafe",
@@ -351,6 +352,7 @@ function stationary(config: Config, clock: Clock): Vehicle {
     async command() {
       throw new Error("stationary equipment does not move");
     },
+    abortCommand() {},
     stop() {},
   };
 }

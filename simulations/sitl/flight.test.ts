@@ -28,6 +28,7 @@ async function equipmentPort() {
 }
 
 for (const scenario of [
+  "armed-startup",
   "equipment-drop",
   "equipment-refused",
   "equipment-timeout",
@@ -334,6 +335,28 @@ for (const scenario of [
           return "";
         } };
       };
+      if (scenario === "armed-startup") {
+        const pilot = connect({ host: "127.0.0.1", port: pilotPort });
+        cleanup.push(() => { pilot.destroy(); });
+        await once(pilot, "connect");
+        let observedMode = -1;
+        let armed = false;
+        pilot.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser()).on("data", (packet: import("node-mavlink").MavLinkPacket) => {
+          if (packet.header.msgid !== minimal.Heartbeat.MSG_ID) return;
+          const heartbeat = packet.protocol.data(packet.payload, minimal.Heartbeat);
+          observedMode = heartbeat.customMode;
+          armed = Boolean(heartbeat.baseMode & 128);
+        });
+        await delay(10000);
+        const mode = new common.SetMode();
+        Object.assign(mode, { targetSystem: 1, baseMode: 1, customMode: 5 });
+        await send(pilot, mode, new MavLinkProtocolV2(254, 190));
+        await until(() => observedMode === 5);
+        const arm = new common.CommandLong();
+        Object.assign(arm, { targetSystem: 1, targetComponent: 1, command: 400, _param1: 1, _param2: 21196 });
+        await send(pilot, arm, new MavLinkProtocolV2(254, 190));
+        await until(() => armed);
+      }
       const app = scenario === "crash" ? await launchProcess() : await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
       if (scenario === "equipment-startup") {
@@ -348,6 +371,15 @@ for (const scenario of [
         return;
       }
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "armed-startup") {
+        await delay(1000);
+        assert.ok(events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control), "armed Loiter before any Atlas command must be watch only");
+        const refused = value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "land" }], now: true } }));
+        assert.ok("task_ids" in refused);
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === refused.task_ids[0] && e.record.task_state === "failed" && e.record.explanation === "flight controller is in control"));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
       if (scenario === "equipment-drop" || scenario === "equipment-refused" || scenario === "equipment-timeout") {
         value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 5, altitude_reference: "launch" } }] } }));
         await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));

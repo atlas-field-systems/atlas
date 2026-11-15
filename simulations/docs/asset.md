@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The seventeen scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The eighteen scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -152,6 +152,9 @@ production GPS driver. A detector peripheral supplies position, an Observation,
 and files over the production acquisition interface. Core's picture must show
 both Assets and the Observation. A file with a place must appear as an Object
 linked to that place. A refused capture must remain in the Asset's Reset ZIP.
+
+The armed-startup scenario arms SITL in Loiter before starting the app. It
+checks watch-only reporting and refusal of an immediate Land request.
 
 The takeover scenarios interrupt Move To and an Atlas failsafe response. They
 check cancellation, refused immediate Tasks, cancels and settings answers,

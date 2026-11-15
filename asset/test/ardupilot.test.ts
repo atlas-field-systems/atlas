@@ -128,3 +128,53 @@ test("docs/README.md: equipment TCP loss rejects a pending command and reconnect
   vehicle.tick(Date.now() + 1000);
   await reconnected;
 });
+
+test("docs/failsafes.md: armed RTL before the first Atlas command is watch only", { timeout: 5000 }, async t => {
+  const server = createServer();
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const connection = once(server, "connection");
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
+  const observed = Promise.withResolvers<Measurements>();
+  vehicle.start(m => { if (m.in_control) observed.resolve(m); });
+  const [peer] = await connection;
+  t.after(() => { vehicle.stop(); peer.destroy(); server.close(); });
+  const heartbeat = new minimal.Heartbeat();
+  Object.assign(heartbeat, { type: 2, autopilot: 3, baseMode: 129, customMode: 6, systemStatus: 4, mavlinkVersion: 3 });
+  await send(peer, heartbeat, new MavLinkProtocolV2(1, 1));
+  assert.equal((await observed.promise).in_control?.value, false);
+});
+
+test("docs/failsafes.md: takeover after Guided confirmation aborts Takeoff before arm", { timeout: 5000 }, async t => {
+  const server = createServer();
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const connection = once(server, "connection");
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 }, systemClock);
+  vehicle.start(() => {});
+  const [peer] = await connection;
+  t.after(() => { vehicle.stop(); peer.destroy(); server.close(); });
+  const writes: number[] = [];
+  const protocol = new MavLinkProtocolV2(1, 1);
+  const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
+  reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
+    if (packet.header.msgid === common.CommandLong.MSG_ID) writes.push(packet.protocol.data(packet.payload, common.CommandLong).command);
+    if (packet.header.msgid === common.SetMode.MSG_ID) {
+      peer.cork();
+      for (const customMode of [4, 6]) {
+        const m = new minimal.Heartbeat();
+        Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode, systemStatus: 4, mavlinkVersion: 3 });
+        void send(peer, m, protocol);
+      }
+      peer.uncork();
+    }
+  });
+  const pending = vehicle.command({ kind: "takeoff", mode: 4, altitude: { altitude_m: 5, altitude_reference: "launch" } });
+  await assert.rejects(pending, /flight controller/);
+  assert.equal(writes.includes(400), false);
+  assert.equal(writes.includes(22), false);
+});

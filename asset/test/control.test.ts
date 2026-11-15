@@ -635,3 +635,32 @@ test("docs/failsafes.md: a newly added idle rule uses the existing idle interval
   const fired = reduce(state, { kind: "tick", now: 5000, hasWork: false }, config);
   assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "NEW"));
 });
+
+for (const kind of ["land", "return_to_home"] as const) {
+  test(`docs/failsafes.md: failed ${kind} override re-arms an already critical battery`, async () => {
+    const { config, state: start } = await setup();
+    start.phase = "failsafe";
+    start.settings.home_position = { latitude: 2, longitude: 2 };
+    start.settings.failsafe_policy = [{ rule_id: "CB", priority: 90, conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } }];
+    start.measurements.battery = { value: 4, source: "vehicle", time: 0 };
+    let state = reduce(start, { kind: "task", task: { ...hold, kind }, now: 0 }, config).state;
+    state = reduce(state, { kind: "tick", now: 1, hasWork: false }, config).state;
+    state = reduce(state, { kind: "command_failed", execution_id: state.commandId, explanation: "refused", now: 2 }, config).state;
+    state.measurements.battery = { value: 3, source: "vehicle", time: 3 };
+    const result = reduce(state, { kind: "tick", now: 3, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "CB" && e.status === "active"));
+  });
+  test(`docs/failsafes.md: resumed ${kind} override retains standing protection`, async () => {
+    const { config, state: start } = await setup();
+    start.phase = "failsafe";
+    start.settings.home_position = { latitude: 2, longitude: 2 };
+    start.settings.failsafe_policy = [{ rule_id: "LOW", priority: 1, conditions: [{ kind: "battery_below", battery_percent: 30 }], response: { kind: "hold" } }];
+    let state = reduce(start, { kind: "task", task: { ...hold, kind }, now: 0 }, config).state;
+    state = reduce(state, { kind: "settings", settings: { run_state: "paused" }, now: 1 }, config).state;
+    state = reduce(state, { kind: "settings", settings: { run_state: "running" }, now: 2 }, config).state;
+    state.measurements.battery = { value: 20, source: "vehicle", time: 3 };
+    const result = reduce(state, { kind: "tick", now: 3, hasWork: false }, config);
+    assert.equal(result.effects.some(e => e.kind === "response" && e.status === "active"), false);
+    assert.equal(result.state.execution?.execution.kind, kind);
+  });
+}

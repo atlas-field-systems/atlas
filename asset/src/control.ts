@@ -22,6 +22,7 @@ type Work = {
   task: Task | null;
   rule: ComponentsFailsafeRule | null;
   fallback: boolean;
+  override: "rearm" | "stand" | null;
 };
 export interface State {
   phase: "ordinary" | "failsafe" | "flight_controller" | "stopping";
@@ -150,6 +151,7 @@ export function reduce(
         pausedAt: null,
         pausedMs: 0,
         fallback,
+        override: state.override === "pause" ? null : state.override,
       };
       if (task) effects.push({ kind: "task", task, status: "active" });
       else effects.push({ kind: "response", rule, action, status: "active" });
@@ -179,8 +181,12 @@ export function reduce(
     if (task) effects.push({ kind: "task", task, status: "failed", explanation });
     else effects.push({ kind: "response", rule, action, status: "failed", explanation });
     effects.push({ kind: "clear" });
+    const failedStandingOverride = state.override === "stand" || state.execution?.override === "stand";
     state.execution = null;
-    if (state.override === "stand") state.override = null;
+    if (failedStandingOverride) {
+      state.override = "rearm";
+      rearm(now);
+    }
     if (criticalFallback(rule, action, now, fallback))
       activate({ kind: "return_to_home" }, rule, now, true);
     else effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: { kind: "hold", mode: 4 } });
@@ -429,7 +435,7 @@ export function reduce(
           rearm(event.now);
         }
       } else if (!paused && wasPaused) {
-        if (state.override === "pause") state.override = null;
+        if (state.override === "pause") state.override = w?.override ?? null;
         if (w && w.pausedAt !== null)
           issue(
             {

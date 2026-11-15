@@ -26,7 +26,9 @@ Every registry step names its equipment mode. The ArduPilot driver compares
 heartbeat modes with the command it received and reports whether Atlas is
 `in_control`. During a commanded mode transition, the prior observed Atlas mode
 remains valid until the requested mode is observed. An unrelated mode still
-shows takeover immediately. A different mode while armed gives control to the flight controller.
+shows takeover immediately. Before the first command, only Guided counts as Atlas control while armed;
+a disarmed vehicle remains eligible for Takeoff. A different mode while armed
+gives control to the flight controller.
 Guided mode hands control back. Handback samples rules, starts a tracked Hold,
 and ends that tick before rule selection. The app calls `Vehicle.tick(now)`;
 the driver owns its heartbeat interval.
@@ -48,13 +50,17 @@ altitude step stays there. An update during transit or descent restarts at the
 destination step so the vehicle reaches the updated place before descending.
 
 Land and Return to home override protection belongs to its execution and ends
-when that execution ends. Failure does not sample or re-arm rules. Whether such
-failure should re-arm protection like Hold remains an owner question.
+when that execution ends. Pause preserves that protection on the suspended
+execution and resume restores it. If that override fails and the app inserts
+Hold, it samples conditions and re-arms protection as for a Hold override.
+A failed critical response or its failed return fallback does not re-arm itself.
 
 The equipment driver has one abortable command generation. A replacement aborts
-the prior generation. Command ACKs are ignored until that invocation's write
+the prior generation. Takeover aborts that generation immediately in the driver
+and the app repeats the command-only abort when entering watch-only state.
+This leaves heartbeats running. Command ACKs are ignored until that invocation's write
 completes. Cancellation is checked before mode and acknowledged command writes
-and after their acknowledgements. MAVLink ACKs carry a command ID but no
+and after their acknowledgements, and before position and Hold target writes. MAVLink ACKs carry a command ID but no
 invocation ID, so an old ACK arriving after the new write completes cannot be
 distinguished from the new command's ACK.
 

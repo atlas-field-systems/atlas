@@ -115,7 +115,8 @@ export function ardupilot(
       observedMode = m.customMode;
       if (observedMode === expectedMode) transitionFrom = null;
       if (!inControl) inControl = m.customMode === 4;
-      else if (armed && expectedMode !== null) inControl = m.customMode === expectedMode || m.customMode === transitionFrom;
+      else if (armed) inControl = m.customMode === (expectedMode ?? 4) || (expectedMode !== null && m.customMode === transitionFrom);
+      if (!inControl) operation?.abort(new Error("flight controller is in control"));
       observe({ armed: stamp(armed), in_control: stamp(inControl), connected: stamp(true) });
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
@@ -304,6 +305,7 @@ export function ardupilot(
             lonInt: Math.round(c.position.longitude * 1e7),
             alt: height?.altitude_m ?? altitude,
           });
+          signal.throwIfAborted();
           await write(m);
           return;
         }
@@ -324,6 +326,7 @@ export function ardupilot(
             vy: 0,
             vz: 0,
           });
+          signal.throwIfAborted();
           await write(m);
           return;
         }
@@ -331,6 +334,9 @@ export function ardupilot(
           await selectMode(c.mode);
           return;
       }
+    },
+    abortCommand() {
+      operation?.abort(new Error("flight controller is in control"));
     },
     stop() {
       stopped = true;

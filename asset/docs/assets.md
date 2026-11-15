@@ -159,8 +159,13 @@ without moving equipment.
 sudo install -m 0640 -o root -g atlas-asset /path/to/config.json /etc/atlas/asset.json
 sudo -u atlas-asset /usr/bin/node /opt/atlas/asset/src/main.ts inspect /etc/atlas/asset.json
 sudo systemd-analyze verify /etc/systemd/system/atlas-asset.service
-sudo systemctl enable --now atlas-asset.service
+sudo systemctl disable atlas-asset.service
+sudo systemctl start atlas-asset.service
 ```
+
+Start the app by hand for each operation. Do not enable it at boot: a companion
+computer reboot during flight must leave it down. An app started while the vehicle
+is armed outside Guided only watches until a person hands control back.
 
 Systemd creates the writable state directory. `systemctl stop atlas-asset`
 requests an orderly shutdown and waits for evidence export. `journalctl -u

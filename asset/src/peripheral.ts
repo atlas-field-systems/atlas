@@ -83,6 +83,7 @@ export function peripheral(
     start(callback) { observe = callback; connect(); },
     tick(now) { if (!stopped && !socket && now >= retryAt) connect(); },
     async command() { throw new Error("acquisition equipment does not move"); },
+    abortCommand() {},
     async stop() { stopped = true; socket?.destroy(); await reading; },
   };
 }
