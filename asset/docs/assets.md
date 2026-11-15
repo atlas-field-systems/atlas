@@ -170,7 +170,8 @@ is armed outside Guided only watches until a person hands control back.
 Systemd creates the writable state directory. `systemctl stop atlas-asset`
 requests an orderly shutdown and waits for evidence export. `journalctl -u
 atlas-asset` shows startup and archive failures. The service has `Restart=no`
-and no shutdown timeout that could kill ZIP export. Boot and service lifecycle
+and no shutdown timeout that could kill ZIP export. The Linux service unit passes
+systemd validation. Installation, boot behavior, and service startup and shutdown
 on a Raspberry Pi have not been verified.
 
 ## Movement module and profiles

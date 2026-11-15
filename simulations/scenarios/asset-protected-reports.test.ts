@@ -26,11 +26,10 @@ scenario({
       equipment: { ...raw.equipment, port: address.port, subsystems: { gps: "GPS" } },
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
     const protocol = new MavLinkProtocolV2(1, 1);
-    let mode = 4, armed = true, pilotArmed = false;
-    const writes: string[] = [];
+    let mode = 4;
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
-    const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: armed ? 129 : 1, customMode: mode, systemStatus: 4, mavlinkVersion: 3 }); out(m); };
+    const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode: mode, systemStatus: 4, mavlinkVersion: 3 }); out(m); };
     const telemetry = () => {
       hb();
       const g = new common.GpsRawInt(); Object.assign(g, { timeUsec: 0n, fixType: 3, lat: -353632620, lon: 1491652370, alt: 584000, eph: 100, epv: 100, vel: 0, cog: 0, satellitesVisible: 10 }); out(g);
@@ -45,24 +44,7 @@ scenario({
       reader.on("data", (packet: MavLinkPacket) => {
         const id = packet.header.msgid;
         if (id === minimal.Heartbeat.MSG_ID) { telemetry(); return; }
-        if (id === common.SetMode.MSG_ID) {
-          const m = packet.protocol.data(packet.payload, common.SetMode);
-          writes.push(`SET_MODE ${m.customMode} pilotArmed=${pilotArmed}`);
-          if (!pilotArmed) {
-            pilotArmed = true; armed = true; mode = 0; hb();
-            setTimeout(() => { mode = m.customMode; hb(); }, 30);
-            return;
-          }
-          mode = m.customMode; hb();
-          return;
-        }
-        if (id === common.CommandLong.MSG_ID) {
-          const m = packet.protocol.data(packet.payload, common.CommandLong);
-          writes.push(`COMMAND_LONG ${m.command} pilotArmed=${pilotArmed}`);
-          const ack = new common.CommandAck(); Object.assign(ack, { command: m.command, result: 0, progress: 0, resultParam2: 0, targetSystem: 255, targetComponent: 190 }); out(ack);
-          return;
-        }
-        if (id === common.SetPositionTargetGlobalInt.MSG_ID) writes.push(`SET_POSITION_TARGET pilotArmed=${pilotArmed}`);
+
       });
       telemetry();
     });
@@ -74,7 +56,7 @@ scenario({
     await w.complete(attempting.promise);
     await w.advance(2000);
     await new Promise(r => setTimeout(r, 60));
-    armed = true; mode = 6; hb();
+    mode = 6; hb();
     const fault = new common.GpsRawInt();
     Object.assign(fault, { timeUsec: 0n, fixType: 1 });
     out(fault);

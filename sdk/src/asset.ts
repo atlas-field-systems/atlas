@@ -56,7 +56,8 @@ const mustArrive = (r: Report) =>
   (r.type === "report.status" &&
     r.kind === "task" &&
     r.task_state !== "active") ||
-  (r.type === "report.failsafe" && r.kind === "response" && r.task_state !== "active");
+  r.type === "report.failsafe" ||
+  (r.type === "report.status" && r.kind === "subsystem" && r.condition !== "healthy");
 const batchLimit = 1000;
 export function createOutbox(
   clock: Clock,
@@ -198,8 +199,8 @@ export function createOutbox(
       recorded(reports);
       const copies = structuredClone(reports);
       (lane === "live" ? live : retained).push(...copies);
-      const sent = waitFor(copies[copies.length - 1]);
-      const ordinary = [...live, ...retained].filter(r => !mustArrive(r) && !protectedReports.has(r));
+      const sent = blocked ? Promise.resolve() : waitFor(copies[copies.length - 1]);
+      const ordinary = [...retained, ...live].filter(r => !mustArrive(r) && !protectedReports.has(r));
       const dropped = new Set(ordinary.slice(0, Math.max(0, ordinary.length - 1024)));
       for (const queue of [live, retained]) {
         for (let i = queue.length - 1; i >= 0; i--) {

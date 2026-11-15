@@ -35,7 +35,11 @@ a disarmed vehicle remains eligible for Takeoff. A different mode while armed
 gives control to the flight controller. The reducer enters watch-only state on
 the measurement itself, before a rejected command can run failure handling.
 The driver also refuses new movement commands while it reports no control.
-Guided mode hands control back. Handback samples rules, starts a tracked Hold,
+Guided mode hands control back unless takeover aborted an unconfirmed Guided
+request. In that case the driver requires a later non-Guided heartbeat followed
+by Guided. The takeover heartbeat itself does not satisfy that requirement.
+A late Guided confirmation alone leaves Atlas watching without commands.
+Handback samples rules, starts a tracked Hold,
 and ends that tick before rule selection. The app calls `Vehicle.tick(now)`;
 the driver owns its heartbeat interval.
 
@@ -290,7 +294,8 @@ resource cleanup and failed-operation archive.
 `log_queue_limit` also bounds ordinary pre-registration reports and the evidence
 write queue. At capacity the app evicts the oldest ordinary waiting report,
 or drops the new ordinary report if only protected evidence remains. Request
-answers, final Task reports, and all failsafe responses are protected and may
+answers, final Task reports, all failsafe reports (including flight-controller
+takeover and handback), and non-healthy subsystem reports are protected and may
 exceed the limit. Each eviction or dropped addition records a pre-registration
 report gap.
 It still offers each acquisition to local report history. Report-history copies

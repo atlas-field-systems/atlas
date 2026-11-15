@@ -322,12 +322,22 @@ restarting idle or contact timers.
 
 ## Open
 
+- A pilot can switch modes and end in Guided before the app receives any
+  heartbeat showing the intervening mode. Atlas cannot detect that switch.
+  If an Atlas Guided request was already on its way, the vehicle can silently
+  end in Atlas's mode even though the pilot intended to take over. The owner
+  still needs to decide how that undetectable case is handled. No new failsafe
+  response is selected here.
+
+
 - After a command other than Land fails or times out, should the Asset stop
   moving and hover in place? The runtime currently does this unless a critical
   fallback starts. This is a question for the owner, not a selected failsafe
   outcome. A failed Land never becomes Hold. The same question includes Return
-  to home failing or timing out during its Land-mode descent; the runtime keeps
-  landing instead of inserting Hold. This adds no new failsafe decision.
+  to home failing or timing out during its Land-mode descent. The runtime sends
+  no Hold then. If the switch into Land itself timed out and the vehicle stayed
+  in Guided, it keeps hovering rather than descending. A rule whose conditions
+  start holding afterwards can start a response. This adds no new failsafe decision.
 
 - Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
   failsafe levels, are tuned in [SITL](../../simulations/docs/asset.md) before the first flight.

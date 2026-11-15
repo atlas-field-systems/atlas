@@ -48,7 +48,7 @@ The [peripheral interface](docs/runtime.md#reporting-only-equipment) carries GPS
 samples, detector Observations, and captured files.
 `safe_action` is the built-in failsafe response. `control_tick_s` sets the
 control-loop interval. `log_queue_limit` bounds each local diagnostic and evidence-write queue, and ordinary pre-registration reports.
-Must-arrive reports may exceed the pre-registration limit.
+The [runtime queue policy](docs/runtime.md#control-loop-failure-containment-and-queue-bounds) defines which reports are protected from this limit.
 The app uses Protocol's validator for all shared values.
 
 The command registry in `src/commands.ts` owns executable kinds, preparation,

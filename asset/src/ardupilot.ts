@@ -34,6 +34,8 @@ export function ardupilot(
   let transitionFrom: number | null = null;
   let observedArmed = false;
   let inControl = true;
+  let pendingGuided = false;
+  let handback: "ready" | "await_other_mode" = "ready";
   let lastHeartbeat = -Infinity;
   const listeners = new Set<(id: number, value: unknown) => void>();
   function wait<T>(
@@ -116,8 +118,16 @@ export function ardupilot(
       observedArmed = armed;
       observedMode = m.customMode;
       if (observedMode === expectedMode) transitionFrom = null;
-      if (!inControl) inControl = m.customMode === 4;
+      if (!inControl) {
+        if (m.customMode !== 4) handback = "ready";
+        inControl = handback === "ready" && m.customMode === 4;
+      }
       else if (armed) inControl = m.customMode === (expectedMode ?? 4) || (expectedMode !== null && m.customMode === transitionFrom);
+      if (!inControl && pendingGuided) {
+        handback = "await_other_mode";
+        pendingGuided = false;
+      }
+      if (observedMode === expectedMode) pendingGuided = false;
       if (!inControl) operation?.abort(new Error("flight controller is in control"));
       observe({ armed: stamp(armed), in_control: stamp(inControl), connected: stamp(true) });
       for (const cb of listeners) cb(id, m);
@@ -229,6 +239,7 @@ export function ardupilot(
       transitionFrom = inControl ? observedMode : null;
       expectedMode = c.mode;
       operation?.abort(new Error("superseded"));
+      pendingGuided = false;
       const current = new AbortController();
       operation = current;
       const signal = current.signal;
@@ -272,6 +283,7 @@ export function ardupilot(
         );
         try {
           signal.throwIfAborted();
+          pendingGuided = number === 4;
           await mode(number);
           await confirmed;
           signal.throwIfAborted();

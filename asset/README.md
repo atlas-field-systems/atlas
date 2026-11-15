@@ -5,7 +5,7 @@ Core, keeps its own state, reports what it observes, and carries out supported
 work. A reporting-only Asset needs no equipment-control commands, task queue, or
 live settings.
 
-**IP runtime, crash lifecycle and Reset ZIP verified in SITL.** Copter execution runs against ArduPilot SITL.
+**IP runtime, app crash lifecycle and Reset ZIP verified in SITL.** Copter execution runs against ArduPilot SITL.
 Reporting-only acquisition runs against real Core with simulated peripherals.
 Hardware verification remains open. The first setup runs on a Raspberry Pi on
 the ground that acts as the companion computer for an ArduPilot quadcopter over
@@ -55,8 +55,8 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- The Linux service unit passes systemd validation. Installation and
-  shutdown on a Raspberry Pi have not been verified.
+- The Linux service unit passes systemd validation. Installation, boot behavior,
+  and service startup and shutdown on a Raspberry Pi have not been verified.
 - The Asset's Fieldlink link is not built. The app connects to Core only over IP.
 - [On-demand local diagnostics](docs/status.md#inspect-local-diagnostics-on-demand) are not built.
 - Peripheral hardware adapters have not been checked on hardware. The [peripheral interface](docs/runtime.md#reporting-only-equipment)

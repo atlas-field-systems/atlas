@@ -55,7 +55,8 @@ export async function startApp(
     function mustKeep(r: LocalReport) {
       return ("request_id" in r && r.request_id !== undefined) ||
         (r.type === "report.status" && r.kind === "task" && r.task_state !== "active") ||
-        (r.type === "report.failsafe" && r.kind === "response");
+        r.type === "report.failsafe" ||
+        (r.type === "report.status" && r.kind === "subsystem" && r.condition !== "healthy");
     }
     function report(reports: LocalReport[]) {
       if (!running) {
