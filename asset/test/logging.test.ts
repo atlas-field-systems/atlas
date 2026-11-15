@@ -46,13 +46,6 @@ test("docs/logging.md: archives preserve versions, gaps, captures and recover in
   now = 2000;
   interrupted.record({ kind: "last", time: now });
   await interrupted.capture({ name: "image.bin", bytes: Uint8Array.of(1, 2, 3) });
-  for (let attempt = 0; attempt < 100; attempt++) {
-    try {
-      const gap = JSON.parse(await readFile(join(config.log_directory, "1000", "gap.json"), "utf8"));
-      if (gap.end === 2000) break;
-    } catch {}
-    await new Promise(resolve => setTimeout(resolve, 10));
-  }
   now = 3000;
   const next = await createLog(config, now, clock);
   await next.close("B", "stopped");

@@ -77,6 +77,7 @@ export function createOutbox(
     blocked: LinkFailure | undefined,
     blockedBatch: Report[] | undefined,
     inFlight = false;
+  let protectedReports = new Set<Report>();
   const listeners = new Set<(result: LinkFailure) => void>();
   const waiting = new Set<() => void>();
   const acknowledged = new Map<Report, () => void>();
@@ -146,6 +147,7 @@ export function createOutbox(
     if (!reports.length && !beat) return;
     beat = false;
     inFlight = true;
+    protectedReports = new Set(queued);
     timer.cancel();
     const priority = reports.some(mustArrive) ? "must_arrive" : "can_skip";
     emit("batch.sent", { count: reports.length, priority });
@@ -157,6 +159,7 @@ export function createOutbox(
         if (settled) return;
         settled = true;
         inFlight = false;
+        protectedReports.clear();
         if (stopped) return release();
         if (result.ok) {
           emit("batch.acknowledged", { count: reports.length });
@@ -195,8 +198,20 @@ export function createOutbox(
       recorded(reports);
       const copies = structuredClone(reports);
       (lane === "live" ? live : retained).push(...copies);
-      if (blocked) return Promise.resolve();
       const sent = waitFor(copies[copies.length - 1]);
+      const ordinary = [...live, ...retained].filter(r => !mustArrive(r) && !protectedReports.has(r));
+      const dropped = new Set(ordinary.slice(0, Math.max(0, ordinary.length - 1024)));
+      for (const queue of [live, retained]) {
+        for (let i = queue.length - 1; i >= 0; i--) {
+          const report = queue[i];
+          if (!dropped.has(report)) continue;
+          queue.splice(i, 1);
+          acknowledged.get(report)?.();
+          acknowledged.delete(report);
+        }
+      }
+      if (dropped.size) emit("reports.gap", { dropped: dropped.size });
+      if (blocked) return Promise.resolve();
       notify();
       return sent;
     },

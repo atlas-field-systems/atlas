@@ -228,7 +228,6 @@ export function reduce(
     state.override = null;
     if (state.settings.run_state !== "running") {
       state.settings = { ...state.settings, run_state: "running" };
-      effects.push({ kind: "settings", settings: state.settings });
     }
     state.execution = null;
     effects.push({ kind: "clear" });
@@ -449,7 +448,8 @@ export function reduce(
         }
       }
       const wasPaused = state.settings.run_state === "paused";
-      state.settings = { ...state.settings, ...event.settings };
+      if (Object.entries(event.settings).some(([key, value]) => Reflect.get(state.settings, key) !== value))
+        state.settings = { ...state.settings, ...event.settings };
       const paused = state.settings.run_state === "paused";
       const w = state.execution;
       if (paused && !wasPaused) {
@@ -599,7 +599,10 @@ export function reduce(
       break;
     }
   }
-  if (event.kind === "settings" && event.request_id !== undefined)
-    effects.push({ kind: "settings", settings: state.settings, request_id: event.request_id });
+  if (state.settings !== previous.settings || (event.kind === "settings" && event.request_id !== undefined)) {
+    const existing = effects.find(e => e.kind === "settings");
+    if (!existing) effects.push({ kind: "settings", settings: state.settings,
+      request_id: event.kind === "settings" ? event.request_id : undefined });
+  }
   return { state, effects };
 }

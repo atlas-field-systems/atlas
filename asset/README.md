@@ -55,10 +55,11 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- The Linux service unit passes systemd validation. Installation, boot, and
+- The Linux service unit passes systemd validation. Installation and
   shutdown on a Raspberry Pi have not been verified.
-- Peripheral hardware adapters and radio transport have not been checked on
-  hardware. The [peripheral interface](docs/runtime.md#reporting-only-equipment)
+- The Asset's Fieldlink link is not built. The app connects to Core only over IP.
+- [On-demand local diagnostics](docs/status.md#inspect-local-diagnostics-on-demand) are not built.
+- Peripheral hardware adapters have not been checked on hardware. The [peripheral interface](docs/runtime.md#reporting-only-equipment)
   accepts equipment output over local TCP. GPS acquisition uses gpsd.
 
 - Capture Task execution and per-link file-selection policy are not built.

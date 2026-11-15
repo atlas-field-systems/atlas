@@ -209,3 +209,15 @@ before waiting for its acknowledgement. Only a batch already out may go
 first; reopening the stream does not wait for retained history to drain.
 Reports keep emission order within each lane and batch. Priority marks a batch,
 never reorders its reports.
+
+The outbox retains at most 1,024 queued ordinary reports across both lanes,
+excluding reports in the current in-flight batch. Overflow drops the oldest
+ordinary live reports first, then ordinary retained reports. Request answers,
+final Task reports and final failsafe responses are never dropped by this bound.
+Protected evidence can exceed the limit. Each drop settles any acknowledgement
+wait for that report and emits `reports.gap` with a dropped count. Consumers
+collect that diagnostic as gap evidence. Local report recording happens before
+overflow selection, so it can retain an unsent report.
+
+After connecting and before registration, `startAsset` refuses an initial
+`link_loss_after_s` at or below Core's advertised `stream_keepalive_s`.

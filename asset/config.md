@@ -47,7 +47,8 @@ seconds, and GCS system ID, `simulated` with a stationary position, or
 The [peripheral interface](docs/runtime.md#reporting-only-equipment) carries GPS
 samples, detector Observations, and captured files.
 `safe_action` is the built-in failsafe response. `control_tick_s` sets the
-control-loop interval. `log_queue_limit` bounds each local diagnostic, evidence-write, and pre-registration report queue.
+control-loop interval. `log_queue_limit` bounds each local diagnostic and evidence-write queue, and ordinary pre-registration reports.
+Must-arrive reports may exceed the pre-registration limit.
 The app uses Protocol's validator for all shared values.
 
 The command registry in `src/commands.ts` owns executable kinds, preparation,
@@ -78,7 +79,7 @@ initial settings. The configured safe action is unused when no commands are list
 | `log_level` | Diagnostic detail | Required `trace`, `debug`, `info`, `warn`, or `error` |
 | `log_directory` | Local operation records | Works while Core is unreachable |
 | `log_message_content` | Trace request and report bodies | Required boolean; credentials removed |
-| `log_queue_limit` | Diagnostic queue capacity | Required positive integer |
+| `log_queue_limit` | Diagnostic, evidence-write, and ordinary pre-registration report capacity | Required positive integer |
 | `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Required positive integers; overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
 | `archive_directory` | [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) destination | Copied off by hand; the app never deletes archives |
 

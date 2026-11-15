@@ -131,6 +131,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     const safe = sanitize(value);
     const kind = String(safe.kind ?? safe.name ?? "diagnostic");
     const time = safe.time ?? safe.at ?? clock.now();
+    if (kind === "reports.gap") drop(time, "SDK report queue full", safe.detail.dropped);
     if (kind === "diagnostics.gap") drop(time, "SDK diagnostic queue full", safe.detail.dropped);
     if (kind === "effect" || (kind === "input" && ["task", "contact", "settings", "cancel", "update"].includes(safe.event?.kind))) retain("history.jsonl", { time, ...safe });
     const level = safe.level ?? (/failed|error|blocked/.test(kind) ? "error" : /lost|gap|closed/.test(kind) ? "warn" : ["input", "effect", "observation", "report"].includes(kind) ? "trace" : "info");

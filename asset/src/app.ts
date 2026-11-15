@@ -52,12 +52,25 @@ export async function startApp(
     );
     type LocalReport = Report extends infer R ? R extends Report ? Omit<R, "asset_id"> : never : never;
     const pendingReports: LocalReport[] = [];
+    function mustKeep(r: LocalReport) {
+      return ("request_id" in r && r.request_id !== undefined) ||
+        (r.type === "report.status" && r.kind === "task" && r.task_state !== "active") ||
+        (r.type === "report.failsafe" && r.kind === "response");
+    }
     function report(reports: LocalReport[]) {
       if (!running) {
         for (const value of reports) log.report(value);
         for (const value of reports) {
-          if (pendingReports.length < config.log_queue_limit) pendingReports.push(value);
-          else log.gap(clock.now(), "pre-registration report queue full");
+          if (pendingReports.length >= config.log_queue_limit) {
+            const discard = pendingReports.findIndex(r => !mustKeep(r));
+            if (discard >= 0) pendingReports.splice(discard, 1);
+            else if (!mustKeep(value)) {
+              log.gap(clock.now(), "pre-registration report queue full");
+              continue;
+            }
+            if (discard >= 0) log.gap(clock.now(), "pre-registration report queue full");
+          }
+          pendingReports.push(value);
         }
         return;
       }
@@ -261,20 +274,11 @@ export async function startApp(
       if (stopped) return;
       try {
         vehicle.tick(clock.now());
-        const before = state.settings;
-        dispatch({
-          kind: "tick",
-          now: clock.now(),
-          hasWork: running?.queue?.peek() !== undefined,
-        });
-        if (before !== state.settings)
-          report([
-            {
-              type: "report.settings",
-              time: clock.now(),
-              settings: state.settings,
-            },
-          ]);
+      } catch (error) {
+        log.record({ kind: "control_failed", time: clock.now(), explanation: String(error) });
+      }
+      try {
+        dispatch({ kind: "tick", now: clock.now(), hasWork: running?.queue?.peek() !== undefined });
         if (canPullTask(state)) {
           const task = running?.queue?.next();
           if (task) dispatch({ kind: "task", task, now: clock.now() });

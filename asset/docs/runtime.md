@@ -99,8 +99,10 @@ Tasks through the existing command-failure rule. A valid immediate settings
 Task ends the superseded execution and holds movement before applying settings.
 Activation emits settings evidence whenever it changes run state. Move To
 updates prepare their new requested speed; Land and Return to home retain speed.
-Settings answers are reducer effects, including retained settings on refusal,
-so the IP adapter sends the decision with the request ID.
+The reducer emits one settings effect for each applied change, including queued
+Tasks and automatic home acquisition. Nested settings Tasks reuse that effect.
+A settings request also receives retained settings on refusal with its request ID.
+The app forwards these effects without a second tick-level settings check.
 
 ## Subsystem evidence
 
@@ -272,8 +274,8 @@ acknowledgements and commanded-mode heartbeat; a refusal rejects that operation.
 
 ## Control-loop failure containment and queue bounds
 
-The control tick catches equipment tick failures and always schedules its next
-iteration unless stopped. Diagnostics contain serialization and filtering errors
+The control tick catches equipment tick failures, still evaluates rules and
+pulls eligible work, and always schedules its next iteration unless stopped. Diagnostics contain serialization and filtering errors
 at the writer boundary and count the failed record as a gap. Equipment errors
 produce `control_failed` diagnostics. Logging cannot escape through dispatch
 before its error handling. The reducer owns the queue-pull predicate; it permits
@@ -285,9 +287,12 @@ registration, refusing a threshold at or below that interval. Equipment control
 continues while the handshake is pending. Startup refusal uses the normal
 resource cleanup and failed-operation archive.
 
-`log_queue_limit` also bounds pre-registration reports and the evidence write
-queue. The app keeps the oldest waiting reports and refuses newer additions
-when full, counting each refused addition as a pre-registration report gap.
+`log_queue_limit` also bounds ordinary pre-registration reports and the evidence
+write queue. At capacity the app evicts the oldest ordinary waiting report,
+or drops the new ordinary report if only protected evidence remains. Request
+answers, final Task reports, and all failsafe responses are protected and may
+exceed the limit. Each eviction or dropped addition records a pre-registration
+report gap.
 It still offers each acquisition to local report history. Report-history copies
 have their own gap reason when the evidence writer is full. Dropping a history
 copy never removes an admitted waiting report from the app or SDK outbox.
