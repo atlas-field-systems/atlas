@@ -9,7 +9,10 @@ scenario({
   async run(w) {
     // Scripted radio: the gateway app and Fieldlink are not built.
     const radio = await radioAsset(w);
-    const ip = await assetApp(w);
+    const ip = await assetApp(w, { config: {
+      description: { commands: [], reports: ["telemetry"] }, initial_settings: {},
+      control_tick_s: 1,
+    } });
     const refused = await w.complete(
       radio.client.call("sendReports", {
         params: { asset_id: ip.asset_id },
