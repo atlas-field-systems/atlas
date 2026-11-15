@@ -4,9 +4,10 @@ Atlas Simulations runs the real Atlas parts together in a simulated world and
 checks that they work end to end. It is where Atlas's integration tests and
 evals live. It is a test harness, not a product: nothing in it ships to a field.
 
-**Built for Core and the SDK.** The first version runs
+**Built for Core, the SDK, and the initial Asset IP runtime.** The first version runs
 [Protocol, Core, and the SDK](../atlas/decision-log.md#build-and-test) together.
 [Core and SDK simulations](docs/core-and-sdk.md) lists its scenarios and fault rules.
+[Asset simulations](docs/asset.md) covers real Asset acquisition and ArduPilot SITL.
 
 ## Real parts, simulated world
 
@@ -16,9 +17,9 @@ it.
 | Real                                              | Simulated                                                                                               |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Core, with its SQLite storage and event log       | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
-| The SDK, used by every simulated caller           | Assets, until the Asset app exists ([simulated Assets](#simulated-assets))                              |
+| The SDK, used by every simulated caller           | Scripted callers in SDK contract scenarios ([simulated Assets](#simulated-assets))                              |
 | Protocol's definitions and its one validator      | Time, so minutes of contact rules run in milliseconds                                                   |
-| Later: the Asset app, the gateway app, Fieldlinks | Equipment, radios, and vehicles (later: ArduPilot SITL)                                                 |
+| The initial Asset IP runtime | Equipment and vehicles, including ArduPilot SITL                                                 |
 |                                                   | Faults in the host: a full disk, a Core crash, a deliberate stop                                        |
 
 A simulation never runs a special build of a part. If a part has to behave
@@ -93,7 +94,7 @@ including that a simulated pass proves nothing about real flight or radios.
 | Doc                                  | Covers                                                                                                              |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | [Core and SDK](docs/core-and-sdk.md) | The first version: Core and the SDK under a faulty network, with simulated Assets, gateways, Plugins, and operators |
-| [Asset](docs/asset.md)               | The Asset app against ArduPilot SITL and simulated equipment, once the Asset app is built                           |
+| [Asset](docs/asset.md)               | The Asset app against ArduPilot SITL and simulated equipment                           |
 
 ## Open
 
@@ -104,7 +105,7 @@ AI agents: read [AGENTS.md](AGENTS.md).
 
 ## Run the Core and SDK scenarios
 
-Use Node 24. Run `npm ci` in Protocol, Core, the SDK, and this folder, in that
+Use Node 24. Run `npm ci` in Protocol, Core, the SDK, Asset, and this folder, in that
 order. Then run `npx tsc --noEmit` and `npm test` here. CI runs the built
 scenarios and fixed fault seeds on each affected pull request.
 The full-disk scenario mounts an 8 MiB tmpfs with passwordless sudo. If the host
