@@ -103,8 +103,13 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   }));
   function retain(path: string, value: unknown) {
     if (path === "history.jsonl" && evidencePending >= config.log_queue_limit) { drop(clock.now(), "history queue full"); return; }
-    evidencePending++;
     const line = JSON.stringify(sanitize(value)) + "\n";
+    if (path === "history.jsonl") {
+      const size = Buffer.byteLength(line);
+      if (bytes + size > config.log_total_limit_bytes) { drop(clock.now(), "total limit"); return; }
+      bytes += size;
+    }
+    evidencePending++;
     evidence = evidence.then(() => appendFile(join(directory, path), line)).catch(error => {
       process.stderr.write(`Asset evidence write failed: ${error}\n`);
       drop(clock.now(), "evidence write failure");

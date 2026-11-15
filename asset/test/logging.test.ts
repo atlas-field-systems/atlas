@@ -163,3 +163,19 @@ test("docs/logging.md: crash recovery preserves a torn final report line as inco
   assert.equal(strFromU8(recovered["reports/history.jsonl"]), '{"type":"report.status","task_id":');
   assert.match(strFromU8(recovered["summary.md"]), /incomplete report line/);
 });
+
+test("docs/logging.md: summary diagnostics obey the total limit while report history stays independent", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-total-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  config.log_total_limit_bytes = 1;
+  const log = await createLog(config, 1000);
+  log.record({ kind: "effect", effect: { kind: "vehicle", payload: "too-large" } });
+  log.report({ type: "report.status", kind: "task", task_id: 1, task_state: "completed", time: 1500 });
+  const zip = unzipSync(await readFile(await log.close("A", "stopped")));
+  assert.equal(zip["history.jsonl"], undefined);
+  assert.match(strFromU8(zip["reports/history.jsonl"]), /completed/);
+  assert.match(strFromU8(zip["summary.md"]), /total limit/);
+});
