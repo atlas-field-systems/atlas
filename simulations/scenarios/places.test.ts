@@ -1,23 +1,21 @@
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset, description } from "../src/actors.ts";
+import { assetApp } from "../src/asset-app.ts";
 import { value } from "../src/world.ts";
 scenario({
   name: "place edits update only online unfinished Tasks when requested",
   checks: ["core/docs/api.md#geo-features"],
   async run(w) {
-    const online = await ipAsset(w, "online");
-    const offline = await ipAsset(w, "offline");
-    for (const asset of [online, offline]) {
-      asset.session.stop();
-      value(
-        await w.complete(
-          asset.client.call("register", {
-            body: { ...description, commands: ["move_to"] },
-          }),
-        ),
-      );
+    async function paused(name: string) {
+      const app = await assetApp(w, { name, equipment: "ardupilot" });
+      const changed = value(await w.complete(w.admin.call("changeSettings", {
+        params: { asset_id: app.asset_id }, body: { settings: { run_state: "paused" } },
+      })));
+      await w.until(() => w.events.some(e => e.kind === "report.settings" && e.record.request_id === changed.event_id));
+      return app;
     }
+    const online = await paused("online");
+    const offline = await paused("offline");
     const place = value(
       await w.complete(
         w.admin.call("createGeofeature", {
@@ -30,40 +28,15 @@ scenario({
       value(
         await w.complete(
           w.admin.call("sendTasks", {
-            params: { asset_id: asset.session.asset_id },
+            params: { asset_id: asset.asset_id },
             body: { tasks: [{ kind: "move_to", geofeature_id }] },
           }),
         ),
       );
-    // Explicit queue evidence means silence does not drop work already held.
     for (const asset of [online, offline])
-      value(
-        await w.complete(
-          asset.client.call("sendReports", {
-            params: { asset_id: asset.session.asset_id },
-            body: {
-              reports: [
-                {
-                  type: "report.status",
-                  time: w.clock.now(),
-                  asset_id: asset.session.asset_id,
-                  kind: "queue",
-                  task_ids: [1],
-                },
-              ],
-            },
-          }),
-        ),
-      );
+      await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.asset_id === asset.asset_id && e.record.kind === "queue" && e.record.task_ids.includes(1)));
+    w.network.cut("offline");
     await w.advance(31000);
-    value(
-      await w.complete(
-        online.client.call("sendReports", {
-          params: { asset_id: online.session.asset_id },
-          body: { reports: [] },
-        }),
-      ),
-    );
     const params = { geofeature_id };
     const body = {
       kind: "point" as const,
@@ -76,7 +49,7 @@ scenario({
       const task = value(
         await w.complete(
           w.admin.call("tasks", {
-            params: { asset_id: asset.session.asset_id },
+            params: { asset_id: asset.asset_id },
           }),
         ),
       ).items[0].task;
@@ -95,16 +68,16 @@ scenario({
       ),
     );
     assert.deepEqual(edit.updated_task_ids, [
-      { asset_id: online.session.asset_id, task_id: 1 },
+      { asset_id: online.asset_id, task_id: 1 },
     ]);
     assert.deepEqual(edit.not_updated_task_ids, [
-      { asset_id: offline.session.asset_id, task_id: 1 },
+      { asset_id: offline.asset_id, task_id: 1 },
     ]);
     value(await w.complete(w.admin.call("deleteGeofeature", { params })));
     const task = value(
       await w.complete(
         w.admin.call("tasks", {
-          params: { asset_id: online.session.asset_id },
+          params: { asset_id: online.asset_id },
         }),
       ),
     ).items[0].task;

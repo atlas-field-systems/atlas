@@ -2,11 +2,12 @@ import { bytesUnder } from "../src/stored.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { follow, type AtlasEvent, type Result } from "@atlas/sdk";
 import { faultRun } from "../src/scenario.ts";
-import { ipAsset, radioAsset, plugin } from "../src/actors.ts";
+import { radioAsset, plugin } from "../src/actors.ts";
+import { assetApp } from "../src/asset-app.ts";
 import { value } from "../src/world.ts";
 import { rules, type RunTrace } from "../src/rules.ts";
 faultRun({
@@ -25,7 +26,7 @@ faultRun({
         result = await w.complete(result.retry());
       return value(result);
     }
-    const assets = [await ipAsset(w, "ip-one"), await ipAsset(w, "ip-two")];
+    const assets = [await assetApp(w, { name: "ip-one", equipment: "ardupilot" }), await assetApp(w, { name: "ip-two", equipment: "ardupilot" })];
     const radio = await radioAsset(w);
     const p = await plugin(w, async (call, reply, id) => {
       await reply.answer({
@@ -53,22 +54,18 @@ faultRun({
       w.trace.inputs.push({
         step,
         seed,
-        asset_id: asset.session.asset_id,
+        asset_id: asset.asset_id,
         operator: step % 2,
         task: "hold",
       });
       const sent = await known(
         operator.call("sendTasks", {
-          params: { asset_id: asset.session.asset_id },
+          params: { asset_id: asset.asset_id },
           body: { tasks: [{ kind: "hold" }] },
         }),
       );
       accepted.push(sent.event_id);
-      await w.until(() =>
-        asset.session.queue!.held().includes(sent.task_ids[0]),
-      );
-      const task = asset.next()!;
-      asset.session.queue!.finish(task.task_id, "completed");
+      await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.asset_id === asset.asset_id && e.record.kind === "task" && e.record.task_id === sent.task_ids[0] && e.record.task_state === "completed"));
       await known(
         operator.call("createGeofeature", {
           body: {
@@ -102,10 +99,9 @@ faultRun({
       }),
     );
     w.network.seed = undefined;
-    for (const asset of assets) await w.complete(asset.session.outbox.flush());
     await w.complete(radio.session.outbox.flush());
     await w.until(() => w.events.some((e) => e.kind === "plugin.result"));
-    for (const asset of assets) asset.session.stop();
+    for (const asset of assets) await asset.stop();
     radio.close();
     p.session.stop();
     await w.advance(31000);
@@ -122,7 +118,7 @@ faultRun({
     }
     const tasks: RunTrace["tasks"] = [];
     for (const asset_id of [
-      ...assets.map((a) => a.session.asset_id),
+      ...assets.map((a) => a.asset_id),
       radio.asset_id,
     ]) {
       const read = value(
@@ -175,17 +171,17 @@ faultRun({
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
+    for (const asset of assets) {
+      const starts = archivedEvents.filter(e => e.kind === "report.status" && e.record.asset_id === asset.asset_id && e.record.kind === "task" && e.record.task_state === "active");
+      assert.equal(asset.equipment?.targets.length, starts.length, "each active Hold reaches equipment exactly once");
+    }
     const trace: RunTrace = {
       reportIds,
       tasks,
       events: archivedEvents,
       starts: [
-        ...assets.flatMap((a) =>
-          a.starts.map((task_id) => ({
-            asset_id: a.session.asset_id,
-            task_id,
-          })),
-        ),
+        ...archivedEvents.flatMap(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_state === "active" && assets.some(a => a.asset_id === e.record.asset_id)
+          ? [{ asset_id: e.record.asset_id, task_id: e.record.task_id }] : []),
         ...radio.starts.map((task_id) => ({
           asset_id: radio.asset_id,
           task_id,
