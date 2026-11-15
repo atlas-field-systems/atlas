@@ -81,6 +81,20 @@ which watches MAVLink heartbeats:
   program, a MAVLink router, or MAVProxy on the same computer. Their
   heartbeats would keep the failsafe from firing.
 
+**Starting values.** A flying Asset starts from these, and its configuration may
+change them. Return to home is preferred over landing where it is.
+
+| When | What happens |
+| --- | --- |
+| Battery below 35% | Atlas returns home. |
+| Battery below 15% | The flight controller returns home on its own, if the vehicle is still out. |
+| Battery below 10% | The vehicle lands where it is: Atlas's critical rule, and the flight controller's own critical level. |
+| 5 seconds without the Atlas app | The flight controller returns home. |
+
+The flight controller's levels sit below Atlas's, so Atlas acts first while it
+runs. Once the flight controller takes over, Atlas only watches, so the flight
+controller carries the last landing itself.
+
 ArduPilot's own rules still apply: the failsafe stays inactive until the first
 heartbeat arrives, does nothing while disarmed, disarms a copter that has
 landed, and leaves the vehicle in the failsafe mode when heartbeats return.
@@ -339,5 +353,3 @@ restarting idle or contact timers.
   to return home or land is covered; other protection actions still need
   equipment checks before first flight.
 
-- Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
-  failsafe levels, are tuned in [SITL](../../simulations/docs/asset.md) before the first flight.
