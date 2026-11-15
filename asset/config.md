@@ -22,7 +22,8 @@ The app validates its configuration before connecting. A local inspection
 command shows the effective configuration with secrets removed: modules,
 equipment, supported commands, reporting policy, and enabled failsafes. It names
 missing or incompatible options without moving equipment. The same check runs in
-CI without hardware. The proposal is to load one local file.
+CI without hardware. Flying configurations require a critical battery rule.
+The proposal is to load one local file.
 
 ## Inspect a configuration
 

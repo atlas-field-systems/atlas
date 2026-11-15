@@ -142,6 +142,12 @@ controller. [Preparation and arming](README.md#prepare-and-take-off) are part of
 that execution. Configured failsafe responses use the same execution as ordinary
 work.
 
+The ArduPilot TCP driver publishes position only with a 3D GPS fix and an
+absolute horizontal position estimate from EKF. Hold uses a position target at
+the measured location with zero velocity in Guided. Each equipment command
+supersedes the preceding operation. Its promise waits for its own command
+acknowledgements and commanded-mode heartbeat; a refusal rejects that operation.
+
 Copters share one command family. Fixed-wing aircraft are not part of the
 current design ([decision log](../../atlas/decision-log.md#operations-and-setup)).
 They will need their own family, because takeoff, travel, and landing mean

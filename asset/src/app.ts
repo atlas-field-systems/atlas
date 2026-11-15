@@ -14,7 +14,7 @@ import { createLog } from "./logging.ts";
 import type { Config } from "./config.ts";
 export async function startApp(
   config: Config,
-  options: { clock?: Clock; fetch?: typeof fetch; vehicle?: Vehicle } = {},
+  options: { clock?: Clock; fetch?: typeof fetch } = {},
 ) {
   const clock = options.clock ?? systemClock;
   let state = initial(config, clock.now());
@@ -28,10 +28,9 @@ export async function startApp(
     observer: (e) => log.record(e),
   });
   const vehicle =
-    options.vehicle ??
-    (config.equipment.kind === "ardupilot"
+    config.equipment.kind === "ardupilot"
       ? ardupilot(config.equipment, clock, log.record)
-      : stationary(config, clock));
+      : stationary(config, clock);
   type Session = Extract<
     Awaited<ReturnType<typeof startAsset>>,
     { ok: true }
@@ -60,6 +59,7 @@ export async function startApp(
         void vehicle.command(effect.command).catch((e) =>
           dispatch({
             kind: "command_failed",
+            execution_id: effect.execution_id,
             now: clock.now(),
             explanation: e instanceof Error ? e.message : "vehicle failed",
           }),
@@ -169,7 +169,10 @@ export async function startApp(
     queue: config.description.commands.length
       ? {
           runNow: (task) => dispatch({ kind: "task", task, now: clock.now() }),
-          stop: (id) => dispatch({ kind: "cancel", id, now: clock.now() }),
+          stop: (id, because) => {
+            if (because !== "now")
+              dispatch({ kind: "cancel", id, now: clock.now() });
+          },
           update: (task) => {
             if (
               state.mode.kind === "running" &&
@@ -231,14 +234,19 @@ export async function startApp(
           },
         ]);
       if (
-        (state.mode.kind === "ready" && state.settings.run_state !== "paused") ||
+        (state.mode.kind === "ready" &&
+          state.settings.run_state !== "paused") ||
         (state.locked && state.mode.kind === "failsafe")
       ) {
         const task = running?.queue?.next();
         if (task) dispatch({ kind: "task", task, now: clock.now() });
       }
     } catch (error) {
-      log.record({ kind: "control_failed", time: clock.now(), explanation: error instanceof Error ? error.message : String(error) });
+      log.record({
+        kind: "control_failed",
+        time: clock.now(),
+        explanation: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       if (!stopped) timer = clock.after(config.control_tick_s * 1000, tick);
     }
@@ -270,9 +278,6 @@ export async function startApp(
   return {
     asset_id: running.asset_id,
     stop,
-    get state() {
-      return state;
-    },
     done: running.done,
   };
 }

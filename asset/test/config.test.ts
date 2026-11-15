@@ -21,7 +21,30 @@ test("config.md: inspection validates Protocol values without equipment access a
   );
 });
 
- test("config.md: link loss must exceed the configured Core keepalive interval", async () => {
- const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
- assert.throws(() => parseConfig({...input, initial_settings: {...input.initial_settings, link_loss_after_s: 10}}), /keepalive/);
- });
+test("config.md: link loss must exceed the configured Core keepalive interval", async () => {
+  const input = JSON.parse(
+    await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"),
+  );
+  assert.throws(
+    () =>
+      parseConfig({
+        ...input,
+        initial_settings: { ...input.initial_settings, link_loss_after_s: 10 },
+      }),
+    /keepalive/,
+  );
+});
+
+test("config.md: flying equipment requires a critical battery rule", async () => {
+  const input = JSON.parse(
+    await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"),
+  );
+  assert.throws(
+    () =>
+      parseConfig({
+        ...input,
+        initial_settings: { ...input.initial_settings, failsafe_policy: [] },
+      }),
+    /critical battery/,
+  );
+});

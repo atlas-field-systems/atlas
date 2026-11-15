@@ -33,26 +33,38 @@ From `asset/`, inspect a configuration with
 The copter equipment connection is MAVLink 2 over TCP. A radio connection
 requires an external serial-to-TCP transport and has not been checked.
 
-The initial runtime executes Takeoff, Move To, and Land where it is. It evaluates
+The initial runtime executes Takeoff, Move To, Guided Hold, pause/resume, and
+Land where it is. Equipment commands supersede earlier operations and report
+their own acknowledgements or refusals. It evaluates
 battery, airborne, idle, and contact-loss conditions locally. The SDK supplies
 ordering and report retries. A configured stationary equipment driver supplies
 one position. The [SITL scenarios](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
-check the initial flight, low battery, and loss of the Core path.
+check Hold followed by Move To, pause/resume, Land now during Move To,
+low battery, and loss of the Core path. They check Core reports and archived
+measurements; they do not establish full conformance.
 
 ## Implementation gaps
 
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
+- The control state still needs the single phase/execution/override model and
+  per-rule duration state. Command failure and timeout share a report path, but
+  stopping the maneuver and retaining critical fallback ownership need work.
+- The command registry still duplicates command kinds and uses shared
+  completion tolerances. Current-state offers, duplicate active Task reports,
+  flight-controller request refusal, blocked outbox/session diagnostics,
+  vehicle ticks, and log sealing still need completion.
 - Boundary and subsystem failsafe conditions, commanded-rule selection,
   complete rule re-arming, priority and fallback cases, and all override answers
   need implementation or simulation coverage.
 - Land at a position and transit altitudes are not executed. Return to home
   currently uses ArduPilot's home, rather than resolving the Atlas setting.
-- Queue cancellation and updates during failsafe, active-place updates, paused
+- Queue cancellation and updates during failsafe, place updates while paused, paused
   timeout accounting, and live policy validation need completion.
-- The driver does not yet recover an equipment TCP connection, gate position
-  on GPS fix quality, or propagate every asynchronous command refusal promptly.
+- The driver does not yet recover an equipment TCP connection. Position is
+  gated on GPS fix and EKF position validity. Refusal and timeout coverage
+  still needs the full equipment-failure scenario matrix.
 - The reporting-only path does not yet support empty settings, continuing
   stationary measurements, GPS peripherals, detector Observations, or files.
 - Startup failure cleanup, local protection before Core joins, service

@@ -6,6 +6,7 @@ import {
   send,
   minimal,
   common,
+  ardupilotmega,
   type MavLinkPacket,
 } from "node-mavlink";
 import type { Clock } from "@atlas/sdk";
@@ -21,12 +22,44 @@ export function ardupilot(
   let observe: (m: Measurements) => void = () => {};
   let targetSystem = 1,
     targetComponent = 1;
+  let location: { latitude: number; longitude: number } | undefined;
   let altitude = 0;
+  let gpsFixed = false;
+  let positionEstimated = false;
   let expectedMode: number | null = null;
   let awaitingMode = false;
-  let stage: "idle" | "guided" | "arming" | "climbing" = "idle";
-  let takeoffAltitude = 0;
-  let failure: Error | undefined;
+  let operation: AbortController | undefined;
+  const listeners = new Set<(id: number, value: unknown) => void>();
+  function wait<T>(
+    signal: AbortSignal,
+    accept: (id: number, value: unknown) => T | undefined,
+  ) {
+    return new Promise<T>((resolve, reject) => {
+      const close = () => {
+        listeners.delete(receive);
+        signal.removeEventListener("abort", abort);
+      };
+      const abort = () => {
+        close();
+        reject(signal.reason);
+      };
+      const receive = (id: number, value: unknown) => {
+        try {
+          const result = accept(id, value);
+          if (result !== undefined) {
+            close();
+            resolve(result);
+          }
+        } catch (error) {
+          close();
+          reject(error);
+        }
+      };
+      listeners.add(receive);
+      signal.addEventListener("abort", abort, { once: true });
+      if (signal.aborted) abort();
+    });
+  }
   const protocol = new MavLinkProtocolV2(config.system_id, 190);
   function write(message: Parameters<typeof send>[1]) {
     if (!socket || !socket.writable)
@@ -69,6 +102,7 @@ export function ardupilot(
     const id = packet.header.msgid;
     if (id === minimal.Heartbeat.MSG_ID) {
       const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
+      for (const cb of listeners) cb(id, m);
       if (m.customMode === expectedMode) awaitingMode = false;
       if (!awaitingMode && m.customMode === 4) expectedMode = 4;
       observe({
@@ -77,21 +111,20 @@ export function ardupilot(
           ? { guided: stamp(m.customMode === expectedMode) }
           : {}),
       });
-      if (stage === "guided" && m.customMode === 4) {
-        stage = "arming";
-        void command(400, [1]).catch((e) => {
-          failure = e;
-        });
-      }
-      if (stage === "arming" && m.baseMode & 128) {
-        stage = "climbing";
-        void command(22, [0, 0, 0, 0, 0, 0, takeoffAltitude]).catch((e) => {
-          failure = e;
-        });
-      }
+    } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
+      const m = packet.protocol.data(
+        packet.payload,
+        ardupilotmega.EkfStatusReport,
+      );
+      positionEstimated = Boolean(m.flags & 16);
+    } else if (id === common.GpsRawInt.MSG_ID) {
+      const m = packet.protocol.data(packet.payload, common.GpsRawInt);
+      gpsFixed = m.fixType >= 3;
     } else if (id === common.GlobalPositionInt.MSG_ID) {
+      if (!gpsFixed || !positionEstimated) return;
       const m = packet.protocol.data(packet.payload, common.GlobalPositionInt);
       altitude = m.relativeAlt / 1000;
+      location = { latitude: m.lat / 1e7, longitude: m.lon / 1e7 };
       observe({
         position: stamp({
           latitude: m.lat / 1e7,
@@ -116,10 +149,7 @@ export function ardupilot(
     } else if (id === common.CommandAck.MSG_ID) {
       const m = packet.protocol.data(packet.payload, common.CommandAck);
       diagnostic(m);
-      if (m.result !== 0 && m.result !== 5)
-        failure = new Error(
-          `ArduPilot command ${m.command} refused (${m.result})`,
-        );
+      for (const cb of listeners) cb(id, m);
     }
   }
   return {
@@ -127,7 +157,7 @@ export function ardupilot(
       observe = cb;
       socket = connect({ host: config.host, port: config.port });
       socket.on("error", (e) => {
-        failure = e;
+        operation?.abort(e);
       });
       const reader = socket
         .pipe(new MavLinkPacketSplitter())
@@ -145,7 +175,7 @@ export function ardupilot(
         void write(rates)
           .then(() => command(511, [245, 200000]))
           .catch((e) => {
-            failure = e;
+            operation?.abort(e);
           });
       });
     },
@@ -161,32 +191,73 @@ export function ardupilot(
         mavlinkVersion: 3,
       });
       void write(m).catch((e) => {
-        failure = e;
+        operation?.abort(e);
       });
     },
     async command(c: VehicleCommand) {
-      if (failure) {
-        const e = failure;
-        failure = undefined;
-        throw e;
-      }
-      stage = "idle";
+      operation?.abort(new Error("superseded"));
+      const current = new AbortController();
+      operation = current;
+      const signal = current.signal;
+      const acknowledged = async (id: number, params: number[] = []) => {
+        const ack = wait(signal, (messageId, value) => {
+          if (
+            messageId !== common.CommandAck.MSG_ID ||
+            !(value instanceof common.CommandAck) ||
+            value.command !== id
+          )
+            return;
+          if (value.result === 5) return;
+          if (value.result !== 0)
+            throw new Error(
+              `ArduPilot command ${id} refused (${value.result})`,
+            );
+          return true;
+        });
+        try {
+          await command(id, params);
+          await ack;
+        } catch (error) {
+          current.abort(error);
+          await ack.catch(() => {});
+          throw error;
+        }
+      };
+      const selectMode = async (number: number) => {
+        const confirmed = wait(signal, (id, value) =>
+          id === minimal.Heartbeat.MSG_ID &&
+          value instanceof minimal.Heartbeat &&
+          value.customMode === number
+            ? true
+            : undefined,
+        );
+        try {
+          await mode(number);
+          await confirmed;
+        } catch (error) {
+          current.abort(error);
+          await confirmed.catch(() => {});
+          throw error;
+        }
+      };
       switch (c.kind) {
         case "takeoff":
           if (c.altitude.altitude_reference !== "launch")
             throw new Error("ArduPilot Takeoff requires launch altitude");
-          takeoffAltitude = c.altitude.altitude_m;
-          stage = "guided";
-          await mode(4);
+          await selectMode(4);
+          await acknowledged(400, [1]);
+          signal.throwIfAborted();
+          await acknowledged(22, [0, 0, 0, 0, 0, 0, c.altitude.altitude_m]);
           return;
         case "move_to": {
+          await selectMode(4);
           const m = new common.SetPositionTargetGlobalInt();
           const height = c.position.altitudes?.find(
             (a) => a.altitude_reference === "launch",
           );
           if (c.position.altitudes?.length && !height)
             throw new Error("ArduPilot Move To requires launch altitude");
-          await command(178, [1, c.speed, -1]);
+          await acknowledged(178, [1, c.speed, -1]);
           Object.assign(m, {
             targetSystem,
             targetComponent,
@@ -199,19 +270,36 @@ export function ardupilot(
           await write(m);
           return;
         }
-        case "hold":
-          await mode(4);
-          await command(17);
+        case "hold": {
+          if (!location)
+            throw new Error("current position unavailable for Hold");
+          await selectMode(4);
+          const m = new common.SetPositionTargetGlobalInt();
+          Object.assign(m, {
+            targetSystem,
+            targetComponent,
+            coordinateFrame: 6,
+            typeMask: 3520,
+            latInt: Math.round(location.latitude * 1e7),
+            lonInt: Math.round(location.longitude * 1e7),
+            alt: altitude,
+            vx: 0,
+            vy: 0,
+            vz: 0,
+          });
+          await write(m);
           return;
+        }
         case "land":
-          await mode(9);
+          await selectMode(9);
           return;
         case "return_to_home":
-          await mode(6);
+          await selectMode(6);
           return;
       }
     },
     stop() {
+      operation?.abort(new Error("stopped"));
       socket?.destroy();
     },
   };

@@ -59,7 +59,12 @@ test("docs/failsafes.md: critical battery replaces Hold immediately, then failed
   );
   const fallback = reduce(
     response.state,
-    { kind: "command_failed", now: 3, explanation: "landing unavailable" },
+    {
+      kind: "command_failed",
+      execution_id: response.state.commandId,
+      now: 3,
+      explanation: "landing unavailable",
+    },
     config,
   );
   assert.ok(
@@ -69,7 +74,12 @@ test("docs/failsafes.md: critical battery replaces Hold immediately, then failed
   );
   const failed = reduce(
     fallback.state,
-    { kind: "command_failed", now: 4, explanation: "return unavailable" },
+    {
+      kind: "command_failed",
+      execution_id: fallback.state.commandId,
+      now: 4,
+      explanation: "return unavailable",
+    },
     config,
   );
   assert.equal(

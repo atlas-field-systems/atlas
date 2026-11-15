@@ -29,6 +29,7 @@ export interface State {
   settings: ComponentsSettings;
   locked: boolean;
   contact: { open: boolean; last_heard: number | null };
+  commandId: number;
   lastHeard: number;
   matching: string[];
   idleSince: number;
@@ -40,10 +41,15 @@ export type Event =
   | { kind: "update"; task: Task; now: number }
   | { kind: "cancel"; id: number; now: number }
   | { kind: "settings"; settings: ComponentsSettings; now: number }
-  | { kind: "command_failed"; explanation: string; now: number }
+  | {
+      kind: "command_failed";
+      explanation: string;
+      now: number;
+      execution_id: number;
+    }
   | { kind: "contact"; contact: State["contact"] };
 export type Effect =
-  | { kind: "vehicle"; command: VehicleCommand }
+  | { kind: "vehicle"; execution_id: number; command: VehicleCommand }
   | {
       kind: "task";
       task: Task;
@@ -67,6 +73,7 @@ export function initial(config: Config, now: number): State {
     settings: config.initial_settings,
     locked: false,
     contact: { open: false, last_heard: now },
+    commandId: 0,
     lastHeard: now,
     matching: [],
     idleSince: now,
@@ -128,6 +135,7 @@ export function reduce(
       else effects.push({ kind: "response", rule, action, status: "active" });
       effects.push({
         kind: "vehicle",
+        execution_id: ++state.commandId,
         command: commands[execution.action.kind].start({
           execution,
           measurements: state.measurements,
@@ -165,15 +173,37 @@ export function reduce(
       return { state, effects };
     case "update": {
       const w = work(state);
-      if (!w?.task || w.task.task_id !== event.task.task_id || state.locked ||
-          event.task.kind === "settings" || event.task.kind === "failsafe") break;
-      const execution = prepare(event.task, state.settings, state.measurements, event.now, config);
+      if (
+        !w?.task ||
+        w.task.task_id !== event.task.task_id ||
+        state.locked ||
+        event.task.kind === "settings" ||
+        event.task.kind === "failsafe"
+      )
+        break;
+      const execution = prepare(
+        event.task,
+        state.settings,
+        state.measurements,
+        event.now,
+        config,
+      );
       execution.started = w.execution.started;
       const updated = { ...w, task: event.task, execution };
-      if (state.mode.kind === "paused") state.mode = { kind: "paused", work: updated };
+      if (state.mode.kind === "paused")
+        state.mode = { kind: "paused", work: updated };
       else {
         state.mode = { kind: "running", work: updated };
-        effects.push({ kind: "vehicle", command: commands[execution.action.kind].start({ execution, measurements: state.measurements, config, now: event.now }) });
+        effects.push({
+          kind: "vehicle",
+          execution_id: ++state.commandId,
+          command: commands[execution.action.kind].start({
+            execution,
+            measurements: state.measurements,
+            config,
+            now: event.now,
+          }),
+        });
       }
       break;
     }
@@ -181,7 +211,11 @@ export function reduce(
       const w = work(state);
       if (w?.task?.task_id === event.id && !state.locked) {
         finish(w, "cancelled");
-        effects.push({ kind: "vehicle", command: { kind: "hold" } });
+        effects.push({
+          kind: "vehicle",
+          execution_id: ++state.commandId,
+          command: { kind: "hold" },
+        });
         state.mode = { kind: "ready" };
       }
       break;
@@ -228,13 +262,18 @@ export function reduce(
       state.settings = { ...state.settings, ...event.settings };
       const w = work(state);
       if (event.settings.run_state === "paused") {
-        effects.push({ kind: "vehicle", command: { kind: "hold" } });
+        effects.push({
+          kind: "vehicle",
+          execution_id: ++state.commandId,
+          command: { kind: "hold" },
+        });
         state.mode = state.locked
           ? { kind: "failsafe", work: w, override: "hold" }
           : { kind: "paused", work: w };
       } else if (event.settings.run_state === "running" && w) {
         effects.push({
           kind: "vehicle",
+          execution_id: ++state.commandId,
           command: commands[w.execution.action.kind].start({
             execution: w.execution,
             measurements: state.measurements,
@@ -250,8 +289,14 @@ export function reduce(
       break;
     }
     case "command_failed": {
+      if (
+        event.execution_id !== state.commandId ||
+        state.mode.kind === "watching"
+      )
+        break;
       const w = work(state);
-      if (w) finish(w, "failed", event.explanation);
+      if (!w) break;
+      finish(w, "failed", event.explanation);
       effects.push({ kind: "clear" });
       state.mode = state.locked
         ? { kind: "failsafe", work: null, override: null }
@@ -303,7 +348,11 @@ export function reduce(
           state.mode = { kind: "failsafe", work: null, override: "hold" };
           effects.push(
             { kind: "autopilot", in_control: false },
-            { kind: "vehicle", command: { kind: "hold" } },
+            {
+              kind: "vehicle",
+              execution_id: ++state.commandId,
+              command: { kind: "hold" },
+            },
           );
         } else {
           if (
@@ -337,11 +386,18 @@ export function reduce(
           now - w.execution.started >
           config.command_timeouts[w.execution.action.kind] * 1000
         ) {
-          finish(w, "failed", "command timeout");
-          effects.push({ kind: "clear" });
-          state.mode = state.locked
-            ? { kind: "failsafe", work: null, override: null }
-            : { kind: "ready" };
+          const failed = reduce(
+            state,
+            {
+              kind: "command_failed",
+              execution_id: state.commandId,
+              explanation: "command timeout",
+              now,
+            },
+            config,
+          );
+          state = failed.state;
+          effects.push(...failed.effects);
         }
       }
       if (event.hasWork || work(state)) state.idleSince = now;

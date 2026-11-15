@@ -12,7 +12,7 @@ import { startApp, parseConfig } from "@atlas/asset";
 import { spawnCore } from "../src/core-process.ts";
 import { value } from "../src/world.ts";
 
-for (const scenario of ["flight", "battery", "link"] as const)
+for (const scenario of ["flight", "battery", "link", "land-now"] as const)
   test(
     `atlas/first-flight.md and asset/docs/failsafes.md: ${scenario} on real Core, Asset and SITL`,
     { timeout: 180000 },
@@ -64,6 +64,13 @@ for (const scenario of ["flight", "battery", "link"] as const)
         offline_after_s: 10,
       });
       cleanup.push(() => core.stop());
+      const until = async (predicate: () => boolean) => {
+        const deadline = Date.now() + 90000;
+        while (!predicate()) {
+          if (Date.now() > deadline) throw new Error(`${scenario} timeout`);
+          await delay(50);
+        }
+      };
       let cookie = "";
       const accountFetch: typeof fetch = async (input, init) => {
         const headers = new Headers(init?.headers);
@@ -85,15 +92,35 @@ for (const scenario of ["flight", "battery", "link"] as const)
       value(await admin.login("ADM", "simulation-password"));
       const issued = value(await admin.call("createAssetKey"));
       if (!("key" in issued)) throw new Error("no key");
-      const linkController = new AbortController();
-      const assetFetch: typeof fetch = (input, init) =>
-        fetch(input, {
+      let linkController = new AbortController();
+      let cutNextFrame = false;
+      let abortedAt: number | undefined;
+      const assetFetch: typeof fetch = async (input, init) => {
+        const response = await fetch(input, {
           ...init,
           signal: AbortSignal.any([
             linkController.signal,
             ...(init?.signal ? [init.signal] : []),
           ]),
         });
+        if (new URL(String(input)).pathname !== "/events" || !response.body)
+          return response;
+        return new Response(
+          response.body.pipeThrough(
+            new TransformStream({
+              transform(chunk, controller) {
+                controller.enqueue(chunk);
+                if (cutNextFrame) {
+                  cutNextFrame = false;
+                  abortedAt = Date.now();
+                  linkController.abort();
+                }
+              },
+            }),
+          ),
+          { status: response.status, headers: response.headers },
+        );
+      };
       const config = parseConfig({
         ...JSON.parse(
           await readFile(
@@ -124,7 +151,7 @@ for (const scenario of ["flight", "battery", "link"] as const)
           response: { kind: "land" },
         });
       if (scenario === "link") {
-        config.initial_settings.link_loss_after_s = 2;
+        config.initial_settings.link_loss_after_s = 12;
         config.initial_settings.failsafe_policy!.push({
           rule_id: "LINK",
           priority: 50,
@@ -139,8 +166,8 @@ for (const scenario of ["flight", "battery", "link"] as const)
       cleanup.push(() => audit.stop());
       const app = await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
-      await delay(12000);
-      if (scenario !== "flight") {
+      await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "battery" || scenario === "link") {
         value(
           await admin.call("sendTasks", {
             params: { asset_id: app.asset_id },
@@ -157,29 +184,99 @@ for (const scenario of ["flight", "battery", "link"] as const)
             },
           }),
         );
-        const until = async (predicate: () => boolean) => {
-          const deadline = Date.now() + 60000;
-          while (!predicate()) {
-            if (Date.now() > deadline) throw new Error(`${scenario} timeout`);
-            await delay(100);
-          }
-        };
-        await until(() => app.state.measurements.airborne?.value === true);
-        if (scenario === "link") linkController.abort();
-        await until(() => app.state.mode.kind === "shutting_down");
-        assert.equal(app.state.locked, true);
-        assert.equal(app.state.measurements.armed?.value, false);
+        if (scenario === "link") await until(() =>
+          events.some(
+            (e) =>
+              e.kind === "report.telemetry" &&
+              e.record.position.altitudes?.some(
+                (a) => a.altitude_reference === "launch" && a.altitude_m >= 3,
+              ),
+          ),
+        );
+        if (scenario === "link") {
+          cutNextFrame = true;
+          await until(() => abortedAt !== undefined);
+          await delay(
+            config.initial_settings.link_loss_after_s! * 1000 +
+              config.control_tick_s * 2000,
+          );
+          linkController = new AbortController();
+        }
+        await until(() =>
+          events.some(
+            (e) =>
+              e.kind === "report.failsafe" &&
+              e.record.kind === "response" &&
+              e.record.rule_id === (scenario === "battery" ? "LB" : "LINK") &&
+              e.record.task_state === "completed",
+          ),
+        );
+        const responses = events.filter(
+          (e) =>
+            e.kind === "report.failsafe" &&
+            e.record.kind === "response" &&
+            e.record.rule_id === (scenario === "battery" ? "LB" : "LINK"),
+        );
+        assert.ok(
+          responses.some(
+            (e) =>
+              e.kind === "report.failsafe" &&
+              e.record.kind === "response" &&
+              e.record.task_state === "active",
+          ),
+        );
         const archive = await app.stop();
         const zipped = unzipSync(await readFile(archive));
-        const diagnostics = Object.entries(zipped)
+        const entries = Object.entries(zipped)
           .filter(([name]) => name.startsWith("diagnostics/"))
-          .map(([, data]) => strFromU8(data))
-          .join("");
-        assert.match(
-          diagnostics,
-          new RegExp(`"rule_id":"${scenario === "battery" ? "LB" : "LINK"}"`),
+          .flatMap(([, data]) =>
+            strFromU8(data)
+              .trim()
+              .split("\n")
+              .filter(Boolean)
+              .map((line) => JSON.parse(line)),
+          );
+        const armed = entries
+          .filter(
+            (entry) =>
+              entry.kind === "input" &&
+              entry.event.kind === "measurements" &&
+              entry.event.measurements.armed,
+          )
+          .at(-1);
+        assert.equal(
+          armed?.event.measurements.armed.value,
+          false,
+          "last archived armed measurement must show disarmed",
         );
-        assert.match(diagnostics, /"task_state":"completed"/);
+        const reports = entries
+          .filter((entry) => entry.kind === "report")
+          .map((entry) => entry.report);
+        const response = reports.find(
+          (r) =>
+            r.type === "report.failsafe" &&
+            r.kind === "response" &&
+            r.rule_id === (scenario === "battery" ? "LB" : "LINK") &&
+            r.task_state === "active",
+        );
+        assert.ok(
+          response,
+          "archive must contain an emitted response, not startup configuration",
+        );
+        assert.ok(
+          reports.some(
+            (r) =>
+              r.type === "report.failsafe" &&
+              r.rule_id === response.rule_id &&
+              r.task_state === "completed",
+          ),
+        );
+        if (scenario === "link")
+          assert.ok(
+            response.time >=
+              abortedAt! + config.initial_settings.link_loss_after_s! * 1000,
+            `LINK started too early at ${response.time - abortedAt!} ms`,
+          );
         console.log(JSON.stringify({ scenario, archive }));
         return;
       }
@@ -195,19 +292,58 @@ for (const scenario of ["flight", "battery", "link"] as const)
                   altitude_reference: "launch",
                 },
               },
+              { kind: "hold" },
               {
                 kind: "move_to",
                 destination: {
-                  latitude: -35.3632,
+                  latitude: -35.3628,
                   longitude: 149.16523,
                   altitudes: [{ altitude_m: 5, altitude_reference: "launch" }],
                 },
               },
-              { kind: "land" },
+              ...(scenario === "land-now" ? [] : [{ kind: "land" as const }]),
             ],
           },
         }),
       );
+      await until(() =>
+        events.some(
+          (e) =>
+            e.kind === "report.status" &&
+            e.record.kind === "task" &&
+            e.record.task_id === 3 &&
+            e.record.task_state === "active",
+        ),
+      );
+      if (scenario === "land-now") {
+        value(
+          await admin.call("sendTasks", {
+            params: { asset_id: app.asset_id },
+            body: { tasks: [{ kind: "land" }], now: true },
+          }),
+        );
+      } else {
+        value(
+          await admin.call("changeSettings", {
+            params: { asset_id: app.asset_id },
+            body: { settings: { run_state: "paused" } },
+          }),
+        );
+        await until(() =>
+          events.some(
+            (e) =>
+              e.kind === "report.settings" &&
+              e.record.settings.run_state === "paused",
+          ),
+        );
+        await delay(500);
+        value(
+          await admin.call("changeSettings", {
+            params: { asset_id: app.asset_id },
+            body: { settings: { run_state: "running" } },
+          }),
+        );
+      }
       async function waitForDone() {
         const end = Date.now() + 100000;
         while (Date.now() < end) {
@@ -221,7 +357,7 @@ for (const scenario of ["flight", "battery", "link"] as const)
               "task_state" in r &&
               r.task_state !== "active",
           );
-          if (finals.length >= 3) return finals;
+          if (finals.length >= 4) return finals;
           await delay(100);
         }
         throw new Error(
@@ -235,7 +371,42 @@ for (const scenario of ["flight", "battery", "link"] as const)
       );
       assert.deepEqual(
         finals.map((r) => ("task_state" in r ? r.task_state : null)),
-        ["completed", "completed", "completed"],
+        scenario === "land-now"
+          ? ["completed", "completed", "cancelled", "completed"]
+          : ["completed", "completed", "completed", "completed"],
+      );
+      if (scenario === "flight")
+        assert.ok(
+          events.some(
+            (e) =>
+              e.kind === "report.telemetry" &&
+              Math.abs(e.record.position.latitude + 35.3628) < 0.00002 &&
+              Math.abs(e.record.position.longitude - 149.16523) < 0.00002,
+          ),
+          "Core receives telemetry near the Move To destination",
+        );
+      const archive = await app.stop();
+      const entries = Object.entries(unzipSync(await readFile(archive)))
+        .filter(([name]) => name.startsWith("diagnostics/"))
+        .flatMap(([, data]) =>
+          strFromU8(data)
+            .trim()
+            .split("\n")
+            .filter(Boolean)
+            .map((line) => JSON.parse(line)),
+        );
+      const armed = entries
+        .filter(
+          (entry) =>
+            entry.kind === "input" &&
+            entry.event.kind === "measurements" &&
+            entry.event.measurements.armed,
+        )
+        .at(-1);
+      assert.equal(
+        armed?.event.measurements.armed.value,
+        false,
+        "last archived armed measurement must show disarmed",
       );
       console.log(JSON.stringify({ tasks, finals }));
     },

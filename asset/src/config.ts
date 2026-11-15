@@ -31,7 +31,10 @@ const command = z.enum([
 const schema = z
   .strictObject({
     asset_key: z.string().min(1),
-    link: z.strictObject({ core_url: z.url(), stream_keepalive_s: positive.default(10) }),
+    link: z.strictObject({
+      core_url: z.url(),
+      stream_keepalive_s: positive.default(10),
+    }),
     description: shared<P["requests.asset"]>("requests.asset"),
     equipment: z.discriminatedUnion("kind", [
       z.strictObject({
@@ -92,9 +95,27 @@ const schema = z
   .superRefine((c, ctx) => {
     const fail = (path: string[], message: string) =>
       ctx.addIssue({ code: "custom", path, message });
-    if (c.initial_settings.link_loss_after_s !== undefined &&
-        c.initial_settings.link_loss_after_s <= c.link.stream_keepalive_s)
-      fail(["initial_settings", "link_loss_after_s"], "must exceed Core stream_keepalive_s");
+    if (
+      c.description.entity_type === "drone" &&
+      !(c.initial_settings.failsafe_policy ?? []).some((r) =>
+        r.conditions.some(
+          (condition) =>
+            condition.kind === "battery_below" && condition.critical,
+        ),
+      )
+    )
+      fail(
+        ["initial_settings", "failsafe_policy"],
+        "flying equipment requires a critical battery rule",
+      );
+    if (
+      c.initial_settings.link_loss_after_s !== undefined &&
+      c.initial_settings.link_loss_after_s <= c.link.stream_keepalive_s
+    )
+      fail(
+        ["initial_settings", "link_loss_after_s"],
+        "must exceed Core stream_keepalive_s",
+      );
     if (c.default_ground_speed_mps > c.max_ground_speed_mps)
       fail(["default_ground_speed_mps"], "exceeds max_ground_speed_mps");
     for (const kind of c.description.commands) {
