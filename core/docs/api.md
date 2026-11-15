@@ -196,10 +196,10 @@ incomplete event and resumes after its last fully handled `event_id`.
 
 ## Operator requests
 
-Core refuses an Asset's `link_loss_after_s` settings request at or below its
+Core refuses an Asset on IP's `link_loss_after_s` settings request at or below its
 configured `stream_keepalive_s` with `409 invalid_link_loss`, including a settings
-Task. This check also applies to radio Assets carried by a gateway, even though
-their Fieldlink supplies contact timing.
+Task. Radio Assets carried by a gateway are exempt because their Fieldlink
+supplies contact timing.
 
 Within a run, the next Task after 9999 is refused with `409 task_ids_exhausted`.
 Cancel for an unknown Task is `404 not_found`; cancel for an ended Task is

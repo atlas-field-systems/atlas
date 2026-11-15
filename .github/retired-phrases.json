@@ -438,5 +438,10 @@
     "phrase": "Atlas cannot detect that switch",
     "why": "Persistent RC-switch positions now reveal pilot takeover even when heartbeats miss the intervening mode.",
     "example": "Atlas cannot detect that switch."
+  },
+  {
+    "phrase": "This check also applies to radio Assets carried by a gateway",
+    "why": "Core stream keepalive constrains only Assets on IP; Fieldlinks supply radio contact timing.",
+    "example": "This check also applies to radio Assets carried by a gateway, even though their Fieldlink supplies contact timing."
   }
 ]
