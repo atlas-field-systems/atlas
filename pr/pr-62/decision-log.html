@@ -380,6 +380,12 @@ back.</p>
 </thead>
 <tbody><tr>
 <td>2026-11-15</td>
+<td>Battery and link protection starts from these values for a flying Asset: Atlas returns home at 35% battery; the flight controller returns home on its own at 15%; landing where it is at 10% is the last resort, by Atlas&#39;s critical rule and by the flight controller. The flight controller returns home after 5 seconds without hearing from the Atlas app. Return to home is preferred over landing in place.</td>
+<td>Starting values for flying Assets; each Asset&#39;s configuration may change them.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#independent-flight-controller-protections">Failsafes</a></td>
+</tr>
+<tr>
+<td>2026-11-15</td>
 <td>When a pilot or the flight controller takes a flying Asset out of Atlas&#39;s mode and a request Atlas had already sent puts it back, the vehicle must not stay in Atlas&#39;s mode. Atlas switches it back to the mode it was taken into and only watches.</td>
 <td>Flight-controller takeover.</td>
 <td><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control">Failsafes</a></td>
