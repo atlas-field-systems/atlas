@@ -189,8 +189,10 @@ export function ardupilot(
       operation = current;
       const signal = current.signal;
       const acknowledged = async (id: number, params: number[] = []) => {
+        let written = false;
         const ack = wait(signal, (messageId, value) => {
           if (
+            !written ||
             messageId !== common.CommandAck.MSG_ID ||
             !(value instanceof common.CommandAck) ||
             value.command !== id
@@ -204,8 +206,12 @@ export function ardupilot(
           return true;
         });
         try {
+          signal.throwIfAborted();
           await command(id, params);
+          signal.throwIfAborted();
+          written = true;
           await ack;
+          signal.throwIfAborted();
         } catch (error) {
           current.abort(error);
           await ack.catch(() => {});
@@ -221,8 +227,10 @@ export function ardupilot(
             : undefined,
         );
         try {
+          signal.throwIfAborted();
           await mode(number);
           await confirmed;
+          signal.throwIfAborted();
         } catch (error) {
           current.abort(error);
           await confirmed.catch(() => {});

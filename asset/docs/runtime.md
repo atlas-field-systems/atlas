@@ -32,3 +32,9 @@ destination step so the vehicle reaches the updated place before descending.
 Land and Return to home override protection belongs to its execution and ends
 when that execution ends. Failure does not sample or re-arm rules. Whether such
 failure should re-arm protection like Hold remains an owner question.
+
+The equipment driver has one abortable command generation. A replacement aborts
+the prior generation. Command ACKs are ignored until that invocation's write
+completes, and an aborted generation cannot send its next step. MAVLink ACKs
+carry a command ID but no invocation ID, so an old ACK arriving after the new
+write completes cannot be distinguished from the new command's ACK.

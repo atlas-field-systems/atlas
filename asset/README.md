@@ -58,7 +58,10 @@ not changes to the behavior specified in the linked pages:
 - Queue cancellation and updates during failsafe, place updates while paused, and live policy validation need completion.
 - The driver does not yet recover an equipment TCP connection. Position is
   gated on GPS fix and EKF position validity. Refusal and timeout coverage
-  still needs the full equipment-failure scenario matrix.
+  still needs the full equipment-failure scenario matrix. ACKs received before
+  the command write completes are ignored. MAVLink cannot attribute an older
+  ACK that arrives after that write to a particular invocation
+  ([driver mechanism](docs/runtime.md)).
 - The reporting-only path does not yet support empty settings, continuing
   stationary measurements, GPS peripherals, detector Observations, or files.
 - Startup failure cleanup, local protection before Core joins, service
