@@ -61,7 +61,11 @@ for (const phase of phases)
         dispatch({ kind: "settings", now: 1, request_id: 42, settings: request === "settings" ? { link_loss_after_s: 50 } : { run_state: request === "pause" ? "paused" : "running" } });
         const answer = effects.find(e => e.kind === "settings");
         assert.ok(answer?.kind === "settings" && answer.request_id === 42);
-        if (table[phase][column] === "refuse") assert.deepEqual(answer.settings, before.settings);
+        if (table[phase][column] === "refuse") {
+          assert.deepEqual(answer.settings, before.settings);
+          assert.deepEqual(state.execution, before.execution);
+          assert.equal(effects.some(e => e.kind === "vehicle"), false);
+        }
         else if (request === "settings") assert.equal(answer.settings.link_loss_after_s, 50);
         else assert.equal(answer.settings.run_state, request === "pause" ? "paused" : "running");
       } else {
@@ -92,8 +96,18 @@ for (const phase of phases)
           assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === 3 && r.task_state === "completed"));
           assert.ok(effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
         }
-        else if (outcome === "run") assert.ok(effects.some(e => e.kind === "vehicle"));
-        else if (outcome === "cancel") assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_state === "cancelled" && r.request_id === 42));
+        else if (outcome === "run") {
+          assert.ok(effects.some(e => e.kind === "vehicle"));
+          assert.equal(state.execution?.execution.kind, request === "now" ? "move_to" : request === "failsafe" ? "land" : request);
+          assert.deepEqual(q.held(), []);
+          for (const id of [1, 2])
+            assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === id && r.task_state === "cancelled"));
+        }
+        else if (outcome === "cancel") {
+          assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_state === "cancelled" && r.request_id === 42));
+          assert.deepEqual(q.held(), request === "cancel queued" ? [] : [2]);
+          assert.deepEqual(state.execution, request === "cancel queued" ? before.execution : null);
+        }
         else if (outcome === "update") {
           assert.equal(state.execution?.execution.destination?.latitude, 3);
           if (phase === "paused") {
