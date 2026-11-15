@@ -8,7 +8,7 @@ import {
 } from "@atlas/sdk";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import { initial, reduce, type Event, type Effect } from "./control.ts";
-import { fresh, type Vehicle } from "./vehicle.ts";
+import { fresh, type Vehicle, type Measurements } from "./vehicle.ts";
 import { ardupilot } from "./ardupilot.ts";
 import { createLog } from "./logging.ts";
 import type { Config } from "./config.ts";
@@ -18,7 +18,7 @@ export async function startApp(
 ) {
   const clock = options.clock ?? systemClock;
   let state = initial(config, clock.now());
-  const log = await createLog(config, clock.now());
+  const log = await createLog(config, clock.now(), clock);
   const client = createClient({
     baseUrl: config.link.core_url,
     credential: { kind: "asset", key: config.asset_key },
@@ -36,11 +36,11 @@ export async function startApp(
     { ok: true }
   >["value"];
   let running: Session | undefined;
-  let stopped = false,
-    lastHeartbeat = -Infinity;
+  let stopped = false;
   let stopping: Promise<string> | undefined;
-  let sentPosition: number | null | undefined,
-    sentBattery: number | null | undefined;
+  const current = currentReports(
+    config, clock, () => state.measurements, () => running?.asset_id,
+  );
   function report(reports: Report[]) {
     for (const r of reports) log.record({ kind: "report", report: r });
     void running?.outbox.add(reports);
@@ -97,18 +97,7 @@ export async function startApp(
         running?.queue?.clear();
         break;
       case "task":
-        if (effect.status === "active")
-          report([
-            {
-              type: "report.status",
-              kind: "task",
-              asset_id: running!.asset_id,
-              time: clock.now(),
-              task_id: effect.task.task_id,
-              task_state: "active",
-            },
-          ]);
-        else
+        if (effect.status !== "active")
           running?.queue?.finish(effect.task.task_id, effect.status, {
             explanation: effect.explanation,
           });
@@ -133,45 +122,6 @@ export async function startApp(
         );
         break;
     }
-  }
-  function current(room: Room) {
-    if (!running) return [];
-    const reports: Report[] = [];
-    const { battery, position } = state.measurements;
-    if (
-      fresh(battery, clock.now(), config.measurement_stale_after_s) !==
-        undefined &&
-      battery &&
-      battery.time !== null &&
-      battery.time !== sentBattery
-    )
-      reports.push({
-        type: "report.battery",
-        asset_id: running.asset_id,
-        time: battery.time,
-        battery_percent: battery.value,
-      });
-    if (
-      fresh(position, clock.now(), config.measurement_stale_after_s) !==
-        undefined &&
-      position &&
-      position.time !== null &&
-      position.time !== sentPosition
-    )
-      reports.push({
-        type: "report.telemetry",
-        asset_id: running.asset_id,
-        time: position.time,
-        position: position.value,
-      });
-    const fits: Report[] = [];
-    for (const r of reports)
-      if (room.size([...fits, r]) <= room.bytes) {
-        fits.push(r);
-        if (r.type === "report.battery") sentBattery = r.time;
-        else sentPosition = r.time;
-      }
-    return fits;
   }
   vehicle.start((measurements) => {
     dispatch({ kind: "measurements", measurements });
@@ -222,17 +172,26 @@ export async function startApp(
     throw new Error(result.explanation);
   }
   running = result.value;
+  running.outbox.onBlocked((failure) => {
+    log.record({ kind: "outbox_blocked", time: clock.now(), failure });
+    process.stderr.write(`Asset outbox blocked: ${failure.error}: ${failure.explanation}\n`);
+  });
+  void running.done.then(
+    end => {
+      log.record({ kind: "session_ended", time: clock.now(), end });
+      if (!stopped) process.stderr.write(`Asset session ended: ${end.reason}\n`);
+    },
+    error => {
+      const explanation = error instanceof Error ? error.message : String(error);
+      log.record({ kind: "session_failed", time: clock.now(), explanation });
+      process.stderr.write(`Asset session failed: ${explanation}\n`);
+    },
+  );
   running.link.onContact((contact) => dispatch({ kind: "contact", contact }));
   let timer: ReturnType<Clock["after"]>;
   function tick() {
     if (stopped) return;
-    if (
-      config.equipment.kind === "ardupilot" &&
-      clock.now() - lastHeartbeat >= config.equipment.heartbeat_s * 1000
-    ) {
-      vehicle.heartbeat();
-      lastHeartbeat = clock.now();
-    }
+    vehicle.tick(clock.now());
     try {
       const before = state.settings;
       dispatch({
@@ -286,6 +245,7 @@ export async function startApp(
       }
       running?.stop();
       client.close();
+      await running?.done.catch(() => {});
       return log.close(running!.asset_id, reason);
     })();
     return stopping;
@@ -309,10 +269,54 @@ function stationary(config: Config, clock: Clock): Vehicle {
           },
         });
     },
-    heartbeat() {},
+    tick() {},
     async command() {
       throw new Error("stationary equipment does not move");
     },
     stop() {},
+  };
+}
+
+export function currentReports(
+  config: Config,
+  clock: Clock,
+  measurements: () => Measurements,
+  assetId: () => string | undefined,
+) {
+  return function current(room: Room) {
+    const asset_id = assetId();
+    if (!asset_id) return [];
+    const reports: Report[] = [];
+    const { battery, position } = measurements();
+    if (
+      fresh(battery, clock.now(), config.measurement_stale_after_s) !==
+        undefined &&
+      battery &&
+      battery.time !== null
+    )
+      reports.push({
+        type: "report.battery",
+        asset_id,
+        time: battery.time,
+        battery_percent: battery.value,
+      });
+    if (
+      fresh(position, clock.now(), config.measurement_stale_after_s) !==
+        undefined &&
+      position &&
+      position.time !== null
+    )
+      reports.push({
+        type: "report.telemetry",
+        asset_id,
+        time: position.time,
+        position: position.value,
+      });
+    const fits: Report[] = [];
+    for (const r of reports)
+      if (room.size([...fits, r]) <= room.bytes) {
+        fits.push(r);
+      }
+    return fits;
   };
 }

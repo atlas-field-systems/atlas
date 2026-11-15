@@ -36,7 +36,10 @@ requires an external serial-to-TCP transport and has not been checked.
 
 The initial runtime executes Takeoff, Move To, Guided Hold, pause/resume, and
 Land at a resolved position, and Return to the Atlas home. Equipment commands supersede earlier operations and report
-their own acknowledgements or refusals. It evaluates
+their own acknowledgements or refusals. The driver owns heartbeat timing and reports generic control ownership.
+Current-state reports retain acquisition times across lost batches. The SDK
+queue supplies Task active and final reports. Blocked outboxes and session
+endings are visible in diagnostics. It evaluates
 battery, airborne, idle, and contact-loss conditions locally. The SDK supplies
 ordering and report retries. A configured stationary equipment driver supplies
 one position. The [SITL scenarios](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
@@ -50,9 +53,6 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- Current-state offers, duplicate active Task reports,
-  blocked outbox/session diagnostics,
-  vehicle ticks, and log sealing still need completion.
 - Boundary and subsystem failsafe conditions, complete rule re-arming, priority and fallback cases, and all override answers
   need implementation or simulation coverage.
 - Queue cancellation and updates during failsafe, place updates while paused, and live policy validation need completion.

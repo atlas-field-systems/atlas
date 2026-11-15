@@ -24,6 +24,9 @@ test("docs/logging.md: the archive uses the injected clock and seals diagnostics
   const zip = unzipSync(await readFile(path));
   assert.match(strFromU8(zip["summary.md"]), /Operation 1000 to 2000/);
   assert.ok(Object.entries(zip).some(([name, bytes]) => name.startsWith("diagnostics/") && strFromU8(bytes).includes('"during"')));
+  assert.doesNotThrow(() => log.record({
+    toJSON() { throw new Error("late record processed after archive"); },
+  }));
   log.record({ kind: "after" });
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(await readdir(config.log_directory), []);

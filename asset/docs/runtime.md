@@ -11,19 +11,32 @@ as a fallback, so a later failure cannot start another return. Command failure
 and timeout replace the failed maneuver with a hold unless a critical fallback
 starts instead. These are runtime mechanisms for the outcomes above.
 
-
 The runtime samples rule conditions when Hold or pause takes effect, including
-measurements received since the last control tick. It evaluates every condition even when a sibling is false. Each rule stores
-one start time per condition. Idle intervals begin on the first idle sample;
+measurements received since the last control tick. It evaluates every condition
+even when a sibling is false. Each rule stores
+one timer per condition. Idle timers reference the same operation-wide idle
+interval, so adding a rule does not restart elapsed idle time. Cloning the
+timing records preserves these shared references. Idle intervals begin on the
+first idle sample;
 contact loss uses the last heard time. Re-arming preserves condition timers.
 The command registry declares whether an override re-arms protection or stands
 until its execution ends. Command timeouts come directly from configuration.
 
-Every registry step names its ArduPilot mode. The driver reports the raw
-heartbeat mode. Control compares a fresh mode observed after its last command
-with the mode that step commanded. A different mode while armed gives control
-to the flight controller. Guided mode hands control back. Handback samples rules,
-starts a tracked Hold, and ends that tick before rule selection.
+Every registry step names its equipment mode. The ArduPilot driver compares
+heartbeat modes with the command it received and reports generic `in_control`
+evidence. A different mode while armed gives control to the flight controller.
+Guided mode hands control back. Handback samples rules, starts a tracked Hold,
+and ends that tick before rule selection. The app calls `Vehicle.tick(now)`;
+the driver owns its heartbeat interval.
+
+The current-state reader offers fresh samples whenever asked, with their
+acquisition times. It keeps no sent flags. The IP sender consumes one change
+notification per offer and waits after acknowledgement; queued reports still
+wake it to drain the queue. A lost batch re-reads current state. Blocked outboxes
+and session endings are logged and printed to standard error, except an
+intentional session stop is only logged. Shutdown waits for the session to end,
+drains diagnostics, seals the writer, then builds the ZIP using the injected
+clock.
 
 Preparation and step errors use one failure path. A place update is prepared
 before replacing the execution. If preparation fails, the prior execution stays

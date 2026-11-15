@@ -525,7 +525,10 @@ export async function startAsset(
           const batch = pending
             ? source.take({ bytes: Infinity, size: () => 0 })
             : undefined;
-          if (batch) batch.settle(await send(batch.reports));
+          if (batch) {
+            pending = false;
+            batch.settle(await send(batch.reports));
+          }
           else if (pending) pending = false;
           else
             await new Promise<void>((resolve) => {

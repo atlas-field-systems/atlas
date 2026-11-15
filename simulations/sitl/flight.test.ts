@@ -609,6 +609,12 @@ for (const scenario of [
         );
       }
       const finals = await waitForDone();
+      for (const final of finals) {
+        if (final.type !== "report.status" || final.kind !== "task") continue;
+        assert.equal(events.filter(e => e.kind === "report.status" && e.record.kind === "task" &&
+          e.record.task_id === final.task_id && e.record.task_state === "active").length, 1,
+          "Core retains one active report before each Task's final outcome");
+      }
       await writeFile(
         join(root, "events.json"),
         JSON.stringify(events, null, 2),
