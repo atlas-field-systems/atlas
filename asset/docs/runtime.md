@@ -8,8 +8,9 @@ override. Each execution tracks suspended time, which does not consume its
 command timeout. Repeating the current run state does not reissue movement. A
 critical fallback keeps the failed response's rule and priority and is marked
 as a fallback, so a later failure cannot start another return. Command failure
-and timeout replace the failed maneuver with a hold unless a critical fallback
-starts instead. These are runtime mechanisms for the outcomes above.
+and timeout share one failure path. Land failure never inserts Hold; the
+existing critical fallback still applies. The unresolved outcome for other
+commands is in [failsafes](failsafes.md#open).
 
 The runtime samples rule conditions when Hold or pause takes effect, including
 measurements received since the last control tick. It evaluates every condition
@@ -51,7 +52,7 @@ destination step so the vehicle reaches the updated place before descending.
 
 Land and Return to home override protection belongs to its execution and ends
 when that execution ends. Pause preserves that protection on the suspended
-execution and resume restores it. If that override fails and the app inserts
+execution and resume restores it. If a Return to home override fails and the app inserts
 Hold, it samples conditions and re-arms protection as for a Hold override.
 A failed critical response or its failed return fallback does not re-arm itself.
 
@@ -87,8 +88,12 @@ the queue unchanged. The helper answers them with current Task or queue evidence
 and the request ID. Known final Task outcomes remain in memory for refused
 cancel answers. Cancels accepted before Task delivery keep their original
 answer even if the Asset enters failsafe state before delivery.
-An immediate settings Task ends the superseded execution and holds movement
-before applying its settings.
+A settings Task validates its policy before stopping current execution. Invalid
+policy ends the Task failed with the validator explanation and clears remaining
+Tasks through the existing command-failure rule. A valid immediate settings
+Task ends the superseded execution and holds movement before applying settings.
+Activation emits settings evidence whenever it changes run state. Move To
+updates prepare their new requested speed; Land and Return to home retain speed.
 Settings answers are reducer effects, including retained settings on refusal,
 so the IP adapter sends the decision with the request ID.
 

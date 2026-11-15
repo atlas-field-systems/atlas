@@ -287,3 +287,8 @@ export function progress(c: Context): "running" | "next" | "completed" {
   if (!steps[c.execution.step]?.complete(c)) return "running";
   return c.execution.step + 1 < steps.length ? "next" : "completed";
 }
+
+export function holdCommand(): VehicleCommand {
+  const step = commands.hold.steps[0];
+  return { ...step.command(), mode: step.mode };
+}

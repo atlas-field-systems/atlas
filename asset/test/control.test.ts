@@ -664,3 +664,42 @@ for (const kind of ["land", "return_to_home"] as const) {
     assert.equal(result.state.execution?.execution.kind, kind);
   });
 }
+
+for (const failure of ["refusal", "timeout"] as const)
+  test(`docs/failsafes.md: Land descent ${failure} never commands Hold`, async () => {
+    const { config, state: start } = await setup();
+    let state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
+    const result = reduce(state, failure === "refusal"
+      ? { kind: "command_failed", execution_id: state.commandId, explanation: "Land refused", now: 1 }
+      : { kind: "tick", now: config.command_timeouts.land! * 1000 + 1, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "task" && e.status === "failed"));
+    assert.equal(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"), false);
+  });
+
+test("docs/failsafes.md: invalid settings Task fails before stopping current work", async () => {
+  const { config, state: start } = await setup();
+  const state = reduce(start, { kind: "task", task: hold, now: 0 }, config).state;
+  const policy = config.initial_settings.failsafe_policy!;
+  const result = reduce(state, { kind: "task", now: 1, task: {
+    ...hold, task_id: 2, kind: "settings", settings: { failsafe_policy: [...policy, ...policy] },
+  } }, config);
+  assert.deepEqual(result.state.execution, state.execution);
+  assert.ok(result.effects.some(e => e.kind === "task" && e.task.task_id === 2 && e.status === "failed" && e.explanation?.includes("duplicate rule_id")));
+  assert.ok(result.effects.some(e => e.kind === "clear"));
+  assert.equal(result.effects.some(e => e.kind === "vehicle"), false);
+});
+
+test("docs/failsafes.md: Fail-safe while paused reports running settings", async () => {
+  const { config, state } = await setup();
+  state.settings = { ...state.settings, run_state: "paused" };
+  const result = reduce(state, { kind: "task", now: 1, task: { ...hold, kind: "failsafe" } }, config);
+  assert.ok(result.effects.some(e => e.kind === "settings" && e.settings.run_state === "running"));
+});
+
+test("docs/README.md: active Move To update applies its new speed", async () => {
+  const { config, state: start } = await setup();
+  const task = { ...hold, kind: "move_to", destination: { latitude: 2, longitude: 2 }, ground_speed_mps: 1 } as const;
+  const state = reduce(start, { kind: "task", task, now: 0 }, config).state;
+  const result = reduce(state, { kind: "update", task: { ...task, ground_speed_mps: 2 }, now: 1 }, config);
+  assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "move_to" && e.command.speed === 2));
+});
