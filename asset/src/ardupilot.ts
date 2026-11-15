@@ -27,6 +27,9 @@ export function ardupilot(
   let gpsFixed = false;
   let positionEstimated = false;
   let operation: AbortController | undefined;
+  let expectedMode: number | null = null;
+  let inControl = true;
+  let lastHeartbeat = -Infinity;
   const listeners = new Set<(id: number, value: unknown) => void>();
   function wait<T>(
     signal: AbortSignal,
@@ -99,7 +102,10 @@ export function ardupilot(
     if (id === minimal.Heartbeat.MSG_ID) {
       const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
       for (const cb of listeners) cb(id, m);
-      observe({ armed: stamp(Boolean(m.baseMode & 128)), mode: stamp(m.customMode) });
+      const armed = Boolean(m.baseMode & 128);
+      if (!inControl) inControl = m.customMode === 4;
+      else if (armed && expectedMode !== null) inControl = m.customMode === expectedMode;
+      observe({ armed: stamp(armed), in_control: stamp(inControl) });
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
         packet.payload,
@@ -168,8 +174,9 @@ export function ardupilot(
           });
       });
     },
-    heartbeat() {
-      if (!socket?.writable) return;
+    tick(now) {
+      if (!socket?.writable || now - lastHeartbeat < config.heartbeat_s * 1000) return;
+      lastHeartbeat = now;
       const m = new minimal.Heartbeat();
       Object.assign(m, {
         type: 6,
@@ -184,6 +191,7 @@ export function ardupilot(
       });
     },
     async command(c: VehicleCommand) {
+      expectedMode = c.mode;
       operation?.abort(new Error("superseded"));
       const current = new AbortController();
       operation = current;

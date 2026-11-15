@@ -548,7 +548,7 @@ for (const condition of ["battery", "contact"] as const)
     state.settings.failsafe_policy = [{ rule_id: "NEW", priority: 50,
       conditions: condition === "battery" ? [{ kind: "battery_below", battery_percent: 30 }] : [{ kind: "contact_lost" }],
       response: { kind: "land" } }];
-    state.measurements.mode = { value: 4, source: "vehicle", time: 12000 };
+    state.measurements.in_control = { value: true, source: "vehicle", time: 12000 };
     state.measurements.position!.time = 12000;
     state.measurements.armed!.time = 12000;
     state.measurements.battery = { value: 20, source: "vehicle", time: 12000 };
@@ -586,7 +586,7 @@ test("docs/failsafes.md: repeated running is not an override", async () => {
 test("docs/failsafes.md: unexpected raw mode during a pending Land gives control to the flight controller", async () => {
   const { config, state: start } = await setup();
   const state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
-  state.measurements.mode = { value: 6, source: "vehicle", time: 1 };
+  state.measurements.in_control = { value: false, source: "vehicle", time: 1 };
   const result = reduce(state, { kind: "tick", now: 1, hasWork: true }, config);
   assert.equal(result.state.phase, "flight_controller");
   assert.equal(result.effects.some(e => e.kind === "vehicle"), false);
@@ -623,4 +623,15 @@ test("docs/failsafes.md: idle duration starts with the idle interval and runs wh
   assert.equal(early.state.phase, "ordinary", "five seconds have not elapsed since idle began");
   const fired = reduce(early.state, { kind: "tick", now: 11000, hasWork: false }, config);
   assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "IDLE" && e.status === "active"));
+});
+
+test("docs/failsafes.md: a newly added idle rule uses the existing idle interval", async () => {
+  const { config, state: start } = await setup();
+  start.settings.failsafe_policy = [];
+  let state = reduce(start, { kind: "tick", now: 1000, hasWork: false }, config).state;
+  state = reduce(state, { kind: "settings", now: 4000, settings: { failsafe_policy: [{
+    rule_id: "NEW", priority: 1, conditions: [{ kind: "idle", for_s: 5 }], response: { kind: "hold" },
+  }] } }, config).state;
+  const fired = reduce(state, { kind: "tick", now: 5000, hasWork: false }, config);
+  assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "NEW"));
 });

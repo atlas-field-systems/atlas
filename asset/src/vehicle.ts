@@ -9,14 +9,14 @@ export interface Measurements {
   battery?: Measurement<number>;
   armed?: Measurement<boolean>;
   airborne?: Measurement<boolean>;
-  mode?: Measurement<number>;
+  in_control?: Measurement<boolean>;
   speed?: Measurement<number>;
 }
 export type { VehicleCommand } from "./commands.ts";
 import type { VehicleCommand } from "./commands.ts";
 export interface Vehicle {
   start(observe: (measurements: Measurements) => void): void;
-  heartbeat(): void;
+  tick(now: number): void;
   command(command: VehicleCommand): Promise<void>;
   stop(): void;
 }

@@ -7,7 +7,7 @@ import { systemClock } from "@atlas/sdk";
 import { ardupilot } from "../src/ardupilot.ts";
 import type { Measurements, VehicleCommand } from "../src/vehicle.ts";
 
-test("docs/failsafes.md: raw mode remains visible while Land confirmation is pending", { timeout: 5000 }, async (t) => {
+test("docs/failsafes.md: flight-controller takeover remains visible while Land confirmation is pending", { timeout: 5000 }, async (t) => {
   const server = createServer();
   let peer: Socket | undefined;
   t.after(() => { peer?.destroy(); server.close(); });
@@ -32,7 +32,7 @@ test("docs/failsafes.md: raw mode remains visible while Land confirmation is pen
   await heartbeat(4);
   const pending = vehicle.command({ kind: "land", mode: 9, destination: undefined, transit_altitude: undefined }).catch(() => {});
   const observed = await heartbeat(6);
-  assert.equal(observed.mode?.value, 6);
+  assert.equal(observed.in_control?.value, false);
   vehicle.stop();
   await pending;
 });

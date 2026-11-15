@@ -26,15 +26,14 @@ export interface State {
   phase: "ordinary" | "failsafe" | "flight_controller" | "stopping";
   execution: Work | null;
   override: "rearm" | "stand" | "pause" | null;
+  idle: { since: number | null };
   rules: Record<
     string,
-    { holds: boolean; conditions: Record<string, number | null> }
+    { holds: boolean; conditions: Record<string, { since: number | null }> }
   >;
   measurements: Measurements;
   settings: ComponentsSettings;
   commandId: number;
-  commandedMode: number | null;
-  commandedAt: number;
   lastHeard: number;
 }
 export type Event =
@@ -77,19 +76,19 @@ export type Effect =
   | { kind: "shutdown" }
   | { kind: "diagnostic"; explanation: string };
 export function initial(config: Config, now: number): State {
+  const idle: { since: number | null } = { since: now };
   return {
     phase: "ordinary",
     execution: null,
     override: null,
+    idle,
     rules: Object.fromEntries((config.initial_settings.failsafe_policy ?? []).map(rule => [rule.rule_id, {
       holds: false,
-      conditions: Object.fromEntries(rule.conditions.filter(c => c.kind === "idle").map(c => [c.kind, now])),
+      conditions: Object.fromEntries(rule.conditions.filter(c => c.kind === "idle").map(c => [c.kind, idle])),
     }])),
     measurements: {},
     settings: config.initial_settings,
     commandId: 0,
-    commandedMode: null,
-    commandedAt: now,
     lastHeard: now,
   };
 }
@@ -101,12 +100,8 @@ export function reduce(
   event: Event,
   config: Config,
 ): { state: State; effects: Effect[] } {
-  let state: State = {
-    ...previous,
-    rules: Object.fromEntries(
-      Object.entries(previous.rules).map(([id, r]) => [id, { ...r, conditions: { ...r.conditions } }]),
-    ),
-  };
+  const timing = structuredClone({ rules: previous.rules, idle: previous.idle });
+  let state: State = { ...previous, ...timing };
   const effects: Effect[] = [];
   function finish(
     w: Work,
@@ -257,8 +252,9 @@ export function reduce(
         case "subsystem":
           holds = false;
       }
-      const since = holds ? (record.conditions[key] ?? now) : null;
-      record.conditions[key] = since;
+      const timer = record.conditions[key] ??= c.kind === "idle" ? state.idle : { since: null };
+      if (c.kind !== "idle") timer.since = holds ? (timer.since ?? now) : null;
+      const since = holds ? timer.since : null;
       return since !== null && (!("for_s" in c) || now - since >= (c.for_s ?? 0) * 1000);
     }).every(Boolean);
   }
@@ -446,10 +442,7 @@ export function reduce(
         const p = get(state.measurements.position);
         if (p) state.settings = { ...state.settings, home_position: p };
       }
-      const mode = get(state.measurements.mode);
-      const controlled = mode === undefined || state.commandedMode === null ||
-        (state.measurements.mode?.time ?? 0) <= state.commandedAt
-        ? undefined : mode === state.commandedMode;
+      const controlled = get(state.measurements.in_control);
       if (
         controlled === false &&
         get(state.measurements.armed) === true &&
@@ -466,7 +459,7 @@ export function reduce(
         );
       }
       if (state.phase === "flight_controller") {
-        if (mode === 4) {
+        if (controlled === true) {
           state.phase = "failsafe";
           state.override = "rearm";
           rearm(event.now);
@@ -519,6 +512,7 @@ export function reduce(
           effects.push(...failed.effects);
         }
       }
+      state.idle.since = event.hasWork || work(state) ? null : (state.idle.since ?? now);
       const started = new Set<string>();
       const matching = (state.settings.failsafe_policy ?? [])
         .filter((r) => {
@@ -563,10 +557,6 @@ export function reduce(
       }
       break;
     }
-  }
-  for (const effect of effects) if (effect.kind === "vehicle") {
-    state.commandedMode = effect.command.mode;
-    if ("now" in event) state.commandedAt = event.now;
   }
   return { state, effects };
 }
