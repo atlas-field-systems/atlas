@@ -40,6 +40,11 @@ request. In that case the driver requires a later non-Guided heartbeat followed
 by Guided. The takeover heartbeat itself does not satisfy that requirement.
 A late Guided confirmation triggers a corrective SET_MODE to the takeover
 mode. This correction is equipment recovery, not an Atlas Task or response.
+While a correction is awaiting confirmation, repeated critical Guided
+heartbeats for the same battery action preserve that pending correction and
+send no additional SET_MODE. A changed battery action can select a new mode.
+After confirmation, a later Guided heartbeat can trigger another correction.
+There is no timed retry of an unconfirmed corrective selection.
 Its confirmation does not count as a person's mode cycle. Another mode followed
 by Guided is required for handback.
 
@@ -48,7 +53,10 @@ PARAM_REQUEST_READ, retrying missing replies on its heartbeat interval. It
 watches RC_CHANNELS on the configured channel and maps its PWM into ArduPilot's
 six switch positions. The first sample establishes a baseline. A changed
 position selecting a non-Guided mode while armed takes control away immediately,
-even if no heartbeat showed that mode. A zero mode-switch channel disables
+even if no heartbeat showed that mode. Takeover starts when the driver
+receives the changed RC report. A pilot action whose RC report is still in
+transit cannot yet stop an Atlas write. Receipt aborts the command generation
+before any later movement write. A zero mode-switch channel disables
 this path. Atlas never writes RC overrides or changes these parameters.
 
 An armed HEARTBEAT with MAV_STATE_CRITICAL keeps Atlas watching, including

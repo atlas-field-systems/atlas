@@ -4,6 +4,7 @@ import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { minimal, common, ardupilotmega, MavLinkPacketParser, MavLinkPacketSplitter, MavLinkProtocolV2, send, type MavLinkPacket } from "node-mavlink";
+import { equipmentWire } from "../src/equipment-wire.ts";
 import { scenario } from "../src/scenario.ts";
 import { value } from "../src/world.ts";
 import { startApp, parseConfig } from "../../asset/src/index.ts";
@@ -29,6 +30,18 @@ scenario({
     let lateGuided = false;
     let rcReleased = false;
     const writes: string[] = [];
+    let takeoverReceived = false;
+    const afterReceipt: string[] = [];
+    w.onClose(equipmentWire(address.port, (direction, packet) => {
+      if (direction === "received" && packet.header.msgid === common.RcChannels.MSG_ID) {
+        const rc = packet.protocol.data(packet.payload, common.RcChannels);
+        if (rc.chan5Raw === 1450) takeoverReceived = true;
+      }
+      if (direction !== "sent" || !takeoverReceived) return;
+      if (packet.header.msgid === common.SetMode.MSG_ID) afterReceipt.push(`SET_MODE ${packet.protocol.data(packet.payload, common.SetMode).customMode}`);
+      if (packet.header.msgid === common.CommandLong.MSG_ID) afterReceipt.push("COMMAND_LONG");
+      if (packet.header.msgid === common.SetPositionTargetGlobalInt.MSG_ID) afterReceipt.push("SET_POSITION_TARGET");
+    }));
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
     const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: armed ? 129 : 1, customMode: mode, systemStatus: 4, mavlinkVersion: 3 }); out(m); };
@@ -96,7 +109,9 @@ scenario({
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");
       assert.equal(mode, 5, "Atlas restores the pilot mode after its late Guided request");
-      assert.deepEqual(writes.filter(s => s.endsWith("pilotArmed=true")), ["SET_MODE 5 pilotArmed=true", "SET_MODE 5 pilotArmed=true"], "only the corrective mode selection is sent");
+      assert.ok(takeoverReceived, "the app received the changed RC position");
+      assert.ok(writes.includes("SET_POSITION_TARGET pilotArmed=true"), "the delayed RC report permits a target before receipt");
+      assert.deepEqual(afterReceipt, ["SET_MODE 5", "SET_MODE 5"], "only corrective selections are sent after receiving takeover evidence");
       mode = 2; hb();
       await new Promise(r => setTimeout(r, 60)); await w.advance(1000);
       mode = 4; hb();
