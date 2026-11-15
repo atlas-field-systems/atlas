@@ -13,8 +13,11 @@ starts instead. These are runtime mechanisms for the outcomes above.
 
 
 The runtime samples rule conditions when Hold or pause takes effect, including
-measurements received since the last control tick. It keeps each matching
-rule's existing condition start time.
+measurements received since the last control tick. It evaluates every condition even when a sibling is false. Each rule stores
+one start time per condition. Idle intervals begin on the first idle sample;
+contact loss uses the last heard time. Re-arming preserves condition timers.
+The command registry declares whether an override re-arms protection or stands
+until its execution ends. Command timeouts come directly from configuration.
 
 Every registry step names its ArduPilot mode. The driver reports the raw
 heartbeat mode. Control compares a fresh mode observed after its last command

@@ -12,38 +12,30 @@ import {
   vehicleStep,
   progress,
   type Execution,
-  type OverrideKind,
 } from "./commands.ts";
 import { fresh, type Measurements, type VehicleCommand } from "./vehicle.ts";
 type Work = {
   execution: Execution;
-  override: OverrideKind | null;
   pausedAt: number | null;
   pausedMs: number;
   task: Task | null;
   rule: ComponentsFailsafeRule | null;
   fallback: boolean;
 };
-type Override = {
-  kind: OverrideKind | "pause";
-  request_id?: number;
-};
 export interface State {
   phase: "ordinary" | "failsafe" | "flight_controller" | "stopping";
   execution: Work | null;
-  override: Override | null;
+  override: "rearm" | "stand" | "pause" | null;
   rules: Record<
     string,
-    { holds: boolean; armed: boolean; since: number | null }
+    { holds: boolean; conditions: Record<string, number | null> }
   >;
   measurements: Measurements;
   settings: ComponentsSettings;
-  contact: { open: boolean; last_heard: number | null };
   commandId: number;
   commandedMode: number | null;
   commandedAt: number;
   lastHeard: number;
-  idleSince: number;
 }
 export type Event =
   | { kind: "tick"; now: number; hasWork: boolean }
@@ -63,7 +55,7 @@ export type Event =
       now: number;
       execution_id: number;
     }
-  | { kind: "contact"; contact: State["contact"] };
+  | { kind: "contact"; contact: { open: boolean; last_heard: number | null } };
 export type Effect =
   | { kind: "vehicle"; execution_id: number; command: VehicleCommand }
   | {
@@ -89,15 +81,16 @@ export function initial(config: Config, now: number): State {
     phase: "ordinary",
     execution: null,
     override: null,
-    rules: {},
+    rules: Object.fromEntries((config.initial_settings.failsafe_policy ?? []).map(rule => [rule.rule_id, {
+      holds: false,
+      conditions: Object.fromEntries(rule.conditions.filter(c => c.kind === "idle").map(c => [c.kind, now])),
+    }])),
     measurements: {},
     settings: config.initial_settings,
-    contact: { open: false, last_heard: now },
     commandId: 0,
     commandedMode: null,
     commandedAt: now,
     lastHeard: now,
-    idleSince: now,
   };
 }
 function work(s: State) {
@@ -111,7 +104,7 @@ export function reduce(
   let state: State = {
     ...previous,
     rules: Object.fromEntries(
-      Object.entries(previous.rules).map(([id, r]) => [id, { ...r }]),
+      Object.entries(previous.rules).map(([id, r]) => [id, { ...r, conditions: { ...r.conditions } }]),
     ),
   };
   const effects: Effect[] = [];
@@ -120,7 +113,7 @@ export function reduce(
     status: "completed" | "failed" | "cancelled",
     explanation?: string,
   ) {
-    if (w.override && w.override !== "hold") state.override = null;
+    if (state.override === "stand") state.override = null;
     if (w.task)
       effects.push({ kind: "task", task: w.task, status, explanation });
     else
@@ -151,7 +144,6 @@ export function reduce(
         execution,
         task,
         rule,
-        override: state.phase === "failsafe" && task && isOverride(task.kind) ? task.kind : null,
         pausedAt: null,
         pausedMs: 0,
         fallback,
@@ -185,7 +177,7 @@ export function reduce(
     else effects.push({ kind: "response", rule, action, status: "failed", explanation });
     effects.push({ kind: "clear" });
     state.execution = null;
-    if (state.override?.kind === "land" || state.override?.kind === "return_to_home") state.override = null;
+    if (state.override === "stand") state.override = null;
     if (criticalFallback(rule, action, now, fallback))
       activate({ kind: "return_to_home" }, rule, now, true);
     else effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: { kind: "hold", mode: 4 } });
@@ -232,41 +224,48 @@ export function reduce(
     rule: ComponentsFailsafeRule,
     now: number,
     commanded = false,
+    hasWork = false,
   ): boolean {
     const get = <T>(m: Parameters<typeof fresh<T>>[0]) =>
       fresh(m, now, config.measurement_stale_after_s);
-    return rule.conditions.every((c) => {
+    const record = state.rules[rule.rule_id] ??= { holds: false, conditions: {} };
+    return rule.conditions.map((c) => {
+      const key = c.kind === "idle" ? c.kind : JSON.stringify(c);
+      let holds: boolean;
       switch (c.kind) {
         case "battery_below": {
           const b = get(state.measurements.battery);
-          return b !== undefined && b < c.battery_percent;
+          holds = b !== undefined && b < c.battery_percent;
+          break;
         }
         case "airborne":
-          return get(state.measurements.airborne) === true;
+          holds = get(state.measurements.airborne) === true;
+          break;
         case "contact_lost":
-          return (
+          holds = (
             now - state.lastHeard >=
             (state.settings.link_loss_after_s ?? Infinity) * 1000
           );
+          break;
         case "idle":
-          return !work(state) && now - state.idleSince >= c.for_s * 1000;
+          holds = !work(state) && !hasWork;
+          break;
         case "commanded":
-          return commanded;
+          holds = commanded;
+          break;
         case "outside_area":
         case "subsystem":
-          return false;
+          holds = false;
       }
-    });
+      const since = holds ? (record.conditions[key] ?? now) : null;
+      record.conditions[key] = since;
+      return since !== null && (!("for_s" in c) || now - since >= (c.for_s ?? 0) * 1000);
+    }).every(Boolean);
   }
   function rearm(now: number) {
     for (const rule of state.settings.failsafe_policy ?? []) {
-      const prior = state.rules[rule.rule_id];
       const holds = matches(rule, now);
-      state.rules[rule.rule_id] = {
-        holds,
-        armed: true,
-        since: holds ? (prior?.since ?? now) : null,
-      };
+      state.rules[rule.rule_id]!.holds = holds;
     }
   }
   function issue(w: Work, now: number) {
@@ -284,7 +283,6 @@ export function reduce(
       state.measurements = { ...state.measurements, ...event.measurements };
       return { state, effects };
     case "contact":
-      state.contact = event.contact;
       if (event.contact.last_heard !== null)
         state.lastHeard = Math.max(state.lastHeard, event.contact.last_heard);
       return { state, effects };
@@ -383,8 +381,8 @@ export function reduce(
           if (event.request_id !== undefined)
             effects.push({ kind: "override", request_id: event.request_id });
           if (isOverride(task.kind))
-            state.override = { kind: task.kind, request_id: event.request_id };
-          if (task.kind === "hold") rearm(event.now);
+            state.override = commands[task.kind].override;
+          if (isOverride(task.kind) && commands[task.kind].override === "rearm") rearm(event.now);
         }
         start(task, task, null, event.now);
       }
@@ -412,11 +410,11 @@ export function reduce(
           command: { kind: "hold", mode: 4 },
         });
         if (state.phase === "failsafe") {
-          state.override = { kind: "pause", request_id: event.request_id };
+          state.override = "pause";
           rearm(event.now);
         }
       } else if (!paused && wasPaused) {
-        if (state.override?.kind === "pause") state.override = null;
+        if (state.override === "pause") state.override = null;
         if (w && w.pausedAt !== null)
           issue(
             {
@@ -470,7 +468,7 @@ export function reduce(
       if (state.phase === "flight_controller") {
         if (mode === 4) {
           state.phase = "failsafe";
-          state.override = { kind: "hold" };
+          state.override = "rearm";
           rearm(event.now);
           effects.push({ kind: "autopilot", in_control: false });
           start({ kind: "hold" }, null, null, now);
@@ -505,7 +503,7 @@ export function reduce(
           state.execution = null;
         } else if (
           now - w.execution.started - w.pausedMs >
-          commands[w.execution.kind].timeout(ctx) * 1000
+          config.command_timeouts[w.execution.kind]! * 1000
         ) {
           const failed = reduce(
             state,
@@ -521,29 +519,18 @@ export function reduce(
           effects.push(...failed.effects);
         }
       }
-      if (event.hasWork || work(state)) state.idleSince = now;
       const started = new Set<string>();
       const matching = (state.settings.failsafe_policy ?? [])
         .filter((r) => {
-          const holds =
-            matches(r, now) &&
-            !(event.hasWork && r.conditions.some((c) => c.kind === "idle"));
-          const prior = state.rules[r.rule_id] ?? {
-            holds: false,
-            armed: true,
-            since: null,
-          };
-          if (holds && !prior.holds) started.add(r.rule_id);
-          state.rules[r.rule_id] = {
-            holds,
-            armed: holds ? prior.armed : true,
-            since: holds ? (prior.since ?? now) : null,
-          };
+          const prior = state.rules[r.rule_id]?.holds ?? false;
+          const holds = matches(r, now, false, event.hasWork);
+          if (holds && !prior) started.add(r.rule_id);
+          state.rules[r.rule_id]!.holds = holds;
           return holds;
         })
         .sort((a, b) => b.priority - a.priority);
       const held =
-        state.override?.kind === "hold" || state.override?.kind === "pause";
+        state.override === "rearm" || state.override === "pause";
       const critical = held
         ? matching.find((r) =>
             r.conditions.some((c) => c.kind === "battery_below" && c.critical),
@@ -555,11 +542,9 @@ export function reduce(
           (r) =>
             started.has(r.rule_id),
         );
-      for (const r of matching) state.rules[r.rule_id]!.armed = false;
       const current = work(state);
       const protectedOverride =
-        current?.override === "land" ||
-        current?.override === "return_to_home";
+        state.override === "stand";
       if (
         candidate &&
         !protectedOverride &&

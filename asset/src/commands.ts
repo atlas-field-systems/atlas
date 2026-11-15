@@ -37,8 +37,6 @@ const tolerance = (
   c: Context,
 ): { horizontal_m: number; altitude_m: number; stopped_mps: number } =>
   c.config.completion_tolerances[c.execution.kind]!;
-const timeout = (c: Context): number =>
-  c.config.command_timeouts[c.execution.kind]!;
 function at(c: Context, target: ComponentsPosition): boolean {
   const p = position(c);
   return Boolean(
@@ -156,9 +154,8 @@ export const commands = {
         },
       },
     ],
-    timeout,
     response: true,
-    override: false,
+    override: null,
   },
   move_to: {
     prepare: (p: Preparation): Resolved => {
@@ -176,9 +173,8 @@ export const commands = {
       return { destination: { ...destination, altitudes }, speed: speed(p) };
     },
     steps: [{ mode: 4, command: move, complete: atDestination }],
-    timeout,
     response: true,
-    override: false,
+    override: null,
   },
   land: {
     prepare: (p: Preparation): Resolved => {
@@ -190,9 +186,8 @@ export const commands = {
       return transit(p, p.action.landing_position ?? p.position);
     },
     steps: transitSteps,
-    timeout,
     response: true,
-    override: true,
+    override: "stand",
   },
   return_to_home: {
     prepare: (p: Preparation): Resolved => {
@@ -213,9 +208,8 @@ export const commands = {
       transitSteps[1]!,
       landing,
     ],
-    timeout,
     response: true,
-    override: true,
+    override: "stand",
   },
   hold: {
     prepare: (p: Preparation): Resolved => ({ speed: speed(p) }),
@@ -233,9 +227,8 @@ export const commands = {
         },
       },
     ],
-    timeout,
     response: true,
-    override: true,
+    override: "rearm",
   },
 } as const;
 export type CommandKind = keyof typeof commands;
@@ -246,10 +239,10 @@ export type VehicleCommand = {
   [K in CommandKind]: Extract<StepCommand, { kind: K }>;
 }[CommandKind] & { mode: number };
 export type OverrideKind = {
-  [K in CommandKind]: (typeof commands)[K]["override"] extends true ? K : never;
+  [K in CommandKind]: (typeof commands)[K]["override"] extends null ? never : K;
 }[CommandKind];
 export function isOverride(kind: string): kind is OverrideKind {
-  return isCommand(kind) && commands[kind].override;
+  return isCommand(kind) && commands[kind].override !== null;
 }
 export function isCommand(kind: string): kind is CommandKind {
   return Object.hasOwn(commands, kind);

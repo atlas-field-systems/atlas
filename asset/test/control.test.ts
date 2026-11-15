@@ -606,3 +606,21 @@ test("docs/README.md: updating a descending Land preserves transit height, speed
   assert.equal(result.state.execution!.execution.started, 0);
   assert.equal(result.state.execution!.execution.speed, state.execution!.execution.speed);
 });
+
+test("docs/failsafes.md: idle duration starts with the idle interval and runs while a sibling is false", async () => {
+  const { config, state: start } = await setup();
+  start.settings.failsafe_policy = [{ rule_id: "IDLE", priority: 50,
+    conditions: [{ kind: "battery_below", battery_percent: 30 }, { kind: "idle", for_s: 5 }],
+    response: { kind: "hold" } }];
+  let state = reduce(start, { kind: "tick", now: 5000, hasWork: true }, config).state;
+  state = reduce(state, { kind: "tick", now: 6000, hasWork: false }, config).state;
+  state = reduce(state, { kind: "measurements", measurements: {
+    battery: { value: 20, source: "vehicle", time: 10000 },
+    position: { ...start.measurements.position!, time: 10000 },
+    armed: { value: true, source: "vehicle", time: 10000 },
+  } }, config).state;
+  const early = reduce(state, { kind: "tick", now: 10000, hasWork: false }, config);
+  assert.equal(early.state.phase, "ordinary", "five seconds have not elapsed since idle began");
+  const fired = reduce(early.state, { kind: "tick", now: 11000, hasWork: false }, config);
+  assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "IDLE" && e.status === "active"));
+});
