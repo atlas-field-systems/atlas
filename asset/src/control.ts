@@ -497,7 +497,9 @@ export function reduce(
         }
       }
       const w = work(state);
-      if (w && w.pausedAt === null) {
+      if (w && get(state.measurements.connected) === false) {
+        failed(w.execution.action, w.task, w.rule, now, w.fallback, new Error("equipment connection lost"));
+      } else if (w && w.pausedAt === null) {
         const ctx = {
           execution: w.execution,
           measurements: state.measurements,

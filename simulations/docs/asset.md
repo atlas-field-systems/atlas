@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The eleven scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The fifteen scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -127,3 +127,11 @@ request ID. These delays affect only the network around the real parts.
 
 The subsystem scenario disables SITL GPS through `SIM_GPS1_ENABLE`. Core must
 receive a fresh faulted GPS condition and the configured subsystem rule must land.
+
+Equipment scenarios place a TCP proxy between the app and SITL. It cuts the
+equipment link during Move To, withholds a command ACK, supplies a simulated
+equipment refusal ACK, or starts with the link unavailable. Core must receive
+the failed Task and cancellation of its successor. During equipment loss, Core
+remains reachable and no telemetry has an acquisition time after the cut. After
+restoration, telemetry must resume with new acquisition times. The flight
+controller retains its GCS failsafe throughout.

@@ -6,6 +6,7 @@ export type Measurement<T> = {
 };
 export type Subsystem = Pick<RecordsReportStatusSubsystem, "condition" | "explanation">;
 export interface Measurements {
+  connected?: Measurement<boolean>;
   subsystems?: Record<string, Measurement<Subsystem>>;
   position?: Measurement<ComponentsPosition>;
   battery?: Measurement<number>;

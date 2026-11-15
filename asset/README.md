@@ -61,10 +61,10 @@ not changes to the behavior specified in the linked pages:
   updates. Contract coverage checks priority, Hold and pause re-arming, lower
   critical levels, and the single critical fallback. SITL checks request answers
   during a response, flight-controller refusal, and invalid live policy answers.
-  This does not complete the wider equipment-failure scenario matrix.
-- The driver does not yet recover an equipment TCP connection. Position is
-  gated on GPS fix and EKF position validity. Refusal and timeout coverage
-  still needs the full equipment-failure scenario matrix. ACKs received before
+  SITL also checks command refusal, command timeout, equipment loss during Move To,
+  and startup without vehicle state.
+- The driver reconnects equipment TCP and recovers measurements without replaying
+  failed work. Position is gated on GPS fix and EKF position validity. ACKs received before
   the command write completes are ignored. MAVLink cannot attribute an older
   ACK that arrives after that write to a particular invocation
   ([driver mechanism](docs/runtime.md)).

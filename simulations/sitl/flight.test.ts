@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { connect, createServer } from "node:net";
+import { connect, createServer, type Socket } from "node:net";
 import { once } from "node:events";
-import { send, common, MavLinkProtocolV2 } from "node-mavlink";
+import { send, common, MavLinkPacketSplitter, MavLinkPacketParser, MavLinkProtocolV2 } from "node-mavlink";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
@@ -26,6 +26,10 @@ async function equipmentPort() {
 }
 
 for (const scenario of [
+  "equipment-drop",
+  "equipment-refused",
+  "equipment-timeout",
+  "equipment-startup",
   "subsystem",
   "requests",
   "boundary",
@@ -175,19 +179,58 @@ for (const scenario of [
           { status: response.status, headers: response.headers },
         );
       };
+      const equipmentPeers = new Set<Socket>();
+      let blocked = scenario === "equipment-startup";
+      let failEquipment = false;
+      let droppedAt = 0;
+      const proxy = createServer(peer => {
+        equipmentPeers.add(peer);
+        peer.on("error", () => {});
+        peer.on("close", () => equipmentPeers.delete(peer));
+        if (blocked) { peer.destroy(); return; }
+        const upstream = connect({ host: "127.0.0.1", port: equipment });
+        equipmentPeers.add(upstream);
+        upstream.on("error", () => peer.destroy());
+        upstream.on("close", () => { equipmentPeers.delete(upstream); peer.destroy(); });
+        peer.on("close", () => upstream.destroy());
+        upstream.pipe(peer);
+        const splitter = peer.pipe(new MavLinkPacketSplitter());
+        const parser = new MavLinkPacketParser();
+        splitter.on("data", frame => {
+          parser.once("data", packet => {
+            if (failEquipment && packet.header.msgid === common.CommandLong.MSG_ID &&
+                packet.protocol.data(packet.payload, common.CommandLong).command === 178) {
+              if (scenario === "equipment-refused") {
+                const ack = new common.CommandAck();
+                Object.assign(ack, { command: 178, result: 2 });
+                void send(peer, ack, new MavLinkProtocolV2(1, 1));
+              }
+              if (scenario === "equipment-refused" || scenario === "equipment-timeout") return;
+            }
+            if (failEquipment && scenario === "equipment-drop" && packet.header.msgid === common.SetPositionTargetGlobalInt.MSG_ID) {
+              blocked = true;
+              droppedAt = Date.now();
+              for (const connection of equipmentPeers) connection.destroy();
+              return;
+            }
+            upstream.write(frame.buffer);
+          });
+          parser.write(frame);
+        });
+      });
+      proxy.listen(0, "127.0.0.1");
+      await once(proxy, "listening");
+      const proxyAddress = proxy.address();
+      assert.ok(proxyAddress && typeof proxyAddress !== "string");
+      cleanup.push(async () => { for (const peer of equipmentPeers) peer.destroy(); await new Promise<void>(resolve => proxy.close(() => resolve())); });
       const example = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
       const config = parseConfig({
-        ...JSON.parse(
-          await readFile(
-            new URL("../../asset/examples/copter.json", import.meta.url),
-            "utf8",
-          ),
-        ),
+        ...example,
         description: { ...example.description, subsystems: [{ subsystem_id: "GPS", label: "GPS receiver" }] },
         equipment: {
           kind: "ardupilot",
           host: "127.0.0.1",
-          port: equipment,
+          port: proxyAddress.port,
           system_id: 255,
           heartbeat_s: 0.2,
           subsystems: { gps: "GPS" },
@@ -197,7 +240,6 @@ for (const scenario of [
         log_directory: join(root, "asset"),
         archive_directory: join(root, "archives"),
       });
-      config.description.subsystems = [{ subsystem_id: "GPS", label: "GPS receiver" }];
       if (scenario === "subsystem") {
         config.initial_settings.failsafe_policy!.push({
           rule_id: "GPS", priority: 50,
@@ -241,6 +283,7 @@ for (const scenario of [
           response: { kind: "land" },
         });
       }
+      if (scenario === "equipment-timeout") config.command_timeouts.move_to = 2;
       const events: AtlasEvent[] = [];
       const audit = follow(admin, { after: 0 }, (event) => {
         events.push(event);
@@ -248,7 +291,41 @@ for (const scenario of [
       cleanup.push(() => audit.stop());
       const app = await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
+      if (scenario === "equipment-startup") {
+        await until(() => events.some(e => e.kind === "report.settings"));
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 5, altitude_reference: "launch" } }, { kind: "hold" }] } }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "failed" && e.record.explanation === "current vehicle state unavailable"));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 2 && e.record.task_state === "cancelled"));
+        assert.equal(events.some(e => e.kind === "report.telemetry"), false);
+        blocked = false;
+        await until(() => events.some(e => e.kind === "report.telemetry"));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "equipment-drop" || scenario === "equipment-refused" || scenario === "equipment-timeout") {
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 5, altitude_reference: "launch" } }] } }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+        failEquipment = true;
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "move_to", destination: { latitude: -35.362, longitude: 149.16523 } }, { kind: "hold" }] } }));
+        const explanation = scenario === "equipment-drop" ? "equipment connection lost" : scenario === "equipment-timeout" ? "command timeout" : "ArduPilot command 178 refused (2)";
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 2 && e.record.task_state === "failed" && e.record.explanation === explanation));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 3 && e.record.task_state === "cancelled"));
+        failEquipment = false;
+        if (scenario === "equipment-drop") {
+          await delay((config.measurement_stale_after_s + 0.5) * 1000);
+          assert.equal(events.some(e => e.kind === "report.telemetry" && e.record.time > droppedAt), false);
+          assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "response"), false);
+          const restoredAt = Date.now();
+          blocked = false;
+          await until(() => events.some(e => e.kind === "report.telemetry" && e.record.time > restoredAt));
+        } else {
+          value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "land" }], now: true } }));
+          await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 4 && e.record.task_state === "completed"));
+        }
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
       if (scenario === "subsystem") {
         await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.condition === "healthy"));
         value(await admin.call("sendTasks", {
@@ -260,6 +337,7 @@ for (const scenario of [
         await once(pilot, "connect");
         const disable = new common.ParamSet();
         Object.assign(disable, { targetSystem: 1, targetComponent: 1, paramId: "SIM_GPS1_ENABLE", paramValue: 0, paramType: 9 });
+        assert.equal(events.filter(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.condition === "healthy").length, 1, "unchanged GPS health is not broadcast periodically");
         const disabledAt = Date.now();
         await send(pilot, disable, new MavLinkProtocolV2(254, 190));
         await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.subsystem_id === "GPS" && e.record.condition === "faulted" && e.record.time >= disabledAt));

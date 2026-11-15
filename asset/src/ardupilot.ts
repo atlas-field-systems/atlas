@@ -19,6 +19,8 @@ export function ardupilot(
   diagnostic: (value: unknown) => void = () => {},
 ): Vehicle {
   let socket: Socket | undefined;
+  let stopped = false;
+  let lastAttempt = -Infinity;
   let observe: (m: Measurements) => void = () => {};
   let targetSystem = 1,
     targetComponent = 1;
@@ -114,7 +116,7 @@ export function ardupilot(
       if (observedMode === expectedMode) transitionFrom = null;
       if (!inControl) inControl = m.customMode === 4;
       else if (armed && expectedMode !== null) inControl = m.customMode === expectedMode || m.customMode === transitionFrom;
-      observe({ armed: stamp(armed), in_control: stamp(inControl) });
+      observe({ armed: stamp(armed), in_control: stamp(inControl), connected: stamp(true) });
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
         packet.payload,
@@ -157,34 +159,51 @@ export function ardupilot(
       for (const cb of listeners) cb(id, m);
     }
   }
+  function open() {
+    lastAttempt = clock.now();
+    socket = connect({ host: config.host, port: config.port });
+    socket.on("error", (cause) => {
+      diagnostic({ kind: "equipment_error", time: clock.now(), explanation: cause.message });
+      operation?.abort(new Error("equipment connection lost", { cause }));
+    });
+    socket.once("close", () => {
+      socket = undefined;
+      location = undefined;
+      gpsFixed = false;
+      positionEstimated = false;
+      operation?.abort(new Error("equipment connection lost"));
+      observe({ connected: { value: false, time: clock.now(), source: "ardupilot" } });
+      subsystem("gps", { condition: "unknown", explanation: "equipment connection lost" });
+      subsystem("flight_controller", { condition: "unknown", explanation: "equipment connection lost" });
+    });
+    const reader = socket
+      .pipe(new MavLinkPacketSplitter())
+      .pipe(new MavLinkPacketParser());
+    reader.on("data", packet);
+    socket.once("connect", () => {
+      const rates = new common.RequestDataStream();
+      Object.assign(rates, {
+        targetSystem,
+        targetComponent,
+        reqStreamId: 0,
+        reqMessageRate: 5,
+        startStop: 1,
+      });
+      void write(rates)
+        .then(() => command(511, [245, 200000]))
+        .catch((e) => {
+          operation?.abort(e);
+        });
+    });
+  }
   return {
     start(cb) {
       observe = cb;
-      socket = connect({ host: config.host, port: config.port });
-      socket.on("error", (e) => {
-        operation?.abort(e);
-      });
-      const reader = socket
-        .pipe(new MavLinkPacketSplitter())
-        .pipe(new MavLinkPacketParser());
-      reader.on("data", packet);
-      socket.once("connect", () => {
-        const rates = new common.RequestDataStream();
-        Object.assign(rates, {
-          targetSystem,
-          targetComponent,
-          reqStreamId: 0,
-          reqMessageRate: 5,
-          startStop: 1,
-        });
-        void write(rates)
-          .then(() => command(511, [245, 200000]))
-          .catch((e) => {
-            operation?.abort(e);
-          });
-      });
+      open();
     },
     tick(now) {
+      if (stopped) return;
+      if (!socket && now - lastAttempt >= config.heartbeat_s * 1000) open();
       if (!socket?.writable || now - lastHeartbeat < config.heartbeat_s * 1000) return;
       lastHeartbeat = now;
       const m = new minimal.Heartbeat();
@@ -201,6 +220,7 @@ export function ardupilot(
       });
     },
     async command(c: VehicleCommand) {
+      if (!socket?.writable) throw new Error("flight controller unavailable");
       transitionFrom = inControl ? observedMode : null;
       expectedMode = c.mode;
       operation?.abort(new Error("superseded"));
@@ -313,6 +333,7 @@ export function ardupilot(
       }
     },
     stop() {
+      stopped = true;
       operation?.abort(new Error("stopped"));
       socket?.destroy();
     },

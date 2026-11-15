@@ -102,3 +102,21 @@ before Core registration. Unchanged samples produce no condition report. The
 Protocol subsystem report carries no source field; source remains in local
 diagnostics. Retries retain the report's original time. Subsystem rules use the
 existing per-condition timing records and measurement freshness limit.
+
+## Equipment connection recovery
+
+The ArduPilot driver retries a closed TCP connection from its normal control
+tick, using the configured equipment heartbeat interval between attempts. Each
+connection has a new MAVLink parser and requests telemetry streams again. Close
+clears the driver's GPS validity and cached Hold position, aborts the pending
+command, and records that equipment is unavailable. Existing measurements keep
+their acquisition times and expire normally. Subsystem conditions become unknown
+with a connection-loss explanation; a heartbeat or GPS sample supplies new evidence.
+
+A lost equipment connection during execution takes the same failure path as a
+refused command or a timeout, even after the command's ACK. A fresh disconnected
+sample fails the active execution on the next control tick. Reconnection never
+replays the command. The Core contact path continues independently. The flight
+controller's own GCS failsafe remains enabled and may take over while the
+equipment link is down. On return, the existing mode-ownership handling observes
+that takeover; it does not claim that Atlas performed the vehicle's response.

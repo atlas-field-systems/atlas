@@ -294,3 +294,18 @@ test("docs/failsafes.md: subsystem thresholds use fresh evidence and unknown nev
     }
   }
 });
+
+test("docs/failsafes.md: a lost equipment link fails active movement even after its command was accepted", async () => {
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  let state = initial(config, 0);
+  state.measurements = {
+    position: { value: { latitude: 1, longitude: 1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, time: 0, source: "equipment" },
+    armed: { value: true, time: 0, source: "equipment" },
+  };
+  state = reduce(state, { kind: "task", now: 0, task: { kind: "move_to", destination: { latitude: 2, longitude: 2 }, task_id: 1, asset_id: "A", requested_by: "OP", time: 0 } }, config).state;
+  state = reduce(state, { kind: "measurements", measurements: { connected: { value: false, source: "equipment", time: 1 } } }, config).state;
+  const result = reduce(state, { kind: "tick", now: 1, hasWork: true }, config);
+  assert.ok(result.effects.some(e => e.kind === "task" && e.status === "failed" && e.explanation === "equipment connection lost"));
+  assert.ok(result.effects.some(e => e.kind === "clear"));
+  assert.equal(result.state.phase, "ordinary");
+});

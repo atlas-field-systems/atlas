@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer, type Socket } from "node:net";
 import { once } from "node:events";
-import { minimal, MavLinkProtocolV2, send } from "node-mavlink";
+import { minimal, common, MavLinkPacketParser, MavLinkPacketSplitter, MavLinkProtocolV2, send } from "node-mavlink";
 import { systemClock } from "@atlas/sdk";
 import { ardupilot } from "../src/ardupilot.ts";
 import type { Measurements, VehicleCommand } from "../src/vehicle.ts";
@@ -62,7 +62,7 @@ for (const staleResult of [0, 2]) test(`docs/runtime.md: stale ACK result ${stal
   Object.assign(heartbeat, { type: 2, autopilot: 3, baseMode: 129, customMode: 4, systemStatus: 4, mavlinkVersion: 3 });
   const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
   const firstSpeed = Promise.withResolvers<void>();
-  reader.on("data", packet => {
+  reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
     if (packet.header.msgid === common.SetMode.MSG_ID) void send(peer!, heartbeat, protocol);
     if (packet.header.msgid === common.CommandLong.MSG_ID) {
       const message = packet.protocol.data(packet.payload, common.CommandLong);
@@ -100,4 +100,31 @@ for (const staleResult of [0, 2]) test(`docs/runtime.md: stale ACK result ${stal
   await send(peer, ack, protocol);
   await next;
   assert.equal(outcome, "accepted");
+});
+
+test("docs/README.md: equipment TCP loss rejects a pending command and reconnects without restarting the app", { timeout: 5000 }, async t => {
+  const server = createServer();
+  const peers = new Set<Socket>();
+  server.on("connection", peer => { peers.add(peer); peer.on("error", () => {}); peer.on("close", () => peers.delete(peer)); });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 0.01 }, systemClock);
+  t.after(() => { vehicle.stop(); for (const peer of peers) peer.destroy(); server.close(); });
+  const connection = once(server, "connection");
+  vehicle.start(() => {});
+  const [peer] = await connection;
+  const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
+  const written = new Promise<void>(resolve => reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
+    if (packet.header.msgid === common.SetMode.MSG_ID) resolve();
+  }));
+  const pending = vehicle.command({ kind: "land", mode: 9, destination: undefined, transit_altitude: undefined });
+  const rejected = assert.rejects(pending, /equipment connection lost/);
+  await written;
+  peer.destroy();
+  await rejected;
+  const reconnected = once(server, "connection");
+  vehicle.tick(Date.now() + 1000);
+  await reconnected;
 });
