@@ -8,8 +8,8 @@ validator, running together under a faulty network. The
 
 - **Core** runs as it ships, on a data directory the simulation creates, with a
   simulated clock. Crash and stop scenarios run it as its own process.
-- **Every caller uses the SDK**: operators logged in to accounts, scripted
-  [simulated Assets](../README.md#simulated-assets) on IP with Asset keys,
+- **Every caller uses the SDK**: operators logged in to accounts, real Asset apps and remaining
+  [contract callers](../README.md#simulated-assets) on IP with Asset keys,
   scripted gateways carrying radio Assets with a gateway key, and scripted
   Plugins with Plugin keys.
 - **The network** sits between each SDK client and Core. A scenario or a fault

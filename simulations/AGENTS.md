@@ -15,8 +15,9 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 - Run the real parts. Fake only the world around them, through what each part
   [takes from outside](README.md#what-each-part-allows). Never add a test-only
   path to a part.
-- A simulated Asset runs only its script and makes no decision of its own
-  ([simulated Assets](README.md#simulated-assets)).
+- Use the real Asset app for IP Asset work. The
+  [migration inventory](README.md#simulated-assets) records remaining scripts
+  and radio exceptions.
 - Never generate scenarios or expected results from Protocol's definitions
   ([test what matters](../atlas/CHARTER.md#test-what-matters)).
 - Built for Core, the SDK, and the initial Asset IP runtime: scenarios and seeded fault workloads run in CI.

@@ -17,7 +17,7 @@ it.
 | Real                                              | Simulated                                                                                               |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Core, with its SQLite storage and event log       | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
-| The SDK, used by every simulated caller           | Scripted operators, gateways, and Plugins in SDK contract scenarios                              |
+| The SDK, used by every simulated caller           | Scripted operators, gateways, Plugins, and remaining contract callers (see below)                              |
 | Protocol's definitions and its one validator      | Time, so minutes of contact rules run in milliseconds                                                   |
 | The initial Asset IP runtime | Equipment and vehicles, including ArduPilot SITL                                                 |
 |                                                   | Faults in the host: a full disk, a Core crash, a deliberate stop                                        |
@@ -49,20 +49,48 @@ Asset behavior scenarios run the [real Asset app](../asset/README.md) with
 simulated equipment ([Asset simulations](docs/asset.md)). Scripted operators,
 gateways, and Plugins are other callers; they do not replace the Asset app.
 
-Migration is incomplete: the following SDK and Core contract suites still script
-Assets, using SDK helpers or direct Asset calls. They test caller contracts,
-not the real app's equipment behavior. They remain to be reworked under the
-[owner's decision](../atlas/decision-log.md#build-and-test):
+The shared world helper, `src/asset-app.ts`, starts the production app with
+`parseConfig`, world time, the simulated network, and world-owned storage. It
+accepts equipment configuration, exposes identity and shutdown, and restarts
+with the same key and optional configuration or clock changes. Public read
+permission scenarios use a separate SDK reader with the app's credential;
+reporting and Task execution stay with the app. Equipment-control scenarios
+still own their TCP peers.
 
-`admission`, `asset-rejoin`, `client-fences`, `current-state`, `everything`,
-`full-disk`, `gateways`, `helper-lifecycles`, `lost-responses`, `offline`,
-`open-reads`, `picture-recovery`, `places`, `reports-gap`, `restarts`,
-`review-regressions`, `review2-regressions`, `run-change`, `stream-contact`,
-`tasks-link`, `wrong-clocks` under `scenarios/`, and
-`faults/core-and-sdk.test.ts`. Each scenario filename ends in `.test.ts`.
-These scripts do only what their scenario requests and make no equipment
-control decisions. They are temporary; replacement runs the app against
-simulated equipment and removes the corresponding scripted Asset.
+Migration is incomplete under the [owner's decision](../atlas/decision-log.md#build-and-test).
+This table is the migration inventory; names under `scenarios/` end in `.test.ts`.
+“Pending” means remaining migration work, not an approved scripted exception.
+
+| Suite | Current Asset implementation |
+| --- | --- |
+| `admission` | Real app, paused settings Tasks fill the queue and Run now completes through the app. |
+| `client-fences` | Real IP app; scripted radio remains because the gateway app and Fieldlink are not built. Its wrong-hash registration is deliberately invalid gateway traffic. |
+| `open-reads` | Real IP apps; scripted radio remains because the gateway app and Fieldlink are not built. |
+| `offline` | Real app, network partition, and settings Tasks. |
+| `restarts` | Real app restart with the same key; unfinished work drops and a new settings Task completes. |
+| `run-change` | Real IP app; scripted radio remains because the gateway app and Fieldlink are not built. |
+| `wrong-clocks` | Real app restarted with a skewed world clock; no forged report. |
+| `asset-rejoin` | Pending: direct SDK startup, outbox and queue control. |
+| `current-state` | Pending: scripted report source. |
+| `everything` | Pending: scripted IP and radio workload. |
+| `full-disk` | Pending: scripted Asset requests during storage failure. |
+| `gateways` | Pending classification: gateway and radio callers. |
+| `helper-lifecycles` | Pending: direct SDK helper lifecycle control. |
+| `lost-responses` | Pending: scripted mutations and retry bodies. |
+| `picture-recovery` | Pending: scripted registration and equipment reports. |
+| `places` | Pending: direct queue control and place updates. |
+| `reports-gap` | Pending: scripted retained report history. |
+| `review-regressions` | Pending: mixed SDK and raw caller regressions. |
+| `review2-regressions` | Pending: mixed SDK and raw caller regressions. |
+| `stream-contact` | Pending: direct registration creates stream traffic. |
+| `tasks-link` | Pending: scripted radio delivery and queue control. |
+| `faults/core-and-sdk.test.ts` | Pending: scripted Asset starts and final outcomes. |
+
+The remaining IP scripts must be replaced before deleting `ipAsset` from
+`src/actors.ts`. Radio Assets stay scripted until a real gateway app and
+Fieldlink can carry their traffic. Scripted raw callers are retained only for
+Core refusal conditions the app cannot produce; the remaining mixed suites
+still need that classification.
 
 ## Two kinds of eval
 
