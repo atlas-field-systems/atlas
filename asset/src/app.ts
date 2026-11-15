@@ -5,10 +5,13 @@ import {
   type Clock,
   type Report,
   type Room,
+  type AssetFile,
 } from "@atlas/sdk";
+import { readFile } from "node:fs/promises";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import { initial, reduce, refusal, type Event, type Effect } from "./control.ts";
 import { fresh, type Vehicle, type Measurements } from "./vehicle.ts";
+import { peripheral, type Observation } from "./peripheral.ts";
 import { ardupilot } from "./ardupilot.ts";
 import { createLog } from "./logging.ts";
 import type { Config } from "./config.ts";
@@ -27,10 +30,6 @@ export async function startApp(
     fetch: options.fetch ?? globalThis.fetch,
     observer: (e) => log.record(e),
   });
-  const vehicle =
-    config.equipment.kind === "ardupilot"
-      ? ardupilot(config.equipment, clock, log.record)
-      : stationary(config, clock);
   type Session = Extract<
     Awaited<ReturnType<typeof startAsset>>,
     { ok: true }
@@ -127,6 +126,34 @@ export async function startApp(
         break;
     }
   }
+  const pendingObservations: Observation[] = [];
+  let uploads = Promise.resolve();
+  const pendingFiles: Array<Omit<AssetFile, "bytes"> & { path: string }> = [];
+  function uploadFile(file: Omit<AssetFile, "bytes"> & { path: string }) {
+    uploads = uploads.then(async () => {
+      const bytes = await readFile(file.path);
+      const result = await running!.link.storeFile({ ...file, bytes });
+      log.record({ kind: "file_result", name: file.name, result });
+    }).catch(error => log.record({ kind: "file_failed", name: file.name, explanation: String(error) }));
+  }
+  const vehicle = config.equipment.kind === "ardupilot"
+    ? ardupilot(config.equipment, clock, log.record)
+    : (config.equipment.kind === "peripheral" || config.equipment.kind === "gpsd")
+      ? peripheral(config.equipment, clock, {
+          diagnostic: log.record,
+          observation(value, source) {
+            log.record({ kind: "observation", source, observation: value });
+            if (running) report([{ ...value, asset_id: running.asset_id }]);
+            else pendingObservations.push(value);
+          },
+          async file(file) {
+            const path = await log.capture(file);
+            const stored = { name: file.name, contentType: file.contentType, place: file.place, path };
+            if (running) uploadFile(stored);
+            else pendingFiles.push(stored);
+          },
+        })
+      : stationary(config, clock);
   const pendingSubsystems: Array<Omit<Extract<Report, { type: "report.status" }> & { kind: "subsystem" }, "asset_id">> = [];
   vehicle.start((measurements) => {
     for (const [id, sample] of Object.entries(measurements.subsystems ?? {})) {
@@ -177,6 +204,10 @@ export async function startApp(
     throw new Error(result.explanation);
   }
   running = result.value;
+  for (const file of pendingFiles) uploadFile(file);
+  pendingFiles.length = 0;
+  report(pendingObservations.map(r => ({ ...r, asset_id: running!.asset_id })));
+  pendingObservations.length = 0;
   report(pendingSubsystems.map(r => ({ ...r, asset_id: running!.asset_id })));
   running.outbox.onBlocked((failure) => {
     log.record({ kind: "outbox_blocked", time: clock.now(), failure });
@@ -236,7 +267,7 @@ export async function startApp(
     if (stopping) return stopping;
     stopped = true;
     timer?.cancel();
-    vehicle.stop();
+    const equipmentStopped = vehicle.stop();
     stopping = (async () => {
       let deadline: ReturnType<Clock["after"]> | undefined;
       try {
@@ -252,6 +283,8 @@ export async function startApp(
       running?.stop();
       client.close();
       await running?.done.catch(() => {});
+      await equipmentStopped;
+      await uploads;
       return log.close(running!.asset_id, reason);
     })();
     return stopping;

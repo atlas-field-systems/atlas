@@ -120,3 +120,51 @@ replays the command. The Core contact path continues independently. The flight
 controller's own GCS failsafe remains enabled and may take over while the
 equipment link is down. On return, the existing mode-ownership handling observes
 that takeover; it does not claim that Atlas performed the vehicle's response.
+
+## Reporting-only equipment
+
+A reporting-only configuration lists no commands and omits supported settings.
+Its initial settings are empty. It has no SDK queue. Automatic home acquisition
+runs only when the description advertises home. The stationary driver publishes
+the configured installation position on each control tick while the installation
+remains configured.
+
+The `peripheral` acquisition driver connects to a configured TCP host and port.
+An equipment adapter supplies newline-delimited UTF-8 JSON. This local driver
+format is not a Protocol record or a Fieldlink. It supports these inputs:
+
+- `position` holds `source`, acquisition `time`, `valid`, and optional `position`.
+  A GPS adapter sets `valid` only for a valid fix. Invalid fixes remove the local
+  position sample and send no replacement telemetry. Core retains the last known
+  position. A valid sample uses Protocol's position shape.
+- `observation` holds `source` and `observation`, a Protocol Observation report
+  without `asset_id`. The detector supplies the observation ID and acquisition
+  time. The app supplies its registered identity. Reports keep the detector's
+  time and target ID. Own position stays separate.
+- `file` holds `name`, `contentType`, base64 bytes in `base64`, and optional
+  `place`, a Protocol geo-feature request. Every file is written under a unique
+  sanitized local name before upload. Upload uses the SDK link's `storeFile`.
+  Files acquired before registration wait locally until registration completes.
+  Refusal never removes a captured file. Uploaded and refused captures both go
+  into `files/` in the Reset ZIP.
+
+`max_message_bytes` bounds one input line. Invalid or oversized input closes the
+connection with a diagnostic. `reconnect_s` controls the next connection attempt
+from the control tick. Socket backpressure bounds acquisition during local file
+writes. Uploads run separately from acquisition and control, one file at a time.
+Waiting files stay on disk until the uploader reads them. Stopping closes the
+socket and waits for local capture writes before sealing the archive. The app
+closes the Core client before waiting for outstanding uploads, so retries do not
+keep shutdown running after the final-report deadline. There is no automatic
+retry of a refused file.
+
+This adapter boundary lets GPS receivers and detectors supply their own hardware
+formats without adding sensor-specific records to Atlas. The simulation runs a
+TCP peripheral in place of that equipment and keeps the app, SDK, and Core real.
+The `gpsd` equipment kind uses the same TCP bounds and reconnect interval. It
+sends WATCH with JSON enabled and consumes TPV reports as described in the
+[gpsd interface](https://gpsd.gitlab.io/gpsd/gpsd_json.html). Modes 2 and 3 with
+coordinates establish position. Mode 3 can supply MSL altitude. Missing time or
+device stays unknown, and a lost fix clears the local sample. Other gpsd message
+classes do not change position. The tracker example uses this driver. Hardware
+GPS receivers and detector hardware integrations have not been verified.

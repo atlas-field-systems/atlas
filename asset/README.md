@@ -5,7 +5,8 @@ Core, keeps its own state, reports what it observes, and carries out supported
 work. A reporting-only Asset needs no equipment-control commands, task queue, or
 live settings.
 
-**Runtime in progress.** The initial IP path runs against ArduPilot SITL.
+**Initial IP runtime built.** Copter execution runs against ArduPilot SITL.
+Reporting-only acquisition runs against real Core with simulated peripherals.
 The documented behavior remains the target; this implementation is incomplete. The first setup runs on a Raspberry Pi on
 the ground that acts as the companion computer for an ArduPilot quadcopter over
 a SiK radio. The Pi is the gateway, running the
@@ -43,7 +44,7 @@ endings are visible in diagnostics. It evaluates
 battery, airborne, idle, contact-loss, and boundary conditions locally. Live
 policy replacements pass configuration validation before application. The SDK supplies
 ordering and report retries. A configured stationary equipment driver supplies
-one position. The [SITL scenarios](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
+continuing installation-position measurements. The [SITL scenarios](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
 check Hold followed by Move To, pause/resume, Land now during Move To,
 low battery, loss of the Core path, idle with a missing predecessor, Land at a position,
 Return to an operator-set Atlas home, and external flight-controller takeover and handback. They check Core reports and archived
@@ -54,22 +55,9 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- GPS and flight-controller subsystem conditions and configured subsystem rules are implemented.
-  SITL disables GPS and checks the condition at Core and a configured Land response.
-  The request matrix now checks ordinary, paused, failsafe, override, and
-  flight-controller phases, including queued cancels and updates and paused place
-  updates. Contract coverage checks priority, Hold and pause re-arming, lower
-  critical levels, and the single critical fallback. SITL checks request answers
-  during a response, flight-controller refusal, and invalid live policy answers.
-  SITL also checks command refusal, command timeout, equipment loss during Move To,
-  and startup without vehicle state.
-- The driver reconnects equipment TCP and recovers measurements without replaying
-  failed work. Position is gated on GPS fix and EKF position validity. ACKs received before
-  the command write completes are ignored. MAVLink cannot attribute an older
-  ACK that arrives after that write to a particular invocation
-  ([driver mechanism](docs/runtime.md)).
-- The reporting-only path does not yet support empty settings, continuing
-  stationary measurements, GPS peripherals, detector Observations, or files.
 - Startup failure cleanup, local protection before Core joins, service
   installation, and more flight-controller takeover scenarios remain.
 - [Logging gaps](docs/logging.md#implementation-status) remain.
+- Peripheral hardware adapters and radio transport have not been checked on
+  hardware. The [peripheral interface](docs/runtime.md#reporting-only-equipment)
+  accepts equipment output over local TCP. GPS acquisition uses gpsd.

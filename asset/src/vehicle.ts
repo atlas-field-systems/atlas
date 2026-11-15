@@ -21,7 +21,7 @@ export interface Vehicle {
   start(observe: (measurements: Measurements) => void): void;
   tick(now: number): void;
   command(command: VehicleCommand): Promise<void>;
-  stop(): void;
+  stop(): void | Promise<void>;
 }
 export function fresh<T>(
   m: Measurement<T> | undefined,

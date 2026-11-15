@@ -135,3 +135,14 @@ the failed Task and cancellation of its successor. During equipment loss, Core
 remains reachable and no telemetry has an acquisition time after the cut. After
 restoration, telemetry must resume with new acquisition times. The flight
 controller retains its GCS failsafe throughout.
+
+## Reporting-only Core scenarios
+
+`scenarios/reporting-assets.test.ts` runs the real Asset app and Core without
+SITL. A stationary installation keeps reporting its configured position after
+the ordinary measurement-freshness interval. It sends no home, settings, or
+queue report. A simulated gpsd receiver supplies tracker fixes through the
+production GPS driver. A detector peripheral supplies position, an Observation,
+and files over the production acquisition interface. Core's picture must show
+both Assets and the Observation. A file with a place must appear as an Object
+linked to that place. A refused capture must remain in the Asset's Reset ZIP.

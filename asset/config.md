@@ -37,7 +37,10 @@ The [copter example](examples/copter.json) is the implemented format. It require
 explicit behavior values. Its values are provisional until verified in SITL.
 `description` is the Protocol registration body and lists supported capabilities.
 `equipment.kind` selects `ardupilot` with a TCP host, port, heartbeat interval in
-seconds, and GCS system ID, or `simulated` with a stationary position.
+seconds, and GCS system ID, `simulated` with a stationary position, or
+`peripheral` or `gpsd` with a TCP host, port, `max_message_bytes`, and `reconnect_s`.
+The [peripheral interface](docs/runtime.md#reporting-only-equipment) carries GPS
+samples, detector Observations, and captured files.
 `safe_action` is the built-in failsafe response. `control_tick_s` sets the
 control-loop interval. `log_queue_limit` bounds queued diagnostics.
 The app uses Protocol's validator for all shared values.

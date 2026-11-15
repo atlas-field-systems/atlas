@@ -22,6 +22,8 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     part = 0,
     fileBytes = 0;
   const files = new Set<string>();
+  const captures = new Set<string>();
+  let captureId = 0;
   function record(value: unknown) {
     if (sealed) return;
     if (pending.length >= config.log_queue_limit) {
@@ -59,12 +61,20 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   record({ kind: "startup", time: start, config: inspectConfig(config) });
   return {
     record,
+    async capture(file: { name: string; bytes: Uint8Array }) {
+      const name = `files/${++captureId}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      await mkdir(join(directory, "files"), { recursive: true });
+      await writeFile(join(directory, name), file.bytes);
+      captures.add(name);
+      return join(directory, name);
+    },
     async close(asset_id: string, reason: string) {
       await writing;
       sealed = true;
       const content: Record<string, Uint8Array> = {};
       for (const name of files)
         content[`diagnostics/${name}`] = await readFile(join(directory, name));
+      for (const name of captures) content[name] = await readFile(join(directory, name));
       content["config.json"] = strToU8(
         JSON.stringify(inspectConfig(config), null, 2),
       );

@@ -102,8 +102,10 @@ counts dropped records, and exports a ZIP with configuration, diagnostics,
 summary, and a manifest. It verifies every manifest entry before renaming the
 ZIP and removing the local directory. A failed ZIP keeps that directory.
 
-The full record described above is not complete. Separate retained reports and
-files, versions and definitions hash, detailed gap intervals, crash recovery,
+Captured peripheral files are retained separately and included in `files/`,
+including files refused by Core.
+
+The full record described above is not complete. Separate retained reports, versions and definitions hash, detailed gap intervals, crash recovery,
 and the no-retry marker for failed archives still need implementation.
 `log_level` and `log_message_content` are parsed but do not yet filter records.
 Diagnostic reads and ZIP construction currently use memory proportional to the

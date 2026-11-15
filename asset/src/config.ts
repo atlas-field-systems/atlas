@@ -39,6 +39,13 @@ const schema = z
         subsystems: z.strictObject({ gps: z.string().optional(), flight_controller: z.string().optional() }).optional(),
       }),
       z.strictObject({
+        kind: z.enum(["peripheral", "gpsd"]),
+        host: z.string().min(1),
+        port: z.int().min(1).max(65535),
+        max_message_bytes: z.int().positive(),
+        reconnect_s: positive,
+      }),
+      z.strictObject({
         kind: z.literal("simulated"),
         position: shared<ComponentsPosition>(
           "report.telemetry",
