@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createLivePicture, follow } from "@atlas/sdk";
+import { assetApp } from "../src/asset-app.ts";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset, plugin, radioAsset } from "../src/actors.ts";
+import { plugin, radioAsset } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 scenario({
   name: "Reset fences old attempts clears live picture and rebinds Plugin",
@@ -11,7 +12,7 @@ scenario({
     "sdk/docs/live.md#live-picture",
   ],
   async run(w) {
-    const asset = await ipAsset(w);
+    const asset = await assetApp(w);
     const radio = await radioAsset(w);
     const p = await plugin(w, () => {});
     const picture = createLivePicture(w.admin);
@@ -43,7 +44,7 @@ scenario({
       !result.ok && result.error === "run_ended",
       JSON.stringify(result),
     );
-    assert.equal((await w.complete(asset.session.done)).reason, "run_ended");
+    assert.equal((await w.complete(asset.done)).reason, "run_ended");
     assert.equal((await w.complete(reader.done)).reason, "run_ended");
     assert.equal(w.admin.status.phase, "run_ended");
     assert.deepEqual(picture.assets().items, []);
