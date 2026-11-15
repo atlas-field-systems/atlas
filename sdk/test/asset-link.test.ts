@@ -185,3 +185,36 @@ test("blocked additions leave no acknowledgement waits [sdk/docs/asset.md#runnin
     assert.equal(pending.size, 0, "blocked additions must not retain unresolved acknowledgement promises");
   } finally { outbox.stop(); }
 });
+
+test("asset/docs/status.md: recovery evidence survives ordinary outbox overflow", () => {
+  const outbox = createOutbox({ now: () => 0, after: () => ({ cancel() {} }) });
+  for (const condition of ["faulted", "healthy"] as const)
+    void outbox.add([{ type: "report.status", kind: "subsystem", asset_id: "A", time: condition === "faulted" ? 0 : 1, subsystem_id: "GPS", condition }]);
+  for (let time = 2; time < 1026; time++)
+    void outbox.add([{ type: "report.battery", asset_id: "A", time, battery_percent: 50 }]);
+  const conditions: string[] = [];
+  for (;;) {
+    const batch = outbox.take({ bytes: Infinity, size: () => 0 });
+    if (!batch) break;
+    for (const report of batch.reports)
+      if (report.type === "report.status" && report.kind === "subsystem") conditions.push(report.condition);
+    batch.settle({ ok: true });
+  }
+  assert.deepEqual(conditions, ["faulted", "healthy"]);
+  outbox.stop();
+});
+
+test("asset/docs/logging.md: asynchronous recording failure remains a diagnostic and reports still send", async () => {
+  const failures: number[] = [];
+  const outbox = createOutbox({ now: () => 0, after: () => ({ cancel() {} }) }, 10000, undefined,
+    (name, detail) => { if (name === "reports.recording_failed") failures.push(Number(detail?.count)); },
+    undefined, async () => { throw new Error("recording failed"); });
+  const accepted = outbox.add([{ type: "report.battery", asset_id: "A", time: 1, battery_percent: 50 }]);
+  await new Promise<void>(resolve => setImmediate(resolve));
+  assert.deepEqual(failures, [1]);
+  const batch = outbox.take({ bytes: Infinity, size: () => 0 });
+  assert.equal(batch?.reports.length, 1);
+  batch!.settle({ ok: true });
+  await accepted;
+  outbox.stop();
+});

@@ -314,21 +314,22 @@ test("peek observes exactly the work next can start without changing reports [sd
 for (const request of ["task", "cancel", "update"] as const)
   test(`asset/docs/failsafes.md: app refusal of ${request} answers without changing work`, () => {
     const reports: Report[] = [];
-    let locked = false;
+    const lock = { locked: false };
     const task: Task = { kind: "hold", time: 0, asset_id: "A", task_id: 1, requested_by: "OP" };
-    const q = createQueue({
-      last_task_id: 0, asset_id: "A",
-      clock: { now: () => 0, after: () => ({ cancel() {} }) },
-      emit: report => reports.push(report),
-      host: {
-        ...{ refuse: () => locked ? "failsafe locks ordinary work" : undefined },
+    const host = {
+        lock,
+        refuse() { return this.lock.locked ? "failsafe locks ordinary work" : undefined; },
         runNow() { assert.fail("refused work must not run"); },
         stop() { assert.fail("refused cancel must not stop work"); },
         update() { assert.fail("refused update must not change work"); },
-      },
+    };
+    const q = createQueue({
+      last_task_id: 0, asset_id: "A",
+      clock: { now: () => 0, after: () => ({ cancel() {} }) },
+      emit: report => reports.push(report), host,
     });
     q.apply({ kind: "tasks.requested", event_id: 1, record: [task] });
-    locked = true;
+    lock.locked = true;
     reports.length = 0;
     if (request === "task")
       q.apply({ kind: "tasks.requested", event_id: 42, record: [{ ...task, task_id: 2, now: true }] });
