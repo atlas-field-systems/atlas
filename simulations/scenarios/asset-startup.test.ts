@@ -1,7 +1,9 @@
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { createServer } from "node:net";
 import { once } from "node:events";
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { unzipSync, strFromU8 } from "fflate";
 import { startApp, parseConfig } from "@atlas/asset";
@@ -95,5 +97,33 @@ scenario({
     await w.complete(closed);
     assert.equal((await readdir(config.archive_directory)).length, 1);
     assert.deepEqual(await readdir(config.log_directory), []);
+  },
+});
+
+scenario({
+  name: "Asset CLI exits unsuccessfully when shutdown cannot archive evidence",
+  checks: ["asset/docs/logging.md#export-the-assets-reset-zip"],
+  async run(w) {
+    const key = value(await w.complete(w.admin.call("createAssetKey")));
+    assert.ok("key" in key);
+    const raw = JSON.parse(await readFile(new URL("../../asset/examples/tracker.json", import.meta.url), "utf8"));
+    const archive = join(w.root, "not-a-directory");
+    await writeFile(archive, "archive destination unavailable");
+    const configPath = join(w.root, "asset.json");
+    await writeFile(configPath, JSON.stringify({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
+      equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
+      log_directory: join(w.root, "asset-logs"), archive_directory: archive }));
+    const child = spawn(process.execPath, [fileURLToPath(new URL("../../asset/src/main.ts", import.meta.url)), "run", configPath]);
+    w.onClose(() => child.kill("SIGKILL"));
+    let stderr = "";
+    child.stderr.on("data", chunk => { stderr += chunk; });
+    const closed = once(child, "close");
+    const [ready] = await once(child.stdout, "data");
+    assert.ok(JSON.parse(String(ready)).asset_id);
+    child.kill("SIGTERM");
+    const [code] = await closed;
+    assert.match(stderr, /EEXIST/);
+    assert.equal(code, 1);
+    assert.equal((await readdir(join(w.root, "asset-logs"))).length, 1);
   },
 });

@@ -9,9 +9,16 @@ try {
     process.stdout.write(`${JSON.stringify(inspectConfig(config), null, 2)}\n`);
   else {
     const controller = new AbortController();
+    let stop = () => controller.abort();
     for (const signal of ["SIGINT", "SIGTERM"] as const)
-      process.once(signal, () => controller.abort());
+      process.once(signal, () => stop());
     const app = await startApp(config, { signal: controller.signal });
+    stop = () => {
+      void app.stop().catch(error => {
+        process.stderr.write(`${error}\n`);
+        process.exitCode = 1;
+      });
+    };
     process.stdout.write(`${JSON.stringify({ asset_id: app.asset_id })}\n`);
     void app.done.catch((error) => {
       process.stderr.write(`${error}\n`);
