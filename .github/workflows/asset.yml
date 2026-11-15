@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - run: systemd-analyze verify asset/atlas-asset.service
       - run: npm ci
         working-directory: protocol
       - run: npm ci

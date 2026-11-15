@@ -130,6 +130,44 @@ Installation is repeatable on ordinary Linux, with example configurations for
 the tracker and quadcopter. No custom Raspberry Pi image is planned.
 [Asset simulations](../../simulations/docs/asset.md) check these behaviors as the runtime is built.
 
+### Install the IP app as a Linux service
+
+Use Node 24 at `/usr/bin/node`. Install this repository's `protocol/`, `sdk/`,
+and `asset/` directories together under `/opt/atlas`. From the repository root,
+run these commands. Repeating them updates the installed files and dependencies.
+Stop an existing service before replacing its files.
+
+```sh
+getent passwd atlas-asset || sudo useradd --system --home-dir /var/lib/atlas-asset --shell /usr/sbin/nologin atlas-asset
+sudo install -d /opt/atlas /etc/atlas
+sudo cp -a protocol sdk asset /opt/atlas/
+sudo npm ci --prefix /opt/atlas/protocol
+sudo npm ci --prefix /opt/atlas/sdk
+sudo npm ci --prefix /opt/atlas/asset
+sudo install -m 0644 asset/atlas-asset.service /etc/systemd/system/atlas-asset.service
+sudo systemctl daemon-reload
+```
+
+Copy either `asset/examples/tracker.json` or `asset/examples/copter.json` to a
+local configuration file. Set the provisioned key, Core URL, equipment connection,
+and operation-specific protection. Set `log_directory` to
+`/var/lib/atlas-asset/logs` and `archive_directory` to
+`/var/lib/atlas-asset/archives`. Install the configured file, then inspect it
+without moving equipment.
+
+```sh
+sudo install -m 0640 -o root -g atlas-asset /path/to/config.json /etc/atlas/asset.json
+sudo -u atlas-asset /usr/bin/node /opt/atlas/asset/src/main.ts inspect /etc/atlas/asset.json
+sudo systemd-analyze verify /etc/systemd/system/atlas-asset.service
+sudo systemctl enable --now atlas-asset.service
+```
+
+Systemd creates the writable state directory. `systemctl stop atlas-asset`
+requests an orderly shutdown and waits for evidence export. `journalctl -u
+atlas-asset` shows startup and archive failures. The service has `Restart=no`
+and no shutdown timeout that could kill ZIP export. Boot and service lifecycle
+on a Raspberry Pi have not been verified.
+
 ## Movement module and profiles
 
 The movement module carries out commands that physically move the platform.
@@ -174,4 +212,3 @@ to show where each camera points. Camera images reach Core as
   connection options.
 - Freshness limits, local storage layout and limits, and overflow behavior.
 - How a turret works out its aim from a Point At target.
-- Packaging, service configuration, and installation commands.
