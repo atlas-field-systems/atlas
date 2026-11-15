@@ -48,20 +48,21 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- The control state still needs the single phase/execution/override model and
-  per-rule duration state. Command failure and timeout share a report path, but
-  stopping the maneuver and retaining critical fallback ownership need work.
+- The control state now separates phase, execution, override, and per-rule
+  matching state. Commanded activation overrides pause, repeated settings do not
+  reissue movement, and suspended time does not consume the command timeout.
+  Critical fallback retains its rule and priority. Boundary and subsystem
+  condition durations, request correlation for Task overrides, and identifying
+  idle from startable work rather than every held Task remain incomplete.
 - The command registry still duplicates command kinds and uses shared
   completion tolerances. Current-state offers, duplicate active Task reports,
   flight-controller request refusal, blocked outbox/session diagnostics,
   vehicle ticks, and log sealing still need completion.
-- Boundary and subsystem failsafe conditions, commanded-rule selection,
-  complete rule re-arming, priority and fallback cases, and all override answers
+- Boundary and subsystem failsafe conditions, complete rule re-arming, priority and fallback cases, and all override answers
   need implementation or simulation coverage.
 - Land at a position and transit altitudes are not executed. Return to home
   currently uses ArduPilot's home, rather than resolving the Atlas setting.
-- Queue cancellation and updates during failsafe, place updates while paused, paused
-  timeout accounting, and live policy validation need completion.
+- Queue cancellation and updates during failsafe, place updates while paused, and live policy validation need completion.
 - The driver does not yet recover an equipment TCP connection. Position is
   gated on GPS fix and EKF position validity. Refusal and timeout coverage
   still needs the full equipment-failure scenario matrix.

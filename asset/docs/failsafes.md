@@ -203,6 +203,14 @@ does not establish a landing. The one exception is a
 [critical battery rule](#an-override-with-hold-or-pause-re-arms-protection),
 whose failed response falls back to Return to home while the battery is still critical.
 
+The runtime stores the phase separately from the active execution and operator
+override. Each execution tracks suspended time, which does not consume its
+command timeout. Repeating the current run state does not reissue movement. A
+critical fallback keeps the failed response's rule and priority and is marked
+as a fallback, so a later failure cannot start another return. Command failure
+and timeout replace the failed maneuver with a hold unless a critical fallback
+starts instead. These are runtime mechanisms for the outcomes above.
+
 ## Lock ordinary work for the rest of the operation
 
 Failsafe state lasts for the rest of the operation, including after a successful
@@ -269,13 +277,13 @@ priority 50), rule `CB1` (critical battery below 10%, Land at landing pad `P1`,
 priority 80), and rule `CB2` (critical battery below 10% with contact lost,
 Land where it is, priority 90):
 
-| Event | What the Asset does |
-| --- | --- |
-| The battery falls below 25% | `LB` fires: Return to home |
-| The operator sends Hold now | Hold replaces Return to home; `LB` is re-armed |
+| Event                                         | What the Asset does                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| The battery falls below 25%                   | `LB` fires: Return to home                                                           |
+| The operator sends Hold now                   | Hold replaces Return to home; `LB` is re-armed                                       |
 | The battery falls below 10%, contact still up | Only `CB1` matches: it fires at once, replacing the Hold, and heads for `P1` to land |
-| The landing at `P1` fails | The Asset returns home, the fixed critical fallback |
-| It lands at home | Final reports, then the app shuts down |
+| The landing at `P1` fails                     | The Asset returns home, the fixed critical fallback                                  |
+| It lands at home                              | Final reports, then the app shuts down                                               |
 
 Had contact also been lost when the battery fell below 10%, `CB1` and `CB2`
 would both match, and only `CB2`, the higher priority, would fire.

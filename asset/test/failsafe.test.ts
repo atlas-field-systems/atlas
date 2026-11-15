@@ -83,7 +83,9 @@ test("docs/failsafes.md: critical battery replaces Hold immediately, then failed
     config,
   );
   assert.equal(
-    failed.effects.some((e) => e.kind === "vehicle"),
+    failed.effects.some(
+      (e) => e.kind === "vehicle" && e.command.kind === "return_to_home",
+    ),
     false,
   );
 });

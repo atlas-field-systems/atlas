@@ -174,10 +174,7 @@ export async function startApp(
               dispatch({ kind: "cancel", id, now: clock.now() });
           },
           update: (task) => {
-            if (
-              state.mode.kind === "running" &&
-              state.mode.work.task?.task_id === task.task_id
-            )
+            if (state.execution?.task?.task_id === task.task_id)
               dispatch({ kind: "update", task, now: clock.now() });
           },
         }
@@ -186,6 +183,7 @@ export async function startApp(
       dispatch({
         kind: "settings",
         settings: request.settings,
+        request_id,
         now: clock.now(),
       });
       if (running)
@@ -234,9 +232,9 @@ export async function startApp(
           },
         ]);
       if (
-        (state.mode.kind === "ready" &&
-          state.settings.run_state !== "paused") ||
-        (state.locked && state.mode.kind === "failsafe")
+        !state.execution &&
+        state.phase !== "stopping" &&
+        (state.phase !== "ordinary" || state.settings.run_state !== "paused")
       ) {
         const task = running?.queue?.next();
         if (task) dispatch({ kind: "task", task, now: clock.now() });
