@@ -259,3 +259,23 @@ for (const critical of [false, true])
           state = tick.state;
         }
       });
+
+for (const kind of ["land", "return_to_home"] as const)
+  test(`docs/failsafes.md: ${kind} override stands while a critical battery rule matches`, async () => {
+    const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+    let state = initial(config, 0);
+    state.phase = "failsafe";
+    state.settings = { ...state.settings, home_position: { latitude: 1, longitude: 1 } };
+    state.measurements = {
+      position: { value: { latitude: 2, longitude: 2, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] }, source: "gps", time: 0 },
+      armed: { value: true, source: "vehicle", time: 0 },
+      battery: { value: 5, source: "vehicle", time: 0 },
+    };
+    state = reduce(state, { kind: "task", now: 0, task: { kind, task_id: 1, asset_id: "A", requested_by: "OP", time: 0, now: true } }, config).state;
+    for (const now of [1, 2]) {
+      const result = reduce(state, { kind: "tick", now, hasWork: false }, config);
+      assert.equal(result.effects.some(e => e.kind === "response" && e.status === "active"), false);
+      assert.equal(result.state.execution?.task?.task_id, 1);
+      state = result.state;
+    }
+  });
