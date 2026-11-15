@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/plugin_input.json",
+  "title": "Plugin input",
+  "description": "One input a Plugin action takes, as the Plugin describes it: its name, a label for operators, which kind of input_value it takes, and whether it may be left out. A choice input lists the values it offers; no other input has choices.",
+  "type": "object",
+  "required": [
+    "input",
+    "label",
+    "input_kind"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "input_kind": {
+            "const": "choice"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "choices"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "choices"
+          ]
+        }
+      }
+    }
+  ],
+  "properties": {
+    "input": {
+      "$ref": "../variables/input.json"
+    },
+    "label": {
+      "$ref": "../variables/label.json"
+    },
+    "input_kind": {
+      "$ref": "../variables/input_kind.json"
+    },
+    "optional": {
+      "$ref": "../variables/optional.json"
+    },
+    "choices": {
+      "type": "array",
+      "items": {
+        "$ref": "../variables/choice.json"
+      },
+      "minItems": 1,
+      "maxItems": 32
+    }
+  },
+  "examples": [
+    {
+      "input": "box",
+      "label": "Area to search",
+      "input_kind": "area"
+    },
+    {
+      "input": "type",
+      "label": "Kind of place",
+      "input_kind": "choice",
+      "choices": [
+        "hospital",
+        "helipad"
+      ]
+    },
+    {
+      "input": "when",
+      "label": "Forecast time",
+      "input_kind": "time",
+      "optional": true
+    }
+  ]
+}
