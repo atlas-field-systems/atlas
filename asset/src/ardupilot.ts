@@ -37,6 +37,9 @@ export function ardupilot(
   let pendingGuided = false;
   let handback: { mode: number; phase: "late_guided" | "restoring" | "await_other_mode" } | undefined;
   let lastHeartbeat = -Infinity;
+  const parameters = new Map<string, number>();
+  const modeParameters = ["FLTMODE_CH", "FLTMODE1", "FLTMODE2", "FLTMODE3", "FLTMODE4", "FLTMODE5", "FLTMODE6"];
+  let switchPosition: number | undefined;
   const listeners = new Set<(id: number, value: unknown) => void>();
   function wait<T>(
     signal: AbortSignal,
@@ -96,6 +99,11 @@ export function ardupilot(
     Object.assign(m, { targetSystem, baseMode: 1, customMode });
     return write(m);
   }
+  function restoreMode() {
+    if (observedMode !== 4 || handback?.phase !== "late_guided") return;
+    handback.phase = "restoring";
+    void mode(handback.mode).catch(diagnostic);
+  }
   function subsystem(key: "gps" | "flight_controller", value: Subsystem) {
     const id = config.subsystems?.[key];
     if (id) observe({ subsystems: { [id]: { value, time: clock.now(), source: "ardupilot" } } });
@@ -121,8 +129,7 @@ export function ardupilot(
       if (!inControl) {
         if (handback) {
           if (m.customMode === 4 && handback.phase === "late_guided") {
-            handback.phase = "restoring";
-            void mode(handback.mode).catch(diagnostic);
+            restoreMode();
           } else if (m.customMode === handback.mode && handback.phase === "restoring") {
             handback.phase = "await_other_mode";
           } else if (m.customMode !== 4 && m.customMode !== handback.mode) handback = undefined;
@@ -138,6 +145,26 @@ export function ardupilot(
       if (!inControl) operation?.abort(new Error("flight controller is in control"));
       observe({ armed: stamp(armed), in_control: stamp(inControl), connected: stamp(true) });
       for (const cb of listeners) cb(id, m);
+    } else if (id === common.ParamValue.MSG_ID) {
+      const m = packet.protocol.data(packet.payload, common.ParamValue);
+      if (modeParameters.includes(m.paramId) && Number.isInteger(m.paramValue)) parameters.set(m.paramId, m.paramValue);
+    } else if (id === common.RcChannels.MSG_ID) {
+      const m = packet.protocol.data(packet.payload, common.RcChannels);
+      const channel = parameters.get("FLTMODE_CH");
+      if (!channel || channel > m.chancount || !modeParameters.every(name => parameters.has(name))) return;
+      const channels = [m.chan1Raw, m.chan2Raw, m.chan3Raw, m.chan4Raw, m.chan5Raw, m.chan6Raw, m.chan7Raw, m.chan8Raw, m.chan9Raw, m.chan10Raw, m.chan11Raw, m.chan12Raw, m.chan13Raw, m.chan14Raw, m.chan15Raw, m.chan16Raw, m.chan17Raw, m.chan18Raw];
+      const pwm = channels[channel - 1];
+      if (pwm === undefined || pwm === 0 || pwm === 65535) return;
+      const position = [1230, 1360, 1490, 1620, 1750].filter(limit => pwm > limit).length + 1;
+      const selected = parameters.get(`FLTMODE${position}`);
+      if (switchPosition !== undefined && position !== switchPosition && observedArmed && selected !== undefined && selected !== 4) {
+        inControl = false;
+        handback = { mode: selected, phase: "late_guided" };
+        operation?.abort(new Error("flight controller is in control"));
+        restoreMode();
+        observe({ in_control: stamp(false) });
+      }
+      switchPosition = position;
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
         packet.payload,
@@ -202,6 +229,8 @@ export function ardupilot(
       .pipe(new MavLinkPacketParser());
     reader.on("data", packet);
     socket.once("connect", () => {
+      parameters.clear();
+      switchPosition = undefined;
       const rates = new common.RequestDataStream();
       Object.assign(rates, {
         targetSystem,
@@ -227,6 +256,12 @@ export function ardupilot(
       if (!socket && now - lastAttempt >= config.heartbeat_s * 1000) open();
       if (!socket?.writable || now - lastHeartbeat < config.heartbeat_s * 1000) return;
       lastHeartbeat = now;
+      for (const name of modeParameters) {
+        if (parameters.has(name)) continue;
+        const request = new common.ParamRequestRead();
+        Object.assign(request, { targetSystem, targetComponent, paramId: name, paramIndex: -1 });
+        void write(request).catch(diagnostic);
+      }
       const m = new minimal.Heartbeat();
       Object.assign(m, {
         type: 6,

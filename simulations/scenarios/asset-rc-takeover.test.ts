@@ -30,7 +30,7 @@ scenario({
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
     const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: armed ? 129 : 1, customMode: mode, systemStatus: 4, mavlinkVersion: 3 }); out(m); };
-    const rc = () => { const m = new common.RcChannels(); Object.assign(m, { chancount: 8, chan5Raw: pilotArmed ? 1500 : 1000 }); out(m); };
+    const rc = () => { const m = new common.RcChannels(); Object.assign(m, { chancount: 8, chan5Raw: pilotArmed ? 1450 : 1000 }); out(m); };
     const telemetry = () => {
       rc();
       hb();
