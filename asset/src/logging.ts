@@ -21,10 +21,23 @@ async function lines(path: string, consume: (line: string) => Promise<void>) {
   const reader = createInterface({ input: createReadStream(path), crlfDelay: Infinity });
   for await (const line of reader) if (line) await consume(line);
 }
+async function replaceFile(path: string, data: string | Uint8Array) {
+  const temporary = `${path}.partial`;
+  try {
+    await writeFile(temporary, data);
+    await rename(temporary, path);
+  } catch (error) {
+    await rm(temporary, { force: true }).catch(() => {});
+    throw error;
+  }
+}
 async function archive(directory: string, end: number, reason: string, normal: boolean) {
   const operation = operationSchema.parse(JSON.parse(await readFile(join(directory, "operation.json"), "utf8")));
   const gaps: Gap[] = [];
-  await lines(join(directory, "gaps.jsonl"), async line => { gaps.push(gapSchema.parse(JSON.parse(line))); });
+  await lines(join(directory, "gaps.jsonl"), async line => {
+    try { gaps.push(gapSchema.parse(JSON.parse(line))); }
+    catch { gaps.push({ start: operation.start, end, dropped: 0, reason: "incomplete gap record; original bytes retained" }); }
+  });
   if (await exists(join(directory, "gap.json"))) gaps.push(gapSchema.parse(JSON.parse(await readFile(join(directory, "gap.json"), "utf8"))));
   if (!normal) gaps.push({ start: operation.start, end, dropped: 0, reason: "the app stopped unexpectedly; this record may be incomplete" });
   const stamp = new Date(operation.start).toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
@@ -71,7 +84,9 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   const recovery = (async () => {
     for (const directory of earlier) {
       if (await exists(join(directory, "archive-failed.json")) || !await exists(join(directory, "operation.json"))) continue;
-      await archive(directory, clock.now(), "unexpected stop", false).catch(() => {});
+      await archive(directory, clock.now(), "unexpected stop", false).catch(error => {
+        process.stderr.write(`Asset recovery failed; local records retained: ${error}\n`);
+      });
     }
   })();
   const directory = join(config.log_directory, String(start));
@@ -79,7 +94,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   await mkdir(join(directory, "diagnostics"));
   await mkdir(join(directory, "reports"));
   const operation = { start, asset_id: "unregistered", archive_directory: config.archive_directory };
-  await writeFile(join(directory, "operation.json"), JSON.stringify(operation));
+  await replaceFile(join(directory, "operation.json"), JSON.stringify(operation));
   await writeFile(join(directory, "config.json"), JSON.stringify(inspectConfig(config), null, 2));
   const packageVersion = async (url: URL) => JSON.parse(await readFile(url, "utf8")).version;
   await writeFile(join(directory, "versions.json"), JSON.stringify({
@@ -148,7 +163,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   }
   async function persistGap() {
     await evidence;
-    if (gaps.size) await writeFile(join(directory, "gaps.jsonl"), [...gaps.values()].map(gap => JSON.stringify(gap) + "\n").join("")).catch(() => {});
+    if (gaps.size) await replaceFile(join(directory, "gaps.jsonl"), [...gaps.values()].map(gap => JSON.stringify(gap) + "\n").join("")).catch(() => {});
   }
   async function drain() {
     while (pending.length) {
@@ -169,7 +184,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     gap: drop,
     identify(asset_id: string) {
       operation.asset_id = asset_id;
-      evidence = evidence.then(() => writeFile(join(directory, "operation.json"), JSON.stringify(operation))).catch(error => {
+      evidence = evidence.then(() => replaceFile(join(directory, "operation.json"), JSON.stringify(operation))).catch(error => {
         process.stderr.write(`Asset identity evidence write failed: ${error}\n`);
         drop(clock.now(), "evidence write failure");
       });
@@ -181,16 +196,21 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     },
     async capture(file: { name: string; bytes: Uint8Array }) {
       const name = `files/${++captureId}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-      await mkdir(join(directory, "files"), { recursive: true });
-      await writeFile(join(directory, name), file.bytes);
-      return join(directory, name);
+      try {
+        await mkdir(join(directory, "files"), { recursive: true });
+        await replaceFile(join(directory, name), file.bytes);
+        return join(directory, name);
+      } catch (error) {
+        drop(clock.now(), "capture write failure");
+        throw error;
+      }
     },
     async close(asset_id: string, reason: string) {
       while (writing) await writing;
       sealed = true;
       await evidence;
       operation.asset_id = asset_id;
-      await writeFile(join(directory, "operation.json"), JSON.stringify(operation));
+      await replaceFile(join(directory, "operation.json"), JSON.stringify(operation));
       await persistGap();
       await recovery;
       return archive(directory, clock.now(), reason, true);
