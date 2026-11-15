@@ -35,7 +35,7 @@ export function ardupilot(
   let observedArmed = false;
   let inControl = true;
   let pendingGuided = false;
-  let handback: "ready" | "await_other_mode" = "ready";
+  let handback: { mode: number; phase: "late_guided" | "restoring" | "await_other_mode" } | undefined;
   let lastHeartbeat = -Infinity;
   const listeners = new Set<(id: number, value: unknown) => void>();
   function wait<T>(
@@ -119,12 +119,19 @@ export function ardupilot(
       observedMode = m.customMode;
       if (observedMode === expectedMode) transitionFrom = null;
       if (!inControl) {
-        if (m.customMode !== 4) handback = "ready";
-        inControl = handback === "ready" && m.customMode === 4;
+        if (handback) {
+          if (m.customMode === 4 && handback.phase === "late_guided") {
+            handback.phase = "restoring";
+            void mode(handback.mode).catch(diagnostic);
+          } else if (m.customMode === handback.mode && handback.phase === "restoring") {
+            handback.phase = "await_other_mode";
+          } else if (m.customMode !== 4 && m.customMode !== handback.mode) handback = undefined;
+        }
+        inControl = !handback && m.customMode === 4;
       }
       else if (armed) inControl = m.customMode === (expectedMode ?? 4) || (expectedMode !== null && m.customMode === transitionFrom);
       if (!inControl && pendingGuided) {
-        handback = "await_other_mode";
+        handback = { mode: m.customMode, phase: "late_guided" };
         pendingGuided = false;
       }
       if (observedMode === expectedMode) pendingGuided = false;

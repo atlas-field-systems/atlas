@@ -50,7 +50,7 @@ scenario({
           writes.push(`SET_MODE ${m.customMode} pilotArmed=${pilotArmed}`);
           if (m.customMode === 9) landing = true;
           if (landing && m.customMode === 4 && !pilotArmed) {
-            pilotArmed = true; mode = 2; hb();
+            pilotArmed = true; mode = 5; hb();
             setTimeout(() => { mode = m.customMode; hb(); }, 30);
             return;
           }
