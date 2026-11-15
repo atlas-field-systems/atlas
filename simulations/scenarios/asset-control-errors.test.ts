@@ -23,7 +23,7 @@ scenario({
     assert.ok("key" in key);
     const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
     const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
-      initial_settings: { ...raw.initial_settings, failsafe_policy: [...raw.initial_settings.failsafe_policy, { rule_id: "IDLE", priority: 1, conditions: [{ kind: "idle", for_s: 2 }], response: { kind: "hold" } }] },
+      initial_settings: raw.initial_settings,
       control_tick_s: 0.137, equipment: { ...raw.equipment, port: address.port, heartbeat_s: 0.274 },
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
     let fail = false, inTick = false, failingTicks = false;
@@ -43,12 +43,16 @@ scenario({
     let archive: string;
     try {
       failingTicks = true;
+      value(await w.complete(w.admin.call("changeSettings", { params: { asset_id: app.asset_id }, body: { settings: {
+        failsafe_policy: [...raw.initial_settings.failsafe_policy, { rule_id: "IDLE", priority: 1, conditions: [{ kind: "idle", for_s: 1 }], response: { kind: "hold" } }],
+      } } })));
       await assert.doesNotReject(w.advance(1000));
       await new Promise(resolve => setImmediate(resolve));
       const before = received;
       await w.advance(3000);
       failingTicks = false;
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "response" && e.record.rule_id === "IDLE"), "rules run even when every equipment tick throws");
+      await w.advance(1000);
       await new Promise(resolve => setTimeout(resolve, 20));
       assert.ok(received > before, "MAVLink heartbeats continue after the failed tick");
     } finally {

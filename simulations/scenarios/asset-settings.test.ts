@@ -11,6 +11,7 @@ for (const change of [{ link_loss_after_s: 25 }, { run_state: "paused" as const 
     checks: ["asset/docs/logging.md#record-decisions-and-observed-equipment-behavior"],
     async run(w) {
       const key = value(await w.complete(w.admin.call("createAssetKey")));
+      assert.ok("key" in key);
       const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
       const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
         initial_settings: { ...raw.initial_settings, failsafe_policy: raw.initial_settings.failsafe_policy },
@@ -33,16 +34,21 @@ scenario({
   checks: ["asset/docs/logging.md#record-decisions-and-observed-equipment-behavior"],
   async run(w) {
     const key = value(await w.complete(w.admin.call("createAssetKey")));
-    const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
+    assert.ok("key" in key);
+      const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
     const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
-      initial_settings: { ...raw.initial_settings, run_state: "paused", failsafe_policy: [...raw.initial_settings.failsafe_policy, { rule_id: "IDLE", priority: 1, conditions: [{ kind: "idle", for_s: 5 }], response: { kind: "hold" } }] },
+      initial_settings: raw.initial_settings,
       equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
       log_directory: join(w.root, "logs"), archive_directory: join(w.root, "archives") });
     const clock = { now: () => w.clock.now(), after: (ms: number, fn: () => void) => w.clock.after(Math.ceil(ms), fn) };
     const app = await w.complete(startApp(config, { clock, fetch: w.network.fetchFor("app") }));
     try {
-      await w.advance(10000);
-      assert.equal(w.events.filter(e => e.kind === "report.settings" && e.record.settings.run_state === "running").length, 1);
+      const after = w.events.length;
+      value(await w.complete(w.admin.call("changeSettings", { params: { asset_id: app.asset_id }, body: { settings: {
+        run_state: "paused", failsafe_policy: [...raw.initial_settings.failsafe_policy, { rule_id: "IDLE", priority: 1, conditions: [{ kind: "idle", for_s: 1 }], response: { kind: "hold" } }],
+      } } })));
+      await w.advance(5000);
+      assert.equal(w.events.slice(after).filter(e => e.kind === "report.settings" && e.record.settings.run_state === "running").length, 1);
     } finally { await w.complete(app.stop()); }
   },
 });
@@ -52,9 +58,10 @@ scenario({
   checks: ["asset/docs/logging.md#when-logging-cannot-keep-up"],
   async run(w) {
     const key = value(await w.complete(w.admin.call("createAssetKey")));
-    const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
+    assert.ok("key" in key);
+      const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
     const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url }, log_queue_limit: 1,
-      initial_settings: { ...raw.initial_settings, failsafe_policy: [...raw.initial_settings.failsafe_policy, { rule_id: "IDLE", priority: 1, conditions: [{ kind: "idle", for_s: 2 }], response: { kind: "hold" } }] },
+      initial_settings: { ...raw.initial_settings, run_state: "paused", home_position: undefined, failsafe_policy: [...raw.initial_settings.failsafe_policy, { rule_id: "IDLE", priority: 1, conditions: [{ kind: "idle", for_s: 0 }], response: { kind: "hold" } }] },
       equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
       log_directory: join(w.root, "logs"), archive_directory: join(w.root, "archives") });
     w.network.cut("app");
@@ -63,7 +70,7 @@ scenario({
     const clock = { now: () => w.clock.now(), after: (ms: number, fn: () => void) => w.clock.after(Math.ceil(ms), fn) };
     const starting = startApp(config, { clock, fetch: (input, init) => { attempting.resolve(); return net(input, init); } });
     await w.complete(attempting.promise);
-    await w.advance(4000);
+    await w.advance(20000);
     w.network.heal("app");
     const app = await w.complete(starting);
     try {

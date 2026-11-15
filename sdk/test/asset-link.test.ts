@@ -113,6 +113,8 @@ test("bounded ordinary evidence preserves finals, in-flight batches and acknowle
     { type: "report.status", kind: "task", asset_id: "A", time: 1, task_id: 1, task_state: "completed" },
     { type: "report.failsafe", kind: "response", asset_id: "A", time: 2, response: { kind: "hold" }, task_state: "completed" },
   ] as const;
+  let evictedSettled = false;
+  void outbox.add([sample(-1)]).then(() => { evictedSettled = true; });
   void outbox.add([...finals]);
   for (let i = 1; i <= 1100; i++) void outbox.add([sample(i)]);
   first.settle({ ok: false, error: "lost", explanation: "no contact" });
@@ -121,6 +123,7 @@ test("bounded ordinary evidence preserves finals, in-flight batches and acknowle
   retry.settle({ ok: true });
   await old;
   assert.ok(droppedSettled);
+  assert.ok(evictedSettled, "dropping an ordinary report releases its acknowledgement wait");
   const reports = [];
   for (;;) {
     const batch = outbox.take({ bytes: Infinity, size: () => 0 });
@@ -130,7 +133,7 @@ test("bounded ordinary evidence preserves finals, in-flight batches and acknowle
   }
   assert.equal(reports.filter(r => r.type === "report.battery").length, 1024);
   for (const final of finals) assert.ok(reports.some(r => JSON.stringify(r) === JSON.stringify(final)));
-  assert.equal(gaps.reduce((a, b) => a + b, 0), 76);
+  assert.equal(gaps.reduce((a, b) => a + b, 0), 77);
   await outbox.flush();
   outbox.stop();
 });
