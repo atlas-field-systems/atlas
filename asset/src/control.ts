@@ -457,7 +457,7 @@ export function reduce(
       const now = event.now;
       const get = <T>(m: Parameters<typeof fresh<T>>[0]) =>
         fresh(m, now, config.measurement_stale_after_s);
-      if (!state.settings.home_position) {
+      if (config.description.settings?.includes("home_position") && !state.settings.home_position) {
         const p = get(state.measurements.position);
         if (p) state.settings = { ...state.settings, home_position: p };
       }

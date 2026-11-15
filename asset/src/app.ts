@@ -264,8 +264,8 @@ export async function startApp(
   };
 }
 function stationary(config: Config, clock: Clock): Vehicle {
-  return {
-    start(observe) {
+  let observe: (measurements: Measurements) => void = () => {};
+  function sample() {
       if (config.equipment.kind === "simulated")
         observe({
           position: {
@@ -274,8 +274,10 @@ function stationary(config: Config, clock: Clock): Vehicle {
             time: clock.now(),
           },
         });
-    },
-    tick() {},
+  }
+  return {
+    start(callback) { observe = callback; sample(); },
+    tick() { sample(); },
     async command() {
       throw new Error("stationary equipment does not move");
     },
