@@ -91,6 +91,3 @@ writes one gap record when writing works again and at shutdown: how many
 records, between which times, and why. The ZIP lists every gap. Flight goes on
 regardless.
 
-## Open
-
-- Default rotation and total limits.

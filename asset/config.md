@@ -80,7 +80,7 @@ initial settings. The configured safe action is unused when no commands are list
 | `log_directory` | Local operation records | Works while Core is unreachable |
 | `log_message_content` | Trace request and report bodies | Required boolean; credentials removed |
 | `log_queue_limit` | Diagnostic, evidence-write, and ordinary pre-registration report capacity | Required positive integer |
-| `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Required positive integers; overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
+| `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Required positive integers; starting points 64 MiB per file and 2 GiB per operation, about 17 hours at full detail (estimated from SITL runs at about 115 MB an hour); overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
 | `archive_directory` | [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) destination | Copied off by hand; the app never deletes archives |
 
 Equipment-specific options belong with their equipment driver or module.
@@ -92,4 +92,3 @@ Equipment-specific options belong with their equipment driver or module.
 - Secret storage and editing tools.
 - Whether any configuration can change during an operation.
 - How movement profiles are selected and switched.
-- Default rotation and total limits for diagnostics.

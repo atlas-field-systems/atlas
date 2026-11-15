@@ -48,8 +48,10 @@ Tasks.
 Tasks that arrive after the clear run normally, even if the operator sent them
 to follow the failed work; the operator cancels any that no longer make sense.
 
-Cancellation alone does not enter failsafe state or start a maneuver. An Atlas
-response starts only when a configured rule matches.
+When a flying Asset's command fails or times out, it stops moving and hovers
+where it is. A landing that fails keeps descending. Neither the failure nor the
+cancellation enters failsafe state or starts another maneuver. An Atlas response
+starts only when a configured rule matches.
 
 ## Independent flight-controller protections
 
@@ -329,15 +331,6 @@ restarting idle or contact timers.
   still needs to decide how that undetectable case is handled. No new failsafe
   response is selected here.
 
-
-- After a command other than Land fails or times out, should the Asset stop
-  moving and hover in place? The runtime currently does this unless a critical
-  fallback starts. This is a question for the owner, not a selected failsafe
-  outcome. A failed Land never becomes Hold. The same question includes Return
-  to home failing or timing out during its Land-mode descent. The runtime sends
-  no Hold then. If the switch into Land itself timed out and the vehicle stayed
-  in Guided, it keeps hovering rather than descending. A rule whose conditions
-  start holding afterwards can start a response. This adds no new failsafe decision.
 
 - Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
   failsafe levels, are tuned in [SITL](../../simulations/docs/asset.md) before the first flight.
