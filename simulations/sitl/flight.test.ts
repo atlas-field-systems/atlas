@@ -405,6 +405,19 @@ for (const scenario of [
         return;
       }
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      // ArduPilot can publish a position before its pre-arm checks pass (for example
+      // "Logging not started"); a takeoff sent then is refused. Wait until it can arm.
+      if (scenario !== "armed-startup") {
+        const observer = connect({ host: "127.0.0.1", port: pilotPort });
+        observer.on("error", () => {});
+        await once(observer, "connect");
+        let armable = false;
+        observer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser()).on("data", packet => {
+          if (packet.header.compid === 1 && packet.header.msgid === common.SysStatus.MSG_ID)
+            armable = (packet.protocol.data(packet.payload, common.SysStatus).onboardControlSensorsHealth & 0x10000000) !== 0;
+        });
+        try { await until(() => armable); } finally { observer.destroy(); }
+      }
       if (scenario === "battery-layers") {
         const pilot = connect({ host: "127.0.0.1", port: pilotPort });
         pilot.on("error", () => {});
