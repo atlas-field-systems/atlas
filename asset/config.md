@@ -1,6 +1,6 @@
 # Asset configuration
 
-A discussion draft for the Asset app; nothing is implemented. Configuration
+Configuration inspection is implemented; equipment execution is in progress. Configuration
 selects the Asset's [modules and equipment drivers](docs/assets.md#modules-and-equipment-drivers)
 and how it reaches Core.
 
@@ -24,9 +24,24 @@ equipment, supported commands, reporting policy, and enabled failsafes. It names
 missing or incompatible options without moving equipment. The same check runs in
 CI without hardware. The proposal is to load one local file.
 
-## Options to discuss
+## Inspect a configuration
 
-Names are proposed keys, not an implemented format.
+With Node 24, run `npm ci` in Protocol, Core, the SDK, and Asset, in that order.
+From `asset/`, run `node src/main.ts inspect examples/copter.json`.
+The command reads one JSON file, validates it, prints the effective configuration
+with `asset_key` removed, and exits without opening equipment or Core. Invalid
+configuration exits with status 1 and names the affected options.
+
+The [copter example](examples/copter.json) is the implemented format. It requires
+explicit behavior values. Its values are provisional until verified in SITL.
+`description` is the Protocol registration body and lists supported capabilities.
+`equipment.kind` selects `ardupilot` with a TCP host, port, heartbeat interval in
+seconds, and GCS system ID, or `simulated` with a stationary position.
+`safe_action` is the built-in failsafe response. `control_tick_s` sets the
+control-loop interval. `log_queue_limit` bounds queued diagnostics.
+The app uses Protocol's validator for all shared values.
+
+## Options
 
 | Option | Purpose | Notes |
 | --- | --- | --- |
@@ -56,7 +71,7 @@ Equipment-specific options belong with their equipment driver or module.
 
 ## Open
 
-- File format, defaults, secret storage, and editing tools.
+- Secret storage and editing tools.
 - Whether any configuration can change during an operation.
 - How movement profiles are selected and switched.
 - Default rotation and total limits for diagnostics.
