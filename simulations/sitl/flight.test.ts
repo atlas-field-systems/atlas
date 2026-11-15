@@ -28,6 +28,8 @@ async function equipmentPort() {
 }
 
 for (const scenario of [
+  "failsafe-signal",
+  "rc-late-guided",
   "armed-startup",
   "equipment-drop",
   "equipment-refused",
@@ -62,7 +64,7 @@ for (const scenario of [
         join(homedir(), ".cache/atlas-sitl");
       await writeFile(
         join(root, "flight.parm"),
-        `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\nFS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
+        `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\nFLTMODE1 4\nFLTMODE4 5\nFS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
       );
       const equipment = await equipmentPort();
       const pilotPort = await equipmentPort();
@@ -524,6 +526,60 @@ for (const scenario of [
         }));
         assert.equal(checked.filter(Boolean).length, 1, "the killed operation has a separate verified ZIP");
         await writeFile(join(root, "crash.json"), JSON.stringify({ killedAt, restartedAt, samples, position }, null, 2));
+        await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
+        return;
+      }
+      if (scenario === "failsafe-signal" || scenario === "rc-late-guided") {
+        const pilot = connect({ host: "127.0.0.1", port: pilotPort });
+        pilot.on("error", () => {});
+        cleanup.push(() => { pilot.destroy(); });
+        await once(pilot, "connect");
+        const protocol = new MavLinkProtocolV2(255, 190);
+        const samples: unknown[] = [];
+        let vehicleMode = -1, status = -1;
+        pilot.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser()).on("data", packet => {
+          if (packet.header.compid !== 1) return;
+          if (packet.header.msgid === minimal.Heartbeat.MSG_ID) {
+            const m = packet.protocol.data(packet.payload, minimal.Heartbeat);
+            vehicleMode = m.customMode; status = m.systemStatus;
+            samples.push({ time: Date.now(), mode: vehicleMode, status });
+          }
+          if (packet.header.msgid === common.SysStatus.MSG_ID) samples.push(packet.protocol.data(packet.payload, common.SysStatus));
+        });
+        const set = async (paramId: string, paramValue: number) => {
+          const m = new common.ParamSet();
+          Object.assign(m, { targetSystem: 1, targetComponent: 1, paramId, paramValue, paramType: 9 });
+          await send(pilot, m, protocol);
+        };
+        await set("FS_THR_ENABLE", 1);
+        await set("FLTMODE1", 4);
+        await set("FLTMODE4", 5);
+        value(await admin.call("sendTasks", { params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "takeoff", target_altitude: { altitude_m: 15, altitude_reference: "launch" } }] } }));
+        await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+        if (scenario === "failsafe-signal") {
+          await set("SIM_RC_FAIL", 1);
+          await until(() => status === 5 && vehicleMode === 6);
+          const m = new common.SetMode();
+          Object.assign(m, { targetSystem: 1, baseMode: 1, customMode: 4 });
+          await send(pilot, m, protocol);
+          await delay(1000);
+          await writeFile(join(root, "failsafe-signal.json"), JSON.stringify(samples, null, 2));
+          assert.equal(status, 5, "failsafe remains visible after an external mode selection");
+          assert.equal(vehicleMode, 6, "Atlas restores radio failsafe RTL after Guided");
+          assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false);
+        } else {
+          const rc = new common.RcChannelsOverride();
+          Object.assign(rc, { targetSystem: 1, targetComponent: 1, chan5Raw: 1500 });
+          await send(pilot, rc, protocol);
+          await until(() => vehicleMode === 5);
+          const m = new common.SetMode();
+          Object.assign(m, { targetSystem: 1, baseMode: 1, customMode: 4 });
+          await send(pilot, m, protocol);
+          await delay(1000);
+          assert.equal(vehicleMode, 5, "persistent pilot switch wins over a late Guided selection");
+          assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false);
+          await writeFile(join(root, "rc-takeover.json"), JSON.stringify(samples, null, 2));
+        }
         await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
         return;
       }
