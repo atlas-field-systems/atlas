@@ -232,7 +232,7 @@ export async function startApp(
       dispatch({
         kind: "tick",
         now: clock.now(),
-        hasWork: Boolean(running?.queue?.held().length),
+        hasWork: running?.queue?.peek() !== undefined,
       });
       if (before !== state.settings)
         report([

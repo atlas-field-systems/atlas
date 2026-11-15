@@ -293,3 +293,20 @@ test("asset/docs/failsafes.md: the now callback identifies the request for an ov
   });
   assert.deepEqual(requests, [42]);
 });
+
+test("peek observes exactly the work next can start without changing reports [sdk/docs/asset.md#the-queue-helper]", () => {
+  const f = fixture();
+  f.deliver([2], { send_last: 3 });
+  assert.equal(f.q.peek(), undefined);
+  f.deliver([1], { send_last: 3 });
+  assert.equal(f.q.peek(), undefined);
+  f.deliver([3], { send_last: 3 });
+  const before = f.reports.length;
+  assert.equal(f.q.peek()?.task_id, 1);
+  assert.equal(f.q.peek()?.task_id, 1);
+  assert.equal(f.reports.length, before);
+  assert.equal(f.q.next()?.task_id, 1);
+  assert.equal(f.q.peek(), undefined);
+  f.q.finish(1, "completed");
+  assert.equal(f.q.peek()?.task_id, 2);
+});

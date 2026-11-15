@@ -12,7 +12,13 @@ import { startApp, parseConfig } from "@atlas/asset";
 import { spawnCore } from "../src/core-process.ts";
 import { value } from "../src/world.ts";
 
-for (const scenario of ["flight", "battery", "link", "land-now"] as const)
+for (const scenario of [
+  "flight",
+  "battery",
+  "link",
+  "land-now",
+  "idle-gap",
+] as const)
   test(
     `atlas/first-flight.md and asset/docs/failsafes.md: ${scenario} on real Core, Asset and SITL`,
     { timeout: 180000 },
@@ -95,6 +101,9 @@ for (const scenario of ["flight", "battery", "link", "land-now"] as const)
       let linkController = new AbortController();
       let cutNextFrame = false;
       let abortedAt: number | undefined;
+      let buffered = "";
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
       const assetFetch: typeof fetch = async (input, init) => {
         const response = await fetch(input, {
           ...init,
@@ -109,7 +118,25 @@ for (const scenario of ["flight", "battery", "link", "land-now"] as const)
           response.body.pipeThrough(
             new TransformStream({
               transform(chunk, controller) {
-                controller.enqueue(chunk);
+                if (scenario === "idle-gap") {
+                  buffered += decoder.decode(chunk, { stream: true });
+                  let end: number;
+                  while ((end = buffered.indexOf("\n\n")) >= 0) {
+                    let frame = buffered.slice(0, end);
+                    buffered = buffered.slice(end + 2);
+                    frame = frame.replace(/^data: (.+)$/m, (line, json) => {
+                      const event = JSON.parse(json);
+                      if (event.kind !== "tasks.requested") return line;
+                      return `data: ${JSON.stringify({
+                        ...event,
+                        record: event.record.filter(
+                          (task: { task_id: number }) => task.task_id !== 2,
+                        ),
+                      })}`;
+                    });
+                    controller.enqueue(encoder.encode(frame + "\n\n"));
+                  }
+                } else controller.enqueue(chunk);
                 if (cutNextFrame) {
                   cutNextFrame = false;
                   abortedAt = Date.now();
@@ -140,6 +167,13 @@ for (const scenario of ["flight", "battery", "link", "land-now"] as const)
         log_directory: join(root, "asset"),
         archive_directory: join(root, "archives"),
       });
+      if (scenario === "idle-gap")
+        config.initial_settings.failsafe_policy!.push({
+          rule_id: "IDLE",
+          priority: 50,
+          conditions: [{ kind: "idle", for_s: 1 }, { kind: "airborne" }],
+          response: { kind: "land" },
+        });
       if (scenario === "battery")
         config.initial_settings.failsafe_policy!.push({
           rule_id: "LB",
@@ -167,6 +201,68 @@ for (const scenario of ["flight", "battery", "link", "land-now"] as const)
       const app = await startApp(config, { fetch: assetFetch });
       cleanup.push(() => app.stop());
       await until(() => events.some((e) => e.kind === "report.telemetry"));
+      if (scenario === "idle-gap") {
+        value(
+          await admin.call("sendTasks", {
+            params: { asset_id: app.asset_id },
+            body: {
+              tasks: [
+                {
+                  kind: "takeoff",
+                  target_altitude: {
+                    altitude_m: 5,
+                    altitude_reference: "launch",
+                  },
+                },
+              ],
+            },
+          }),
+        );
+        await until(() =>
+          events.some(
+            (e) =>
+              e.kind === "report.status" &&
+              e.record.kind === "task" &&
+              e.record.task_id === 1 &&
+              e.record.task_state === "completed",
+          ),
+        );
+        value(
+          await admin.call("sendTasks", {
+            params: { asset_id: app.asset_id },
+            body: { tasks: [{ kind: "hold" }, { kind: "hold" }] },
+          }),
+        );
+        await until(() =>
+          events.some(
+            (e) =>
+              e.kind === "report.status" &&
+              e.record.kind === "queue" &&
+              e.record.task_ids.includes(3),
+          ),
+        );
+        await delay(2000);
+        assert.ok(
+          events.some(
+            (e) =>
+              e.kind === "report.failsafe" &&
+              e.record.kind === "response" &&
+              e.record.rule_id === "IDLE" &&
+              e.record.task_state === "active",
+          ),
+          "a held Task waiting for a missing predecessor must not suppress idle",
+        );
+        await until(() =>
+          events.some(
+            (e) =>
+              e.kind === "report.failsafe" &&
+              e.record.kind === "response" &&
+              e.record.rule_id === "IDLE" &&
+              e.record.task_state === "completed",
+          ),
+        );
+        return;
+      }
       if (scenario === "battery" || scenario === "link") {
         value(
           await admin.call("sendTasks", {
@@ -184,15 +280,16 @@ for (const scenario of ["flight", "battery", "link", "land-now"] as const)
             },
           }),
         );
-        if (scenario === "link") await until(() =>
-          events.some(
-            (e) =>
-              e.kind === "report.telemetry" &&
-              e.record.position.altitudes?.some(
-                (a) => a.altitude_reference === "launch" && a.altitude_m >= 3,
-              ),
-          ),
-        );
+        if (scenario === "link")
+          await until(() =>
+            events.some(
+              (e) =>
+                e.kind === "report.telemetry" &&
+                e.record.position.altitudes?.some(
+                  (a) => a.altitude_reference === "launch" && a.altitude_m >= 3,
+                ),
+            ),
+          );
         if (scenario === "link") {
           cutNextFrame = true;
           await until(() => abortedAt !== undefined);

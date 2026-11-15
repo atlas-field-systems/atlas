@@ -101,7 +101,9 @@ SITL runs at five times real time, so its configured GCS heartbeat interval is
 0.2 wall seconds. Flight-controller GCS failsafe remains enabled. Low battery
 uses SITL's battery consumption with a smaller configured battery capacity.
 Core-path loss aborts the Asset's HTTP connection while its equipment TCP link
-continues. Each scenario prints its temporary evidence directory, including
+continues. The idle-gap scenario withholds one Task in the simulated network
+while delivering its successor. It checks that the blocked queue does not
+suppress the configured idle response. Each scenario prints its temporary evidence directory, including
 Core archives and SITL output. Asset shutdown writes its own verified archive.
 These checks prove simulated behavior only. The remaining scenario list above
 is still the conformance target.

@@ -130,7 +130,8 @@ it. The helper holds the Asset's Tasks and hands them to the app.
   and used when that Task arrives. The helper answers it with a queue report
   carrying its `request_id`
   ([geo features](../../core/docs/api.md#geo-features)).
-- **The app pulls work.** The app calls `next()` when it is ready to run a Task,
+- **The app pulls work.** `peek()` returns the Task `next()` could start, without
+  starting it or emitting reports. The app calls `next()` when it is ready to run a Task,
   so pause, equipment checks and failsafes stay in the app. With `now`, the helper
   cancels every lower `task_id` and tells the app to end the running Task and run
   the new one at once, even while paused. Lower updates awaiting delivery are

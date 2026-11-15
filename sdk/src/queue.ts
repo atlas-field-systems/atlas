@@ -57,6 +57,7 @@ type Effect =
 export interface Queue {
   apply(event: AssetEvent): void;
   next(): Task | undefined;
+  peek(): Task | undefined;
   finish(id: number, state: FinishState, fields?: FinishFields): void;
   clear(): void;
   held(): number[];
@@ -351,6 +352,7 @@ export function createQueue(
   return {
     apply,
     next: () => apply({ kind: "start" }),
+    peek: () => available(state),
     finish: (task_id, state, fields = {}) => {
       apply({ kind: "finish", task_id, state, fields });
     },

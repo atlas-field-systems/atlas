@@ -51,9 +51,10 @@ not changes to the behavior specified in the linked pages:
 - The control state now separates phase, execution, override, and per-rule
   matching state. Commanded activation overrides pause, repeated settings do not
   reissue movement, and suspended time does not consume the command timeout.
-  Critical fallback retains its rule and priority. Boundary and subsystem
-  condition durations and identifying
-  idle from startable work rather than every held Task remain incomplete.
+  Critical fallback retains its rule and priority. Hold and pause sample current
+  conditions when re-arming. Idle detection uses the SDK queue's startable work,
+  including while paused, rather than every held Task. Boundary and subsystem
+  conditions and boundary durations remain incomplete.
 - The command registry still duplicates command kinds and uses shared
   completion tolerances. Current-state offers, duplicate active Task reports,
   flight-controller request refusal, blocked outbox/session diagnostics,
