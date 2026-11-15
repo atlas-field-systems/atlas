@@ -45,7 +45,7 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
   };
   let core = await startCore({ clock, config: coreConfig });
   const clients: Client[] = [];
-  const cleanup = new Set<() => void>();
+  const cleanup = new Set<() => unknown>();
   function client<C extends Credential>(
     caller: string,
     credential: C,
@@ -161,7 +161,7 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
     complete,
     until,
     diagnostics,
-    onClose(fn: () => void) {
+    onClose(fn: () => unknown) {
       cleanup.add(fn);
     },
     trace: {
@@ -172,7 +172,7 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
     },
     drain: settle,
     async close() {
-      for (const fn of cleanup) fn();
+      for (const fn of cleanup) await fn();
       for (const c of clients) c.close();
       network.close();
       await settle();
