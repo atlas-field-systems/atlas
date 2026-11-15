@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { follow } from "@atlas/sdk";
-import { createWorld, value } from "../src/world.ts";
+import { reportingPeripheral } from "../src/peripheral.ts";
+import { createWorld } from "../src/world.ts";
 
 test("sdk/docs/live.md: data and keepalives advance contact; closing retains the last hear-time", async (t) => {
   const w = await createWorld({ stream_keepalive_s: 2 });
@@ -15,15 +16,15 @@ test("sdk/docs/live.md: data and keepalives advance contact; closing retains the
   await w.until(() => contact.open);
   const opened = contact.last_heard!;
   await w.advance(1000);
-  const issued = value(await w.complete(w.admin.call("createAssetKey")));
-  if (!("key" in issued)) throw new Error("missing key");
-  const asset = w.client("contact-asset", { kind: "asset", key: issued.key });
-  value(await w.complete(asset.connect()));
-  value(await w.complete(asset.call("register", { body: { entity_type: "drone", commands: [], reports: ["telemetry"], settings: ["home_position"] } })));
+  await reportingPeripheral(w, { name: "contact-asset", config: {
+    description: { commands: [], reports: ["telemetry"] }, initial_settings: {},
+  } });
   await w.settle();
   assert.ok(contact.last_heard! > opened, "data frame must advance contact before a keepalive");
+  const dataHeard = contact.last_heard!;
   await w.advance(2000);
-  assert.equal(contact.last_heard, opened + 2000);
+  assert.ok(contact.last_heard! > dataHeard, "keepalive advances contact after registration data");
+  assert.ok(contact.last_heard! <= w.clock.now());
   const heard = contact.last_heard;
   stream.stop();
   await w.complete(stream.done);

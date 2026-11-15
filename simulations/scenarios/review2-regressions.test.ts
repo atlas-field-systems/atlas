@@ -122,6 +122,7 @@ scenario({
 });
 
 scenario({
+  // SDK observer contract: the app does not expose a caller-supplied SDK diagnostic observer.
   name: "one client orders diagnostics across startup queue outbox and report retries",
   checks: ["sdk/docs/logging.md#what-it-reports"],
   async run(w) {
@@ -186,6 +187,7 @@ scenario({
 });
 
 scenario({
+  // SDK configuration contract: the app does not expose SDK backoff configuration.
   name: "report resend uses configured growing backoff and ends with the session",
   checks: ["sdk/docs/asset.md#running-over-any-link"],
   async run(w) {
