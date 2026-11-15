@@ -16,7 +16,8 @@ scenario({
     await w.until(() => telemetry().length === 2);
     await w.advance(1000);
     assert.equal(telemetry().length, 2, "a changed measurement is sent once");
+    const beforeHeartbeat = w.network.traffic.filter(t => t.path.endsWith("/reports")).length;
     await w.advance(app.config.reporting.heartbeat_s * 1000);
-    assert.ok(w.network.traffic.filter(t => t.path.endsWith("/reports")).length >= 3, "heartbeat keeps reporting while equipment is quiet");
+    assert.ok(w.network.traffic.filter(t => t.path.endsWith("/reports")).length > beforeHeartbeat, "heartbeat keeps reporting while equipment is quiet");
   },
 });
