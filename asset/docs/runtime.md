@@ -131,9 +131,10 @@ the queue unchanged. The helper answers them with current Task or queue evidence
 and the request ID. Known final Task outcomes remain in memory for refused
 cancel answers. Cancels accepted before Task delivery keep their original
 answer even if the Asset enters failsafe state before delivery.
-A settings Task validates its policy before stopping current execution. Invalid
-policy ends the Task failed with the validator explanation and clears remaining
-Tasks through the existing command-failure rule. A valid immediate settings
+A settings Task validates its policy before the SDK supersedes current work.
+Invalid policy is refused at admission and leaves current work cancellable.
+The execution boundary also validates policies; a rejection there fails the
+Task and clears remaining Tasks through the command-failure rule. A valid immediate settings
 Task ends the superseded execution and holds movement before applying settings.
 Activation emits settings evidence whenever it changes run state. Move To
 updates prepare their new requested speed; Land and Return to home retain speed.
@@ -341,3 +342,12 @@ Gap accumulation keeps one count and first-to-last interval per failure reason,
 rather than queuing disk writes on every reason change. Persistence writes that
 bounded set after draining and at shutdown. The intervals may include time
 between separate occurrences of the same failure reason.
+
+A failure before descent retains a safe-stop intent independently of Task
+execution. If equipment refuses the Hold or disconnects, fresh equipment state
+allows another Hold attempt. Ordinary work waits until a fresh speed sample
+after equipment accepts the Hold shows the configured stopped tolerance. The configured Hold
+timeout permits another attempt when confirmation does not arrive. This stops
+the old movement without retrying the failed Task. Flight-controller takeover
+clears this intent because the controller owns motion. Land and Return to home
+failures in their descent step leave descent running.

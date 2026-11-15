@@ -30,8 +30,6 @@ for (const failure of ["disconnect", "settings"] as const) scenario({
     let connections = 0;
     const targets: number[] = [];
     let takeoverSent = false;
-    const setModes: Array<{ mode: number; afterTakeover: boolean }> = [];
-    const commands: Array<{ command: number; afterTakeover: boolean }> = [];
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
     const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode: mode, systemStatus: 4, mavlinkVersion: 3 }); out(m); };
@@ -53,7 +51,6 @@ for (const failure of ["disconnect", "settings"] as const) scenario({
         if (id === minimal.Heartbeat.MSG_ID) { telemetry(); return; }
         if (id === common.SetMode.MSG_ID) {
           const m = packet.protocol.data(packet.payload, common.SetMode);
-          setModes.push({ mode: m.customMode, afterTakeover: takeoverSent });
           mode = m.customMode;
           hb();
           return;
@@ -68,7 +65,6 @@ for (const failure of ["disconnect", "settings"] as const) scenario({
         }
         if (id === common.CommandLong.MSG_ID) {
           const m = packet.protocol.data(packet.payload, common.CommandLong);
-          commands.push({ command: m.command, afterTakeover: takeoverSent });
           const ack = new common.CommandAck(); Object.assign(ack, { command: m.command, result: 0, progress: 0, resultParam2: 0, targetSystem: 255, targetComponent: 190 }); out(ack);
         }
       });

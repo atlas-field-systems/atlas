@@ -14,7 +14,7 @@ import { fresh, type Vehicle, type Measurements } from "./vehicle.ts";
 import { peripheral } from "./peripheral.ts";
 import { ardupilot } from "./ardupilot.ts";
 import { createLog } from "./logging.ts";
-import type { Config } from "./config.ts";
+import { parseConfig, type Config } from "./config.ts";
 export async function startApp(
   config: Config,
   options: { clock?: Clock; fetch?: typeof fetch; signal?: AbortSignal } = {},
@@ -101,7 +101,7 @@ export async function startApp(
         case "diagnostic":
           break;
         case "vehicle":
-          void vehicle.command(effect.command).catch((e) =>
+          void vehicle.command(effect.command).then(() => dispatch({ kind: "command_accepted", execution_id: effect.execution_id, now: clock.now() })).catch((e) =>
             dispatch({
               kind: "command_failed",
               execution_id: effect.execution_id,
@@ -214,7 +214,15 @@ export async function startApp(
       onReports: reports => { for (const value of reports) log.report(value); },
       queue: config.description.commands.length
         ? {
-            refuse: request => refusal(state, request),
+            refuse: request => {
+              const reason = refusal(state, request);
+              if (reason || request.kind !== "task" || request.task.kind !== "settings") return reason;
+              try {
+                parseConfig({ ...config, initial_settings: { ...state.settings, ...request.task.settings } });
+              } catch (error) {
+                return error instanceof Error ? error.message : String(error);
+              }
+            },
             runNow: (task, request_id) =>
               dispatch({ kind: "task", task, request_id, now: clock.now() }),
             stop: (id, because) => {

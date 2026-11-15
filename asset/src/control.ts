@@ -36,6 +36,7 @@ export interface State {
   >;
   measurements: Measurements;
   settings: ComponentsSettings;
+  safeStop: { issuedAt: number | null; acceptedAt: number | null } | null;
   commandId: number;
   lastHeard: number;
 }
@@ -57,6 +58,7 @@ export type Event =
       now: number;
       execution_id: number;
     }
+  | { kind: "command_accepted"; execution_id: number; now: number }
   | { kind: "contact"; contact: { open: boolean; last_heard: number | null } };
 export type Effect =
   | { kind: "vehicle"; execution_id: number; command: VehicleCommand }
@@ -81,12 +83,13 @@ export type Effect =
   | { kind: "diagnostic"; explanation: string };
 export function refusal(state: State, request: QueueRequest): string | undefined {
   if (state.phase === "flight_controller") return "flight controller is in control";
+  if (state.safeStop && request.kind === "task" && !(request.task.now && isOverride(request.task.kind))) return "equipment stop is pending";
   if (state.phase === "ordinary") return;
   if (request.kind === "task" && request.task.now && isOverride(request.task.kind)) return;
   return "failsafe locks ordinary work";
 }
 export function canPullTask(state: State): boolean {
-  return !state.execution && state.phase === "ordinary" && state.settings.run_state !== "paused";
+  return !state.safeStop && !state.execution && state.phase === "ordinary" && state.settings.run_state !== "paused";
 }
 export function initial(config: Config, now: number): State {
   const idle: { since: number | null } = { since: now };
@@ -101,6 +104,7 @@ export function initial(config: Config, now: number): State {
     }])),
     measurements: {},
     settings: config.initial_settings,
+    safeStop: null,
     commandId: 0,
     lastHeard: now,
   };
@@ -138,6 +142,7 @@ export function reduce(
     fallback = false,
   ) {
     try {
+      state.safeStop = null;
       const execution = prepare(
         action,
         state.settings,
@@ -170,6 +175,10 @@ export function reduce(
       failed(action, task, rule, now, fallback, error);
     }
   }
+  function stop(now: number) {
+    state.safeStop = { issuedAt: now, acceptedAt: null };
+    effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
+  }
   function failed(
     action: ComponentsFailsafeResponse,
     task: Task | null,
@@ -191,7 +200,7 @@ export function reduce(
     }
     if (criticalFallback(rule, action, now, fallback))
       activate({ kind: "return_to_home" }, rule, now, true);
-    else if (!descending) effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
+    else if (!descending) stop(now);
   }
   function criticalFallback(
     rule: ComponentsFailsafeRule | null,
@@ -309,6 +318,7 @@ export function reduce(
       ) {
         const interrupted = state.execution;
         if (interrupted) finish(interrupted, "cancelled");
+        state.safeStop = null;
         state.phase = "flight_controller";
         state.execution = null;
         state.override = null;
@@ -477,6 +487,10 @@ export function reduce(
       }
       break;
     }
+    case "command_accepted":
+      if (event.execution_id === state.commandId && state.safeStop)
+        state.safeStop = { ...state.safeStop, acceptedAt: event.now };
+      break;
     case "command_failed": {
       if (
         event.execution_id !== state.commandId ||
@@ -484,7 +498,10 @@ export function reduce(
       )
         break;
       const w = state.execution;
-      if (!w) break;
+      if (!w) {
+        if (state.safeStop) state.safeStop = { issuedAt: null, acceptedAt: null };
+        break;
+      }
       failed(w.execution.action, w.task, w.rule, event.now, w.fallback, new Error(event.explanation));
       break;
     }
@@ -514,6 +531,16 @@ export function reduce(
             effects.push({ kind: "shutdown" });
           }
           break;
+        }
+      }
+      if (state.safeStop) {
+        const stopIntent = state.safeStop;
+        if (stopIntent.issuedAt === null) {
+          if (get(state.measurements.connected) === true && get(state.measurements.position) && get(state.measurements.armed) !== undefined) stop(now);
+        } else if (stopIntent.acceptedAt !== null && state.measurements.speed?.time != null && state.measurements.speed.time > stopIntent.acceptedAt && get(state.measurements.connected) === true && (get(state.measurements.speed) ?? Infinity) <= config.completion_tolerances.hold!.stopped_mps) {
+          state.safeStop = null;
+        } else if (now - stopIntent.issuedAt > config.command_timeouts.hold! * 1000) {
+          state.safeStop = { issuedAt: null, acceptedAt: null };
         }
       }
       const w = state.execution;

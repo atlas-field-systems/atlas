@@ -198,6 +198,7 @@ test("docs/failsafes.md: observed Land survives delayed critical battery evidenc
   t.after(() => vehicle.stop());
   vehicle.start(() => {});
   [peer] = await connected;
+  assert.ok(peer);
   peer.on("error", () => {});
   const protocol = new MavLinkProtocolV2(1, 1);
   const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
