@@ -309,3 +309,19 @@ test("docs/failsafes.md: a lost equipment link fails active movement even after 
   assert.ok(result.effects.some(e => e.kind === "clear"));
   assert.equal(result.state.phase, "ordinary");
 });
+
+for (const [west, east, longitude, outside] of [
+  [-1, 1, 179.9, true], [-1, 1, -179.9, true], [-1, 1, 0, false],
+  [179, -179, 179.9, false], [179, -179, -179.9, false], [179, -179, 0, true],
+] as const) test(`docs/failsafes.md: polygon ${west} to ${east} at longitude ${longitude}`, async () => {
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.initial_settings.failsafe_policy = [{ rule_id: "AREA", priority: 1,
+    conditions: [{ kind: "outside_area", area: [
+      { latitude: -1, longitude: west }, { latitude: -1, longitude: east },
+      { latitude: 1, longitude: east }, { latitude: 1, longitude: west },
+    ] }], response: { kind: "land" } }];
+  let state = initial(config, 0);
+  state.measurements = { position: { value: { latitude: 0, longitude }, source: "vehicle", time: 0 },
+    armed: { value: true, source: "vehicle", time: 0 } };
+  assert.equal(reduce(state, { kind: "tick", now: 0, hasWork: false }, config).state.phase === "failsafe", outside);
+});
