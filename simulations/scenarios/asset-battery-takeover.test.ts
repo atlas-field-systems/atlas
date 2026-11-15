@@ -26,6 +26,7 @@ for (const critical of [false, true]) scenario({
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
     const protocol = new MavLinkProtocolV2(1, 1);
     let mode = 4, armed = true, protectionActive = false, landing = false;
+    let confirmationDelayed = false;
     const writes: string[] = [];
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
@@ -61,6 +62,13 @@ for (const critical of [false, true]) scenario({
           if (landing && m.customMode === 4 && !protectionActive) {
             protectionActive = true; mode = critical ? 9 : 6;
             setTimeout(() => { mode = m.customMode; telemetry(); }, 30);
+            return;
+          }
+          if (protectionActive && m.customMode === (critical ? 9 : 6) && mode === 4) {
+            if (confirmationDelayed) return;
+            confirmationDelayed = true;
+            hb(); hb(); hb();
+            setTimeout(() => { mode = m.customMode; hb(); }, 100);
             return;
           }
           mode = m.customMode; hb();

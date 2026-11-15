@@ -27,11 +27,12 @@ scenario({
     const protocol = new MavLinkProtocolV2(1, 1);
     let mode = 4, armed = true, pilotArmed = false, landing = false;
     let lateGuided = false;
+    let rcReleased = false;
     const writes: string[] = [];
     let peer: Socket | undefined;
     const out = (m: Parameters<typeof send>[1]) => { if (peer && !peer.destroyed) void send(peer, m, protocol).catch(() => {}); };
     const hb = () => { const m = new minimal.Heartbeat(); Object.assign(m, { type: 2, autopilot: 3, baseMode: armed ? 129 : 1, customMode: mode, systemStatus: 4, mavlinkVersion: 3 }); out(m); };
-    const rc = () => { const m = new common.RcChannels(); Object.assign(m, { chancount: 8, chan5Raw: pilotArmed ? 1450 : 1000 }); out(m); };
+    const rc = () => { const m = new common.RcChannels(); Object.assign(m, { chancount: 8, chan5Raw: rcReleased ? 1450 : 1000 }); out(m); };
     const telemetry = () => {
       rc();
       hb();
@@ -59,7 +60,7 @@ scenario({
           writes.push(`SET_MODE ${m.customMode} pilotArmed=${pilotArmed}`);
           if (m.customMode === 9) landing = true;
           if (landing && m.customMode === 4 && !pilotArmed) {
-            pilotArmed = true; mode = 4; hb(); rc(); mode = 5;
+            pilotArmed = true; mode = 4; hb(); mode = 5;
             lateGuided = true;
             return;
           }
@@ -75,7 +76,10 @@ scenario({
           const ack = new common.CommandAck(); Object.assign(ack, { command: m.command, result: 0, progress: 0, resultParam2: 0, targetSystem: 255, targetComponent: 190 }); out(ack);
           return;
         }
-        if (id === common.SetPositionTargetGlobalInt.MSG_ID) writes.push(`SET_POSITION_TARGET pilotArmed=${pilotArmed}`);
+        if (id === common.SetPositionTargetGlobalInt.MSG_ID) {
+          writes.push(`SET_POSITION_TARGET pilotArmed=${pilotArmed}`);
+          if (pilotArmed && !rcReleased) { rcReleased = true; rc(); }
+        }
       });
       telemetry();
     });
