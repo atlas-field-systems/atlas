@@ -5,7 +5,7 @@ import { once } from "node:events";
 import { send, common, minimal, MavLinkPacketSplitter, MavLinkPacketParser, MavLinkProtocolV2 } from "node-mavlink";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, readdir } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -15,6 +15,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { startApp, parseConfig } from "@atlas/asset";
 import { spawnCore } from "../src/core-process.ts";
 import { value } from "../src/world.ts";
+import { checkAssetArchive } from "../src/asset-archive.ts";
 
 async function equipmentPort() {
   const reservation = createServer();
@@ -482,6 +483,14 @@ for (const scenario of [
         assert.equal(events.some(e => e.kind === "report.status" && e.record.kind === "task" && [2, 3].includes(e.record.task_id) && e.record.time >= restartedAt), false, "restart never resumes or invents outcomes for earlier work");
         assert.equal(events.filter(e => e.kind === "asset.registered").length, 1);
         await restarted.stop();
+        const archives = await readdir(config.archive_directory);
+        assert.equal(archives.filter(name => name.endsWith(".zip")).length, 2);
+        const checked = await Promise.all(archives.filter(name => name.endsWith(".zip")).map(async name => {
+          const path = join(config.archive_directory, name);
+          const manifest = JSON.parse(strFromU8(unzipSync(await readFile(path))["manifest.json"]));
+          if (!manifest.normal) return checkAssetArchive(path, false);
+        }));
+        assert.equal(checked.filter(Boolean).length, 1, "the killed operation has a separate verified ZIP");
         await writeFile(join(root, "crash.json"), JSON.stringify({ killedAt, restartedAt, samples, position }, null, 2));
         await writeFile(join(root, "events.json"), JSON.stringify(events, null, 2));
         return;
@@ -954,6 +963,7 @@ for (const scenario of [
           "Core receives telemetry near the Move To destination",
         );
       const archive = await app.stop();
+      if (scenario === "flight") await checkAssetArchive(archive, true);
       const entries = Object.entries(unzipSync(await readFile(archive)))
         .filter(([name]) => name.startsWith("diagnostics/"))
         .flatMap(([, data]) =>

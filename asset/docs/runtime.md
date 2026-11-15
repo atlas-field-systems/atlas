@@ -216,3 +216,10 @@ errors. Losses and gaps are warnings. Other events default to info. A caller can
 set an explicit level. Disabling message content removes request, response,
 event, effect and report bodies from diagnostics. Report history remains separate.
 Credential fields and the configured Asset key are removed before persistence.
+
+The SDK's `onReports` callback records copies before outbox transmission and when
+current samples are offered. Pre-registration reports also enter local history.
+This history uses a separate disk writer, independent of diagnostic filtering
+and rotation. It is never replayed into a later operation. SDK diagnostic gap
+counts enter the operation's gap list with their reported local time; the SDK
+supplies no earlier bound for those lost events.

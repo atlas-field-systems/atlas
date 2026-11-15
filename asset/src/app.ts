@@ -54,6 +54,7 @@ export async function startApp(
     const pendingReports: LocalReport[] = [];
     function report(reports: LocalReport[]) {
       if (!running) {
+        for (const value of reports) log.report(value);
         pendingReports.push(...reports);
         return;
       }
@@ -192,6 +193,7 @@ export async function startApp(
       heartbeatMs: config.reporting.heartbeat_s * 1000,
       settings: () => state.settings,
       current,
+      onReports: reports => { for (const value of reports) log.report(value); },
       queue: config.description.commands.length
         ? {
             refuse: request => refusal(state, request),
@@ -226,6 +228,7 @@ export async function startApp(
       throw new Error(result.explanation);
     }
     running = result.value;
+    log.identify(running.asset_id);
     if (stopped) {
       running.stop();
       await running.done;

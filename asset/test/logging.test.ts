@@ -62,6 +62,12 @@ test("docs/logging.md: archives preserve versions, gaps, captures and recover in
   const old = zipped.find(zip => JSON.parse(strFromU8(zip["manifest.json"])).normal === false);
   assert.ok(old, "the interrupted operation has its own abnormal archive");
   const manifest = JSON.parse(strFromU8(old["manifest.json"]));
+  const { createHash } = await import("node:crypto");
+  assert.deepEqual(Object.keys(old).sort(), [...manifest.files.map((file: { path: string }) => file.path), "manifest.json"].sort());
+  for (const file of manifest.files) {
+    assert.equal(old[file.path].length, file.size);
+    assert.equal(createHash("sha256").update(old[file.path]).digest("hex"), file.sha256);
+  }
   assert.ok(manifest.gaps.some((gap: { start: number; end: number; reason: string }) => gap.start === 1000 && gap.end === 2000 && gap.reason === "total limit"));
   assert.match(strFromU8(old["summary.md"]), /stopped unexpectedly/);
   assert.deepEqual([...old["files/1-image.bin"]], [1, 2, 3]);
@@ -105,4 +111,37 @@ test("docs/logging.md: detail and message filters remove diagnostic content and 
   assert.match(diagnostics, /visible/);
   assert.doesNotMatch(diagnostics, /quiet-message|hidden-message|sensitive/);
   for (const bytes of Object.values(zip)) assert.ok(!strFromU8(bytes).includes(config.asset_key));
+});
+
+test("docs/logging.md: SDK gaps and shutdown diagnostic gaps are listed with intervals", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-gaps-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  const log = await createLog(config, 1000, { ...systemClock, now: () => 2000 });
+  log.record({ name: "diagnostics.gap", at: 1500, detail: { dropped: 7 } });
+  const zip = unzipSync(await readFile(await log.close("A", "stopped")));
+  const manifest = JSON.parse(strFromU8(zip["manifest.json"]));
+  assert.ok(manifest.gaps.some((gap: { start: number; end: number; dropped: number }) => gap.start === 1500 && gap.end === 1500 && gap.dropped === 7));
+  assert.match(strFromU8(zip["summary.md"]), /SDK diagnostic queue full/);
+  assert.ok(Object.entries(zip).some(([name, bytes]) => name.startsWith("diagnostics/") && strFromU8(bytes).includes('"dropped":7')));
+});
+
+test("docs/logging.md: an identity diagnostic write failure never becomes an unhandled rejection", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-identity-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  const log = await createLog(config, 1000);
+  const operation = join(config.log_directory, "1000", "operation.json");
+  const { mkdir } = await import("node:fs/promises");
+  await rm(operation);
+  await mkdir(operation);
+  log.identify("A");
+  await new Promise(resolve => setTimeout(resolve, 50));
+  await rm(operation, { recursive: true });
+  const zip = unzipSync(await readFile(await log.close("A", "stopped")));
+  assert.match(strFromU8(zip["summary.md"]), /evidence write failure/);
 });

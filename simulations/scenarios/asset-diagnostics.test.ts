@@ -23,5 +23,8 @@ scenario({
     const diagnostics = Object.entries(zip).filter(([name]) => name.startsWith("diagnostics/")).map(([, bytes]) => strFromU8(bytes)).join("");
     assert.match(diagnostics, /"kind":"outbox_blocked"/);
     assert.match(diagnostics, /"kind":"session_ended"/);
+    const reports = strFromU8(zip["reports/history.jsonl"]);
+    assert.match(reports, /report.telemetry/);
+    assert.match(reports, /report.settings/);
   },
 });

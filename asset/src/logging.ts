@@ -34,8 +34,14 @@ async function archive(directory: string, end: number, reason: string, normal: b
     await writeFile(join(directory, "archive-failed.json"), JSON.stringify({ time: end, reason: "archive attempt did not complete" }));
     await writeFile(join(directory, "summary.md"), `Operation ${operation.start} to ${end}. ${reason}.\n${normal ? "Ended normally." : "the app stopped unexpectedly; this record may be incomplete"}\n\nTasks, failsafes, overrides and contact changes follow in local order.\n`);
     await lines(join(directory, "history.jsonl"), async line => { await appendFile(join(directory, "summary.md"), `${line}\n`); });
+    await lines(join(directory, "reports/history.jsonl"), async line => {
+      const report = JSON.parse(line);
+      if (report.type === "report.failsafe" || report.type === "report.status")
+        await appendFile(join(directory, "summary.md"), `Report ${line}\n`);
+    });
     for (const gap of gaps) await appendFile(join(directory, "summary.md"), `Gap ${gap.start} to ${gap.end}: ${gap.dropped} records, ${gap.reason}.\n`);
     await writeFile(join(directory, "README.md"), "Asset operation evidence.\n\nsummary.md records start, end, outcome, Tasks, failsafes, overrides, contact and gaps.\nmanifest.json lists payload file sizes and SHA-256 hashes, normal completion and gaps. It excludes itself.\ndiagnostics/ contains app, equipment and SDK diagnostics as written.\nreports/ contains recorded reports, including unsent reports.\nfiles/ contains captured files, uploaded or not.\nconfig.json contains configuration without credentials.\nversions.json records software versions and the definitions hash.\nhistory.jsonl contains the operation timeline. gaps.jsonl and gap.json contain diagnostic gap evidence.\n");
+    if (gaps.length) await writeFile(join(directory, "diagnostics", "gaps.jsonl"), gaps.map(gap => JSON.stringify({ kind: "gap", ...gap }) + "\n").join(""));
     const files = await inventory(directory);
     const manifest = Buffer.from(JSON.stringify({ ...operation, end, reason, normal, gaps, files }));
     await writeFile(join(directory, "manifest.json"), manifest);
@@ -99,21 +105,24 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
       drop(clock.now(), "evidence write failure");
     }).finally(() => { evidencePending--; });
   }
-  function drop(time: number, reason: string) {
+  function drop(time: number, reason: string, count = 1) {
     if (gap && gap.reason !== reason) {
       const previous = gap;
-      evidence = evidence.then(() => appendFile(join(directory, "gaps.jsonl"), JSON.stringify(previous) + "\n"));
+      evidence = evidence.then(() => appendFile(join(directory, "gaps.jsonl"), JSON.stringify(previous) + "\n")).catch(error => {
+        process.stderr.write(`Asset gap write failed: ${error}\n`);
+      });
       gap = undefined;
     }
     gap ??= { start: time, end: time, reason, dropped: 0 };
     gap.end = time;
-    gap.dropped++;
+    gap.dropped += count;
   }
   function record(value: unknown) {
     if (sealed) return;
     const safe = sanitize(value);
     const kind = String(safe.kind ?? safe.name ?? "diagnostic");
     const time = safe.time ?? safe.at ?? clock.now();
+    if (kind === "diagnostics.gap") drop(time, "SDK diagnostic queue full", safe.detail.dropped);
     if (kind === "effect" || (kind === "input" && ["task", "contact", "settings", "cancel", "update"].includes(safe.event?.kind))) retain("history.jsonl", { time, ...safe });
     const level = safe.level ?? (/failed|error|blocked/.test(kind) ? "error" : /lost|gap|closed/.test(kind) ? "warn" : ["input", "effect", "observation", "report"].includes(kind) ? "trace" : "info");
     if (levels[z.enum(["trace", "debug", "info", "warn", "error"]).parse(level)] < levels[config.log_level]) return;
@@ -149,7 +158,10 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     record,
     identify(asset_id: string) {
       operation.asset_id = asset_id;
-      evidence = evidence.then(() => writeFile(join(directory, "operation.json"), JSON.stringify(operation)));
+      evidence = evidence.then(() => writeFile(join(directory, "operation.json"), JSON.stringify(operation))).catch(error => {
+        process.stderr.write(`Asset identity evidence write failed: ${error}\n`);
+        drop(clock.now(), "evidence write failure");
+      });
     },
     report(value: unknown) { if (!sealed) retain("reports/history.jsonl", value); },
     async capture(file: { name: string; bytes: Uint8Array }) {

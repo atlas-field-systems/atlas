@@ -64,7 +64,12 @@ export function createOutbox(
   observer?: Observer,
   emit = diagnostics(clock, observer),
   current?: (room: Room) => Report[],
+  onReports?: (reports: Report[]) => void,
 ) {
+  function recorded(reports: Report[]) {
+    try { onReports?.(structuredClone(reports)); }
+    catch { emit("reports.recording_failed", { count: reports.length }); }
+  }
   const live: Report[] = [],
     retained: Report[] = [];
   let stopped = false,
@@ -122,14 +127,17 @@ export function createOutbox(
       reports = queued;
     if (current && queued.length < batchLimit) {
       const bytes = room.bytes - (queued.length ? room.size(queued) : 0);
-      if (bytes > 0 || !queued.length)
+      if (bytes > 0 || !queued.length) {
+        const samples = current({ bytes, size: room.size });
+        recorded(samples);
         reports = [
           ...queued,
-          ...current({ bytes, size: room.size }).slice(
+          ...samples.slice(
             0,
             batchLimit - queued.length,
           ),
         ];
+      }
     }
     if (!reports.length && retained.length) {
       lane = retained;
@@ -184,6 +192,7 @@ export function createOutbox(
     },
     add(reports: Report[], lane: "live" | "retained" = "live") {
       if (stopped || !reports.length) return Promise.resolve();
+      recorded(reports);
       const copies = structuredClone(reports);
       (lane === "live" ? live : retained).push(...copies);
       if (blocked) return Promise.resolve();
@@ -234,6 +243,7 @@ export interface AssetOptions {
   observer?: Observer;
   queue?: QueueHost;
   current?(room: Room): Report[];
+  onReports?(reports: Report[]): void;
   settings(): P["report.settings"]["settings"];
   onSettings?(
     settings: P["settings_change"],
@@ -253,6 +263,7 @@ export function runAsset(
     options.observer,
     emit,
     options.current,
+    options.onReports,
   );
   const stopServing = link.serve(outbox);
   const queue = options.queue

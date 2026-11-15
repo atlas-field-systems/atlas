@@ -21,6 +21,11 @@ Each client shares one counter across its requests, link, outbox, and queue.
 Each batch resend produces one `batch.resent` event.
 These are local diagnostics, not Protocol records.
 
+The Asset helpers also offer `onReports`, separate from diagnostics. It receives
+copies when reports enter the outbox and when current-state samples are offered.
+The host can retain them even when diagnostics omit message content. A callback
+failure emits `reports.recording_failed` and never prevents sending.
+
 ## Rules
 
 - The SDK never logs credentials. It removes passwords, keys, keys that Core

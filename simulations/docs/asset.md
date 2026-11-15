@@ -168,3 +168,10 @@ again with its original key. Core must keep the same identity, mark unfinished
 Tasks dropped without a final outcome, and receive fresh telemetry without
 resuming earlier work. Each run retains `crash.json` with the kill time,
 restart time, heartbeat modes, armed state, and landing position.
+
+The flight and crash scenarios open the Asset ZIP and check its README, summary,
+manifest, versions, diagnostics and separate reports. Every payload's size and
+SHA-256 must match the manifest. Every gap must have an interval and appear in
+the summary. After SIGKILL and a ground restart, the interrupted operation must
+have its own ZIP marked as incomplete. No earlier report is sent by the new app.
+The reporting-only scenarios also check retained capture bytes under `files/`.
