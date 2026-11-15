@@ -48,7 +48,7 @@ export async function assetApp(w: World, options: AssetAppOptions = {}) {
     get asset_id() { return app.asset_id; },
     get done() { return app.done; },
     stop,
-    async restart(next: Omit<AssetAppOptions, "name"> = {}) {
+    async restart(next: Omit<AssetAppOptions, "name" | "equipment"> = {}) {
       await stop();
       clock = next.clock ?? clock;
       config = parseConfig({ ...config, ...next.config });

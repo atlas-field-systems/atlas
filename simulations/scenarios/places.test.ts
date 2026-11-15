@@ -36,7 +36,7 @@ scenario({
     for (const asset of [online, offline])
       await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.asset_id === asset.asset_id && e.record.kind === "queue" && e.record.task_ids.includes(1)));
     w.network.cut("offline");
-    await w.advance(31000);
+    for (let second = 0; second < 31; second++) await w.advance(1000);
     const params = { geofeature_id };
     const body = {
       kind: "point" as const,

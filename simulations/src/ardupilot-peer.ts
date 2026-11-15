@@ -1,6 +1,7 @@
 import { once } from "node:events";
 import { createServer, type Socket } from "node:net";
 import { minimal, common, ardupilotmega, MavLinkPacketParser, MavLinkPacketSplitter, MavLinkProtocolV2, send, type MavLinkPacket } from "node-mavlink";
+import type { parseConfig } from "@atlas/asset";
 import type { World } from "./world.ts";
 
 /** Simulated equipment, speaking the production driver's MAVLink TCP interface. */
@@ -83,7 +84,7 @@ export async function ardupilotPeer(w: World) {
     return new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   });
   return {
-    config: { kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1 } satisfies { kind: "ardupilot"; host: string; port: number; system_id: number; heartbeat_s: number },
+    config: { kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1, stream_rate_hz: 5, extended_state_interval_us: 200000 } satisfies Extract<ReturnType<typeof parseConfig>["equipment"], { kind: "ardupilot" }>,
     commands,
     targets,
   };

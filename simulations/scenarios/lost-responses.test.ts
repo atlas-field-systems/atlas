@@ -203,6 +203,14 @@ scenario({
       1,
       "same report batch is not stored twice",
     );
+    const lostBatch = w.network.traffic.find(t => t.caller === "asset" &&
+      t.path === `/entities/assets/${asset_id}/reports` && t.fault?.kind === "loseResponse");
+    assert.ok(lostBatch?.key, "an app report response was lost after commit");
+    await w.until(() => w.network.traffic.filter(t => t.key === lostBatch.key).length >= 2);
+    const reportRetries = w.network.traffic.filter(t => t.key === lostBatch.key);
+    assert.ok(reportRetries.length >= 2, "the app retried the lost report batch");
+    for (const retry of reportRetries)
+      assert.deepEqual(retry.body, lostBatch.body, "report retry preserves the immutable body");
     const attempts = w.network.traffic.filter(
       (t) => t.path === "/entities/geofeatures" && t.method === "POST",
     );
