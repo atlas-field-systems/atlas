@@ -9,7 +9,7 @@ import { parseConfig } from "../src/config.ts";
 import { createLog } from "../src/logging.ts";
 
 for (const target of ["gaps.jsonl", "operation.json", "files/1-image.bin"]) {
-  test(`docs/logging.md: interrupted ${target} write preserves honest archive evidence`, async t => {
+  test(`docs/logging.md: interrupted ${target} write preserves honest archive evidence`, { timeout: 10000 }, async t => {
     const root = await fs.mkdtemp(join(tmpdir(), "atlas-write-failure-"));
     t.after(() => fs.rm(root, { recursive: true, force: true }));
     const config = parseConfig(JSON.parse(await fs.readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
@@ -55,14 +55,17 @@ for (const target of ["gaps.jsonl", "operation.json", "files/1-image.bin"]) {
   });
 }
 
-test("docs/logging.md: recovery retains malformed gap bytes and explains the gap", async t => {
+test("docs/logging.md: recovery retains malformed gap bytes and explains the gap", { timeout: 10000 }, async t => {
   const root = await fs.mkdtemp(join(tmpdir(), "atlas-torn-gap-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const config = parseConfig(JSON.parse(await fs.readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
   config.log_directory = join(root, "logs");
   config.archive_directory = join(root, "archives");
   await createLog(config, 1000);
-  await new Promise(resolve => setTimeout(resolve, 20));
+  while (true) {
+    try { await fs.access(join(config.log_directory, "1000", "diagnostics", "diagnostics-0.jsonl")); break; }
+    catch { await new Promise(resolve => setImmediate(resolve)); }
+  }
   await fs.writeFile(join(config.log_directory, "1000", "gaps.jsonl"), '{"start":1000,"end":1000,"dropped":2,"reason":"known"}\n{"start":');
   const next = await createLog(config, 2000);
   await next.close("B", "stopped");

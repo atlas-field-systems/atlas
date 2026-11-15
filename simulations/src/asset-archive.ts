@@ -30,7 +30,18 @@ export async function checkAssetArchive(path: string, normal: boolean) {
   assert.equal(versions.app, "0.1.0");
   assert.equal(versions.sdk, "0.1.0");
   assert.equal(versions.protocol, "0.1.0");
-  const reports = strFromU8(zip["reports/history.jsonl"]).trim().split("\n").map(line => JSON.parse(line));
+  const lines = strFromU8(zip["reports/history.jsonl"]).split("\n");
+  const reports = [];
+  for (const [index, line] of lines.entries()) {
+    if (!line && index === lines.length - 1) continue;
+    try { reports.push(JSON.parse(line)); }
+    catch (error) {
+      if (normal || index !== lines.length - 1) throw error;
+      assert.ok(manifest.gaps.some((gap: { reason: string; dropped: number }) =>
+        gap.reason === "incomplete report line; original bytes retained" && gap.dropped >= 1),
+      "torn final report has gap evidence");
+    }
+  }
   assert.ok(reports.some(report => report.type === "report.status" && report.kind === "task"));
   return { zip, manifest, reports };
 }

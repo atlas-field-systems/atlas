@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, appendFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -9,7 +9,7 @@ import { parseConfig } from "@atlas/asset";
 import { createLog } from "../../asset/src/logging.ts";
 import { checkAssetArchive } from "../src/asset-archive.ts";
 
-test("asset/docs/logging.md: recovery checker accepts only a torn final report with gap evidence", async t => {
+test("asset/docs/logging.md: recovery checker accepts only a torn final report with gap evidence", { timeout: 10000 }, async t => {
   const root = await mkdtemp(join(tmpdir(), "atlas-check-archive-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const config = parseConfig(JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8")));
@@ -17,8 +17,19 @@ test("asset/docs/logging.md: recovery checker accepts only a torn final report w
   config.archive_directory = join(root, "archives");
   const log = await createLog(config, 1000);
   log.report({ type: "report.status", kind: "task", task_id: 1, task_state: "completed", time: 1500 });
-  const base = unzipSync(await readFile(await log.close("A", "stopped")));
-  const report = strFromU8(base["reports/history.jsonl"]);
+  const history = join(config.log_directory, "1000", "reports/history.jsonl");
+  let report = "";
+  while (!report.endsWith("\n")) {
+    report = await readFile(history, "utf8").catch(() => "");
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  await appendFile(history, "{");
+  const next = await createLog(config, 2000);
+  await next.close("B", "stopped");
+  const names = await readdir(config.archive_directory);
+  const recovered = join(config.archive_directory, names.find(name => name.includes("unregistered"))!);
+  assert.equal((await checkAssetArchive(recovered, false)).reports.length, 1);
+  const base = unzipSync(await readFile(recovered));
   for (const variant of ["torn", "normal", "complete-malformed", "earlier-malformed", "missing-gap"]) {
     const zip = { ...base };
     const manifest = JSON.parse(strFromU8(zip["manifest.json"]));

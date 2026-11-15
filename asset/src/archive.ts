@@ -1,10 +1,10 @@
 import { createReadStream, createWriteStream } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
+import { readdir, stat, open } from "node:fs/promises";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { finished } from "node:stream/promises";
-import { Zip, ZipPassThrough, Unzip } from "fflate";
+import { Zip, ZipPassThrough } from "fflate";
 
 export type ArchiveFile = { path: string; size: number; sha256: string };
 export async function inventory(directory: string, prefix = ""): Promise<ArchiveFile[]> {
@@ -51,24 +51,48 @@ export async function writeZip(directory: string, path: string, files: ArchiveFi
 export async function verifyZip(path: string, files: ArchiveFile[]) {
   const expected = new Map(files.map(file => [file.path, file]));
   const seen = new Set<string>();
-  const unzip = new Unzip(file => {
-    const wanted = expected.get(file.name);
-    if (!wanted) throw new Error(`Unexpected ZIP entry: ${file.name}`);
-    const hash = createHash("sha256");
-    let size = 0;
-    file.ondata = (error, chunk, final) => {
-      if (error) throw error;
-      hash.update(chunk);
-      size += chunk.length;
-      if (final) {
-        if (seen.has(file.name) || size !== wanted.size || hash.digest("hex") !== wanted.sha256)
-          throw new Error(`ZIP verification failed: ${file.name}`);
-        seen.add(file.name);
-      }
-    };
-    file.start();
-  });
-  for await (const chunk of createReadStream(path)) unzip.push(chunk, false);
-  unzip.push(new Uint8Array(), true);
-  if (seen.size !== expected.size) throw new Error("ZIP verification missing files");
+  const input = await open(path, "r");
+  try {
+    async function read(offset: number, size: number) {
+      const buffer = Buffer.alloc(size);
+      const { bytesRead } = await input.read(buffer, 0, size, offset);
+      if (bytesRead !== size) throw new Error("Truncated ZIP");
+      return buffer;
+    }
+    const length = (await input.stat()).size;
+    const end = await read(length - 22, 22);
+    if (end.readUInt32LE(0) !== 0x06054b50 || end.readUInt16LE(20) !== 0)
+      throw new Error("Invalid ZIP directory end");
+    const count = end.readUInt16LE(10);
+    const directory = end.readUInt32LE(16);
+    if (directory + end.readUInt32LE(12) !== length - 22 || count !== files.length)
+      throw new Error("Invalid ZIP directory size");
+    let offset = directory;
+    for (let index = 0; index < count; index++) {
+      const entry = await read(offset, 46);
+      if (entry.readUInt32LE(0) !== 0x02014b50 || entry.readUInt16LE(10) !== 0)
+        throw new Error("Invalid stored ZIP entry");
+      const nameSize = entry.readUInt16LE(28);
+      const name = (await read(offset + 46, nameSize)).toString("utf8");
+      const wanted = expected.get(name);
+      const size = entry.readUInt32LE(24);
+      if (!wanted || seen.has(name) || size !== wanted.size || entry.readUInt32LE(20) !== size)
+        throw new Error(`ZIP verification failed: ${name}`);
+      const localOffset = entry.readUInt32LE(42);
+      const local = await read(localOffset, 30);
+      if (local.readUInt32LE(0) !== 0x04034b50 || local.readUInt16LE(8) !== 0 ||
+          local.readUInt16LE(26) !== nameSize || (await read(localOffset + 30, nameSize)).toString("utf8") !== name)
+        throw new Error(`Invalid ZIP local entry: ${name}`);
+      const start = localOffset + 30 + nameSize + local.readUInt16LE(28);
+      if (start + size > directory) throw new Error(`Invalid ZIP payload bounds: ${name}`);
+      const hash = createHash("sha256");
+      if (size) for await (const chunk of createReadStream(path, { start, end: start + size - 1 })) hash.update(chunk);
+      if (hash.digest("hex") !== wanted.sha256) throw new Error(`ZIP verification failed: ${name}`);
+      seen.add(name);
+      offset += 46 + nameSize + entry.readUInt16LE(30) + entry.readUInt16LE(32);
+    }
+    if (offset !== length - 22 || seen.size !== expected.size) throw new Error("ZIP verification missing files");
+  } finally {
+    await input.close();
+  }
 }

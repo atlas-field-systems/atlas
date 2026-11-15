@@ -354,3 +354,28 @@ timeout permits another attempt when confirmation does not arrive. This stops
 the old movement without retrying the failed Task. Flight-controller takeover
 clears this intent because the controller owns motion. Land and Return to home
 failures in their descent step leave descent running.
+
+## Local evidence and archive verification
+
+Operation metadata and gap snapshots are written to a sibling `.partial` file
+and renamed after the write completes. A failed replacement removes the temporary
+file and leaves the prior snapshot readable. Identity updates share the evidence
+write queue. Shutdown waits for that queue before replacing the final metadata.
+These replacements protect against interrupted writes; they do not promise
+power-loss durability beyond the filesystem's guarantees.
+
+Captures use the same temporary-write and rename sequence. A failed capture
+removes its temporary file, records a capture-write gap, and rejects acquisition.
+Only successful writes receive a final capture name. Recovery retains malformed
+gap records as original bytes and adds an incomplete-gap explanation instead of
+abandoning the operation. Recovery failures are printed with their retained-record
+status.
+
+ZIP verification reads stored-entry offsets and sizes from the central directory,
+then streams each payload through SHA-256. It checks the local entry name and
+payload bounds against that directory and compares every payload with the
+inventory. ZIP signatures inside a captured file never delimit outer entries.
+The simulation archive checker accepts a malformed final report only in an
+abnormal archive, without a terminating newline, and with the corresponding
+incomplete-report gap. Complete malformed lines and malformed normal archives
+still fail the check.
