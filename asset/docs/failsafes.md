@@ -123,6 +123,11 @@ nothing.
   rule fires. The app keeps reporting what the vehicle does, without claiming
   that Atlas started it. A cancelled Task does not become completed because the
   flight controller performed a similar maneuver.
+- **A late Atlas request.** If a request Atlas already sent puts the vehicle
+  back into Atlas's mode after takeover, Atlas switches it back to the mode the
+  pilot or flight controller selected and only watches. That correction is not
+  reported as an Atlas command. A person must select another mode and then
+  Atlas's mode to hand control back.
 - **Handing back.** A person hands control back by switching the flight
   controller to the mode the app works in, Guided on ArduPilot. The app reports
   that it is back in control and holds where it is, as after a
@@ -324,13 +329,15 @@ restarting idle or contact timers.
 
 ## Open
 
-- A pilot can switch modes and end in Guided before the app receives any
-  heartbeat showing the intervening mode. Atlas cannot detect that switch.
-  If an Atlas Guided request was already on its way, the vehicle can silently
-  end in Atlas's mode even though the pilot intended to take over. The owner
-  still needs to decide how that undetectable case is handled. No new failsafe
-  response is selected here.
-
+- A mode change made through another ground station can begin and end between
+  observations without a lasting pilot-switch change. If no protection remains
+  active, Atlas cannot tell that control was taken away. Such a vehicle can
+  remain in Atlas's mode without a deliberate handback.
+- An active flight-controller protection keeps Atlas watching. If Atlas never
+  observes the protection's chosen mode, and the protection does not identify
+  its action, Atlas cannot yet restore that mode. Radio protection configured
+  to return home or land is covered; other protection actions still need
+  equipment checks before first flight.
 
 - Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
   failsafe levels, are tuned in [SITL](../../simulations/docs/asset.md) before the first flight.

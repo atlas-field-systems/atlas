@@ -64,7 +64,7 @@ for (const scenario of [
         join(homedir(), ".cache/atlas-sitl");
       await writeFile(
         join(root, "flight.parm"),
-        `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\nFLTMODE1 4\nFLTMODE4 5\nFS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
+        `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\n${scenario === "rc-late-guided" ? "FLTMODE1 4\nFLTMODE4 5\n" : ""}${["subsystem", "takeover", "takeover-response"].includes(scenario) ? "FS_EKF_THRESH 0\n" : ""}FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nSYSID_MYGCS 255\nBATT_CAPACITY ${scenario === "battery" ? 100 : 3300}\n`,
       );
       const equipment = await equipmentPort();
       const pilotPort = await equipmentPort();
@@ -544,6 +544,7 @@ for (const scenario of [
             vehicleMode = m.customMode; status = m.systemStatus;
             samples.push({ time: Date.now(), mode: vehicleMode, status });
           }
+          if (packet.header.msgid === common.RcChannels.MSG_ID) samples.push(packet.protocol.data(packet.payload, common.RcChannels));
           if (packet.header.msgid === common.SysStatus.MSG_ID) samples.push(packet.protocol.data(packet.payload, common.SysStatus));
         });
         const set = async (paramId: string, paramValue: number) => {
@@ -551,6 +552,7 @@ for (const scenario of [
           Object.assign(m, { targetSystem: 1, targetComponent: 1, paramId, paramValue, paramType: 9 });
           await send(pilot, m, protocol);
         };
+        await set("RC_OVERRIDE_TIME", -1);
         await set("FS_THR_ENABLE", 1);
         await set("FLTMODE1", 4);
         await set("FLTMODE4", 5);
@@ -566,6 +568,9 @@ for (const scenario of [
           await writeFile(join(root, "failsafe-signal.json"), JSON.stringify(samples, null, 2));
           assert.equal(status, 5, "failsafe remains visible after an external mode selection");
           assert.equal(vehicleMode, 6, "Atlas restores radio failsafe RTL after Guided");
+          await set("SIM_RC_FAIL", 0);
+          await until(() => status === 4);
+          await writeFile(join(root, "failsafe-signal.json"), JSON.stringify(samples, null, 2));
           assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false);
         } else {
           const rc = new common.RcChannelsOverride();
@@ -576,6 +581,7 @@ for (const scenario of [
           Object.assign(m, { targetSystem: 1, baseMode: 1, customMode: 4 });
           await send(pilot, m, protocol);
           await delay(1000);
+          await writeFile(join(root, "rc-takeover.json"), JSON.stringify(samples, null, 2));
           assert.equal(vehicleMode, 5, "persistent pilot switch wins over a late Guided selection");
           assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false);
           await writeFile(join(root, "rc-takeover.json"), JSON.stringify(samples, null, 2));

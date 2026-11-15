@@ -10,8 +10,8 @@ critical fallback keeps the failed response's rule and priority and is marked
 as a fallback, so a later failure cannot start another return. Command failure
 and timeout share one failure path. Land failure and a Return to home failure
 during its Land-mode descent never insert Hold; the
-existing critical fallback still applies. The unresolved outcome for other
-commands is in [failsafes](failsafes.md#open).
+existing critical fallback still applies. Other failures insert Hold unless the
+critical fallback starts.
 
 The runtime samples rule conditions when Hold or pause takes effect, including
 measurements received since the last control tick. It evaluates every condition
@@ -38,7 +38,28 @@ The driver also refuses new movement commands while it reports no control.
 Guided mode hands control back unless takeover aborted an unconfirmed Guided
 request. In that case the driver requires a later non-Guided heartbeat followed
 by Guided. The takeover heartbeat itself does not satisfy that requirement.
-A late Guided confirmation alone leaves Atlas watching without commands.
+A late Guided confirmation triggers a corrective SET_MODE to the takeover
+mode. This correction is equipment recovery, not an Atlas Task or response.
+Its confirmation does not count as a person's mode cycle. Another mode followed
+by Guided is required for handback.
+
+On connection the driver reads FLTMODE_CH and FLTMODE1 through FLTMODE6 with
+PARAM_REQUEST_READ, retrying missing replies on its heartbeat interval. It
+watches RC_CHANNELS on the configured channel and maps its PWM into ArduPilot's
+six switch positions. The first sample establishes a baseline. A changed
+position selecting a non-Guided mode while armed takes control away immediately,
+even if no heartbeat showed that mode. A zero mode-switch channel disables
+this path. Atlas never writes RC overrides or changes these parameters.
+
+An armed HEARTBEAT with MAV_STATE_CRITICAL keeps Atlas watching, including
+when Guided has already replaced the protection's mode. SYS_STATUS's enabled
+but unhealthy RC-receiver flag identifies radio loss. The driver reads
+FS_THR_ENABLE and FS_OPTIONS at connection. For ordinary RTL and Land radio
+protection, without the continue-Guided option, it restores the configured mode
+even if no heartbeat showed it. Otherwise it restores the protection's mode
+when observed. An active protection never permits handback. A critical
+heartbeat does not identify which protection fired or the selected mode;
+[remaining limits](failsafes.md#open) stay explicit.
 Handback samples rules, starts a tracked Hold,
 and ends that tick before rule selection. The app calls `Vehicle.tick(now)`;
 the driver owns its heartbeat interval.

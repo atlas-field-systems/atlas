@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The eighteen scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The twenty scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -127,6 +127,9 @@ request ID. These delays affect only the network around the real parts.
 
 The subsystem scenario disables SITL GPS through `SIM_GPS1_ENABLE`. Core must
 receive a fresh faulted GPS condition and the configured subsystem rule must land.
+The subsystem and takeover-rule scenarios disable the competing EKF variance
+threshold so they measure the Atlas rule's outcome. GCS protection stays enabled;
+the dedicated radio-protection scenario tests yielding to an active protection.
 
 Equipment scenarios place a TCP proxy between the app and SITL. It cuts the
 equipment link during Move To, withholds a command ACK, supplies a simulated
@@ -180,3 +183,13 @@ SHA-256 must match the manifest. Every gap must have an interval and appear in
 the summary. After SIGKILL and a ground restart, the interrupted operation must
 have its own ZIP marked as incomplete. No earlier report is sent by the new app.
 The reporting-only scenarios also check retained capture bytes under `files/`.
+
+The late-Guided scripted peers retain the vehicle's final mode, not just the
+Asset's watch-only reports. Separate peers hide the intervening heartbeat and
+supply a persistent RC-switch position or active radio-failsafe evidence.
+The SITL RC scenario holds an RC override as the world's pilot switch, selects
+Loiter, then injects Guided externally. It checks restoration to Loiter without
+handback. The radio scenario activates SIM_RC_FAIL, observes RTL and critical
+system status, then injects Guided. Critical status persists and Atlas restores
+RTL. Both save their vehicle observations beside Core events. These checks do
+not prove other flight-controller protections or radio hardware.

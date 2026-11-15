@@ -35,11 +35,13 @@ export function ardupilot(
   let observedArmed = false;
   let inControl = true;
   let pendingGuided = false;
-  let handback: { mode: number; phase: "late_guided" | "restoring" | "await_other_mode" } | undefined;
+  let handback: { mode: number | null; phase: "late_guided" | "restoring" | "await_other_mode" } | undefined;
   let lastHeartbeat = -Infinity;
   const parameters = new Map<string, number>();
-  const modeParameters = ["FLTMODE_CH", "FLTMODE1", "FLTMODE2", "FLTMODE3", "FLTMODE4", "FLTMODE5", "FLTMODE6"];
+  const modeParameters = ["FLTMODE_CH", "FLTMODE1", "FLTMODE2", "FLTMODE3", "FLTMODE4", "FLTMODE5", "FLTMODE6", "FS_THR_ENABLE", "FS_OPTIONS"];
   let switchPosition: number | undefined;
+  let protectionActive = false;
+  let radioFailed = false;
   const listeners = new Set<(id: number, value: unknown) => void>();
   function wait<T>(
     signal: AbortSignal,
@@ -100,7 +102,7 @@ export function ardupilot(
     return write(m);
   }
   function restoreMode() {
-    if (observedMode !== 4 || handback?.phase !== "late_guided") return;
+    if (observedMode !== 4 || !handback || handback.mode === null || handback.phase === "restoring") return;
     handback.phase = "restoring";
     void mode(handback.mode).catch(diagnostic);
   }
@@ -126,19 +128,32 @@ export function ardupilot(
       observedArmed = armed;
       observedMode = m.customMode;
       if (observedMode === expectedMode) transitionFrom = null;
+      protectionActive = armed && m.systemStatus === 5;
+      if (protectionActive) {
+        inControl = false;
+        const action = parameters.get("FS_THR_ENABLE");
+        const options = parameters.get("FS_OPTIONS");
+        const radioMode = radioFailed && options !== undefined && !(options & 4)
+          ? action === 1 ? 6 : action === 3 ? 9 : undefined
+          : undefined;
+        if (m.customMode !== 4) handback = { mode: m.customMode, phase: "late_guided" };
+        else if (radioMode !== undefined && (!handback || handback.mode === null)) handback = { mode: radioMode, phase: "late_guided" };
+        handback ??= { mode: null, phase: "await_other_mode" };
+        restoreMode();
+      }
       if (!inControl) {
         if (handback) {
-          if (m.customMode === 4 && handback.phase === "late_guided") {
+          if (m.customMode === 4 && handback.phase !== "restoring") {
             restoreMode();
           } else if (m.customMode === handback.mode && handback.phase === "restoring") {
             handback.phase = "await_other_mode";
           } else if (m.customMode !== 4 && m.customMode !== handback.mode) handback = undefined;
         }
-        inControl = !handback && m.customMode === 4;
+        inControl = !protectionActive && !handback && m.customMode === 4;
       }
       else if (armed) inControl = m.customMode === (expectedMode ?? 4) || (expectedMode !== null && m.customMode === transitionFrom);
       if (!inControl && pendingGuided) {
-        handback = { mode: m.customMode, phase: "late_guided" };
+        if (m.customMode !== 4) handback = { mode: m.customMode, phase: "late_guided" };
         pendingGuided = false;
       }
       if (observedMode === expectedMode) pendingGuided = false;
@@ -151,7 +166,7 @@ export function ardupilot(
     } else if (id === common.RcChannels.MSG_ID) {
       const m = packet.protocol.data(packet.payload, common.RcChannels);
       const channel = parameters.get("FLTMODE_CH");
-      if (!channel || channel > m.chancount || !modeParameters.every(name => parameters.has(name))) return;
+      if (!channel || channel > m.chancount || !modeParameters.slice(0, 7).every(name => parameters.has(name))) return;
       const channels = [m.chan1Raw, m.chan2Raw, m.chan3Raw, m.chan4Raw, m.chan5Raw, m.chan6Raw, m.chan7Raw, m.chan8Raw, m.chan9Raw, m.chan10Raw, m.chan11Raw, m.chan12Raw, m.chan13Raw, m.chan14Raw, m.chan15Raw, m.chan16Raw, m.chan17Raw, m.chan18Raw];
       const pwm = channels[channel - 1];
       if (pwm === undefined || pwm === 0 || pwm === 65535) return;
@@ -193,6 +208,15 @@ export function ardupilot(
       });
     } else if (id === common.SysStatus.MSG_ID) {
       const m = packet.protocol.data(packet.payload, common.SysStatus);
+      radioFailed = Boolean(m.onboardControlSensorsEnabled & 65536) && !(m.onboardControlSensorsHealth & 65536);
+      if (protectionActive && radioFailed && observedMode === 4 && (!handback || handback.mode === null)) {
+        const action = parameters.get("FS_THR_ENABLE");
+        const options = parameters.get("FS_OPTIONS");
+        if (options !== undefined && !(options & 4) && (action === 1 || action === 3)) {
+          handback = { mode: action === 1 ? 6 : 9, phase: "late_guided" };
+          restoreMode();
+        }
+      }
       if (m.batteryRemaining >= 0)
         observe({ battery: stamp(m.batteryRemaining) });
     } else if (id === common.ExtendedSysState.MSG_ID) {
