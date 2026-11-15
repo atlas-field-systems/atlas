@@ -3,7 +3,7 @@
   "link": {"core_url": "http://127.0.0.1:8443"},
   "description": {"entity_type": "drone", "commands": ["takeoff", "move_to", "land", "hold", "return_to_home", "failsafe"], "reports": ["telemetry", "battery", "status", "settings", "failsafe"], "settings": ["run_state", "home_position", "failsafe_policy", "link_loss_after_s"]},
   "equipment": {"kind": "ardupilot", "host": "127.0.0.1", "port": 5760, "system_id": 255, "heartbeat_s": 1},
-  "initial_settings": {"run_state": "running", "link_loss_after_s": 10, "failsafe_policy": [{"rule_id": "CB", "priority": 99, "conditions": [{"kind": "battery_below", "battery_percent": 10, "critical": true}], "response": {"kind": "land"}}]},
+  "initial_settings": {"run_state": "running", "link_loss_after_s": 12, "failsafe_policy": [{"rule_id": "CB", "priority": 99, "conditions": [{"kind": "battery_below", "battery_percent": 10, "critical": true}], "response": {"kind": "land"}}]},
   "safe_action": {"kind": "land"},
   "completion_tolerances": {"horizontal_m": 2, "altitude_m": 0.5, "stopped_mps": 0.3},
   "command_timeouts": {"takeoff": 60, "move_to": 120, "land": 120, "hold": 10, "return_to_home": 180, "failsafe": 10},

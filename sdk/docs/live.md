@@ -49,8 +49,11 @@ browser and Node.
 - A `401` stops reconnecting, as in [Credentials](client.md#credentials). A
   definitions mismatch stops the client.
 
-The client reports each open, close, and keepalive to the host, so an Asset can
+The client reports each open, close, data frame, and keepalive to the host, so an Asset can
 apply its own [contact rule](../../core/docs/api.md#contact).
+`last_heard` advances when the stream opens or receives a validated data frame
+or keepalive comment. Closing preserves the last numeric value; it is null
+only before anything has been heard.
 
 ## Live picture
 

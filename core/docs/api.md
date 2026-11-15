@@ -442,7 +442,9 @@ keep the last-heard time.
   `gateway.contact` event when its view changes.
 - **The Asset's view.** On IP, the Asset is in contact while its stream is open
   and data or keepalives arrive. It loses contact after its `link_loss_after_s`
-  with neither. Through a Fieldlink, the Fieldlink supplies contact. Contact loss
+  with neither. Core sends keepalive comments every `stream_keepalive_s`
+  ([configuration](../config.md)); the IP Asset loss threshold must exceed that
+  interval. Through a Fieldlink, the Fieldlink supplies contact. Contact loss
   is an input to the Asset's [failsafe conditions](../../asset/docs/failsafes.md).
 
 ## Accounts and provisioning

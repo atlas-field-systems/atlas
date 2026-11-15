@@ -20,3 +20,8 @@ test("config.md: inspection validates Protocol values without equipment access a
     /invalid/,
   );
 });
+
+ test("config.md: link loss must exceed the configured Core keepalive interval", async () => {
+ const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+ assert.throws(() => parseConfig({...input, initial_settings: {...input.initial_settings, link_loss_after_s: 10}}), /keepalive/);
+ });

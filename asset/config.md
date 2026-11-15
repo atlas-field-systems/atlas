@@ -40,6 +40,9 @@ seconds, and GCS system ID, or `simulated` with a stationary position.
 `safe_action` is the built-in failsafe response. `control_tick_s` sets the
 control-loop interval. `log_queue_limit` bounds queued diagnostics.
 The app uses Protocol's validator for all shared values.
+`link.stream_keepalive_s` declares the Core event-stream keepalive interval
+(default 10 seconds). Set it to match Core configuration. Inspection refuses an
+initial `link_loss_after_s` at or below that interval without contacting Core.
 
 ## Options
 

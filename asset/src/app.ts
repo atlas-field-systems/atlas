@@ -175,7 +175,7 @@ export async function startApp(
               state.mode.kind === "running" &&
               state.mode.work.task?.task_id === task.task_id
             )
-              dispatch({ kind: "task", task, now: clock.now() });
+              dispatch({ kind: "update", task, now: clock.now() });
           },
         }
       : undefined,
@@ -214,29 +214,34 @@ export async function startApp(
       vehicle.heartbeat();
       lastHeartbeat = clock.now();
     }
-    const before = state.settings;
-    dispatch({
-      kind: "tick",
-      now: clock.now(),
-      hasWork: Boolean(running?.queue?.held().length),
-    });
-    if (before !== state.settings)
-      report([
-        {
-          type: "report.settings",
-          asset_id: running!.asset_id,
-          time: clock.now(),
-          settings: state.settings,
-        },
-      ]);
-    if (
-      (state.mode.kind === "ready" && state.settings.run_state !== "paused") ||
-      (state.locked && state.mode.kind === "failsafe")
-    ) {
-      const task = running?.queue?.next();
-      if (task) dispatch({ kind: "task", task, now: clock.now() });
+    try {
+      const before = state.settings;
+      dispatch({
+        kind: "tick",
+        now: clock.now(),
+        hasWork: Boolean(running?.queue?.held().length),
+      });
+      if (before !== state.settings)
+        report([
+          {
+            type: "report.settings",
+            asset_id: running!.asset_id,
+            time: clock.now(),
+            settings: state.settings,
+          },
+        ]);
+      if (
+        (state.mode.kind === "ready" && state.settings.run_state !== "paused") ||
+        (state.locked && state.mode.kind === "failsafe")
+      ) {
+        const task = running?.queue?.next();
+        if (task) dispatch({ kind: "task", task, now: clock.now() });
+      }
+    } catch (error) {
+      log.record({ kind: "control_failed", time: clock.now(), explanation: error instanceof Error ? error.message : String(error) });
+    } finally {
+      if (!stopped) timer = clock.after(config.control_tick_s * 1000, tick);
     }
-    if (!stopped) timer = clock.after(config.control_tick_s * 1000, tick);
   }
   function stop(reason = "operator stopped") {
     if (stopping) return stopping;

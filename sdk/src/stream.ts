@@ -58,6 +58,11 @@ export function follow(
     idle: Timer | undefined,
     opening: Timer | undefined,
     wake: (() => void) | undefined;
+  let lastHeard: number | null = null;
+  const heard = () => {
+    lastHeard = clock.now();
+    options.onContact?.({ open: true, last_heard: lastHeard });
+  };
   const boundEpoch = internal(client).epoch;
   const terminal = (): FollowEnd["reason"] | undefined => {
     if (stopped) return "stopped";
@@ -105,7 +110,7 @@ export function follow(
               stale = false;
               attempts = 0;
               internal(client).emit("stream.open");
-              options.onContact?.({ open: true, last_heard: clock.now() });
+              heard();
               const reader = response.body.getReader(),
                 decoder = new TextDecoder();
               let buffer = "",
@@ -141,10 +146,7 @@ export function follow(
                     if (line === "") frameLength = 0;
                     if (line.startsWith(":")) {
                       internal(client).emit("stream.alive");
-                      options.onContact?.({
-                        open: true,
-                        last_heard: clock.now(),
-                      });
+                      heard();
                     } else if (line.startsWith("data:"))
                       data.push(line.slice(5).replace(/^ /, ""));
                     else if (line === "" && data.length) {
@@ -184,6 +186,7 @@ export function follow(
                       } catch (error) {
                         return { reason: "invalid_event", error };
                       }
+                      heard();
                       if (event.event_id <= cursor) continue;
                       try {
                         idle?.cancel();
@@ -213,7 +216,7 @@ export function follow(
             opening?.cancel();
             stale = true;
             controller?.abort();
-            options.onContact?.({ open: false, last_heard: null });
+            options.onContact?.({ open: false, last_heard: lastHeard });
             internal(client).emit("stream.close", { cursor });
           }
         }

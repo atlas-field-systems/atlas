@@ -29,6 +29,7 @@ export interface State {
   settings: ComponentsSettings;
   locked: boolean;
   contact: { open: boolean; last_heard: number | null };
+  lastHeard: number;
   matching: string[];
   idleSince: number;
 }
@@ -36,6 +37,7 @@ export type Event =
   | { kind: "tick"; now: number; hasWork: boolean }
   | { kind: "measurements"; measurements: Measurements }
   | { kind: "task"; task: Task; now: number }
+  | { kind: "update"; task: Task; now: number }
   | { kind: "cancel"; id: number; now: number }
   | { kind: "settings"; settings: ComponentsSettings; now: number }
   | { kind: "command_failed"; explanation: string; now: number }
@@ -65,6 +67,7 @@ export function initial(config: Config, now: number): State {
     settings: config.initial_settings,
     locked: false,
     contact: { open: false, last_heard: now },
+    lastHeard: now,
     matching: [],
     idleSince: now,
   };
@@ -157,7 +160,23 @@ export function reduce(
       return { state, effects };
     case "contact":
       state.contact = event.contact;
+      if (event.contact.last_heard !== null)
+        state.lastHeard = Math.max(state.lastHeard, event.contact.last_heard);
       return { state, effects };
+    case "update": {
+      const w = work(state);
+      if (!w?.task || w.task.task_id !== event.task.task_id || state.locked ||
+          event.task.kind === "settings" || event.task.kind === "failsafe") break;
+      const execution = prepare(event.task, state.settings, state.measurements, event.now, config);
+      execution.started = w.execution.started;
+      const updated = { ...w, task: event.task, execution };
+      if (state.mode.kind === "paused") state.mode = { kind: "paused", work: updated };
+      else {
+        state.mode = { kind: "running", work: updated };
+        effects.push({ kind: "vehicle", command: commands[execution.action.kind].start({ execution, measurements: state.measurements, config, now: event.now }) });
+      }
+      break;
+    }
     case "cancel": {
       const w = work(state);
       if (w?.task?.task_id === event.id && !state.locked) {
@@ -338,7 +357,7 @@ export function reduce(
                 return get(state.measurements.airborne) === true;
               case "contact_lost":
                 return (
-                  now - (state.contact.last_heard ?? now) >=
+                  now - state.lastHeard >=
                   (state.settings.link_loss_after_s ?? Infinity) * 1000
                 );
               case "idle":

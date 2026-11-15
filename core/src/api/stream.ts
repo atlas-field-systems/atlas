@@ -41,7 +41,7 @@ export interface Streams {
   closeAll(): void;
 }
 
-export function startStreams(store: Store, clock: Clock): Streams {
+export function startStreams(store: Store, clock: Clock, keepaliveMs: number): Streams {
   const closers = new Set<() => void>();
   return {
     closeAll() {
@@ -114,7 +114,7 @@ export function startStreams(store: Store, clock: Clock): Streams {
       const alive = () => {
         if (closed) return;
         if (!blocked) res.write(": alive\n\n");
-        keepalive = clock.after(10000, alive);
+        keepalive = clock.after(keepaliveMs, alive);
       };
       res.writeHead(200, {
         "content-type": "text/event-stream",
@@ -130,7 +130,7 @@ export function startStreams(store: Store, clock: Clock): Streams {
         }),
       );
       pump();
-      keepalive = clock.after(10000, alive);
+      keepalive = clock.after(keepaliveMs, alive);
     },
   };
 }
