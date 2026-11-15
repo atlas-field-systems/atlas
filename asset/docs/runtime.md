@@ -57,3 +57,18 @@ completes. Cancellation is checked before mode and acknowledged command writes
 and after their acknowledgements. MAVLink ACKs carry a command ID but no
 invocation ID, so an old ACK arriving after the new write completes cannot be
 distinguished from the new command's ACK.
+
+Boundary evaluation projects polygon vertices into metres around the current
+position, unwraps longitudes at the antimeridian, and uses ray casting for
+containment and the nearest segment for the distance margin. Height limits
+compare only matching altitude references. The existing per-condition timer
+measures continuous violation; a fresh inside sample or stale position clears it.
+This local plane calculation approximates distances, especially for large polygons
+and near the poles; those geometries have not been checked in SITL.
+
+Live policy replacement runs the configuration validator against the proposed
+settings merged with current settings before applying any change. It checks
+unique rule IDs and priorities, declared subsystem references, supported responses,
+and Protocol parameter shapes. Rejection
+keeps all current settings and timing records. The IP settings handler reports
+those retained settings with the request ID.

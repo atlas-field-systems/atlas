@@ -96,7 +96,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 `ATLAS_SITL_DIRECTORY` to use another download directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The eight scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The nine scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -111,5 +111,8 @@ continues. The idle-gap scenario withholds one Task in the simulated network
 while delivering its successor. It checks that the blocked queue does not
 suppress the configured idle response. Each scenario prints its temporary evidence directory, including
 Core archives and SITL output. Asset shutdown writes its own verified archive.
+The boundary scenario flies outside its configured polygon and checks the two-second
+condition duration against archived position acquisition times, the Core response
+reports, and the final disarmed measurement.
 These checks prove simulated behavior only. The remaining scenario list above
 is still the conformance target.

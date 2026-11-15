@@ -40,7 +40,8 @@ their own acknowledgements or refusals. The driver owns heartbeat timing and rep
 Current-state reports retain acquisition times across lost batches. The SDK
 queue supplies Task active and final reports. Blocked outboxes and session
 endings are visible in diagnostics. It evaluates
-battery, airborne, idle, and contact-loss conditions locally. The SDK supplies
+battery, airborne, idle, contact-loss, and boundary conditions locally. Live
+policy replacements pass configuration validation before application. The SDK supplies
 ordering and report retries. A configured stationary equipment driver supplies
 one position. The [SITL scenarios](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
 check Hold followed by Move To, pause/resume, Land now during Move To,
@@ -53,9 +54,9 @@ measurements; they do not establish full conformance.
 This draft is not ready for a field operation. These are implementation gaps,
 not changes to the behavior specified in the linked pages:
 
-- Boundary and subsystem failsafe conditions, complete rule re-arming, priority and fallback cases, and all override answers
+- Subsystem failsafe conditions, complete rule re-arming, priority and fallback cases, and all override answers
   need implementation or simulation coverage.
-- Queue cancellation and updates during failsafe, place updates while paused, and live policy validation need completion.
+- Queue cancellation and updates during failsafe, place updates while paused, and end-to-end live policy refusal answers need completion.
 - The driver does not yet recover an equipment TCP connection. Position is
   gated on GPS fix and EKF position validity. Refusal and timeout coverage
   still needs the full equipment-failure scenario matrix. ACKs received before

@@ -4,7 +4,8 @@ import type {
   ComponentsFailsafeRule,
   ComponentsFailsafeResponse,
 } from "@atlas/protocol/types";
-import type { Config } from "./config.ts";
+import { parseConfig, type Config } from "./config.ts";
+import { outsideBoundary } from "./boundary.ts";
 import {
   commands,
   isOverride,
@@ -248,7 +249,11 @@ export function reduce(
         case "commanded":
           holds = commanded;
           break;
-        case "outside_area":
+        case "outside_area": {
+          const position = get(state.measurements.position);
+          holds = position !== undefined && outsideBoundary(position, c);
+          break;
+        }
         case "subsystem":
           holds = false;
       }
@@ -394,6 +399,14 @@ export function reduce(
       if (state.phase === "failsafe" && event.request_id !== undefined &&
         event.settings.run_state !== undefined && event.settings.run_state !== state.settings.run_state)
         effects.push({ kind: "override", request_id: event.request_id });
+      if (event.settings.failsafe_policy !== undefined) {
+        try {
+          parseConfig({ ...config, initial_settings: { ...state.settings, ...event.settings } });
+        } catch (error) {
+          effects.push({ kind: "diagnostic", explanation: error instanceof Error ? error.message : String(error) });
+          break;
+        }
+      }
       const wasPaused = state.settings.run_state === "paused";
       state.settings = { ...state.settings, ...event.settings };
       const paused = state.settings.run_state === "paused";

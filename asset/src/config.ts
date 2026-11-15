@@ -119,6 +119,18 @@ const schema = z
       if (c.default_ground_speed_mps === undefined) fail(["default_ground_speed_mps"], "required for movement");
       if (c.max_ground_speed_mps === undefined) fail(["max_ground_speed_mps"], "required for movement");
     }
+    const identities = new Set<string>();
+    const priorities = new Set<number>();
+    const subsystems = new Set((c.description.subsystems ?? []).map(s => s.subsystem_id));
+    for (const rule of c.initial_settings.failsafe_policy ?? []) {
+      if (identities.has(rule.rule_id)) fail(["initial_settings", "failsafe_policy"], "duplicate rule_id");
+      if (priorities.has(rule.priority)) fail(["initial_settings", "failsafe_policy"], "duplicate priority");
+      identities.add(rule.rule_id);
+      priorities.add(rule.priority);
+      for (const condition of rule.conditions)
+        if (condition.kind === "subsystem" && !subsystems.has(condition.subsystem_id))
+          fail(["initial_settings", "failsafe_policy"], `undeclared subsystem ${condition.subsystem_id}`);
+    }
     if (!c.description.commands.length) return;
     for (const response of [
       c.safe_action,

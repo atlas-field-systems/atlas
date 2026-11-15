@@ -627,9 +627,9 @@ test("docs/failsafes.md: idle duration starts with the idle interval and runs wh
 
 test("docs/failsafes.md: a newly added idle rule uses the existing idle interval", async () => {
   const { config, state: start } = await setup();
-  start.settings.failsafe_policy = [];
+  start.settings = { ...start.settings, failsafe_policy: [] };
   let state = reduce(start, { kind: "tick", now: 1000, hasWork: false }, config).state;
-  state = reduce(state, { kind: "settings", now: 4000, settings: { failsafe_policy: [{
+  state = reduce(state, { kind: "settings", now: 4000, settings: { failsafe_policy: [...config.initial_settings.failsafe_policy!, {
     rule_id: "NEW", priority: 1, conditions: [{ kind: "idle", for_s: 5 }], response: { kind: "hold" },
   }] } }, config).state;
   const fired = reduce(state, { kind: "tick", now: 5000, hasWork: false }, config);

@@ -26,6 +26,7 @@ async function equipmentPort() {
 }
 
 for (const scenario of [
+  "boundary",
   "takeover",
   "flight",
   "battery",
@@ -189,6 +190,16 @@ for (const scenario of [
         log_directory: join(root, "asset"),
         archive_directory: join(root, "archives"),
       });
+      if (scenario === "boundary")
+        config.initial_settings.failsafe_policy!.push({
+          rule_id: "AREA", priority: 50,
+          conditions: [{ kind: "outside_area", for_s: 2, area: [
+            { latitude: -35.3635, longitude: 149.1650 },
+            { latitude: -35.3631, longitude: 149.1650 },
+            { latitude: -35.3631, longitude: 149.1655 },
+            { latitude: -35.3635, longitude: 149.1655 },
+          ] }], response: { kind: "land" },
+        });
       if (scenario === "idle-gap")
         config.initial_settings.failsafe_policy!.push({
           rule_id: "IDLE",
@@ -410,7 +421,7 @@ for (const scenario of [
         );
         return;
       }
-      if (scenario === "battery" || scenario === "link") {
+      if (scenario === "battery" || scenario === "link" || scenario === "boundary") {
         value(
           await admin.call("sendTasks", {
             params: { asset_id: app.asset_id },
@@ -427,6 +438,15 @@ for (const scenario of [
             },
           }),
         );
+        if (scenario === "boundary") {
+          await until(() => events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_id === 1 && e.record.task_state === "completed"));
+          value(await admin.call("sendTasks", {
+            params: { asset_id: app.asset_id }, body: { tasks: [{ kind: "move_to", destination: {
+              latitude: -35.3628, longitude: 149.16523,
+              altitudes: [{ altitude_m: 5, altitude_reference: "launch" }],
+            } }] },
+          }));
+        }
         if (scenario === "link")
           await until(() =>
             events.some(
@@ -451,7 +471,7 @@ for (const scenario of [
             (e) =>
               e.kind === "report.failsafe" &&
               e.record.kind === "response" &&
-              e.record.rule_id === (scenario === "battery" ? "LB" : "LINK") &&
+              e.record.rule_id === (scenario === "battery" ? "LB" : scenario === "boundary" ? "AREA" : "LINK") &&
               e.record.task_state === "completed",
           ),
         );
@@ -459,7 +479,7 @@ for (const scenario of [
           (e) =>
             e.kind === "report.failsafe" &&
             e.record.kind === "response" &&
-            e.record.rule_id === (scenario === "battery" ? "LB" : "LINK"),
+            e.record.rule_id === (scenario === "battery" ? "LB" : scenario === "boundary" ? "AREA" : "LINK"),
         );
         assert.ok(
           responses.some(
@@ -500,7 +520,7 @@ for (const scenario of [
           (r) =>
             r.type === "report.failsafe" &&
             r.kind === "response" &&
-            r.rule_id === (scenario === "battery" ? "LB" : "LINK") &&
+            r.rule_id === (scenario === "battery" ? "LB" : scenario === "boundary" ? "AREA" : "LINK") &&
             r.task_state === "active",
         );
         assert.ok(
@@ -515,6 +535,11 @@ for (const scenario of [
               r.task_state === "completed",
           ),
         );
+        if (scenario === "boundary") {
+          const outside = entries.find(e => e.kind === "input" && e.event.kind === "measurements" && e.event.measurements.position?.value.latitude > -35.3631);
+          assert.ok(outside, "archive must show the vehicle outside the configured area");
+          assert.ok(response.time >= outside.event.measurements.position.time + 2000, "boundary response must wait for the configured duration");
+        }
         if (scenario === "link")
           assert.ok(
             response.time >=
