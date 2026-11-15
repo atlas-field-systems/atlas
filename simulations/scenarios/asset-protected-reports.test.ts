@@ -22,7 +22,7 @@ scenario({
     assert.ok("key" in key);
     const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
     const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
-      description: { ...raw.description, subsystems: [{ subsystem_id: "GPS", name: "GPS" }] },
+      description: { ...raw.description, subsystems: [{ subsystem_id: "GPS", label: "GPS" }] },
       equipment: { ...raw.equipment, port: address.port, subsystems: { gps: "GPS" } },
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
     const protocol = new MavLinkProtocolV2(1, 1);
