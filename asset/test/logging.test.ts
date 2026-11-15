@@ -1,0 +1,30 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { unzipSync, strFromU8 } from "fflate";
+import { systemClock } from "@atlas/sdk";
+import { parseConfig } from "../src/config.ts";
+import { createLog } from "../src/logging.ts";
+
+test("docs/logging.md: the archive uses the injected clock and seals diagnostics", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-log-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  let now = 1000;
+  const log = await createLog(config, 1000, { ...systemClock, now: () => now });
+  log.record({ kind: "before" });
+  now = 2000;
+  const closing = log.close("A", "stopped");
+  log.record({ kind: "during" });
+  const path = await closing;
+  const zip = unzipSync(await readFile(path));
+  assert.match(strFromU8(zip["summary.md"]), /Operation 1000 to 2000/);
+  assert.ok(Object.entries(zip).some(([name, bytes]) => name.startsWith("diagnostics/") && strFromU8(bytes).includes('"during"')));
+  log.record({ kind: "after" });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(await readdir(config.log_directory), []);
+});

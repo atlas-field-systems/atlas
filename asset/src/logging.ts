@@ -9,11 +9,13 @@ import {
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { zipSync, unzipSync, strToU8 } from "fflate";
+import { systemClock, type Clock } from "@atlas/sdk";
 import { inspectConfig, type Config } from "./config.ts";
-export async function createLog(config: Config, start: number) {
+export async function createLog(config: Config, start: number, clock: Clock = systemClock) {
   const directory = join(config.log_directory, String(start));
   await mkdir(directory, { recursive: true });
   const pending: string[] = [];
+  let sealed = false;
   let writing: Promise<void> | undefined,
     dropped = 0,
     bytes = 0,
@@ -21,6 +23,7 @@ export async function createLog(config: Config, start: number) {
     fileBytes = 0;
   const files = new Set<string>();
   function record(value: unknown) {
+    if (sealed) return;
     if (pending.length >= config.log_queue_limit) {
       dropped++;
       return;
@@ -58,6 +61,7 @@ export async function createLog(config: Config, start: number) {
     record,
     async close(asset_id: string, reason: string) {
       await writing;
+      sealed = true;
       const content: Record<string, Uint8Array> = {};
       for (const name of files)
         content[`diagnostics/${name}`] = await readFile(join(directory, name));
@@ -68,7 +72,7 @@ export async function createLog(config: Config, start: number) {
         "Asset operation diagnostics and configuration.\n",
       );
       content["summary.md"] = strToU8(
-        `Operation ${start} to ${Date.now()}. ${reason}. Dropped diagnostics: ${dropped}.\n`,
+        `Operation ${start} to ${clock.now()}. ${reason}. Dropped diagnostics: ${dropped}.\n`,
       );
       const manifest = Object.entries(content).map(([path, data]) => ({
         path,
