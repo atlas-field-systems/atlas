@@ -105,6 +105,12 @@ existing per-condition timing records and measurement freshness limit.
 
 ## Equipment connection recovery
 
+ArduPilot measurements use the app's clock when the driver decodes a received
+frame. This is local acquisition time, not a synchronized flight-controller
+clock or report-build time. TCP bytes already in transit can reach the app after
+a proxy closes its side. Decoding those bytes supplies new local measurements;
+subsequent report builds retain those acquisition times.
+
 The ArduPilot driver retries a closed TCP connection from its normal control
 tick, using the configured equipment heartbeat interval between attempts. Each
 connection has a new MAVLink parser and requests telemetry streams again. Close

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { connect, createServer, type Socket } from "node:net";
+import { connect, createServer, Socket } from "node:net";
 import { once } from "node:events";
 import { send, common, MavLinkPacketSplitter, MavLinkPacketParser, MavLinkProtocolV2 } from "node-mavlink";
 import { spawn } from "node:child_process";
@@ -183,6 +183,17 @@ for (const scenario of [
       let blocked = scenario === "equipment-startup";
       let failEquipment = false;
       let droppedAt = 0;
+      let receivedAt = 0;
+      let assetSocket: Socket | undefined;
+      let proxyPort = 0;
+      const emit = Socket.prototype.emit;
+      if (scenario === "equipment-drop") t.mock.method(Socket.prototype, "emit", function (this: Socket, event: string | symbol, ...args: unknown[]) {
+        const equipmentData = this.remotePort === proxyPort && event === "data";
+        if (equipmentData) assetSocket = this;
+        const emitted: boolean = Reflect.apply(emit, this, [event, ...args]);
+        if (equipmentData) receivedAt = Date.now();
+        return emitted;
+      });
       const proxy = createServer(peer => {
         equipmentPeers.add(peer);
         peer.on("error", () => {});
@@ -197,7 +208,7 @@ for (const scenario of [
         const splitter = peer.pipe(new MavLinkPacketSplitter());
         const parser = new MavLinkPacketParser();
         splitter.on("data", frame => {
-          parser.once("data", packet => {
+          parser.once("data", async packet => {
             if (failEquipment && packet.header.msgid === common.CommandLong.MSG_ID &&
                 packet.protocol.data(packet.payload, common.CommandLong).command === 178) {
               if (scenario === "equipment-refused") {
@@ -209,8 +220,15 @@ for (const scenario of [
             }
             if (failEquipment && scenario === "equipment-drop" && packet.header.msgid === common.SetPositionTargetGlobalInt.MSG_ID) {
               blocked = true;
+              assert.ok(assetSocket);
+              assetSocket.pause();
+              const finalPosition = new common.GlobalPositionInt();
+              Object.assign(finalPosition, { lat: -353632600, lon: 1491652300, alt: 589000, relativeAlt: 5000 });
+              await send(peer, finalPosition, new MavLinkProtocolV2(1, 1));
               droppedAt = Date.now();
               for (const connection of equipmentPeers) connection.destroy();
+              await delay(30);
+              assetSocket.resume();
               return;
             }
             upstream.write(frame.buffer);
@@ -222,6 +240,7 @@ for (const scenario of [
       await once(proxy, "listening");
       const proxyAddress = proxy.address();
       assert.ok(proxyAddress && typeof proxyAddress !== "string");
+      proxyPort = proxyAddress.port;
       cleanup.push(async () => { for (const peer of equipmentPeers) peer.destroy(); await new Promise<void>(resolve => proxy.close(() => resolve())); });
       const example = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
       const config = parseConfig({
@@ -314,7 +333,11 @@ for (const scenario of [
         failEquipment = false;
         if (scenario === "equipment-drop") {
           await delay((config.measurement_stale_after_s + 0.5) * 1000);
-          assert.equal(events.some(e => e.kind === "report.telemetry" && e.record.time > droppedAt), false);
+          const telemetryTimes = events.flatMap(e => e.kind === "report.telemetry" ? [e.record.time] : []);
+          await writeFile(join(root, "equipment-cut.json"), JSON.stringify({ droppedAt, receivedAt, telemetryTimes }, null, 2));
+          assert.ok(receivedAt > droppedAt, "buffered equipment bytes arrive after the proxy destroys its connections");
+          assert.ok(telemetryTimes.some(time => time > droppedAt), "the controlled race delivers a final measurement after proxy destruction");
+          assert.equal(telemetryTimes.some(time => time > receivedAt), false, "telemetry never claims acquisition after the Asset last received equipment bytes");
           assert.equal(events.some(e => e.kind === "report.failsafe" && e.record.kind === "response"), false);
           const restoredAt = Date.now();
           blocked = false;

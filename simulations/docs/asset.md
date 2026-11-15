@@ -132,7 +132,13 @@ Equipment scenarios place a TCP proxy between the app and SITL. It cuts the
 equipment link during Move To, withholds a command ACK, supplies a simulated
 equipment refusal ACK, or starts with the link unavailable. Core must receive
 the failed Task and cancellation of its successor. During equipment loss, Core
-remains reachable and no telemetry has an acquisition time after the cut. After
+remains reachable and no telemetry has an acquisition time after the Asset's
+last equipment-byte delivery. The equipment-drop scenario pauses the Asset's
+socket, flushes a final simulated position, destroys the proxy connections, and
+resumes the socket. It requires telemetry after proxy destruction to prove the
+buffered-delivery race is exercised, then rejects telemetry dated after the last
+socket data event completes. The socket observer changes no production path.
+Each run saves both cut times and telemetry times in `equipment-cut.json`. After
 restoration, telemetry must resume with new acquisition times. The flight
 controller retains its GCS failsafe throughout.
 
