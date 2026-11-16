@@ -31,14 +31,7 @@ built. Until then the owner judges Atlas from simulation results.
    [Asset simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md#run-the-initial-sitl-scenarios)
    document the verified scenarios and remaining conformance target. Hardware
    behavior remains unverified.
-2. **How much does the radio really carry?** Atlas uses a slow link's
-   airtime [fully and efficiently](scale.md#use-slow-links-fully-and-efficiently),
-   so the Fieldlink needs to know how much airtime it has to spend before it
-   [asks the Asset for reports](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state). What Meshtastic carries in practice, after its relays and
-   acknowledgements, is
-   [not known yet](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet).
-   A faster radio setting carries more over a shorter range. Only a
-   measurement settles it.
+2. **How much does the radio really carry?** The [Meshtastic bench work](../fieldlink/meshtastic/README.md#radio-measurement) addresses the unknown radio capacity.
 
 ## The Meshtastic Fieldlink comes first
 
@@ -48,12 +41,7 @@ see later, so the gateway app and the simulated radio link are shaped by it.
 Building for SiK first would shape them around SiK's one-drone,
 point-to-point link.
 
-## The radio is measured during the build
-
-While the Meshtastic Fieldlink is built, two Meshtastic radios are connected
-to the build computer and send messages to each other. Their measured numbers
-go into the Meshtastic page, and the simulated radio link uses them. The
-measurement answers the second risk.
+The [Meshtastic folder](../fieldlink/meshtastic/README.md) owns its design and bench work.
 
 ## New failsafe and radio decisions wait
 
@@ -69,8 +57,7 @@ found.
    remain. [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets) now use the
    real app for IP Asset work.
 2. **The gateway app and the Meshtastic Fieldlink**, over a simulated radio
-   link, with the two radios on the bench. Planned; neither runtime nor the
-   radio measurement is complete.
+   link. Planned; see the [Meshtastic design and bench work](../fieldlink/meshtastic/README.md).
 3. **The SiK Fieldlink.** Planned.
 4. **Simulation tools and the full simulation.** The existing harness runs
    Core, SDK, and Asset IP scenarios. Radio simulation and tools for writing

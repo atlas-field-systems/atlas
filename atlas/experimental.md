@@ -1,7 +1,7 @@
 # Experimental ideas
 
 These ideas are experimental and not committed.
-Nothing here is a requirement until it moves into another Charter page.
+Nothing here is a requirement until adopted in its owning documentation.
 
 ## Ground elevation at connect
 
@@ -19,26 +19,4 @@ Open question: how accurate the elevation must be.
 
 ## Passive listening
 
-On a mesh radio link, every radio hears the messages the other radios send. A
-Fieldlink for such a link could let its Asset keep what it hears as a **local
-picture**: the Assets nearby, and the Observations and Tracks being reported.
-The local picture costs no air time, because the messages are sent anyway. For
-example:
-
-- An Asset told to follow a Track it cannot see listens to another Asset's
-  observation reports on that Track and steers itself.
-- An Asset follows another Asset by hearing its status and position reports,
-  and does not ask Core each time.
-
-An Asset uses whatever it can read. A report it cannot read in full is skipped.
-
-Not every link can do this. A point-to-point link, such as SiK, has nothing to
-overhear. An Asset on IP asks Core instead, which lets every caller
-[read everything](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#reads).
-
-Open questions:
-
-- How a listening Asset checks that a report came from the radio it claims to
-  come from.
-- Which heard records a Fieldlink passes to its Asset app.
-- How an Asset's Reset ZIP records what the Asset heard and acted on.
+Moved into the current [Meshtastic pre-build design](../fieldlink/meshtastic/README.md#listening-and-shared-updates).
