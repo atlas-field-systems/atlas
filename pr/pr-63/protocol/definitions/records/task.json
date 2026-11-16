@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task.json",
+  "title": "Task",
+  "description": "A Task's body defines one piece of work for an Asset. kind names a command kind the Asset lists in its description, or settings for a settings change made when the Task runs. Core assigns task_id, which also gives the order the Asset runs its Tasks in. The body changes only when an operator edits a place the Task names and chooses to update its Tasks: Core then sends the Task again, with the same task_id and a new copy of the place, as tasks.updated. A Task that names a geo feature always carries the copy Core made: move_to its destination, land its landing_position. The Asset's report.status kind task records its state.",
+  "type": "object",
+  "required": [
+    "time",
+    "asset_id",
+    "task_id",
+    "requested_by",
+    "kind"
+  ],
+  "oneOf": [
+    {
+      "$ref": "task/takeoff.json"
+    },
+    {
+      "$ref": "task/move_to.json"
+    },
+    {
+      "$ref": "task/land.json"
+    },
+    {
+      "$ref": "task/return_to_home.json"
+    },
+    {
+      "$ref": "task/hold.json"
+    },
+    {
+      "$ref": "task/point_at.json"
+    },
+    {
+      "$ref": "task/failsafe.json"
+    },
+    {
+      "$ref": "task/settings.json"
+    },
+    {
+      "$ref": "task/capture.json"
+    }
+  ],
+  "unevaluatedProperties": false,
+  "properties": {
+    "time": {
+      "$ref": "../variables/time.json"
+    },
+    "asset_id": {
+      "$ref": "../variables/asset_id.json"
+    },
+    "task_id": {
+      "$ref": "../variables/task_id.json"
+    },
+    "send_last": {
+      "$ref": "../variables/send_last.json"
+    },
+    "now": {
+      "$ref": "../variables/now.json"
+    },
+    "requested_by": {
+      "$ref": "../variables/requested_by.json"
+    },
+    "kind": {
+      "$ref": "../variables/kind.json"
+    }
+  },
+  "examples": [
+    {
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "task_id": 1,
+      "send_last": 3,
+      "requested_by": "OP1",
+      "kind": "takeoff",
+      "target_altitude": {
+        "altitude_m": 30,
+        "altitude_reference": "launch"
+      }
+    },
+    {
+      "time": 1793667601000,
+      "asset_id": "A1",
+      "task_id": 2,
+      "send_last": 3,
+      "requested_by": "OP1",
+      "kind": "move_to",
+      "destination": {
+        "latitude": 42.2746,
+        "longitude": -71.8063,
+        "altitudes": [
+          {
+            "altitude_m": 30,
+            "altitude_reference": "launch"
+          }
+        ]
+      }
+    },
+    {
+      "time": 1793667602000,
+      "asset_id": "A1",
+      "task_id": 3,
+      "send_last": 3,
+      "requested_by": "OP1",
+      "kind": "land",
+      "landing_position": {
+        "latitude": 42.2746,
+        "longitude": -71.8063
+      },
+      "transit_altitude": {
+        "altitude_m": 20,
+        "altitude_reference": "launch"
+      }
+    },
+    {
+      "time": 1793667601500,
+      "asset_id": "A1",
+      "task_id": 7,
+      "requested_by": "OP1",
+      "kind": "move_to",
+      "geofeature_id": "G2",
+      "destination": {
+        "latitude": 42.2751,
+        "longitude": -71.8049
+      }
+    },
+    {
+      "time": 1793667603000,
+      "asset_id": "A1",
+      "task_id": 4,
+      "requested_by": "OP1",
+      "kind": "return_to_home",
+      "now": true
+    },
+    {
+      "time": 1793667604000,
+      "asset_id": "A1",
+      "task_id": 5,
+      "requested_by": "OP1",
+      "kind": "settings",
+      "settings": {
+        "landing_gear": "up"
+      }
+    },
+    {
+      "time": 1793667605000,
+      "asset_id": "A1",
+      "task_id": 6,
+      "requested_by": "OP1",
+      "kind": "hold",
+      "now": true
+    },
+    {
+      "time": 1793667606000,
+      "asset_id": "A1",
+      "task_id": 8,
+      "requested_by": "OP1",
+      "kind": "failsafe",
+      "now": true
+    },
+    {
+      "time": 1793667605000,
+      "asset_id": "A3",
+      "task_id": 6,
+      "requested_by": "OP1",
+      "kind": "point_at",
+      "now": true,
+      "target": {
+        "latitude": 42.2758,
+        "longitude": -71.8041
+      }
+    },
+    {
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "task_id": 9,
+      "requested_by": "OP1",
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "photo"
+    },
+    {
+      "time": 1793667600000,
+      "asset_id": "A1",
+      "task_id": 9,
+      "requested_by": "OP1",
+      "kind": "capture",
+      "camera_id": "C1",
+      "media": "clip",
+      "duration_s": 10
+    }
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "move_to"
+          }
+        },
+        "required": [
+          "kind",
+          "geofeature_id"
+        ]
+      },
+      "then": {
+        "required": [
+          "destination"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "land"
+          }
+        },
+        "required": [
+          "kind",
+          "geofeature_id"
+        ]
+      },
+      "then": {
+        "required": [
+          "landing_position"
+        ]
+      }
+    }
+  ]
+}
