@@ -26,8 +26,8 @@ has run against ArduPilot, real or simulated. One was reversed two days
 after it was made.</li>
 <li><strong>How much does the radio really carry?</strong> Atlas uses a slow link&#39;s
 airtime <a href="scale.html#use-slow-links-fully-and-efficiently">fully and efficiently</a>,
-so the Asset and the Fieldlink need to know how much airtime they have to
-spend. What Meshtastic carries in practice, after its relays and
+so the Fieldlink needs to know how much airtime it has to spend before it
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state">asks the Asset for reports</a>. What Meshtastic carries in practice, after its relays and
 acknowledgements, is
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet">not known yet</a>.
 A faster radio setting carries more over a shorter range. Only a
