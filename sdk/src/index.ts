@@ -28,9 +28,13 @@ export type {
 export { runAsset, startAsset } from "./asset.ts";
 export type {
   LinkResult,
+  LinkFailure,
   AssetFile,
   AssetLink,
   AssetOptions,
+  Batch,
+  ReportSource,
+  Room,
 } from "./asset.ts";
 export { startPlugin } from "./plugin.ts";
 export type { Reply } from "./plugin.ts";

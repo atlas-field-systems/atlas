@@ -29,6 +29,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-15 | The Asset's link asks for reports. Whenever the link has room to send, it asks the Asset for up to that much, and the Asset answers with its most important waiting reports. How much room there is depends on the link and how good it is right now. | The Asset link, on IP and every Fieldlink. How each Fieldlink works out its room is designed with that Fieldlink. | [Asset communications](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state) |
 | 2026-11-14 | Atlas has no set fleet size. The earlier figure of about 20 Assets was a rough guess, not a requirement, and no field link is designed or judged by whether it carries a set number of Assets. | Fleet size, every field link. | [Scale](scale.md#fleet) |
 | 2026-11-14 | On slow links, Atlas uses the airtime fully and efficiently: it sends as much useful data as the link can carry, and spends every byte well. | Slow field links, such as LoRa. | [Scale](scale.md#use-slow-links-fully-and-efficiently) |
 | 2026-11-14 | One Core may run several gateways at once when their radio links cannot clash: gateways in different areas, such as two gateways 20 miles apart, or gateways in one area on different bands, such as an FLRC gateway beside a Meshtastic gateway. An Asset always uses exactly one gateway. | Gateways on one Core. Two gateways in one radio network stay out of scope. | [Scale](scale.md#setup) |
@@ -136,6 +137,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-15 | The real Asset app is built now, with no throwaway prototype first. | The Asset app. | [Build order](build-order.md#the-steps) |
 | 2026-11-14 | Meshtastic is the first Fieldlink built, and SiK is built on what it establishes. Meshtastic is closer to later Fieldlinks, so the gateway app and the simulation tools are shaped by it and not by SiK. | The order of the Fieldlinks. | [Build order](build-order.md#the-meshtastic-fieldlink-comes-first) |
 | 2026-11-14 | The radio is measured during the build: two Meshtastic radios are connected to the build computer and send messages to each other. | Building the Meshtastic Fieldlink. | [Build order](build-order.md#the-radio-is-measured-during-the-build) |
 | 2026-11-14 | No new failsafe or radio decision is made until the Asset app has run against simulated ArduPilot and the radio is measured. Decisions already made stay in force. | Failsafe and radio decisions. | [Build order](build-order.md#new-failsafe-and-radio-decisions-wait) |

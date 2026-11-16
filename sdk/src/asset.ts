@@ -10,34 +10,45 @@ import {
   type QueueHost,
   type Report,
 } from "./queue.ts";
+export type LinkFailure = {
+  ok: false;
+  error:
+    | "run_ended"
+    | "unauthenticated"
+    | "definitions_mismatch"
+    | "closed"
+    | "refused";
+  explanation: string;
+};
 export type LinkResult =
   | { ok: true }
-  | {
-      ok: false;
-      error:
-        | "run_ended"
-        | "unauthenticated"
-        | "definitions_mismatch"
-        | "closed"
-        | "refused";
-      explanation: string;
-    };
+  | LinkFailure
+  | { ok: false; error: "lost"; explanation: string };
 export interface AssetFile {
   name: string;
   contentType: string;
   bytes: Uint8Array;
   place?: P["requests.geofeature"];
 }
+export interface Room {
+  bytes: number;
+  size(reports: Report[]): number;
+}
+export interface Batch {
+  reports: Report[];
+  priority: "must_arrive" | "can_skip";
+  settle(result: LinkResult): void;
+}
+export interface ReportSource {
+  take(room: Room): Batch | undefined;
+  onWaiting(cb: () => void): () => void;
+}
 export interface AssetLink {
   events(after: number): AsyncIterable<AssetEvent>;
-  sendReports(
-    reports: Report[],
-    priority: "must_arrive" | "can_skip",
-  ): Promise<LinkResult>;
+  serve(source: ReportSource): () => void;
   onContact(
     cb: (c: { open: boolean; last_heard: number | null }) => void,
   ): () => void;
-  capacity(): number | undefined;
   storeFile(file: AssetFile): Promise<Result<{ object_id: string }>>;
 }
 const mustArrive = (r: Report) =>
@@ -45,24 +56,42 @@ const mustArrive = (r: Report) =>
   (r.type === "report.status" &&
     r.kind === "task" &&
     r.task_state !== "active");
+const batchLimit = 1000;
 export function createOutbox(
-  link: AssetLink,
   clock: Clock,
   heartbeatMs = 10000,
   observer?: Observer,
   emit = diagnostics(clock, observer),
+  current?: (room: Room) => Report[],
 ) {
   const live: Report[] = [],
     retained: Report[] = [];
   let stopped = false,
-    blocked: LinkResult | undefined,
+    beat = false,
+    blocked: LinkFailure | undefined,
     blockedBatch: Report[] | undefined,
-    flight: Promise<void> | undefined;
-  const listeners = new Set<(result: LinkResult) => void>();
+    inFlight = false,
+    currentDue = true;
+  const listeners = new Set<(result: LinkFailure) => void>();
+  const failures = new Set<(error: unknown) => void>();
+  const waiting = new Set<() => void>();
   const acknowledged = new Map<Report, () => void>();
-  function releaseWaiters() {
+  const beats: (() => void)[] = [];
+  const idle: (() => void)[] = [];
+  function notify() {
+    if (stopped || blocked) return;
+    for (const cb of waiting) cb();
+  }
+  function settleIdle() {
+    if (!stopped && !blocked && (inFlight || live.length || retained.length))
+      return;
+    for (const resolve of idle.splice(0)) resolve();
+  }
+  function release() {
     for (const resolve of acknowledged.values()) resolve();
     acknowledged.clear();
+    for (const resolve of beats.splice(0)) resolve();
+    settleIdle();
   }
   function waitFor(report: Report) {
     return new Promise<void>((resolve) => {
@@ -73,64 +102,123 @@ export function createOutbox(
       });
     });
   }
-  let timer = clock.after(heartbeatMs, beat);
-  function beat() {
-    void flush(true);
+  let timer = clock.after(heartbeatMs, due);
+  function due() {
+    beat = true;
+    notify();
   }
-  function flush(heartbeat = false): Promise<void> {
-    if (flight) return flight;
-    if (stopped || blocked) return Promise.resolve();
-    flight = (async () => {
-      do {
-        const lane = live.length ? live : retained;
-        if (!lane.length && !heartbeat) break;
-        const batch = lane.slice(0, 1000);
-        emit("batch.sent", { count: batch.length });
-        const result = await link.sendReports(
-          batch,
-          batch.some(mustArrive) ? "must_arrive" : "can_skip",
-        );
-        if (!result.ok) {
-          blocked = result;
-          blockedBatch = batch;
-          releaseWaiters();
-          for (const cb of listeners) cb(result);
-          break;
+  function fill(lane: Report[], room: Room) {
+    const batch: Report[] = [];
+    for (const report of lane) {
+      if (batch.length >= batchLimit) break;
+      if (batch.length && room.size([...batch, report]) > room.bytes) break;
+      batch.push(report);
+    }
+    return batch;
+  }
+  function take(room: Room): Batch | undefined {
+    if (stopped || blocked || inFlight) return;
+    let lane = live,
+      queued = fill(live, room),
+      reports = queued;
+    let carriesCurrent = false;
+    if (current && currentDue && queued.length < batchLimit) {
+      const bytes = room.bytes - (queued.length ? room.size(queued) : 0);
+      if (bytes > 0 || !queued.length) {
+        let samples: Report[];
+        try {
+          samples = current({ bytes, size: room.size });
+        } catch (error) {
+          stop();
+          for (const cb of failures) cb(error);
+          return;
         }
-        emit("batch.acknowledged", { count: batch.length });
-        lane.splice(0, batch.length);
-        for (const report of batch) {
-          acknowledged.get(report)?.();
-          acknowledged.delete(report);
-        }
-        heartbeat = false;
-      } while (!stopped && (live.length || retained.length));
-    })().finally(() => {
-      flight = undefined;
-      timer.cancel();
-      if (!stopped && !blocked) {
-        timer = clock.after(heartbeatMs, beat);
-        if (live.length || retained.length) void flush();
+        currentDue = false;
+        carriesCurrent = true;
+        reports = [...queued, ...samples.slice(0, batchLimit - queued.length)];
       }
-    });
-    return flight;
+    }
+    if (!reports.length && retained.length) {
+      lane = retained;
+      reports = queued = fill(retained, room);
+    }
+    if (!reports.length && !beat) return;
+    beat = false;
+    inFlight = true;
+    timer.cancel();
+    const priority = reports.some(mustArrive) ? "must_arrive" : "can_skip";
+    emit("batch.sent", { count: reports.length, priority });
+    let settled = false;
+    return {
+      reports: structuredClone(reports),
+      priority,
+      settle(result) {
+        if (settled) return;
+        settled = true;
+        inFlight = false;
+        if (stopped) return release();
+        if (result.ok) {
+          emit("batch.acknowledged", { count: reports.length });
+          lane.splice(0, queued.length);
+          for (const report of queued) {
+            acknowledged.get(report)?.();
+            acknowledged.delete(report);
+          }
+          for (const resolve of beats.splice(0)) resolve();
+        } else if (result.error === "lost") {
+          emit("batch.lost", { count: reports.length });
+          beat ||= !reports.length;
+          currentDue ||= carriesCurrent;
+        } else {
+          blocked = result;
+          blockedBatch = reports;
+          release();
+          for (const cb of listeners) cb(result);
+          return;
+        }
+        timer = clock.after(heartbeatMs, due);
+        settleIdle();
+        if (live.length || retained.length || beat) notify();
+      },
+    };
   }
   return {
+    take,
+    onWaiting(cb: () => void) {
+      waiting.add(cb);
+      return () => {
+        waiting.delete(cb);
+      };
+    },
     add(reports: Report[], lane: "live" | "retained" = "live") {
       if (stopped || !reports.length) return Promise.resolve();
       const copies = structuredClone(reports);
       (lane === "live" ? live : retained).push(...copies);
       if (blocked) return Promise.resolve();
       const sent = waitFor(copies[copies.length - 1]);
-      void flush();
+      notify();
       return sent;
     },
-    flush,
+    changed() {
+      currentDue = true;
+      notify();
+    },
+    flush() {
+      return new Promise<void>((resolve) => {
+        idle.push(resolve);
+        settleIdle();
+        notify();
+      });
+    },
     flushLive() {
       if (stopped || blocked) return Promise.resolve();
       const last = live.at(-1);
       if (last) return waitFor(last);
-      return retained.length ? Promise.resolve() : flush(true);
+      if (retained.length) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        beats.push(resolve);
+        due();
+      });
     },
     get blocked() {
       return blocked;
@@ -138,24 +226,29 @@ export function createOutbox(
     get blockedBatch() {
       return blockedBatch && structuredClone(blockedBatch);
     },
-    onBlocked(cb: (r: LinkResult) => void) {
+    onBlocked(cb: (r: LinkFailure) => void) {
       listeners.add(cb);
       return () => {
         listeners.delete(cb);
       };
     },
-    stop() {
-      stopped = true;
-      releaseWaiters();
-      timer.cancel();
+    onFailed(cb: (error: unknown) => void) {
+      failures.add(cb);
     },
+    stop,
   };
+  function stop() {
+    stopped = true;
+    timer.cancel();
+    release();
+  }
 }
 export interface AssetOptions {
   clock: Clock;
   heartbeatMs?: number;
   observer?: Observer;
   queue?: QueueHost;
+  current?(room: Room): Report[];
   settings(): P["report.settings"]["settings"];
   onSettings?(
     settings: P["settings_change"],
@@ -170,12 +263,19 @@ export function runAsset(
 ) {
   const { asset_id } = registration;
   const outbox = createOutbox(
-    link,
     options.clock,
     options.heartbeatMs,
     options.observer,
     emit,
+    options.current,
   );
+  let fail!: (error: unknown) => void;
+  const failed = new Promise<never>((_, reject) => {
+    fail = reject;
+  });
+  failed.catch(() => {});
+  outbox.onFailed(fail);
+  const stopServing = link.serve(outbox);
   const queue = options.queue
     ? createQueue(
         {
@@ -193,6 +293,7 @@ export function runAsset(
   let wakeStop: (() => void) | undefined;
   function untilStopped<T>(pending: Promise<T>): Promise<T | undefined> {
     return Promise.race([
+      failed,
       pending,
       new Promise<undefined>((resolve) => {
         wakeStop = () => resolve(undefined);
@@ -219,10 +320,12 @@ export function runAsset(
     // Reopening must not wait for retained history to drain.
     if (!reports.length) await outbox.flushLive();
   }
-  const ready = rejoin().then(async (): Promise<LinkResult> => {
-    await outbox.flush();
-    return outbox.blocked ?? { ok: true };
-  });
+  const ready = rejoin().then(
+    async (): Promise<{ ok: true } | LinkFailure> => {
+      await outbox.flush();
+      return outbox.blocked ?? { ok: true };
+    },
+  );
   const done = (async (): Promise<FollowEnd> => {
     try {
       const initial = await untilStopped(ready);
@@ -252,6 +355,7 @@ export function runAsset(
       return { reason: stopped ? "stopped" : "closed" };
     } finally {
       outbox.stop();
+      stopServing();
     }
   })();
   return {
@@ -265,6 +369,7 @@ export function runAsset(
       stopped = true;
       wakeStop?.();
       outbox.stop();
+      stopServing();
     },
   };
 }
@@ -318,6 +423,58 @@ export async function startAsset(
     stream?.stop();
     session?.stop();
   };
+  async function send(reports: Report[]): Promise<LinkResult> {
+    if (stopped)
+      return {
+        ok: false,
+        error: "closed",
+        explanation: "Asset session stopped",
+      };
+    let attempt = 0;
+    let result = await client.call("sendReports", {
+      params: { asset_id },
+      body: { reports },
+    });
+    while (
+      !stopped &&
+      !result.ok &&
+      result.retry &&
+      (result.error === "unknown" || (result.status ?? 0) >= 500)
+    ) {
+      const delay = backoffDelay(
+        attempt++,
+        internal(client).options.backoff ?? defaultBackoff,
+      );
+      await new Promise<void>((resolve) => {
+        const timer = options.clock.after(delay, resolve);
+        wakeRetry = () => {
+          timer.cancel();
+          resolve();
+        };
+      });
+      wakeRetry = undefined;
+      if (stopped) break;
+      result = await result.retry();
+    }
+    if (stopped)
+      return {
+        ok: false,
+        error: "closed",
+        explanation: "Asset session stopped",
+      };
+    if (result.ok) return { ok: true };
+    return {
+      ok: false,
+      error:
+        result.error === "run_ended" ||
+        result.error === "unauthenticated" ||
+        result.error === "definitions_mismatch" ||
+        result.error === "closed"
+          ? result.error
+          : "refused",
+      explanation: result.explanation,
+    };
+  }
   const link: AssetLink = {
     async *events(after) {
       let pending: AssetEvent | undefined;
@@ -377,56 +534,32 @@ export async function startAsset(
         stream.stop();
       }
     },
-    async sendReports(reports) {
-      if (stopped)
-        return {
-          ok: false,
-          error: "closed",
-          explanation: "Asset session stopped",
-        };
-      let attempt = 0;
-      let result = await client.call("sendReports", {
-        params: { asset_id },
-        body: { reports },
+    serve(source) {
+      let open = true,
+        pending = true,
+        wake: (() => void) | undefined;
+      const unsubscribe = source.onWaiting(() => {
+        pending = true;
+        wake?.();
       });
-      while (
-        !stopped &&
-        !result.ok &&
-        result.retry &&
-        (result.error === "unknown" || (result.status ?? 0) >= 500)
-      ) {
-        const delay = backoffDelay(
-          attempt++,
-          internal(client).options.backoff ?? defaultBackoff,
-        );
-        await new Promise<void>((resolve) => {
-          const timer = options.clock.after(delay, resolve);
-          wakeRetry = () => {
-            timer.cancel();
-            resolve();
-          };
-        });
-        wakeRetry = undefined;
-        if (stopped) break;
-        result = await result.retry();
-      }
-      if (stopped)
-        return {
-          ok: false,
-          error: "closed",
-          explanation: "Asset session stopped",
-        };
-      if (result.ok) return { ok: true };
-      return {
-        ok: false,
-        error:
-          result.error === "run_ended" ||
-          result.error === "unauthenticated" ||
-          result.error === "definitions_mismatch" ||
-          result.error === "closed"
-            ? result.error
-            : "refused",
-        explanation: result.explanation,
+      void (async () => {
+        while (open && !stopped) {
+          const batch = pending
+            ? source.take({ bytes: Infinity, size: () => 0 })
+            : undefined;
+          if (batch) batch.settle(await send(batch.reports));
+          else if (pending) pending = false;
+          else
+            await new Promise<void>((resolve) => {
+              wake = resolve;
+            });
+          wake = undefined;
+        }
+      })();
+      return () => {
+        open = false;
+        unsubscribe();
+        wake?.();
       };
     },
     onContact(cb) {
@@ -435,7 +568,6 @@ export async function startAsset(
         contacts.delete(cb);
       };
     },
-    capacity: () => undefined,
     async storeFile(file) {
       let geofeature_id: string | undefined;
       if (file.place) {

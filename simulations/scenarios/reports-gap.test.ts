@@ -45,7 +45,10 @@ scenario({
       .filter((batch) => batch.length);
     assert.deepEqual(
       times,
-      [[original + 31000], [original + 31001], [original, original + 100]],
+      [
+        [original + 31000, original + 31001],
+        [original, original + 100],
+      ],
       "live waits before retained, whose order is unchanged",
     );
     const history: number[] = [];

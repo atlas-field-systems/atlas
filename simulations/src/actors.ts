@@ -3,6 +3,7 @@ import {
   runAsset,
   startPlugin,
   type AssetLink,
+  type LinkResult,
   type AssetEvent,
   type Report,
   type Clock,
@@ -107,6 +108,25 @@ export async function radioAsset(w: World, name = "gateway") {
     starts: number[] = [];
   let wake: (() => void) | undefined,
     closed = false;
+  async function send(batch: Report[]): Promise<LinkResult> {
+    reports.push(...batch);
+    let result = await client.call("sendReports", {
+      params: { asset_id },
+      body: { reports: batch },
+    });
+    for (let delay = 10; !result.ok && result.retry; delay *= 2) {
+      if (result.error !== "unknown") {
+        if (result.status === undefined || result.status < 500) break;
+        await new Promise<void>((resolve) =>
+          w.clock.after(Math.min(delay, 1000), resolve),
+        );
+      }
+      result = await result.retry();
+    }
+    return result.ok
+      ? { ok: true }
+      : { ok: false, error: "refused", explanation: result.explanation };
+  }
   const link: AssetLink = {
     async *events() {
       while (!closed) {
@@ -117,27 +137,37 @@ export async function radioAsset(w: World, name = "gateway") {
           });
       }
     },
-    async sendReports(batch) {
-      reports.push(...batch);
-      let result = await client.call("sendReports", {
-        params: { asset_id },
-        body: { reports: batch },
+    serve(source) {
+      let open = true,
+        pending = true,
+        wake: (() => void) | undefined;
+      const room = {
+        bytes: 1200,
+        size: (r: Report[]) => new TextEncoder().encode(JSON.stringify(r)).length,
+      };
+      const unsubscribe = source.onWaiting(() => {
+        pending = true;
+        wake?.();
       });
-      for (let delay = 10; !result.ok && result.retry; delay *= 2) {
-        if (result.error !== "unknown") {
-          if (result.status === undefined || result.status < 500) break;
-          await new Promise<void>((resolve) =>
-            w.clock.after(Math.min(delay, 1000), resolve),
-          );
+      void (async () => {
+        while (open && !closed) {
+          const batch = pending ? source.take(room) : undefined;
+          if (batch) batch.settle(await send(batch.reports));
+          else if (pending) pending = false;
+          else
+            await new Promise<void>((resolve) => {
+              wake = resolve;
+            });
+          wake = undefined;
         }
-        result = await result.retry();
-      }
-      return result.ok
-        ? { ok: true }
-        : { ok: false, error: "refused", explanation: result.explanation };
+      })();
+      return () => {
+        open = false;
+        unsubscribe();
+        wake?.();
+      };
     },
     onContact: () => () => {},
-    capacity: () => 1200,
     storeFile: async () => ({
       ok: false,
       error: "unsupported",
