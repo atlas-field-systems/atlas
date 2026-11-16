@@ -79,7 +79,8 @@ The app hands reports to the outbox with `add`. They wait there until the link
 asks.
 
 - **Order.** `take` fills the room with live reports in the order added, then
-  with current state from the `current(room)` option, if the app gives one.
+  with current state from the `current(room)` option, if the app gives one and
+  it has changed since it was last read.
   Retained history goes in its own batch, oldest first, only when nothing live
   waits. A batch holds at most 1000 reports, and always at least the first
   waiting report, so a report larger than the room is never stuck.
@@ -100,8 +101,9 @@ asks.
 - After `heartbeatMs` ([configuration](../config.md)) with nothing sent, the next
   `take` returns an empty batch, so Core keeps the Asset
   [online](../../core/docs/api.md#contact).
-- `changed()` tells the link that current state has changed. On IP, the app
-  calls it to report on change.
+- `changed()` marks current state as changed and tells the link. The first
+  `take` reads current state too. On IP, the app calls `changed()` to report on
+  change.
 
 ## The queue helper
 
@@ -188,7 +190,8 @@ and `stop()`. Stopping releases an idle event read, calls the iterator's
 delivering another event. An asynchronous settings handler completes before the
 next event is consumed. On IP, this also holds the stream cursor and backpressure
 until consumption finishes. Closing the client or ending its run stops the helper.
-A consumer error rejects `done` and stops the stream, outbox, and report retries.
+A consumer error, including a throw from `current`, rejects `done` and stops the
+stream, outbox, and report retries.
 The IP wrapper is `startAsset(client, options)`. It sends the
 Asset helpers' diagnostics to the client's `observer`, so one counter orders them.
 
