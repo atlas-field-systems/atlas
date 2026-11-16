@@ -100,6 +100,7 @@ for (const options of [0, 4]) scenario({
       value(await w.complete(w.admin.call("cancel", { params: { asset_id: app.asset_id, task_id: 1 } })));
       await w.until(() => pilotArmed);
       await w.until(() => lateGuidedReceived);
+      if (options !== 4) await w.until(() => receivedModes.includes(6));
       await w.advance(6000);
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");

@@ -89,6 +89,7 @@ scenario({
       assert.ok(lateGuided);
       w.clock.after(30, lateGuided);
       await w.until(() => lateGuidedReceived);
+      await w.until(() => writes.includes("SET_MODE 5 pilotArmed=true"));
       await w.advance(6000);
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");

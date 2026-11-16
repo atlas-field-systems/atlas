@@ -105,6 +105,7 @@ for (const critical of [false, true]) scenario({
       value(await w.complete(w.admin.call("cancel", { params: { asset_id: app.asset_id, task_id: 1 } })));
       await w.until(() => protectionActive);
       await w.until(() => lateGuidedReceived);
+      await w.until(() => writes.includes(`SET_MODE ${critical ? 9 : 6} protectionActive=true`));
       await w.advance(6000);
       assert.ok(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && e.record.in_control));
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");
