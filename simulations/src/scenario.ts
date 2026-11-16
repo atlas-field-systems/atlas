@@ -10,13 +10,17 @@ export function scenario(spec: {
   run(world: World): Promise<void>;
   seed?: number;
   config?: Parameters<typeof createWorld>[0];
+  demo?: string[];
 }) {
   test(spec.name, async () => {
     await checkAnchors(spec.checks);
     const world = await createWorld(spec.config);
+    const evidence = spec.demo ? process.env.ATLAS_DEMO_OUTPUT : undefined;
+    let failure: unknown;
     try {
       await spec.run(world);
     } catch (error) {
+      failure = error;
       await recordFailure(
         spec.name,
         spec.checks,
@@ -28,8 +32,9 @@ export function scenario(spec: {
       throw error;
     } finally {
       try {
-        await world.close();
+        await world.close(evidence);
       } catch (error) {
+        failure = error;
         await recordFailure(
           spec.name,
           spec.checks,
@@ -39,6 +44,32 @@ export function scenario(spec: {
           spec.seed,
         );
         throw error;
+      } finally {
+        if (evidence) {
+          const result = failure ? "FAIL" : "PASS";
+          const reports = world.events.flatMap(event =>
+            event.kind === "report.status" && event.record.kind === "task"
+              ? [`- Asset ${event.record.asset_id}, Task ${event.record.task_id}: ${event.record.task_state}`]
+              : []);
+          const summary = [
+            "# Asset reconnect demo", "", `Result: ${result}`, "",
+            "Real Core, SDK and Asset app; simulated TCP peripheral, network and time.",
+            "This is a settings Task, not a flight or a radio test.", "",
+            "## What this scenario checks", "",
+            ...spec.demo!.map(step => `- ${step}`), "",
+            "## Task reports observed by the operator's event reader", "", ...reports, "",
+            ...(failure ? [`Failure: ${String(failure)}`, ""] : []),
+            "## Evidence", "",
+            "- events.jsonl: domain events seen by the operator's reader.",
+            "- archive/: Core's verified Reset ZIP, including its full event log and diagnostics.",
+            "- asset-archives/: the Asset's verified Reset ZIP and diagnostics.",
+            "Archives may be missing if shutdown failed; see the command output.", "",
+          ].join("\n");
+          await mkdir(evidence, { recursive: true });
+          await writeFile(resolve(evidence, "events.jsonl"), world.events.map(event => JSON.stringify(event)).join("\n") + "\n");
+          await writeFile(resolve(evidence, "summary.md"), summary);
+          process.stdout.write(`\n${summary}\nEvidence: ${evidence}\n`);
+        }
       }
     }
   });

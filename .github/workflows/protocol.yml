@@ -2,9 +2,9 @@ name: protocol
 on:
   push:
     branches: [main]
-    paths: ['protocol/**', '.github/workflows/protocol.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'protocol/**', '.github/workflows/protocol.yml']
   pull_request:
-    paths: ['protocol/**', '.github/workflows/protocol.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'protocol/**', '.github/workflows/protocol.yml']
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -12,14 +12,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: protocol
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm ci
-      - run: npm run check
-      - run: npm test
+      - run: npm run setup -- protocol
+      - run: npm run check -- protocol

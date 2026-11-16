@@ -49,6 +49,6 @@ throughout. Node 24 runs the `.ts` sources directly, and browser builds may be
 bundled.
 
 
-Run `npm ci`, `npx tsc --noEmit`, `npm run check:browser`, and `npm test`
-in this folder after installing Protocol and Core. The queue is the SDK contract
+From the repository root, run `npm run setup -- sdk` and `npm run check -- sdk`
+([workspace commands](../README.md#check-a-change)). The queue is the SDK contract
 test. [Simulations](../simulations/README.md) checks the parts together.

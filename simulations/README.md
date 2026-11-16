@@ -152,8 +152,9 @@ AI agents: read [AGENTS.md](AGENTS.md).
 
 ## Run the Core and SDK scenarios
 
-Use Node 24. Run `npm ci` in Protocol, Core, the SDK, Asset, and this folder, in that
-order. Then run `npx tsc --noEmit` and `npm test` here. CI runs the built
+From the repository root, run `npm run setup -- simulations` and
+`npm run check -- simulations` ([workspace commands](../README.md#check-a-change)).
+Alternatively, after setup run `npx tsc --noEmit` and `npm test` here. CI runs the built
 scenarios and fixed fault seeds on each affected pull request.
 The full-disk scenario mounts an 8 MiB tmpfs with passwordless sudo. If the host
 cannot mount it, the test reports a skip with the mount error. The crash and stop
@@ -182,3 +183,26 @@ A run cannot advance more than 24 simulated hours. `settle()` waits for eight
 quiet event-loop turns with no request in flight. Open stream reads are excluded.
 Arriving chunks and SDK diagnostics count as activity. Delayed requests remain
 abortable, so SDK timeouts cancel the simulated delay.
+
+## Run the demo
+
+From the repository root, run `npm run setup -- simulations`, then `npm run demo`.
+The demo runs the existing `asset-rejoin` scenario and its assertions. It uses
+the real Core, SDK, and Asset app, with a simulated TCP peripheral, clock, and
+network. An operator sends a settings Task; the Asset reports completion, loses
+the acknowledgement, and reconnects. Core must record that completion once.
+This is not an ArduPilot flight or a radio simulation.
+
+Every invocation prints a new `simulations/.runs/demo-*` evidence directory:
+
+- `summary.md`: PASS or FAIL, the intended checks, and observed Task reports.
+- `events.jsonl`: domain events seen by the operator's event reader.
+- `archive/`: Core's verified Reset ZIP, including the complete event log.
+- `asset-archives/`: the Asset's verified Reset ZIP.
+
+The command fails if an assertion or archive export fails. An early startup
+failure may leave no summary; the terminal output explains it. A shutdown
+failure may leave incomplete evidence. Only archive folders are copied from
+the temporary world, not its credential files or live database. Once inspected,
+the printed demo directory may be removed. CI runs the demo and uploads its
+evidence alongside scenario failures.

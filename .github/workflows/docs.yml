@@ -2,9 +2,9 @@ name: docs
 on:
   push:
     branches: [main]
-    paths: ['**.md', 'protocol/definitions/**', '.github/scripts/check-*.mjs', '.github/retired-phrases.json', '.github/workflows/docs.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', '**.md', 'protocol/definitions/**', '.github/scripts/check-*.mjs', '.github/retired-phrases.json', '.github/workflows/docs.yml']
   pull_request:
-    paths: ['**.md', 'protocol/definitions/**', '.github/scripts/check-*.mjs', '.github/retired-phrases.json', '.github/workflows/docs.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', '**.md', 'protocol/definitions/**', '.github/scripts/check-*.mjs', '.github/retired-phrases.json', '.github/workflows/docs.yml']
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -17,5 +17,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node .github/scripts/check-links.mjs
-      - run: node .github/scripts/check-retired.mjs
+      - run: npm run check -- docs

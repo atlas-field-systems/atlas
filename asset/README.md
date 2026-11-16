@@ -28,7 +28,8 @@ The [first-flight story](../atlas/first-flight.md) describes the workflow.
 
 ## Run the initial app
 
-Use Node 24. Run `npm ci` in Protocol, Core, the SDK, and Asset, in that order.
+Use Node 24. From the repository root, run `npm run setup -- asset`
+([workspace commands](../README.md#start-here)).
 From `asset/`, inspect a configuration with
 `node src/main.ts inspect examples/copter.json`, then start it with
 `node src/main.ts run <config.json>`. Provision its key in Core first.
