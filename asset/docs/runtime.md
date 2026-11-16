@@ -95,8 +95,8 @@ destination step so the vehicle reaches the updated place before descending.
 
 Land and Return to home override protection belongs to its execution and ends
 when that execution ends. Pause preserves that protection on the suspended
-execution and resume restores it. If a Return to home override fails and the app inserts
-Hold, it samples conditions and re-arms protection as for a Hold override.
+execution and resume restores it. If a Land or Return to home override fails, the app
+samples conditions and re-arms protection as for a Hold override.
 A failed critical response or its failed return fallback does not re-arm itself.
 
 The equipment driver has one abortable command generation. A replacement aborts

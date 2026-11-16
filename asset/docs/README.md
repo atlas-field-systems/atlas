@@ -182,7 +182,9 @@ and keeps no earlier Task to resume. Pause keeps the active Task and resumes it.
 A settings change names end states, so repeating one changes nothing. The Asset
 applies immediate changes in event order, alongside its own local changes, and a
 settings change Task when that Task runs. It reports the resulting values in a
-settings report rather than comparing operator and Asset clocks.
+settings report rather than comparing operator and Asset clocks. When a settings
+Task's values can't be accepted, the Task fails with the reason and the Asset
+keeps doing what it was doing.
 
 ## Handle failures and link loss
 
