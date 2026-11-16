@@ -67,8 +67,6 @@ the link asks for everything at once.
 - **Current state is read when the link asks.** Position, battery, each
   subsystem, and each Observation are built from local state at the moment the
   link asks, so the link never carries data that is already out of date.
-  Before registration, the Asset keeps each subsystem's latest condition,
-  including recovery to healthy, even when its waiting-report queue is full.
 - **Most important first.** Task outcomes and answers to requests go first and
   must arrive. Then changes that matter, such as a failsafe, a fault, or a new
   or moved Observation. Then current telemetry. Retained history goes last,

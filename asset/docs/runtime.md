@@ -349,8 +349,9 @@ resource cleanup and failed-operation archive.
 write queue. At capacity the app evicts the oldest ordinary waiting report,
 or drops the new ordinary report if only protected evidence remains. Request
 answers, final Task reports, all failsafe reports (including flight-controller
-takeover and handback), and non-healthy subsystem reports are protected and may
-exceed the limit. Each eviction or dropped addition records a pre-registration
+takeover and handback), and each subsystem's latest report, healthy or not, are
+protected and may exceed the limit. An earlier report for the same subsystem is
+ordinary. Each eviction or dropped addition records a pre-registration
 report gap.
 It still offers each acquisition to local report history. Report-history copies
 have their own gap reason when the evidence writer is full. Dropping a history
