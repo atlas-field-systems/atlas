@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/subsystem.json",
+  "title": "subsystem",
+  "description": "One subsystem an Asset declares: hardware or equipment software, such as a GPS receiver or a camera, with its ID and a readable label. A declared subsystem may not have reported yet.",
+  "type": "object",
+  "required": [
+    "subsystem_id",
+    "label"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "subsystem_id": {
+      "$ref": "../variables/subsystem_id.json"
+    },
+    "label": {
+      "$ref": "../variables/label.json"
+    }
+  },
+  "examples": [
+    {
+      "subsystem_id": "GPS",
+      "label": "GPS receiver"
+    }
+  ]
+}
