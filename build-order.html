@@ -25,14 +25,7 @@ runtime now runs against ArduPilot SITL. The
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md#run-the-initial-sitl-scenarios">Asset simulations</a>
 document the verified scenarios and remaining conformance target. Hardware
 behavior remains unverified.</li>
-<li><strong>How much does the radio really carry?</strong> Atlas uses a slow link&#39;s
-airtime <a href="scale.html#use-slow-links-fully-and-efficiently">fully and efficiently</a>,
-so the Fieldlink needs to know how much airtime it has to spend before it
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state">asks the Asset for reports</a>. What Meshtastic carries in practice, after its relays and
-acknowledgements, is
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#not-designed-yet">not known yet</a>.
-A faster radio setting carries more over a shorter range. Only a
-measurement settles it.</li>
+<li><strong>How much does the radio really carry?</strong> The <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#radio-measurement">Meshtastic bench work</a> addresses the unknown radio capacity.</li>
 </ol>
 <h2 id="the-meshtastic-fieldlink-comes-first">The Meshtastic Fieldlink comes first</h2>
 <p>Meshtastic is the first Fieldlink, and SiK is built on what it establishes.
@@ -40,11 +33,7 @@ Meshtastic is the fuller Fieldlink and is closer to the Fieldlinks Atlas will
 see later, so the gateway app and the simulated radio link are shaped by it.
 Building for SiK first would shape them around SiK&#39;s one-drone,
 point-to-point link.</p>
-<h2 id="the-radio-is-measured-during-the-build">The radio is measured during the build</h2>
-<p>While the Meshtastic Fieldlink is built, two Meshtastic radios are connected
-to the build computer and send messages to each other. Their measured numbers
-go into the Meshtastic page, and the simulated radio link uses them. The
-measurement answers the second risk.</p>
+<p>The <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md">Meshtastic folder</a> owns its design and bench work.</p>
 <h2 id="new-failsafe-and-radio-decisions-wait">New failsafe and radio decisions wait</h2>
 <p>No new failsafe or radio decision is made until the Asset app has run against
 simulated ArduPilot and the radio is measured. The decisions already in the
@@ -57,8 +46,7 @@ scenarios are built; <a href="https://github.com/atlas-field-systems/atlas/blob/
 remain. <a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets">Simulations</a> now use the
 real app for IP Asset work.</li>
 <li><strong>The gateway app and the Meshtastic Fieldlink</strong>, over a simulated radio
-link, with the two radios on the bench. Planned; neither runtime nor the
-radio measurement is complete.</li>
+link. Planned; see the <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md">Meshtastic design and bench work</a>.</li>
 <li><strong>The SiK Fieldlink.</strong> Planned.</li>
 <li><strong>Simulation tools and the full simulation.</strong> The existing harness runs
 Core, SDK, and Asset IP scenarios. Radio simulation and tools for writing
