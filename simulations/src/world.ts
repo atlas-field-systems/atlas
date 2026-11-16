@@ -1,5 +1,5 @@
 import type { CoreConfig } from "../../core/src/config.ts";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, readdir, cp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setImmediate } from "node:timers/promises";
@@ -171,13 +171,19 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
       fault: undefined as unknown,
     },
     drain: settle,
-    async close() {
+    async close(evidenceDirectory?: string) {
       for (const fn of cleanup) await fn();
       for (const c of clients) c.close();
       network.close();
       await settle();
       const stopped = await complete(core.stop());
       if (!stopped.archived) throw new Error(stopped.explanation);
+      if (evidenceDirectory) {
+        for (const entry of await readdir(root, { withFileTypes: true })) {
+          if (entry.isDirectory() && (entry.name === "archive" || entry.name.endsWith("-archives")))
+            await cp(join(root, entry.name), join(evidenceDirectory, entry.name), { recursive: true });
+        }
+      }
       await rm(root, { recursive: true, force: true });
     },
   };

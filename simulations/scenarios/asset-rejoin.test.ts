@@ -6,6 +6,13 @@ import { reportingPeripheral } from "../src/peripheral.ts";
 scenario({
   name: "Asset sends one startup and one reconnect batch",
   checks: ["core/docs/api.md#asset-and-gateway-calls", "sdk/docs/asset.md#report-outbox"],
+  demo: [
+    "The Asset registers and sends its startup reports once.",
+    "After its event stream drops, the Asset sends one reconnect batch.",
+    "An operator sends a settings Task, and the Asset reports completion.",
+    "The network loses the acknowledgement of that final report, then drops the stream again.",
+    "The Asset retries the unchanged report batch across reconnection; Core records the completion once.",
+  ],
   async run(w) {
     const { app: asset } = await reportingPeripheral(w, { config: {
       description: { commands: [], reports: ["status", "settings"], settings: ["run_state"] },

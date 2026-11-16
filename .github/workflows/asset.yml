@@ -2,9 +2,9 @@ name: asset
 on:
   push:
     branches: [main]
-    paths: ['asset/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'asset/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
   pull_request:
-    paths: ['asset/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'asset/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -19,22 +19,9 @@ jobs:
           node-version: 24
       - run: |
           if [ ! -x /usr/bin/node ]; then sudo ln -s "$(command -v node)" /usr/bin/node; fi
-          systemd-analyze verify asset/atlas-asset.service
-      - run: npm ci
-        working-directory: protocol
-      - run: npm ci
-        working-directory: core
-      - run: npm ci
-        working-directory: sdk
-      - run: npm ci
-        working-directory: asset
-      - run: npx tsc --noEmit && npm test && node src/main.ts inspect examples/copter.json
-        working-directory: asset
-      - run: npm ci
-        working-directory: simulations
-      - run: node simulations/scripts/fetch-sitl.mjs
-      - run: node --test sitl/flight.test.ts
-        working-directory: simulations
+      - run: npm run setup -- simulations
+      - run: npm run check -- asset
+      - run: npm run check:sitl
       - uses: actions/upload-artifact@v4
         if: always()
         with:
