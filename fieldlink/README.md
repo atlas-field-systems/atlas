@@ -55,7 +55,7 @@ makes a decision for the Asset.
 | Getting messages across: encoding, retries, duplicates, end-to-end acknowledgement | The Task queue, pause, and cancel |
 | Noticing the link is lost, and saying so | What to do about it: its [failsafe rules](../asset/docs/failsafes.md) |
 | Asking for reports whenever it has room to send, and how much room it has, from the link and its current quality | [What to send in that room](../asset/docs/communications.md#report-from-local-state), most important first |
-| Resending a must-arrive batch until it is acknowledged | Marking each batch must-arrive or can-skip |
+| Resending a must-arrive batch until it is acknowledged, or giving it back as lost so the Asset offers it again | Marking each batch must-arrive or can-skip |
 | Radio identity and link security | Equipment, movement, and every other behavior |
 
 The two sides meet only through the [Asset link](../sdk/docs/asset.md#the-asset-link).
