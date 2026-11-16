@@ -443,5 +443,10 @@
     "phrase": "This check also applies to radio Assets carried by a gateway",
     "why": "Core stream keepalive constrains only Assets on IP; Fieldlinks supply radio contact timing.",
     "example": "This check also applies to radio Assets carried by a gateway, even though their Fieldlink supplies contact timing."
+  },
+  {
+    "phrase": "A simulated Asset runs only its script",
+    "why": "IP Asset work runs the real app; only radio Assets and contract callers stay scripted.",
+    "example": "A simulated Asset runs only its script and makes no decision of its own."
   }
 ]

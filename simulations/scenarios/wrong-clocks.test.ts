@@ -1,7 +1,7 @@
-import { createLivePicture, startAsset } from "@atlas/sdk";
+import { createLivePicture } from "@atlas/sdk";
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset, description } from "../src/actors.ts";
+import { assetApp } from "../src/asset-app.ts";
 import { value } from "../src/world.ts";
 scenario({
   name: "clock-ahead reports remain history and never latest",
@@ -11,36 +11,28 @@ scenario({
   ],
   async run(w) {
     const shifted = w.clock.shifted(60000);
-    const asset = await ipAsset(w, "asset", w.clock, description, {
-      lights: "off",
-    });
-    asset.session.stop();
+    const asset = await assetApp(w, { config: {
+      description: { commands: [], reports: ["settings"], settings: ["run_state"] },
+      initial_settings: { run_state: "paused" },
+    } });
+    await asset.stop();
     const live = createLivePicture(w.admin);
     w.onClose(() => live.stop());
     await w.until(() => live.assets().ready);
-    const asset_id = asset.session.asset_id;
+    const asset_id = asset.asset_id;
     const params = { asset_id };
-    const future = value(
-      await w.complete(
-        startAsset(asset.client, {
-          clock: shifted,
-          description,
-          settings: () => ({ lights: "on" }),
-        }),
-      ),
-    );
-    w.onClose(() => future.stop());
+    await asset.restart({ clock: shifted, config: { initial_settings: { run_state: "running" } } });
     await w.until(() =>
       w.events.some(
         (e) => e.kind === "report.settings" && e.clock_ahead === true,
       ),
     );
     const picture = value(await w.complete(w.admin.call("asset", { params })));
-    assert.equal(picture.item.settings.lights.value, "off");
+    assert.equal(picture.item.settings.run_state.value, "paused");
     assert.equal(
-      live.assets().items.find((a) => a.asset_id === asset_id)?.settings.lights
+      live.assets().items.find((a) => a.asset_id === asset_id)?.settings.run_state
         .value,
-      "off",
+      "paused",
     );
     const history = [];
     const pages = w.admin
@@ -56,7 +48,7 @@ scenario({
     );
     assert.ok(futureReport && futureReport.kind === "report.settings");
     assert.equal(futureReport.record.time, shifted.now());
-    assert.equal(futureReport.record.settings.lights, "on");
+    assert.equal(futureReport.record.settings.run_state, "running");
     assert.equal(
       history.filter((e) => e.clock_ahead).length,
       1,

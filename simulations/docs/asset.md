@@ -18,6 +18,9 @@ The first Asset simulations connect the app to Core directly over IP. The
 gateway path, as in [first flight](../../atlas/first-flight.md), joins when the
 gateway exists. Tracker scenarios cover the minimal reporting-only case.
 
+The [Simulated Assets inventory](../README.md#simulated-assets) owns the current
+migration status and describes the shared app lifecycle helper.
+
 ## Scenarios
 
 Each checks behavior its [Asset page](../../asset/docs/README.md) owns.

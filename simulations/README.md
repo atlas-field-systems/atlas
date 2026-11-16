@@ -17,7 +17,7 @@ it.
 | Real                                              | Simulated                                                                                               |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Core, with its SQLite storage and event log       | The network between programs: delays, lost requests, lost responses, dropped event streams, disconnects |
-| The SDK, used by every simulated caller           | Scripted operators, gateways, and Plugins in SDK contract scenarios                              |
+| The SDK, used by every simulated caller           | Scripted operators, gateways, Plugins, and remaining contract callers (see below)                              |
 | Protocol's definitions and its one validator      | Time, so minutes of contact rules run in milliseconds                                                   |
 | The initial Asset IP runtime | Equipment and vehicles, including ArduPilot SITL                                                 |
 |                                                   | Faults in the host: a full disk, a Core crash, a deliberate stop                                        |
@@ -49,20 +49,58 @@ Asset behavior scenarios run the [real Asset app](../asset/README.md) with
 simulated equipment ([Asset simulations](docs/asset.md)). Scripted operators,
 gateways, and Plugins are other callers; they do not replace the Asset app.
 
-Migration is incomplete: the following SDK and Core contract suites still script
-Assets, using SDK helpers or direct Asset calls. They test caller contracts,
-not the real app's equipment behavior. They remain to be reworked under the
-[owner's decision](../atlas/decision-log.md#build-and-test):
+The shared world helper, `src/asset-app.ts`, starts the production app with
+`parseConfig`, world time, the simulated network, and world-owned storage. It
+accepts equipment configuration, exposes identity and shutdown, and restarts
+with the same key and optional configuration or clock changes. Public read
+permission scenarios use a separate SDK reader with the app's credential;
+reporting and Task execution stay with the app. For equipment, it takes the
+shared simulated ArduPilot (`src/ardupilot-peer.ts`) or a TCP reporting
+peripheral (`src/peripheral.ts`). Without either, the app is stationary and runs
+its control loop once a second. Failsafe and takeover scenarios still
+script their own ArduPilot peers to time each mode change.
 
-`admission`, `asset-rejoin`, `client-fences`, `current-state`, `everything`,
-`full-disk`, `gateways`, `helper-lifecycles`, `lost-responses`, `offline`,
-`open-reads`, `picture-recovery`, `places`, `reports-gap`, `restarts`,
-`review-regressions`, `review2-regressions`, `run-change`, `stream-contact`,
-`tasks-link`, `wrong-clocks` under `scenarios/`, and
-`faults/core-and-sdk.test.ts`. Each scenario filename ends in `.test.ts`.
-These scripts do only what their scenario requests and make no equipment
-control decisions. They are temporary; replacement runs the app against
-simulated equipment and removes the corresponding scripted Asset.
+Every IP Asset doing Asset work in a scenario is the real app, as the
+[owner decided](../atlas/decision-log.md#build-and-test). Two kinds of scripted
+caller remain, and neither stands in for the Asset app:
+
+- **Radio Assets** (`radioAsset` in `src/actors.ts`) behind a scripted
+  gateway. The real app has no radio link until the gateway app and a Fieldlink
+  exist; these move to the app then.
+- **Contract callers** (`sdkAssetCaller`, and raw Core calls) check a contract
+  the app cannot reach: the SDK's public Asset helpers, which any program on IP
+  may use (a caller-supplied diagnostic observer, retry backoff, synchronous
+  queue transitions, explicit report lanes, a gimbal declaration), and Core's
+  refusal of traffic the app never sends (a wrong definitions hash, a late
+  report contradicting a final Task state, a changed body on a replayed
+  request).
+
+Names under `scenarios/` end in `.test.ts`.
+
+| Suite | Asset in the scenario |
+| --- | --- |
+| `admission` | Real app; paused settings Tasks fill the queue and Run now completes through the app. |
+| `asset-rejoin` | Real app; settings Task completion and a lost-response retry keep final reports unchanged. |
+| `client-fences` | Real IP app and radio Asset. Its wrong-hash registration is a raw caller. |
+| `current-state` | Real app with a TCP reporting peripheral; a change reports once, then the heartbeat. |
+| `everything` | Real IP apps with a separate SDK reader on the app's credential. |
+| `full-disk` | Real apps; a full Core disk refuses startup and peripheral captures without partial events. |
+| `gateways` | Real IP app and radio Assets. |
+| `helper-lifecycles` | Real app for the startup handshake retry; SDK contract callers for consumer, consumer-error, and retained-lane lifecycles. |
+| `lost-responses` | Real app generates reports and retries; a raw changed-body replay checks the idempotency refusal. |
+| `offline` | Real app, network partition, and settings Tasks. |
+| `open-reads` | Real IP apps and a radio Asset. |
+| `picture-recovery` | Real apps for snapshot recovery; an SDK contract caller declares a gimbal and changing equipment. |
+| `places` | Real IP apps; paused queues and a network partition exercise place updates. |
+| `reports-gap` | Real app catches up detector Observations with acquisition times intact; an SDK contract caller checks live-versus-retained lane order. |
+| `restarts` | Real app restart with the same key; unfinished work drops and a new settings Task completes. |
+| `review-regressions` | Real apps for the filtered picture, storage-refusal retry, and late final evidence; contract callers, a radio Asset, and non-Asset callers for the rest. |
+| `review2-regressions` | SDK contract callers for diagnostic observer order and retry backoff; non-Asset callers for the rest. |
+| `run-change` | Real IP app and a radio Asset. |
+| `stream-contact` | Real app; keepalives advance contact and closing keeps the hear time. |
+| `tasks-link` | Radio Asset: radio Task delivery and queue control. |
+| `wrong-clocks` | Real app restarted with a skewed world clock. |
+| `faults/core-and-sdk.test.ts` | Real IP apps execute Holds through simulated ArduPilot; a radio Asset alongside. |
 
 ## Two kinds of eval
 
@@ -132,8 +170,8 @@ documentation anchors, and an asynchronous script. Seeded workloads run seeds
 scenarios. Each network decision hashes the seed, caller, path, and that caller's
 request count on the route. Workload choices use one seeded generator. Faults
 therefore do not move between callers when I/O order changes.
-Fault runs count starts observed by the scripted Assets, both pulled Tasks and
-Run now callbacks. Every fault seed checks that seeded decisions cut both readers and lost
+Fault runs count Task starts: each real app's active Holds reaching its
+simulated equipment, and the radio Asset's pulled Tasks and Run now callbacks. Every fault seed checks that seeded decisions cut both readers and lost
 responses on at least two routes. The traffic log records whether each fault
 came from a seed or an explicit scenario rule. Seeded runs place no faults by hand. Reader event IDs are compared with Core's
 `events.jsonl` from the Reset ZIP after the run stops, using each reader's audience.

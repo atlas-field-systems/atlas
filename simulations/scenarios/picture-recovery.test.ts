@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createLivePicture, follow } from "@atlas/sdk";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset, description } from "../src/actors.ts";
+import { assetApp } from "../src/asset-app.ts";
+import { sdkAssetCaller, description } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 
 for (const failure of ["entities", "tasks", "removed"] as const) {
@@ -9,8 +10,8 @@ for (const failure of ["entities", "tasks", "removed"] as const) {
     name: `picture recovers ${failure} snapshot failure and follows later places`,
     checks: ["sdk/docs/live.md#live-picture"],
     async run(w) {
-      const a = await ipAsset(w);
-      const asset_id = a.session.asset_id;
+      const a = await assetApp(w);
+      const asset_id = a.asset_id;
       const network = w.network.fetchFor("picture");
       let began: number | undefined;
       let removed = false;
@@ -119,13 +120,14 @@ scenario({
 });
 
 scenario({
+  // SDK picture contract: the app has no gimbal acquisition input or dynamic camera declaration API.
   name: "picture reconciles declared equipment after registration and later reports",
   checks: [
     "core/docs/api.md#read-the-picture",
     "sdk/docs/live.md#live-picture",
   ],
   async run(w) {
-    const a = await ipAsset(w, "equipment", w.clock, {
+    const a = await sdkAssetCaller(w, "equipment", w.clock, {
       ...description,
       reports: ["status", "gimbal"],
       subsystems: [{ subsystem_id: "S1", label: "Drive" }],

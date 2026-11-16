@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset } from "../src/actors.ts";
+import { sdkAssetCaller } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 scenario({
+  // SDK outbox contract: the app offers live acquisition only, with no retained-lane API.
   name: "reports after a gap send live first and retained oldest first",
   checks: [
     "core/docs/api.md#asset-and-gateway-calls",
     "core/docs/api.md#reads",
   ],
   async run(w) {
-    const asset = await ipAsset(w);
+    const asset = await sdkAssetCaller(w);
     const asset_id = asset.session.asset_id;
     const path = `/entities/assets/${asset_id}/reports`;
     const original = w.clock.now();
@@ -70,5 +71,36 @@ scenario({
         .item.settings.lights.time,
       original + 31001,
     );
+  },
+});
+
+scenario({
+  name: "real Asset catches up after a reporting gap with acquisition times intact",
+  checks: ["core/docs/api.md#asset-and-gateway-calls", "core/docs/api.md#reads"],
+  async run(w) {
+    const { reportingPeripheral } = await import("../src/peripheral.ts");
+    const { app, send } = await reportingPeripheral(w, { config: { description: { commands: [], reports: ["observation"] } } });
+    const params = { asset_id: app.asset_id };
+    const samples: number[] = [];
+    w.network.cut("asset");
+    for (const latitude of [3, 4, 5]) {
+      samples.push(w.clock.now());
+      send({ kind: "observation", source: "detector", observation: { type: "report.observation", kind: "coordinates", observation_id: `O${latitude}`, time: samples.at(-1), position: { latitude, longitude: 2 } } });
+      await w.advance(1000);
+    }
+    await w.advance(31000);
+    w.network.heal("asset");
+    await w.until(() => w.events.filter(e => e.kind === "report.observation").length >= 3);
+    const history: number[] = [];
+    const pages = w.admin.history({ ...params, report: "observation", limit: 1 })[Symbol.asyncIterator]();
+    for (;;) {
+      const page = await w.complete(pages.next());
+      if (page.done) break;
+      history.push(...value(page.value).items.map(e => e.record.time));
+    }
+    assert.deepEqual(history, samples, "Core history preserves original acquisition order and times");
+    const picture = value(await w.complete(w.admin.call("entities")));
+    assert.equal(picture.observations.length, 3);
+    assert.deepEqual(picture.observations.map(o => o.time).sort((a, b) => a - b), samples);
   },
 });

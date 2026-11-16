@@ -1,16 +1,18 @@
 import assert from "node:assert/strict";
 import { createClient, createLivePicture, follow } from "@atlas/sdk";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset, radioAsset, plugin } from "../src/actors.ts";
+import { assetApp } from "../src/asset-app.ts";
+import { reportingPeripheral } from "../src/peripheral.ts";
+import { sdkAssetCaller, radioAsset, plugin } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 
 scenario({
   name: "filtered picture keeps shared places live",
   checks: ["sdk/docs/live.md#live-picture"],
   async run(w) {
-    const a = await ipAsset(w);
+    const a = await assetApp(w);
     const picture = createLivePicture(w.admin, {
-      asset_id: a.session.asset_id,
+      asset_id: a.asset_id,
     });
     w.onClose(() => picture.stop());
     await w.until(() => picture.assets().ready);
@@ -30,13 +32,14 @@ scenario({
   },
 });
 scenario({
+  // Raw Core contract: an active report after final completion is contradictory traffic the app never emits.
   name: "Task picture keeps final states despite late reports",
   checks: [
     "core/docs/api.md#operator-requests",
     "core/docs/api.md#read-the-picture",
   ],
   async run(w) {
-    const a = await ipAsset(w);
+    const a = await sdkAssetCaller(w);
     const asset_id = a.session.asset_id;
     const picture = createLivePicture(w.admin);
     w.onClose(() => picture.stop());
@@ -155,30 +158,22 @@ scenario({
     "core/docs/api.md#asset-and-gateway-calls",
   ],
   async run(w) {
-    const a = await ipAsset(w);
-    const asset_id = a.session.asset_id;
+    const { app: a } = await reportingPeripheral(w, { config: {
+      description: { commands: [], reports: ["status", "settings"], settings: ["run_state"] },
+      initial_settings: { run_state: "running" },
+    } });
+    const asset_id = a.asset_id;
     const path = `/entities/assets/${asset_id}/reports`;
+    await w.until(() => w.network.traffic.some(t => t.caller === "asset" && t.path === "/events"));
     w.network.once("asset", path, { kind: "refuse", status: 507 });
-    a.session.outbox.add([
-      {
-        type: "report.settings",
-        time: w.clock.now(),
-        asset_id,
-        settings: { lights: "off" },
-      },
-      {
-        type: "report.settings",
-        time: w.clock.now(),
-        asset_id,
-        settings: { lights: "on" },
-        request_id: 1,
-      },
-    ]);
+    value(await w.complete(w.admin.call("sendTasks", {
+      params: { asset_id },
+      body: { tasks: [{ kind: "settings", settings: { run_state: "paused" } }] },
+    })));
     await w.settle();
     await w.advance(1000);
-    assert.equal(a.session.outbox.blocked, undefined);
     const attempts = w.network.traffic.filter(
-      (t) => t.path === path && JSON.stringify(t.body).includes('"lights"'),
+      (t) => t.path === path && t.key === w.network.traffic.find(t => t.path === path && t.status === 507)?.key,
     );
     assert.ok(attempts.length >= 2);
     assert.equal(new Set(attempts.map((t) => t.key)).size, 1);
@@ -190,27 +185,19 @@ scenario({
     assert.equal(attempts.at(-1)?.status, 200);
     assert.equal(
       value(await w.complete(w.admin.call("asset", { params: { asset_id } })))
-        .item.settings.lights.value,
-      "on",
+        .item.settings.run_state.value,
+      "paused",
     );
-    await w.settle();
-    for (const name of [
-      "definitions.checked",
-      "batch.sent",
-      "batch.resent",
-      "batch.acknowledged",
-    ])
-      assert.ok(
-        w.diagnostics.some((e) => e.name === name),
-        name,
-      );
+    const finals = w.events.filter(e => e.kind === "report.status" && e.record.kind === "task");
+    assert.deepEqual(finals.map(e => e.kind === "report.status" && e.record.kind === "task" ? e.record.task_state : undefined), ["active", "completed"]);
   },
 });
 scenario({
+  // SDK picture contract: the app has no gimbal acquisition input; radio waits for gateway and Fieldlink.
   name: "gimbal snapshot resists older reports and radio registration keeps gateway",
   checks: ["core/docs/api.md#reads", "sdk/docs/live.md#live-picture"],
   async run(w) {
-    const a = await ipAsset(w, "asset", w.clock, {
+    const a = await sdkAssetCaller(w, "asset", w.clock, {
       entity_type: "ground_vehicle",
       commands: [],
       reports: ["gimbal"],
@@ -319,6 +306,7 @@ scenario({
   },
 });
 scenario({
+  // SDK helper contract: ignored duplicate events and explicit queue clear are exercised by a caller.
   name: "diagnostics record validation authentication queue and retry decisions",
   checks: ["sdk/docs/logging.md#what-it-reports"],
   async run(w) {
@@ -332,7 +320,7 @@ scenario({
     await w.complete(c.call("me"));
     w.network.once("admin", "/entities", { kind: "refuse", status: 503 });
     value(await w.complete(w.admin.call("entities")));
-    const a = await ipAsset(w);
+    const a = await sdkAssetCaller(w);
     const asset_id = a.session.asset_id;
     const sent = value(
       await w.complete(
@@ -397,10 +385,11 @@ scenario({
   },
 });
 scenario({
+  // SDK helper contract: synchronous queue transitions in a single millisecond are explicitly controlled.
   name: "same millisecond queue reports keep emitted order inside a batch",
   checks: ["core/docs/api.md#reads", "sdk/docs/asset.md#report-outbox"],
   async run(w) {
-    const a = await ipAsset(w);
+    const a = await sdkAssetCaller(w);
     const asset_id = a.session.asset_id;
     const path = `/entities/assets/${asset_id}/reports`;
     value(
@@ -450,42 +439,27 @@ scenario({
     "sdk/docs/live.md#live-picture",
   ],
   async run(w) {
-    const a = await ipAsset(w);
-    const asset_id = a.session.asset_id;
+    const { app: a } = await reportingPeripheral(w, { config: {
+      description: { commands: [], reports: ["status", "settings"], settings: ["run_state"] },
+      initial_settings: { run_state: "running" },
+    } });
+    const asset_id = a.asset_id;
     const picture = createLivePicture(w.admin);
     w.onClose(() => picture.stop());
     await w.until(() => picture.assets().ready);
+    const path = `/entities/assets/${asset_id}/reports`;
+    // The request reaches the app, but its answer and final evidence cannot reach Core.
+    w.network.once("asset", path, { kind: "delay", ms: 60000 });
+    value(await w.complete(w.admin.call("sendTasks", {
+      params: { asset_id },
+      body: { tasks: [{ kind: "settings", settings: { run_state: "running" } }] },
+    })));
+    await w.until(() => w.network.traffic.some(t => t.path === path && t.fault?.kind === "delay"));
     w.network.cut("asset");
-    value(
-      await w.complete(
-        w.admin.call("sendTasks", {
-          params: { asset_id },
-          body: { tasks: [{ kind: "hold" }] },
-        }),
-      ),
-    );
     await w.advance(31000);
     assert.equal(picture.tasks(asset_id).items[0].state, "dropped");
     w.network.heal("asset");
-    value(
-      await w.complete(
-        a.client.call("sendReports", {
-          params: { asset_id },
-          body: {
-            reports: [
-              {
-                type: "report.status",
-                kind: "task",
-                asset_id,
-                time: w.clock.now(),
-                task_id: 1,
-                task_state: "completed",
-              },
-            ],
-          },
-        }),
-      ),
-    );
+    await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_state === "completed"));
     await w.settle();
     assert.equal(picture.tasks(asset_id).items[0].state, "dropped");
   },

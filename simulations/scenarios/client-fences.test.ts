@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createClient } from "@atlas/sdk";
+import { assetApp } from "../src/asset-app.ts";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset, radioAsset } from "../src/actors.ts";
+import { radioAsset } from "../src/actors.ts";
 import { value, type World } from "../src/world.ts";
 
 const checks = ["sdk/docs/client.md#retries-and-idempotency"];
@@ -45,7 +46,7 @@ scenario({
   name: "outstanding Task retry cannot cross a session change",
   checks,
   async run(w) {
-    const a = await ipAsset(w);
+    const a = await assetApp(w);
     const c = await account(w, "session");
     value(
       await w.complete(
@@ -58,10 +59,10 @@ scenario({
         }),
       ),
     );
-    const path = `/tasks/${a.session.asset_id}`;
+    const path = `/tasks/${a.asset_id}`;
     w.network.once("session", path, { kind: "loseResponse" });
     const pending = c.call("sendTasks", {
-      params: { asset_id: a.session.asset_id },
+      params: { asset_id: a.asset_id },
       body: { tasks: [{ kind: "hold" }] },
     });
     await w.until(() =>
@@ -90,7 +91,7 @@ scenario({
     assert.equal(
       value(
         await w.complete(
-          c.call("tasks", { params: { asset_id: a.session.asset_id } }),
+          c.call("tasks", { params: { asset_id: a.asset_id } }),
         ),
       ).items.length,
       1,
