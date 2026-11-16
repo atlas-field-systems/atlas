@@ -65,7 +65,7 @@ other part of Atlas exists to serve those three.
 
 ## Listening design before the radio build
 
-The owner brought [listening and a local picture](../fieldlink/meshtastic/README.md#local-picture)
+The owner brought [listening and a local picture](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#local-picture)
 into the Meshtastic pre-build design; it is not implemented.
 
 ## Kept in mind for later
