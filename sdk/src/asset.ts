@@ -70,8 +70,10 @@ export function createOutbox(
     beat = false,
     blocked: LinkFailure | undefined,
     blockedBatch: Report[] | undefined,
-    inFlight = false;
+    inFlight = false,
+    currentDue = true;
   const listeners = new Set<(result: LinkFailure) => void>();
+  const failures = new Set<(error: unknown) => void>();
   const waiting = new Set<() => void>();
   const acknowledged = new Map<Report, () => void>();
   const beats: (() => void)[] = [];
@@ -119,16 +121,22 @@ export function createOutbox(
     let lane = live,
       queued = fill(live, room),
       reports = queued;
-    if (current && queued.length < batchLimit) {
+    let carriesCurrent = false;
+    if (current && currentDue && queued.length < batchLimit) {
       const bytes = room.bytes - (queued.length ? room.size(queued) : 0);
-      if (bytes > 0 || !queued.length)
-        reports = [
-          ...queued,
-          ...current({ bytes, size: room.size }).slice(
-            0,
-            batchLimit - queued.length,
-          ),
-        ];
+      if (bytes > 0 || !queued.length) {
+        let samples: Report[];
+        try {
+          samples = current({ bytes, size: room.size });
+        } catch (error) {
+          stop();
+          for (const cb of failures) cb(error);
+          return;
+        }
+        currentDue = false;
+        carriesCurrent = true;
+        reports = [...queued, ...samples.slice(0, batchLimit - queued.length)];
+      }
     }
     if (!reports.length && retained.length) {
       lane = retained;
@@ -160,6 +168,7 @@ export function createOutbox(
         } else if (result.error === "lost") {
           emit("batch.lost", { count: reports.length });
           beat ||= !reports.length;
+          currentDue ||= carriesCurrent;
         } else {
           blocked = result;
           blockedBatch = reports;
@@ -190,7 +199,10 @@ export function createOutbox(
       notify();
       return sent;
     },
-    changed: notify,
+    changed() {
+      currentDue = true;
+      notify();
+    },
     flush() {
       return new Promise<void>((resolve) => {
         idle.push(resolve);
@@ -220,12 +232,16 @@ export function createOutbox(
         listeners.delete(cb);
       };
     },
-    stop() {
-      stopped = true;
-      timer.cancel();
-      release();
+    onFailed(cb: (error: unknown) => void) {
+      failures.add(cb);
     },
+    stop,
   };
+  function stop() {
+    stopped = true;
+    timer.cancel();
+    release();
+  }
 }
 export interface AssetOptions {
   clock: Clock;
@@ -253,6 +269,12 @@ export function runAsset(
     emit,
     options.current,
   );
+  let fail!: (error: unknown) => void;
+  const failed = new Promise<never>((_, reject) => {
+    fail = reject;
+  });
+  failed.catch(() => {});
+  outbox.onFailed(fail);
   const stopServing = link.serve(outbox);
   const queue = options.queue
     ? createQueue(
@@ -271,6 +293,7 @@ export function runAsset(
   let wakeStop: (() => void) | undefined;
   function untilStopped<T>(pending: Promise<T>): Promise<T | undefined> {
     return Promise.race([
+      failed,
       pending,
       new Promise<undefined>((resolve) => {
         wakeStop = () => resolve(undefined);

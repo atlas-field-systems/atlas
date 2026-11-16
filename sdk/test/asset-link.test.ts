@@ -93,3 +93,75 @@ test("the link asks with its room; live reports, then current state, then histor
   rest.settle({ ok: true });
   assert.equal(outbox.take({ bytes: 0, size: room.size }), undefined);
 });
+
+test("current state goes once per change, so waiting history still drains [sdk/docs/asset.md#report-outbox]", () => {
+  const report = (time: number) =>
+    ({
+      type: "report.status",
+      time,
+      asset_id: "A",
+      kind: "subsystem",
+      subsystem_id: "GPS",
+      condition: "healthy",
+    }) as const;
+  const room = { bytes: Infinity, size: () => 0 };
+  let reads = 0;
+  const outbox = createOutbox(
+    { now: () => 0, after: () => ({ cancel() {} }) },
+    10000,
+    undefined,
+    undefined,
+    () => [report(1000 + reads++)],
+  );
+  const times = (b?: Batch) => b?.reports.map((r) => r.time);
+  void outbox.add([report(1)], "retained");
+  const first = outbox.take(room)!;
+  assert.deepEqual(times(first), [1000], "current state goes first");
+  first.settle({ ok: true });
+  const history = outbox.take(room)!;
+  assert.deepEqual(times(history), [1], "unchanged state is not sent again ahead of history");
+  history.settle({ ok: true });
+  assert.equal(outbox.take(room), undefined, "nothing waits");
+  outbox.changed();
+  const changed = outbox.take(room)!;
+  assert.deepEqual(times(changed), [1001], "a change makes current state due");
+  changed.settle({ ok: false, error: "lost", explanation: "no ack" });
+  assert.deepEqual(times(outbox.take(room)), [1002], "a lost batch reads current state afresh");
+});
+
+test("a throw from current rejects done and stops the outbox [sdk/docs/asset.md#running-over-any-link]", async () => {
+  const failure = new Error("sensor read failed");
+  const link: AssetLink = {
+    events: () => ({
+      [Symbol.asyncIterator]: () => ({
+        next: () => new Promise<IteratorResult<never>>(() => {}),
+      }),
+    }),
+    serve(source) {
+      const answer = () =>
+        source.take({ bytes: Infinity, size: () => 0 })?.settle({ ok: true });
+      answer();
+      return source.onWaiting(answer);
+    },
+    onContact: () => () => {},
+    async storeFile() {
+      throw new Error("unused");
+    },
+  };
+  const s = runAsset(
+    link,
+    { asset_id: "A", after: 0, last_task_id: 0 },
+    {
+      clock: { now: () => 1000, after: () => ({ cancel() {} }) },
+      settings: () => ({}),
+      current() {
+        throw failure;
+      },
+    },
+  );
+  await assert.rejects(s.done, failure);
+  await s.outbox.add([
+    { type: "report.status", time: 1, asset_id: "A", kind: "subsystem", subsystem_id: "GPS", condition: "healthy" },
+  ]);
+  assert.equal(s.outbox.take({ bytes: Infinity, size: () => 0 }), undefined, "the outbox stopped");
+});
