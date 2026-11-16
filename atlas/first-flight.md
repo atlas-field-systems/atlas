@@ -1,6 +1,7 @@
 # First flight
 
-The first setup uses a Raspberry Pi on the ground as the gateway, running the
+The planned first field setup uses a Raspberry Pi on the ground as the gateway,
+running the
 [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md). The gateway runs
 the Asset app for an ArduPilot quadcopter and talks to it over a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
@@ -12,8 +13,13 @@ sends them to the Asset at once. The Asset starts Takeoff only when it holds all
 three. The app sends equipment commands to the flight controller and reports the
 observed outcomes. The operator sees the reported vehicle behavior.
 
-Core is **Built**. The Asset app, gateway, Fieldlink, and Command Interface
-runtimes remain planned. The Pi can reach Core while vehicle equipment is still
+Core and the SDK are built. The Asset app runs over IP, with
+[initial flight and failure scenarios verified in ArduPilot SITL](../simulations/docs/asset.md#run-the-initial-sitl-scenarios).
+The gateway, SiK Fieldlink, and Command Interface remain planned. The
+[Asset status](../asset/README.md#implementation-gaps) lists the remaining
+implementation gaps and unverified hardware; this field setup is not yet verified.
+
+The Pi can reach Core while vehicle equipment is still
 starting or unreachable. Connection alone does not establish takeoff readiness.
 The operator can intervene locally at the Pi. Independent vehicle controls and
 ArduPilot protections remain part of the setup. While they are in control,

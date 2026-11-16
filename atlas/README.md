@@ -36,5 +36,6 @@ Contributors read [AGENTS.md](AGENTS.md).
 ## Read intended use as intended use
 
 These pages describe the owner's intended use of Atlas. They do not prove that a
-capability exists. The first flight includes planned commands.
+capability exists. The [repository overview](../README.md) points to each part's
+current implementation status. The first field flight remains planned.
 Repository archival, deletion, and replacement remain separate decisions.

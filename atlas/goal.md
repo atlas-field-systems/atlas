@@ -92,12 +92,12 @@ whole answer. Proof from real flights comes later.
 [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md)
 owns how they run.
 
-A simulation runs the real code of every part: the real Asset app, the real
-Core, the real gateway app, and the real Fieldlinks. No real hardware takes
-part. Only the equipment and the links between the parts are simulated, such
-as a simulated radio link.
+The target is a simulation running the real code of every part: the real
+Asset app, Core, gateway app, and Fieldlinks. No real hardware takes part.
+Only the equipment and the links between the parts are simulated, such as a
+simulated radio link.
 
-A simulation covers a full operation and everything that can go wrong in one:
+That full simulation covers a whole operation and its failures:
 
 - Assets take off and make Observations.
 - Other Assets are tasked onto those Observations.
@@ -105,12 +105,12 @@ A simulation covers a full operation and everything that can go wrong in one:
 - A radio link fails, and an Asset flies out of range.
 - Hardware faults.
 
-The simulations run in CI, so every change is checked against whole
-operations.
+The existing simulations run Protocol, Core, the SDK, and the initial Asset
+app over IP in CI. [Simulations](../simulations/README.md) owns the current
+coverage and the callers that remain scripted.
 
-That full simulation cannot run yet, because the Asset app, the gateway app,
-and the Fieldlinks are not built. The
-[build order](build-order.md) says what to build next.
+The full operation above still awaits the gateway app and Fieldlinks. The
+[build order](build-order.md) says what remains to build.
 
 ## The test question
 
