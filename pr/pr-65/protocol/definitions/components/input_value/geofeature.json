@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/input_value/geofeature.json",
+  "title": "geofeature",
+  "description": "A geo feature already on the map, such as a building an operator picked.",
+  "type": "object",
+  "required": [
+    "kind",
+    "geofeature_id"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "geofeature"
+    },
+    "geofeature_id": {
+      "$ref": "../../variables/geofeature_id.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "geofeature",
+      "geofeature_id": "G1"
+    }
+  ]
+}
