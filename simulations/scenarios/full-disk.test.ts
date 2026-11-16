@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { assetApp } from "../src/asset-app.ts";
 import { reportingPeripheral } from "../src/peripheral.ts";
 import { value } from "../src/world.ts";
+import type { Traffic } from "../src/network.ts";
 import { createWorld } from "../src/world.ts";
 const execute = promisify(execFile);
 test("full disk refuses a change without a partial event [core/docs/storage.md#memory-and-full-disks]", async (t) => {
@@ -58,16 +59,16 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
     assert.equal(startupTraffic.length, 1, "a definitive startup refusal is not retried");
     assert.equal(startupTraffic[0].status, 507);
     assert.ok(JSON.stringify(startupTraffic[0].response).includes("storage_full"));
-    for (const place of [
-      undefined,
-      { kind: "point" as const, position: { latitude: 1, longitude: 2 } },
-    ]) {
+    for (const [place, path] of [
+      [undefined, "/objects"],
+      [{ kind: "point" as const, position: { latitude: 1, longitude: 2 } }, "/entities/geofeatures"],
+    ] as const) {
       const count = w.network.traffic.length;
       files.send({ kind: "file", name: "capture.txt", contentType: "text/plain",
         base64: Buffer.from("field evidence").toString("base64"), place });
-      await w.until(() => w!.network.traffic.slice(count).some(t =>
-        t.caller === "files" && t.status === 507));
-      const refused = w.network.traffic.slice(count).find(t => t.caller === "files" && t.status === 507);
+      const isRefused = (t: Traffic) => t.caller === "files" && t.path === path && t.status === 507;
+      await w.until(() => w!.network.traffic.slice(count).some(isRefused));
+      const refused = w.network.traffic.slice(count).find(isRefused);
       assert.ok(JSON.stringify(refused?.response).includes("storage_full"));
     }
     assert.equal(
