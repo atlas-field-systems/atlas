@@ -81,11 +81,11 @@ tools that make a new simulation quick to write. For now simulations are the
 whole answer. Proof from real flights comes later.
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md">Simulations</a>
 owns how they run.</p>
-<p>A simulation runs the real code of every part: the real Asset app, the real
-Core, the real gateway app, and the real Fieldlinks. No real hardware takes
-part. Only the equipment and the links between the parts are simulated, such
-as a simulated radio link.</p>
-<p>A simulation covers a full operation and everything that can go wrong in one:</p>
+<p>The target is a simulation running the real code of every part: the real
+Asset app, Core, gateway app, and Fieldlinks. No real hardware takes part.
+Only the equipment and the links between the parts are simulated, such as a
+simulated radio link.</p>
+<p>That full simulation covers a whole operation and its failures:</p>
 <ul>
 <li>Assets take off and make Observations.</li>
 <li>Other Assets are tasked onto those Observations.</li>
@@ -93,11 +93,11 @@ as a simulated radio link.</p>
 <li>A radio link fails, and an Asset flies out of range.</li>
 <li>Hardware faults.</li>
 </ul>
-<p>The simulations run in CI, so every change is checked against whole
-operations.</p>
-<p>That full simulation cannot run yet, because the Asset app, the gateway app,
-and the Fieldlinks are not built. The
-<a href="build-order.html">build order</a> says what to build next.</p>
+<p>The existing simulations run Protocol, Core, the SDK, and the initial Asset
+app over IP in CI. <a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md">Simulations</a> owns the current
+coverage and the callers that remain scripted.</p>
+<p>The full operation above still awaits the gateway app and Fieldlinks. The
+<a href="build-order.html">build order</a> says what remains to build.</p>
 <h2 id="the-test-question">The test question</h2>
 <p>Hold every new idea against one question: is this overcomplicated?</p>
 <p>Atlas aims for systems that are simple and elegant. Complexity for its own

@@ -1,7 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>First flight</title>
 <link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="first-flight">First flight</h1>
-<p>The first setup uses a Raspberry Pi on the ground as the gateway, running the
+<p>The planned first field setup uses a Raspberry Pi on the ground as the gateway,
+running the
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md">SiK Fieldlink</a>. The gateway runs
 the Asset app for an ArduPilot quadcopter and talks to it over a SiK radio link. It acts as the
 companion computer from the ground, much like using a ground-control station
@@ -11,8 +12,12 @@ Interface and sends them in one request. Core numbers the Tasks 1, 2, and 3 and
 sends them to the Asset at once. The Asset starts Takeoff only when it holds all
 three. The app sends equipment commands to the flight controller and reports the
 observed outcomes. The operator sees the reported vehicle behavior.</p>
-<p>Core is <strong>Built</strong>. The Asset app, gateway, Fieldlink, and Command Interface
-runtimes remain planned. The Pi can reach Core while vehicle equipment is still
+<p>Core and the SDK are built. The Asset app runs over IP, with
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md#run-the-initial-sitl-scenarios">initial flight and failure scenarios verified in ArduPilot SITL</a>.
+The gateway, SiK Fieldlink, and Command Interface remain planned. The
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/README.md#implementation-gaps">Asset status</a> lists the remaining
+implementation gaps and unverified hardware; this field setup is not yet verified.</p>
+<p>The Pi can reach Core while vehicle equipment is still
 starting or unreachable. Connection alone does not establish takeoff readiness.
 The operator can intervene locally at the Pi. Independent vehicle controls and
 ArduPilot protections remain part of the setup. While they are in control,

@@ -4,15 +4,15 @@
 <p>The owner decided this order on 2026-11-14
 (<a href="decision-log.html#build-and-test">decision log</a>). The numbered steps are the
 working plan for carrying it out.</p>
-<p>The first version is Protocol, Core, and the SDK, with their simulations
+<p>Protocol, Core, and the SDK, with their simulations, form the built first version
 (<a href="design-decisions.html#design-the-whole-product-then-build-it">Design decisions</a>).
 This page orders the parts that follow.</p>
 <h2 id="the-target-is-the-full-simulation">The target is the full simulation</h2>
 <p><a href="goal.html#how-we-know-it-works">The goal</a> says how Atlas is shown to work: a
 simulation of a whole operation that runs the real code of every part, with no
-real hardware. That simulation cannot run until the Asset app, the gateway
-app, and a Fieldlink exist. The build order aims to make it runnable as soon
-as possible.</p>
+real hardware. The Asset app now runs over IP; the gateway app and Fieldlinks
+are still unbuilt. The build order aims to make the full simulation runnable
+as soon as possible.</p>
 <h2 id="decided-the-parts-the-full-simulation-needs-come-first">Decided: the parts the full simulation needs come first</h2>
 <p>After the first version, the Asset app, the gateway app, and the Fieldlinks
 are built before the Command Interface.</p>
@@ -20,10 +20,11 @@ are built before the Command Interface.</p>
 built. Until then the owner judges Atlas from simulation results.</p>
 <h2 id="two-risks-the-order-must-answer">Two risks the order must answer</h2>
 <ol>
-<li><strong>Do Atlas Tasks and failsafes fit a real autopilot?</strong> The decision log
-holds 19 failsafe decisions, made between 2026-11-10 and 2026-11-13. None
-has run against ArduPilot, real or simulated. One was reversed two days
-after it was made.</li>
+<li><strong>Do Atlas Tasks and failsafes fit a real autopilot?</strong> The initial Asset
+runtime now runs against ArduPilot SITL. The
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md#run-the-initial-sitl-scenarios">Asset simulations</a>
+document the verified scenarios and remaining conformance target. Hardware
+behavior remains unverified.</li>
 <li><strong>How much does the radio really carry?</strong> Atlas uses a slow link&#39;s
 airtime <a href="scale.html#use-slow-links-fully-and-efficiently">fully and efficiently</a>,
 so the Fieldlink needs to know how much airtime it has to spend before it
@@ -51,20 +52,21 @@ log stay in force. After the results, they are reviewed against what was
 found.</p>
 <h2 id="the-steps">The steps</h2>
 <ol>
-<li><strong>The Asset app, built whole.</strong> Simulations run it against simulated
-ArduPilot over IP
-(<a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md">Asset simulations</a>).
-The first scenarios are first flight&#39;s Takeoff, Move To, and Land, then a
-low battery and a lost link. They answer the first risk.</li>
+<li><strong>The Asset app, built whole.</strong> The IP runtime and initial ArduPilot SITL
+scenarios are built; <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/README.md#implementation-gaps">implementation gaps</a>
+remain. <a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets">Simulations</a> now use the
+real app for IP Asset work.</li>
 <li><strong>The gateway app and the Meshtastic Fieldlink</strong>, over a simulated radio
-link, with the two radios on the bench.</li>
-<li><strong>The SiK Fieldlink.</strong></li>
-<li><strong>Simulation tools and the full simulation.</strong> Tools make a whole operation
-quick to write as a scenario. The full simulation then runs: Assets take
-off and make Observations, other Assets are tasked onto them, Fusion makes
-Tracks, a radio link fails, and hardware faults.</li>
-<li><strong>The Command Interface.</strong></li>
-<li><strong>First flight in the field</strong> (<a href="first-flight.html">First flight</a>).</li>
+link, with the two radios on the bench. Planned; neither runtime nor the
+radio measurement is complete.</li>
+<li><strong>The SiK Fieldlink.</strong> Planned.</li>
+<li><strong>Simulation tools and the full simulation.</strong> The existing harness runs
+Core, SDK, and Asset IP scenarios. Radio simulation and tools for writing
+the full operation remain planned. That operation has Assets take off and
+make Observations, other Assets tasked onto them, Fusion making Tracks,
+a radio link failing, and hardware faults.</li>
+<li><strong>The Command Interface.</strong> Planned; no application code yet.</li>
+<li><strong>First flight in the field</strong> (<a href="first-flight.html">First flight</a>). Planned.</li>
 </ol>
 <p>Each part is still built whole, as the design decisions say.</p>
 </main>
