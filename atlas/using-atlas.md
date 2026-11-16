@@ -1,5 +1,8 @@
 # Using Atlas
 
+This page describes the intended operation. See the [repository overview](https://github.com/atlas-field-systems/atlas/blob/main/README.md)
+for what is built and what remains planned.
+
 An operator uses the Command Interface to watch Assets and request work.
 Core keeps the shared picture, the requests, and the event log. A gateway carries
 Atlas across a field link. The Asset app controls its equipment and reports what

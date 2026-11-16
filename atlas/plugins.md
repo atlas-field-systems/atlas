@@ -1,7 +1,8 @@
 # Plugins
 
-This page records the owner's intended use. Plugins are part of the product and
-are built with the rest of it. No Plugin exists yet.
+This page records the owner's intended use. The [Core Plugin interface](https://github.com/atlas-field-systems/atlas/blob/main/core/README.md)
+and [SDK client](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md) are built. Simulations use scripted Plugins;
+no operational Plugin exists yet.
 
 A Plugin is a small program that runs beside Core and offers actions. An
 operator runs an action with inputs, such as an area or a building. The Plugin

@@ -7,8 +7,8 @@ live settings.
 
 **IP runtime, app crash lifecycle and Reset ZIP verified in SITL.** Copter execution runs against ArduPilot SITL.
 Reporting-only acquisition runs against real Core with simulated peripherals.
-Hardware verification remains open. The first setup runs on a Raspberry Pi on
-the ground that acts as the companion computer for an ArduPilot quadcopter over
+Hardware verification remains open. The planned first field setup uses a
+Raspberry Pi on the ground as the companion computer for an ArduPilot quadcopter over
 a SiK radio. The Pi is the gateway, running the
 [SiK Fieldlink](../fieldlink/sik/README.md), and runs the Asset app for
 the vehicle.
