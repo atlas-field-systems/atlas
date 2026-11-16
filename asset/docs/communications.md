@@ -82,6 +82,8 @@ The module also tells other modules when internet access is available, for
 modules that call external APIs. A field radio is not assumed to carry internet
 traffic.
 
+The [Meshtastic listening design](../../fieldlink/meshtastic/README.md#local-picture) owns its local-picture and subscription proposals.
+
 ## Several links
 
 Initial Assets use one link: Wi-Fi, FLRC, or LoRa. A later Asset may have

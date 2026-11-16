@@ -448,5 +448,15 @@
     "phrase": "A simulated Asset runs only its script",
     "why": "IP Asset work runs the real app; only radio Assets and contract callers stay scripted.",
     "example": "A simulated Asset runs only its script and makes no decision of its own."
+  },
+  {
+    "phrase": "On a mesh radio link[,]? every radio hears (the others|the messages the other radios send)",
+    "why": "Listening depends on reception, the firmware's delivery path, readability, and verified sources; mesh membership alone does not make all traffic available.",
+    "example": "On a mesh radio link every radio hears the others."
+  },
+  {
+    "phrase": "(passive listening|listening in|local picture) (is|remains) (only )?(a later idea|later work|out of scope)",
+    "why": "The owner brought listening into current pre-build design documentation; implementation and detailed mechanisms are not yet approved.",
+    "example": "Passive listening remains later work."
   }
 ]
