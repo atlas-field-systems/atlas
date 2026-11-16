@@ -268,7 +268,8 @@ override: it starts its response, which replaces the Hold or the paused
 response Task. A condition that already holds at the override, such as a
 battery still below the rule's percentage, fires again only after it stops
 holding and holds again. The Asset stays in failsafe state throughout; re-arming
-never cancels it. A Land or Return to home override re-arms nothing.
+never cancels it. A Land or Return to home override re-arms nothing while it
+runs. If it fails, the Asset re-arms every rule, as after Hold now.
 
 **A critical battery level always fires.** A rule whose battery condition is
 marked critical fires whenever the battery is below that level, whatever its
