@@ -43,6 +43,30 @@ The movement module's copter profile carries out the
 [Takeoff, Move To, Land workflow](../../atlas/first-flight.md). ArduPilot handles
 flight control and stabilization.
 
+The Copter 4.7.2 setup uses these parameters for the
+[starting protections](failsafes.md#independent-flight-controller-protections).
+Capacity thresholds are remaining mAh, not percentages. Set `BATT_CAPACITY` to
+the measured pack capacity and scale both thresholds with it. With a 3300 mAh
+pack the setup is:
+
+| Parameter | Value | Purpose |
+| --- | --- | --- |
+| `MAV_GCS_SYSID` | 255 | The Asset app's GCS system ID on this build |
+| `FS_GCS_ENABLE` | 1 | RTL on GCS loss |
+| `FS_GCS_TIMEOUT` | 5 | Seconds without the app heartbeat |
+| `FS_OPTIONS` | 0 | No continue-flight exemptions |
+| `BATT_CAPACITY` | 3300 | Pack capacity in mAh |
+| `BATT_LOW_MAH` | 495 | 15% remaining |
+| `BATT_CRT_MAH` | 330 | 10% remaining |
+| `BATT_FS_LOW_ACT` | 2 | RTL |
+| `BATT_FS_CRT_ACT` | 1 | Land |
+| `BATT_LOW_VOLT`, `BATT_CRT_VOLT` | 0 | Capacity-only starting thresholds |
+
+The battery monitor must measure consumed charge. The SITL setup uses
+`BATT_MONITOR=4`; actual sensor calibration and hardware checks remain part of
+flight preparation. The app reads protection actions but never configures the
+controller. The simulation reads these parameters back from the pinned build.
+
 ### Fixed camera turret
 
 A turret reports Observations produced by its own detection software; Atlas does
@@ -118,7 +142,7 @@ The app starts dependencies before their consumers, stops them in reverse order,
 and cleans up after a partial startup. Modules can start before their equipment
 is ready, so [connection readiness](README.md#start-and-connect) stays separate.
 
-A standard Linux service starts the app on boot and shuts it down in order. It
+A standard Linux service starts the app when requested and shuts it down in order. It
 never restarts the app on its own: an app that fails in flight
 [stays down](failsafes.md#if-the-app-fails-in-flight)
 ([an operation runs without planned restarts](../../atlas/using-atlas.md#an-operation-runs-without-planned-restarts)).
@@ -129,6 +153,51 @@ then register again as a new Asset
 Installation is repeatable on ordinary Linux, with example configurations for
 the tracker and quadcopter. No custom Raspberry Pi image is planned.
 [Asset simulations](../../simulations/docs/asset.md) check these behaviors as the runtime is built.
+
+### Install the IP app as a Linux service
+
+Use Node 24 at `/usr/bin/node`. Install this repository's `protocol/`, `core/`,
+`sdk/`, and `asset/` directories together under `/opt/atlas`. From the repository root,
+run these commands. Repeating them updates the installed files and dependencies.
+Stop an existing service before replacing its files.
+
+```sh
+getent passwd atlas-asset || sudo useradd --system --home-dir /var/lib/atlas-asset --shell /usr/sbin/nologin atlas-asset
+sudo install -d /opt/atlas /etc/atlas
+sudo cp -a protocol core sdk asset /opt/atlas/
+sudo npm ci --prefix /opt/atlas/protocol
+sudo npm ci --prefix /opt/atlas/core
+sudo npm ci --prefix /opt/atlas/sdk
+sudo npm ci --prefix /opt/atlas/asset
+sudo install -m 0644 asset/atlas-asset.service /etc/systemd/system/atlas-asset.service
+sudo systemctl daemon-reload
+```
+
+Copy either `asset/examples/tracker.json` or `asset/examples/copter.json` to a
+local configuration file. Set the provisioned key, Core URL, equipment connection,
+and operation-specific protection. Set `log_directory` to
+`/var/lib/atlas-asset/logs` and `archive_directory` to
+`/var/lib/atlas-asset/archives`. Install the configured file, then inspect it
+without moving equipment.
+
+```sh
+sudo install -m 0640 -o root -g atlas-asset /path/to/config.json /etc/atlas/asset.json
+sudo -u atlas-asset /usr/bin/node /opt/atlas/asset/src/main.ts inspect /etc/atlas/asset.json
+sudo systemd-analyze verify /etc/systemd/system/atlas-asset.service
+sudo systemctl disable atlas-asset.service
+sudo systemctl start atlas-asset.service
+```
+
+Start the app by hand for each operation. Do not enable it at boot: a companion
+computer reboot during flight must leave it down. An app started while the vehicle
+is armed outside Guided only watches until a person hands control back.
+
+Systemd creates the writable state directory. `systemctl stop atlas-asset`
+requests an orderly shutdown and waits for evidence export. `journalctl -u
+atlas-asset` shows startup and archive failures. The service has `Restart=no`
+and no shutdown timeout that could kill ZIP export. The Linux service unit passes
+systemd validation. Installation, boot behavior, and service startup and shutdown
+on a Raspberry Pi have not been verified.
 
 ## Movement module and profiles
 
@@ -141,6 +210,8 @@ ArduPilot equipment driver exchanges commands and state with the flight
 controller. [Preparation and arming](README.md#prepare-and-take-off) are part of
 that execution. Configured failsafe responses use the same execution as ordinary
 work.
+
+[Runtime](runtime.md#movement-execution) owns the ArduPilot driver details.
 
 Copters share one command family. Fixed-wing aircraft are not part of the
 current design ([decision log](../../atlas/decision-log.md#operations-and-setup)).
@@ -168,4 +239,3 @@ to show where each camera points. Camera images reach Core as
   connection options.
 - Freshness limits, local storage layout and limits, and overflow behavior.
 - How a turret works out its aim from a Point At target.
-- Packaging, service configuration, and installation commands.

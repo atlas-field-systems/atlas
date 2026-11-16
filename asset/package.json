@@ -1,0 +1,24 @@
+{
+  "name": "@atlas/asset",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "inspect": "node src/main.ts inspect"
+  },
+  "dependencies": {
+    "@atlas/sdk": "file:../sdk",
+    "@atlas/protocol": "file:../protocol",
+    "zod": "^4.0.0",
+    "node-mavlink": "^2.3.0",
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "@types/node": "^24.0.0"
+  }
+}

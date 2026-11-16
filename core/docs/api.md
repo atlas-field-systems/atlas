@@ -29,7 +29,7 @@ Accounts may call every operator route.
   [hash recipe](../../protocol/docs/decisions.md#definitions-hash). Core refuses
   a missing or different hash with `409 definitions_mismatch`. `GET /about`
   needs no credential and
-  returns `core_version`, `protocol_version`, `definitions_hash`, and `run_id`. The event
+  returns `core_version`, `protocol_version`, `definitions_hash`, `run_id`, and `stream_keepalive_s`. The event
   stream alone takes the hash as `?definitions=`, because browsers cannot set headers on it. Other requests require the header, except `/about` and the debug log.
   An Asset, gateway, or Plugin sends its key and hash on `GET /about` too. When
   that hash differs, Core records the mismatch as described above.
@@ -65,6 +65,7 @@ Accounts may call every operator route.
 | `409 definitions_mismatch` | Missing or different definitions hash |
 | `409 asset_offline`, `plugin_offline` | Recipient is offline |
 | `409 no_critical_battery_rule` | Flying Asset has no critical battery rule |
+| `409 invalid_link_loss` | An Asset link-loss setting does not exceed Core stream keepalive |
 | `409 queue_full` | The request exceeds the reported queue cap |
 | `409 not_supported` | Command, setting, camera, or action is not declared |
 | `409 task_ended`, `call_settled` | Task ended or Plugin call was already answered or dropped |
@@ -181,7 +182,8 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 Events stream. Each message has `id: <event_id>`, `event: <kind>`, and the event
 as `data`. Every parameter is optional. `asset_id` narrows a stream of every
 event to one Asset. A browser that reconnects sends `Last-Event-ID`, and Core
-resumes after it. Core sends a `: alive` comment every 10 s.
+resumes after it. Core sends a `: alive` comment every `stream_keepalive_s`
+([Core configuration](../config.md)).
 Core closes streams by terminating their connection; a reader discards any
 incomplete event and resumes after its last fully handled `event_id`.
 
@@ -189,11 +191,18 @@ incomplete event and resumes after its last fully handled `event_id`.
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
   how a page recovers after a refresh or in a new tab.
 - Core streams from the `events` table. When a reader cannot keep up, Core closes
-  its stream and the reader resumes from its last `event_id`.
+  its stream and the reader resumes from its last `event_id`. Event and keepalive
+  writes both stop on transport backpressure. A drain resumes output; without a
+  drain within 30 seconds, Core terminates the connection.
 - **The cursor is the duplicate check.** A reader handles each `event_id` once and
   resumes after the last one it handled, so nothing is missed or repeated.
 
 ## Operator requests
+
+Core refuses an Asset on IP's `link_loss_after_s` settings request at or below its
+configured `stream_keepalive_s` with `409 invalid_link_loss`, including a settings
+Task. Radio Assets carried by a gateway are exempt because their Fieldlink
+supplies contact timing.
 
 Within a run, the next Task after 9999 is refused with `409 task_ids_exhausted`.
 Cancel for an unknown Task is `404 not_found`; cancel for an ended Task is
@@ -423,6 +432,9 @@ Asset on its own side and speaks to Core only by `asset_id`.
 
 ## Contact
 
+[Operator request admission](#operator-requests) owns link-loss settings refusal.
+The [Core configuration](../config.md) owns the keepalive interval.
+
 Stored contact records describe transitions. An online record keeps the time
 of the online transition, rather than every later heartbeat. Offline records
 keep the last-heard time.
@@ -442,7 +454,9 @@ keep the last-heard time.
   `gateway.contact` event when its view changes.
 - **The Asset's view.** On IP, the Asset is in contact while its stream is open
   and data or keepalives arrive. It loses contact after its `link_loss_after_s`
-  with neither. Through a Fieldlink, the Fieldlink supplies contact. Contact loss
+  with neither. Core sends keepalive comments every `stream_keepalive_s`
+  ([configuration](../config.md)); the IP Asset loss threshold must exceed that
+  interval. Through a Fieldlink, the Fieldlink supplies contact. Contact loss
   is an input to the Asset's [failsafe conditions](../../asset/docs/failsafes.md).
 
 ## Accounts and provisioning

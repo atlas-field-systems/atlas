@@ -311,9 +311,11 @@ export function onlineAssetsOnIp(tx: ReadTx): string[] {
 
 export type AdmissionView = {
   asset_id: string;
+  gateway_id: AssetRow["gateway_id"];
   description: Description; // a radio Asset not yet signed up has none → refused not_supported
   online: boolean;
   flying: boolean; // description lists takeoff
+  streamKeepaliveS: number;
   hasCriticalBatteryRule: boolean; // latest reported failsafe_policy has a battery_below rule with critical: true
 };
 export function admissionView(tx: ReadTx, asset_id: string): AdmissionView {
@@ -333,6 +335,8 @@ export function admissionView(tx: ReadTx, asset_id: string): AdmissionView {
     asset_id,
     description,
     online,
+    gateway_id: row.gateway_id,
+    streamKeepaliveS: tx.env.config.stream_keepalive_s,
     flying: description.commands.includes("takeoff"),
     hasCriticalBatteryRule: policyHasCriticalBatteryRule(
       latest?.kind === "report.settings"
@@ -756,6 +760,8 @@ function restart(tx: Tx, asset_id: string): void {
   tasks.dropUnfinished(tx, asset_id);
 }
 export function checkSettings(v: AdmissionView, settings: Settings): void {
+  if (v.gateway_id === null && settings.link_loss_after_s !== undefined && settings.link_loss_after_s <= v.streamKeepaliveS)
+    refuse("invalid_link_loss", "link_loss_after_s must exceed Core stream_keepalive_s");
   for (const rule of settings.failsafe_policy ?? [])
     checkCommand(v.description, rule.response);
   for (const key of Object.keys(settings))

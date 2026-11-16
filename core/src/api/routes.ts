@@ -122,7 +122,7 @@ const ADMIN = ["admin"] as const;
 const READERS = ["account", "asset", "gateway", "plugin"] as const;
 
 function about(tx: ReadTx): unknown {
-  return { ...tx.env.versions, run_id: tx.runId };
+  return { ...tx.env.versions, run_id: tx.runId, stream_keepalive_s: tx.env.config.stream_keepalive_s };
 }
 function debugLog(): unknown {
   return refuse("not_found", "No such debug endpoint");

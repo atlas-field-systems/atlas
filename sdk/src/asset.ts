@@ -55,7 +55,9 @@ const mustArrive = (r: Report) =>
   ("request_id" in r && r.request_id !== undefined) ||
   (r.type === "report.status" &&
     r.kind === "task" &&
-    r.task_state !== "active");
+    r.task_state !== "active") ||
+  r.type === "report.failsafe" ||
+  (r.type === "report.status" && r.kind === "subsystem");
 const batchLimit = 1000;
 export function createOutbox(
   clock: Clock,
@@ -63,7 +65,13 @@ export function createOutbox(
   observer?: Observer,
   emit = diagnostics(clock, observer),
   current?: (room: Room) => Report[],
+  onReports?: (reports: Report[]) => void | Promise<void>,
 ) {
+  function recorded(reports: Report[]) {
+    const failed = () => emit("reports.recording_failed", { count: reports.length });
+    try { onReports?.(structuredClone(reports))?.catch(failed); }
+    catch { failed(); }
+  }
   const live: Report[] = [],
     retained: Report[] = [];
   let stopped = false,
@@ -72,6 +80,7 @@ export function createOutbox(
     blockedBatch: Report[] | undefined,
     inFlight = false,
     currentDue = true;
+  let protectedReports = new Set<Report>();
   const listeners = new Set<(result: LinkFailure) => void>();
   const failures = new Set<(error: unknown) => void>();
   const waiting = new Set<() => void>();
@@ -133,6 +142,7 @@ export function createOutbox(
           for (const cb of failures) cb(error);
           return;
         }
+        recorded(samples);
         currentDue = false;
         carriesCurrent = true;
         reports = [...queued, ...samples.slice(0, batchLimit - queued.length)];
@@ -145,6 +155,7 @@ export function createOutbox(
     if (!reports.length && !beat) return;
     beat = false;
     inFlight = true;
+    protectedReports = new Set(queued);
     timer.cancel();
     const priority = reports.some(mustArrive) ? "must_arrive" : "can_skip";
     emit("batch.sent", { count: reports.length, priority });
@@ -156,6 +167,7 @@ export function createOutbox(
         if (settled) return;
         settled = true;
         inFlight = false;
+        protectedReports.clear();
         if (stopped) return release();
         if (result.ok) {
           emit("batch.acknowledged", { count: reports.length });
@@ -192,10 +204,23 @@ export function createOutbox(
     },
     add(reports: Report[], lane: "live" | "retained" = "live") {
       if (stopped || !reports.length) return Promise.resolve();
+      recorded(reports);
       const copies = structuredClone(reports);
       (lane === "live" ? live : retained).push(...copies);
+      const sent = blocked ? Promise.resolve() : waitFor(copies[copies.length - 1]);
+      const ordinary = [...retained, ...live].filter(r => !mustArrive(r) && !protectedReports.has(r));
+      const dropped = new Set(ordinary.slice(0, Math.max(0, ordinary.length - 1024)));
+      for (const queue of [live, retained]) {
+        for (let i = queue.length - 1; i >= 0; i--) {
+          const report = queue[i];
+          if (!dropped.has(report)) continue;
+          queue.splice(i, 1);
+          acknowledged.get(report)?.();
+          acknowledged.delete(report);
+        }
+      }
+      if (dropped.size) emit("reports.gap", { dropped: dropped.size });
       if (blocked) return Promise.resolve();
-      const sent = waitFor(copies[copies.length - 1]);
       notify();
       return sent;
     },
@@ -249,6 +274,7 @@ export interface AssetOptions {
   observer?: Observer;
   queue?: QueueHost;
   current?(room: Room): Report[];
+  onReports?(reports: Report[]): void | Promise<void>;
   settings(): P["report.settings"]["settings"];
   onSettings?(
     settings: P["settings_change"],
@@ -268,6 +294,7 @@ export function runAsset(
     options.observer,
     emit,
     options.current,
+    options.onReports,
   );
   let fail!: (error: unknown) => void;
   const failed = new Promise<never>((_, reject) => {
@@ -400,6 +427,9 @@ export async function startAsset(
     connected = await client.connect();
   }
   if (!connected.ok) return connected;
+  const threshold = options.settings().link_loss_after_s;
+  if (threshold !== undefined && threshold <= connected.value.stream_keepalive_s)
+    return { ok: false as const, error: "refused" as const, explanation: "initial_settings.link_loss_after_s must exceed Core stream_keepalive_s" };
   const registered = await known(
     client.call("register", { body: options.description }),
   );
@@ -547,7 +577,10 @@ export async function startAsset(
           const batch = pending
             ? source.take({ bytes: Infinity, size: () => 0 })
             : undefined;
-          if (batch) batch.settle(await send(batch.reports));
+          if (batch) {
+            pending = false;
+            batch.settle(await send(batch.reports));
+          }
           else if (pending) pending = false;
           else
             await new Promise<void>((resolve) => {

@@ -3,7 +3,7 @@
 The Asset app evaluates equipment, contact, and work state locally. It controls
 the response, and reports and logs the trigger, the selected rule, and the
 observed outcome. Contact comes from the [communications module](communications.md#contact).
-No Asset runtime is built yet. Terms are in the [Atlas glossary](../../GLOSSARY.md).
+The initial runtime is incomplete; see its [implementation gaps](../README.md#implementation-gaps). Terms are in the [Atlas glossary](../../GLOSSARY.md).
 
 ## No rules are enabled by default
 
@@ -48,8 +48,12 @@ Tasks.
 Tasks that arrive after the clear run normally, even if the operator sent them
 to follow the failed work; the operator cancels any that no longer make sense.
 
-Cancellation alone does not enter failsafe state or start a maneuver. An Atlas
-response starts only when a configured rule matches.
+When a flying Asset's command fails or times out, it stops moving and hovers
+where it is. Land or Return to home keeps descending if it fails after descent
+has started; a failure before descent stops movement and hovers. Neither the
+failure nor the cancellation enters failsafe state. The existing
+[critical-battery fallback](#an-override-with-hold-or-pause-re-arms-protection)
+still applies. Otherwise, an Atlas response starts only when a configured rule matches.
 
 ## Independent flight-controller protections
 
@@ -78,6 +82,20 @@ which watches MAVLink heartbeats:
 - Nothing else may send heartbeats with that system ID: not a ground station
   program, a MAVLink router, or MAVProxy on the same computer. Their
   heartbeats would keep the failsafe from firing.
+
+**Starting values.** A flying Asset starts from these, and its configuration may
+change them. Return to home is preferred over landing where it is.
+
+| When | What happens |
+| --- | --- |
+| Battery below 35% | Atlas returns home. |
+| Battery below 15% | The flight controller returns home on its own, if the vehicle is still out. |
+| Battery below 10% | The vehicle lands where it is: Atlas's critical rule, and the flight controller's own critical level. |
+| 5 seconds without the Atlas app | The flight controller returns home. |
+
+The flight controller's levels sit below Atlas's, so Atlas acts first while it
+runs. Once the flight controller takes over, Atlas only watches, so the flight
+controller carries the last landing itself.
 
 ArduPilot's own rules still apply: the failsafe stays inactive until the first
 heartbeat arrives, does nothing while disarmed, disarms a copter that has
@@ -121,6 +139,11 @@ nothing.
   rule fires. The app keeps reporting what the vehicle does, without claiming
   that Atlas started it. A cancelled Task does not become completed because the
   flight controller performed a similar maneuver.
+- **A late Atlas request.** If a request Atlas already sent puts the vehicle
+  back into Atlas's mode after takeover, Atlas switches it back to the mode the
+  pilot or flight controller selected and only watches. That correction is not
+  reported as an Atlas command. A person must select another mode and then
+  Atlas's mode to hand control back.
 - **Handing back.** A person hands control back by switching the flight
   controller to the mode the app works in, Guided on ArduPilot. The app reports
   that it is back in control and holds where it is, as after a
@@ -245,7 +268,8 @@ override: it starts its response, which replaces the Hold or the paused
 response Task. A condition that already holds at the override, such as a
 battery still below the rule's percentage, fires again only after it stops
 holding and holds again. The Asset stays in failsafe state throughout; re-arming
-never cancels it. A Land or Return to home override re-arms nothing.
+never cancels it. A Land or Return to home override re-arms nothing while it
+runs. If it fails, the Asset re-arms every rule, as after Hold now.
 
 **A critical battery level always fires.** A rule whose battery condition is
 marked critical fires whenever the battery is below that level, whatever its
@@ -269,13 +293,13 @@ priority 50), rule `CB1` (critical battery below 10%, Land at landing pad `P1`,
 priority 80), and rule `CB2` (critical battery below 10% with contact lost,
 Land where it is, priority 90):
 
-| Event | What the Asset does |
-| --- | --- |
-| The battery falls below 25% | `LB` fires: Return to home |
-| The operator sends Hold now | Hold replaces Return to home; `LB` is re-armed |
+| Event                                         | What the Asset does                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| The battery falls below 25%                   | `LB` fires: Return to home                                                           |
+| The operator sends Hold now                   | Hold replaces Return to home; `LB` is re-armed                                       |
 | The battery falls below 10%, contact still up | Only `CB1` matches: it fires at once, replacing the Hold, and heads for `P1` to land |
-| The landing at `P1` fails | The Asset returns home, the fixed critical fallback |
-| It lands at home | Final reports, then the app shuts down |
+| The landing at `P1` fails                     | The Asset returns home, the fixed critical fallback                                  |
+| It lands at home                              | Final reports, then the app shuts down                                               |
 
 Had contact also been lost when the battery fell below 10%, `CB1` and `CB2`
 would both match, and only `CB2`, the higher priority, would fire.
@@ -322,5 +346,12 @@ restarting idle or contact timers.
 
 ## Open
 
-- Flight-controller protection values, such as `FS_GCS_TIMEOUT` and the battery
-  failsafe levels, are tuned in [SITL](../../simulations/docs/asset.md) before the first flight.
+- A mode change made through another ground station can begin and end between
+  observations without a lasting pilot-switch change. If no protection remains
+  active, Atlas cannot tell that control was taken away. Such a vehicle can
+  remain in Atlas's mode without a deliberate handback.
+- Protection actions other than radio Return to home or Land and primary-battery
+  Return to home or critical Land still need equipment checks for restoration
+  when Atlas never observed their mode. A critical heartbeat alone cannot
+  identify the action to restore.
+

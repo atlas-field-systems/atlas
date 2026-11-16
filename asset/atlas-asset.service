@@ -1,0 +1,16 @@
+[Unit]
+Description=Atlas Asset
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=atlas-asset
+Group=atlas-asset
+WorkingDirectory=/opt/atlas/asset
+ExecStart=/usr/bin/node /opt/atlas/asset/src/main.ts run /etc/atlas/asset.json
+Restart=no
+KillSignal=SIGTERM
+TimeoutStopSec=infinity
+StateDirectory=atlas-asset
+UMask=0077

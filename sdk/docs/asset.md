@@ -88,15 +88,15 @@ asks.
   settled, so a resent batch never changes. On IP the link resends it with the
   same key until it gets a `200`.
 - **Acknowledged.** `settle({ok: true})` drops the batch's reports. Final Task
-  reports (`completed`, `failed`, `cancelled`) and answers stay in the outbox
+  and failsafe-response reports (`completed`, `failed`, `cancelled`) and answers stay in the outbox
   until then, across reconnects. Other reports keep their original times when
   sent after a gap. Which of them to keep during a gap is the
   [Asset's choice](../../asset/docs/communications.md#report-from-local-state).
 - **Lost.** `settle` with `lost` means the link gave up on the batch. Its added
   reports are offered again in the next batch, and current state is read
   afresh.
-- **Must arrive.** A batch is `must_arrive` when it holds a final Task report or
-  answers a request, and `can_skip` otherwise.
+- **Must arrive.** A batch is `must_arrive` when it holds a final Task or failsafe-response
+  report or answers a request, and `can_skip` otherwise.
 - A report answering a request carries `request_id`, the request's `event_id`.
 - After `heartbeatMs` ([configuration](../config.md)) with nothing sent, the next
   `take` returns an empty batch, so Core keeps the Asset
@@ -132,7 +132,8 @@ it. The helper holds the Asset's Tasks and hands them to the app.
   and used when that Task arrives. The helper answers it with a queue report
   carrying its `request_id`
   ([geo features](../../core/docs/api.md#geo-features)).
-- **The app pulls work.** The app calls `next()` when it is ready to run a Task,
+- **The app pulls work.** `peek()` returns the Task `next()` could start, without
+  starting it or emitting reports. The app calls `next()` when it is ready to run a Task,
   so pause, equipment checks and failsafes stay in the app. With `now`, the helper
   cancels every lower `task_id` and tells the app to end the running Task and run
   the new one at once, even while paused. Lower updates awaiting delivery are
@@ -149,6 +150,16 @@ it. The helper holds the Asset's Tasks and hands them to the app.
   the final `report.status` Task report and hands it to the outbox.
 - **Clearing.** `clear()` reports every held Task `cancelled`. The app calls it when a command fails or a failsafe starts, as
   in [failsafes](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks).
+
+`QueueHost.refuse(request)` is optional. It returns an explanation to refuse
+a Task, cancel, or update before queue mutation. The app owns that decision,
+including its [failsafe execution lock](../../asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation).
+A refused new Task is reported failed with the request ID. A refused cancel
+returns the known Task state or queue; a refused update returns the queue.
+Previously accepted cancels and `now` supersession still apply to late delivery.
+
+The queue passes the Core event ID as the second argument to `runNow`, so the
+Asset can name an immediate override request in its failsafe report.
 
 Settings requests are not Tasks unless they arrive as one. The helper passes
 `settings.requested` events to the app in event order; the app applies them and
@@ -201,3 +212,22 @@ before waiting for its acknowledgement. Only a batch already out may go
 first; reopening the stream does not wait for retained history to drain.
 Reports keep emission order within each lane and batch. Priority marks a batch,
 never reorders its reports.
+
+The outbox retains at most 1,024 queued ordinary reports across both lanes,
+excluding reports in the current in-flight batch. Overflow drops the oldest
+ordinary retained reports first, then ordinary live reports. Request answers,
+final Task reports, all failsafe reports, and subsystem condition reports are
+never dropped by this bound and make their batch must-arrive.
+Protected evidence can exceed the limit. Each drop settles any acknowledgement
+wait for that report and emits `reports.gap` with a dropped count. Consumers
+collect that diagnostic as gap evidence. Local report recording happens before
+overflow selection, so it can retain an unsent report. A blocked outbox retains
+additions under the same bound and returns immediately without registering
+acknowledgement waits.
+
+After connecting and before registration, `startAsset` refuses an initial
+`link_loss_after_s` at or below Core's advertised `stream_keepalive_s`.
+
+Report recording failures, including rejected asynchronous `onReports` callbacks,
+emit `reports.recording_failed` without stopping report delivery. Queue host
+methods retain their receiver, including `refuse`.

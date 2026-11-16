@@ -1,6 +1,6 @@
 # Asset simulations
 
-How the [Asset app](../../asset/README.md) is simulated, once it is built. The
+How the [Asset app](../../asset/README.md) is simulated. The
 [Simulations README](../README.md) owns the shared rules: real parts, a
 simulated world, repeatable runs, and every failure kept as a simulation.
 
@@ -79,3 +79,129 @@ Each checks behavior its [Asset page](../../asset/docs/README.md) owns.
 - Eval thresholds, such as how close and how fast counts as a pass in SITL.
 - Scenarios for several links and congestion, once the gateway and Fieldlink
   designs exist.
+
+## Run the initial SITL scenarios
+
+Use Node 24 and install dependencies with `npm ci` in Protocol, Core, the SDK,
+Asset, and Simulations, in that order. From the repository root run:
+
+```sh
+node simulations/scripts/fetch-sitl.mjs
+cd simulations
+node --test sitl/flight.test.ts
+```
+
+The downloader pins official Copter 4.7.2 and its default copter parameters by
+SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
+`ATLAS_SITL_DIRECTORY` to use another download directory. Relative paths resolve
+from the caller's working directory before SITL changes to its evidence directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
+instead of silently changing the test equipment.
+
+The twenty-one scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+Each scenario allocates equipment TCP ports from the operating system instead
+of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
+Destination landing and Return to home each end with Core telemetry within
+3 metres of the requested position and an archived disarmed measurement. Return
+to home first sets Atlas home away from the arming point. Both specify a transit
+altitude above takeoff altitude.
+SITL runs at five times real time, so its configured GCS heartbeat interval is
+0.2 wall seconds. Flight-controller GCS failsafe remains enabled. Low battery
+uses SITL's battery consumption with a smaller configured battery capacity.
+Core-path loss aborts the Asset's HTTP connection while its equipment TCP link
+continues. The idle-gap scenario withholds one Task in the simulated network
+while delivering its successor. It checks that the blocked queue does not
+suppress the configured idle response. Each scenario prints its temporary evidence directory, including
+Core archives and SITL output. Asset shutdown writes its own verified archive.
+The boundary scenario flies outside its configured polygon and checks the two-second
+condition duration against archived position acquisition times, the Core response
+reports, and the final disarmed measurement.
+These checks prove simulated behavior only. The remaining scenario list above
+is still the conformance target.
+
+The request-answer scenario submits a policy with duplicate priorities that Core
+can deliver but the Asset refuses. It checks that retained settings reach Core
+with the request ID. After an operator Fail-safe starts a response, it sends an
+ordinary Task and a cancel while the simulated network delays outgoing reports.
+Core must receive failed Task evidence answering both requests, without the Task
+entering the held queue. The takeover scenario also checks the refused Task's
+request ID. These delays affect only the network around the real parts.
+
+The subsystem scenario disables SITL GPS through `SIM_GPS1_ENABLE`. Core must
+receive a fresh faulted GPS condition and the configured subsystem rule must land.
+The subsystem and takeover-rule scenarios disable the competing EKF variance
+threshold so they measure the Atlas rule's outcome. GCS protection stays enabled;
+the dedicated radio-protection scenario tests yielding to an active protection.
+
+Equipment scenarios place a TCP proxy between the app and SITL. It cuts the
+equipment link during Move To, withholds a command ACK, supplies a simulated
+equipment refusal ACK, or starts with the link unavailable. Core must receive
+the failed Task and cancellation of its successor. During equipment loss, Core
+remains reachable and no telemetry has an acquisition time after the Asset's
+last equipment-byte delivery. The equipment-drop scenario pauses the Asset's
+socket, flushes a final simulated position, destroys the proxy connections, and
+resumes the socket. It requires telemetry after proxy destruction to prove the
+buffered-delivery race is exercised, then rejects telemetry dated after the last
+socket data event completes. The socket observer changes no production path.
+Each run saves both cut times and telemetry times in `equipment-cut.json`. After
+restoration, telemetry must resume with new acquisition times. The flight
+controller retains its GCS failsafe throughout.
+
+The battery-layering scenario uses the [quadcopter setup](../../asset/docs/assets.md#ardupilot-quadcopter)
+with a 1000 mAh simulated pack and proportionate remaining-charge thresholds.
+It flies Move To away from home, requires Atlas's low-battery return, then
+flight-controller RTL and critical Land, with Core reporting takeover and no
+new Atlas response. It reads the protection parameters back from SITL and
+injects Guided during both battery protections to check mode restoration. A TCP
+proxy hides each protection's first mode from the app, so recovery must use the
+reported battery protection rather than an earlier mode observation.
+`battery-layers.json` retains controller samples and parameter replies;
+`events.json` retains the Core sequence. Simulated results prove no hardware behavior.
+
+## Reporting-only Core scenarios
+
+`scenarios/reporting-assets.test.ts` runs the real Asset app and Core without
+SITL. A stationary installation keeps reporting its configured position after
+the ordinary measurement-freshness interval. It sends no home, settings, or
+queue report. A simulated gpsd receiver supplies tracker fixes through the
+production GPS driver. A detector peripheral supplies position, an Observation,
+and files over the production acquisition interface. Core's picture must show
+both Assets and the Observation. A file with a place must appear as an Object
+linked to that place. A refused capture must remain in the Asset's Reset ZIP.
+
+The armed-startup scenario arms SITL in Loiter before starting the app. It
+checks watch-only reporting and refusal of an immediate Land request. This
+scenario disables SITL ground auto-disarm so the vehicle stays armed while
+the request is delivered; otherwise auto-disarm correctly shuts the app down.
+
+The takeover scenarios interrupt Move To and an Atlas failsafe response. They
+check cancellation, refused immediate Tasks, cancels and settings answers,
+watch-only behavior while a GPS condition matches, Guided handback Hold, and
+a lower-priority GPS rule firing after fresh healthy then faulted evidence.
+The critical battery rule remains configured throughout.
+
+The crash scenario runs the production CLI in a separate process. It sends
+SIGKILL during Move To with a successor held in the queue. Core must show the
+Asset offline. A separate MAVLink connection observes RTL after the configured
+GCS timeout, then disarming within 3 metres of the arming home. This observer
+sends no GCS heartbeat. Only after landing does the scenario start the CLI
+again with its original key. Core must keep the same identity, mark unfinished
+Tasks dropped without a final outcome, and receive fresh telemetry without
+resuming earlier work. Each run retains `crash.json` with the kill time,
+restart time, heartbeat modes, armed state, and landing position.
+
+The flight and crash scenarios open the Asset ZIP and check its README, summary,
+manifest, versions, diagnostics and separate reports. Every payload's size and
+SHA-256 must match the manifest. Every gap must have an interval and appear in
+the summary. After SIGKILL and a ground restart, the interrupted operation must
+have its own ZIP marked as incomplete. No earlier report is sent by the new app.
+The reporting-only scenarios also check retained capture bytes under `files/`.
+
+The late-Guided scripted peers retain the vehicle's final mode, not just the
+Asset's watch-only reports. Separate peers hide the intervening heartbeat and
+supply a persistent RC-switch position or active radio-failsafe evidence.
+The SITL RC scenario holds an RC override as the world's pilot switch, selects
+Loiter, then injects Guided externally. It checks restoration to Loiter without
+handback. The radio scenario activates SIM_RC_FAIL, observes RTL and critical
+system status, then injects Guided. Critical status persists and Atlas restores
+RTL. Both save their vehicle observations beside Core events. These checks do
+not prove radio hardware.

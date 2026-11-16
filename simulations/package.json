@@ -7,12 +7,15 @@
     "test": "node --test --test-timeout=30000 scenarios/*.test.ts faults/*.test.ts"
   },
   "dependencies": {
-    "@atlas/sdk": "file:../sdk",
+    "@atlas/asset": "file:../asset",
     "@atlas/core": "file:../core",
-    "@atlas/protocol": "file:../protocol"
+    "@atlas/protocol": "file:../protocol",
+    "@atlas/sdk": "file:../sdk",
+    "node-mavlink": "^2.3.0"
   },
   "devDependencies": {
-    "typescript": "7.0.2",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "fflate": "^0.8.3",
+    "typescript": "7.0.2"
   }
 }

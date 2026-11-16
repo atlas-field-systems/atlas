@@ -2,7 +2,8 @@
 
 The Asset records detailed evidence locally for the whole operation, including
 while it has no contact with Core. It collects its own app and equipment events
-and the diagnostics of its SDK client or Fieldlink. Logging is not implemented yet.
+and the diagnostics of its SDK client or Fieldlink. The IP runtime writes and
+verifies its operation ZIP, including recovery after an unexpected stop.
 
 ## Record decisions and observed equipment behavior
 
@@ -90,6 +91,3 @@ writes one gap record when writing works again and at shutdown: how many
 records, between which times, and why. The ZIP lists every gap. Flight goes on
 regardless.
 
-## Open
-
-- Default rotation and total limits.

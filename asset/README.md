@@ -5,7 +5,9 @@ Core, keeps its own state, reports what it observes, and carries out supported
 work. A reporting-only Asset needs no equipment-control commands, task queue, or
 live settings.
 
-**Planning.** No runtime exists yet. The first setup runs on a Raspberry Pi on
+**IP runtime, app crash lifecycle and Reset ZIP verified in SITL.** Copter execution runs against ArduPilot SITL.
+Reporting-only acquisition runs against real Core with simulated peripherals.
+Hardware verification remains open. The first setup runs on a Raspberry Pi on
 the ground that acts as the companion computer for an ArduPilot quadcopter over
 a SiK radio. The Pi is the gateway, running the
 [SiK Fieldlink](../fieldlink/sik/README.md), and runs the Asset app for
@@ -21,4 +23,52 @@ The [first-flight story](../atlas/first-flight.md) describes the workflow.
 - [Configuration](config.md) and [logging](docs/logging.md): local options and diagnostic evidence.
 - [Core API](../core/docs/api.md): how the Asset talks to Core.
 - [Protocol](../protocol/README.md): the shared records.
+- [Runtime](docs/runtime.md): execution state and equipment control.
 - AI agents: read [AGENTS.md](AGENTS.md).
+
+## Run the initial app
+
+Use Node 24. Run `npm ci` in Protocol, Core, the SDK, and Asset, in that order.
+From `asset/`, inspect a configuration with
+`node src/main.ts inspect examples/copter.json`, then start it with
+`node src/main.ts run <config.json>`. Provision its key in Core first.
+The copter equipment connection is MAVLink 2 over TCP. A radio connection
+requires an external serial-to-TCP transport and has not been checked.
+
+The initial runtime executes Takeoff, Move To, Guided Hold, pause/resume, and
+Land at a resolved position, and Return to the Atlas home. Equipment commands supersede earlier operations and report
+their own acknowledgements or refusals. The driver owns heartbeat timing and reports generic control ownership.
+Current-state reports retain acquisition times across lost batches. The SDK
+queue supplies Task active and final reports. Blocked outboxes and session
+endings are visible in diagnostics. It evaluates
+battery, airborne, idle, contact-loss, and boundary conditions locally. Live
+policy replacements pass configuration validation before application. The SDK supplies
+ordering and report retries. A configured stationary equipment driver supplies
+continuing installation-position measurements. The [SITL scenarios](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
+check Hold followed by Move To, pause/resume, Land now during Move To,
+low battery, loss of the Core path, idle with a missing predecessor, Land at a position,
+Return to an operator-set Atlas home, and external flight-controller takeover and handback. They check Core reports and archived
+measurements; they do not establish full conformance.
+
+## Implementation gaps
+
+This draft is not ready for a field operation. These are implementation gaps,
+not changes to the behavior specified in the linked pages:
+
+- The Linux service unit passes systemd validation. Installation, boot behavior,
+  and service startup and shutdown on a Raspberry Pi have not been verified.
+- The Asset's Fieldlink link is not built. The app connects to Core only over IP.
+- [On-demand local diagnostics](docs/status.md#inspect-local-diagnostics-on-demand) are not built.
+- Peripheral hardware adapters have not been checked on hardware. The [peripheral interface](docs/runtime.md#reporting-only-equipment)
+  accepts equipment output over local TCP. GPS acquisition uses gpsd.
+
+- Capture Task execution and per-link file-selection policy are not built.
+  Peripheral captures currently attempt upload over IP.
+- Gimbal control and reports, Point At execution, and lights are not built.
+- Report history is retained locally, but historical telemetry catch-up is not
+  implemented as a separate delivery lane.
+- Failsafe shutdown for a non-flying Asset whose equipment reports movement
+  stopped is not built. The current shutdown check requires disarmed and grounded
+  vehicle measurements.
+- Configurable module loading and movement-profile selection are not built.
+  Executable movement currently supports the copter command family only.

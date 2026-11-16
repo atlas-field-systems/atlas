@@ -8,6 +8,7 @@ export interface CoreConfig {
   data_directory: string;
   first_admin: { operator_id: string; password_file: string } | null;
   offline_after_s: number;
+  stream_keepalive_s: number;
   max_object_bytes: number;
   clock_ahead_s: number;
   log_level: "error" | "warn" | "info" | "debug" | "trace";
@@ -30,6 +31,7 @@ export const CONFIG_DEFAULTS: Omit<
   data_directory: "/var/lib/atlas-core",
   first_admin: null,
   offline_after_s: 30,
+  stream_keepalive_s: 10,
   max_object_bytes: 100_000_000,
   clock_ahead_s: 10,
   log_level: "trace",
@@ -70,6 +72,7 @@ export function resolveConfig(
     fail("port", "must be an integer from 0 to 65535");
   for (const key of [
     "offline_after_s",
+    "stream_keepalive_s",
     "clock_ahead_s",
     "max_object_bytes",
     "log_file_limit_bytes",
@@ -77,6 +80,8 @@ export function resolveConfig(
   ] as const)
     if (!Number.isFinite(config[key]) || config[key] <= 0)
       fail(key, "must be positive");
+  if (config.stream_keepalive_s * 1000 > 2147483647)
+    fail("stream_keepalive_s", "must not exceed 2147483.647 seconds");
   for (const key of [
     "listen_address",
     "data_directory",

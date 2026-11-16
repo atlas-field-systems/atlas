@@ -2,7 +2,8 @@
 
 The Asset app keeps its own state, reports what it observes, and carries out
 supported work through configurable [modules and equipment drivers](assets.md).
-This is the selected plan. No runtime exists yet.
+This is the selected behavior. The [implementation status](../README.md#implementation-gaps)
+lists what the initial runtime does not yet implement.
 
 Protocol owns the records named here: the description, Task, settings change,
 and cancel, and the subsystem, task, queue, telemetry, battery, settings, gimbal, and
@@ -90,6 +91,14 @@ A Move To without a requested speed uses the Asset's configured default. The
 Asset caps a request above its configured safe maximum at that maximum, so
 it never exceeds the limit. [Configuration](../config.md) owns both values.
 
+### Movement execution
+
+Land and Return to home reach the requested place before descending. Without a
+transit altitude, they keep the altitude at which they began. Land with neither
+a destination nor a transit altitude descends where the Asset is. An unresolved
+place or an unsupported altitude reference fails with an explanation.
+[Runtime](runtime.md#movement-execution) owns equipment execution.
+
 ### The queue
 
 The Asset holds its own queue: the Tasks it has received and not started. Core
@@ -111,7 +120,7 @@ starts again, whether it reappears in a repeated event or after a reconnect.
 Another attempt needs a new Task.
 
 An Asset with no Task to run waits in place for work, with its platform hold. A
-copter that finishes its last Task in the air loiters there until an operator
+copter that finishes its last Task in the air hovers there until an operator
 sends more. An empty queue is ordinary, and no
 Task has to follow another. Only a
 [configured failsafe rule](failsafes.md#configure-conditions-as-well-as-responses)
@@ -151,7 +160,7 @@ takeoff.
 ### Pause
 
 Pause is a setting, not a Task. It suspends current movement with a
-platform-specific hold: copters stop and loiter in place, and ground vehicles
+platform-specific hold: copters stop and hover in place, and ground vehicles
 brake and stop. A paused Asset does not advance its
 queue, though a Task sent with `now` still runs.
 
@@ -173,7 +182,9 @@ and keeps no earlier Task to resume. Pause keeps the active Task and resumes it.
 A settings change names end states, so repeating one changes nothing. The Asset
 applies immediate changes in event order, alongside its own local changes, and a
 settings change Task when that Task runs. It reports the resulting values in a
-settings report rather than comparing operator and Asset clocks.
+settings report rather than comparing operator and Asset clocks. When a settings
+Task's values can't be accepted, the Task fails with the reason and the Asset
+keeps doing what it was doing.
 
 ## Handle failures and link loss
 

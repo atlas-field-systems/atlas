@@ -428,5 +428,20 @@
     "phrase": "\\bcapacity\\(\\)|\\breads? a capacity figure\\b|\\bby the capacity (its|the) link reports\\b|\\bresolves sendReports\\b|\\bsaying how much the link can carry now\\b",
     "why": "The Asset link asks the Asset for reports when it has room; the Asset no longer pushes batches or reads a capacity figure.",
     "example": "The Asset judges by the capacity its link reports."
+  },
+  {
+    "phrase": "ordinary live reports first, then ordinary retained reports",
+    "why": "Outbox overflow discards retained history before live reports.",
+    "example": "Overflow drops the oldest ordinary live reports first, then ordinary retained reports."
+  },
+  {
+    "phrase": "Atlas cannot detect that switch",
+    "why": "Persistent RC-switch positions now reveal pilot takeover even when heartbeats miss the intervening mode.",
+    "example": "Atlas cannot detect that switch."
+  },
+  {
+    "phrase": "This check also applies to radio Assets carried by a gateway",
+    "why": "Core stream keepalive constrains only Assets on IP; Fieldlinks supply radio contact timing.",
+    "example": "This check also applies to radio Assets carried by a gateway, even though their Fieldlink supplies contact timing."
   }
 ]

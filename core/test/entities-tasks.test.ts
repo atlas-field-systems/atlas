@@ -728,3 +728,45 @@ test("two gateways on one Core each carry only their own radio Assets (Scale, Se
     await h.stop();
   }
 });
+
+for (const transport of ["ip", "radio"] as const)
+  for (const request of ["settings", "task"] as const)
+    test(`api.md#operator-requests: ${transport} ${request} link loss admission uses its contact transport`, async () => {
+      const clock = simulatedClock();
+      const h = await startHarness(clock, { stream_keepalive_s: 10 });
+      try {
+        const supported = { ...description, settings: [...description.settings, "link_loss_after_s"] };
+        let id: string;
+        if (transport === "ip") {
+          id = (await asset(h, supported)).id;
+        } else {
+          const gateway = await h.call("POST", "/administration/gateways", { cookie: h.admin });
+          assert.equal(gateway.status, 201);
+          const radio = await h.call("POST", "/entities/assets/radios", {
+            key: gateway.body.key,
+            body: { definitions_hash: protocol.hash },
+          });
+          assert.equal(radio.status, 201);
+          id = radio.body.asset_id;
+          const described = await h.call("PUT", `/entities/assets/${id}/description`, {
+            key: gateway.body.key,
+            body: { ...supported, time: clock.now(), asset_id: id },
+          });
+          assert.equal(described.status, 200);
+          const contact = await h.call("PUT", `/entities/assets/${id}/contact`, {
+            key: gateway.body.key,
+            body: { time: clock.now(), asset_id: id, contact: "online" },
+          });
+          assert.equal(contact.status, 200);
+        }
+        for (const seconds of [5, 10, 11]) {
+          const settings = { link_loss_after_s: seconds };
+          const result = request === "settings"
+            ? await h.call("PATCH", `/entities/assets/${id}/settings`, { cookie: h.admin, body: { settings } })
+            : await task(h, id, { tasks: [{ kind: "settings", settings }] });
+          const refused = transport === "ip" && seconds <= 10;
+          assert.equal(result.status, refused ? 409 : 202, JSON.stringify(result.body));
+          if (refused) assert.equal(result.body.error, "invalid_link_loss");
+        }
+      } finally { await h.close(); }
+    });

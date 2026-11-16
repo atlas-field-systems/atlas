@@ -1678,3 +1678,45 @@ test("PR53-16 slow stream deadline destroys its socket [api.md#the-event-log-and
     await h.close();
   }
 });
+
+test("config.md: keepalive interval must fit the system clock timer", async () => {
+  const { resolveConfig } = await import("../src/config.ts");
+  assert.equal(resolveConfig({ stream_keepalive_s: 2147483.647 }).ok, true);
+  const result = resolveConfig({ stream_keepalive_s: 2147483.648 });
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.ok(result.problems.some(problem => problem.key === "stream_keepalive_s"));
+});
+
+test("api.md: keepalive backpressure closes an idle stalled stream after 30 seconds", async () => {
+  const { channel } = await import("node:diagnostics_channel");
+  const { connect } = await import("node:net");
+  const c = simulatedClock();
+  const h = await startHarness(c, { stream_keepalive_s: 0.001 });
+  const opened = Promise.withResolvers<import("node:http").ServerResponse>();
+  const requests = channel("http.server.request.start");
+  const observe = (message: unknown) => {
+    const event = message as { request: import("node:http").IncomingMessage; response: import("node:http").ServerResponse };
+    if (event.request.url?.startsWith("/events")) opened.resolve(event.response);
+  };
+  requests.subscribe(observe);
+  const socket = connect(Number(new URL(h.core.url).port), "127.0.0.1");
+  socket.on("error", () => {});
+  try {
+    await once(socket, "connect");
+    socket.pause();
+    socket.write(`GET /events?after=999999 HTTP/1.1\r\nHost: localhost\r\nCookie: ${h.admin}\r\nAtlas-Definitions: ${protocol.hash}\r\n\r\n`);
+    const response = await opened.promise;
+    const transport = response.socket!;
+    transport.cork();
+    while (!response.writableNeedDrain) c.advance(1);
+    const queued = response.writableLength;
+    c.advance(100);
+    assert.equal(response.writableLength, queued, "keepalives stop buffering at backpressure");
+    c.advance(29900);
+    assert.equal(transport.destroyed, true, "idle stream has the same slow-reader deadline as event output");
+  } finally {
+    socket.destroy();
+    requests.unsubscribe(observe);
+    await h.close();
+  }
+});
