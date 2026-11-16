@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/fov_deg.json",
+  "title": "fov_deg",
+  "description": "A camera's full field of view across one axis, in degrees (more than 0, less than 180).",
+  "type": "number",
+  "exclusiveMinimum": 0,
+  "exclusiveMaximum": 180,
+  "examples": [
+    80
+  ]
+}
