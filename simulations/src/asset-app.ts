@@ -25,7 +25,9 @@ export async function assetApp(w: World, options: AssetAppOptions = {}) {
   const equipment = options.equipment === "ardupilot" ? await ardupilotPeer(w) : undefined;
   let config = parseConfig({
     ...defaults,
-    equipment: equipment?.config ?? { kind: "simulated", position: { latitude: 1, longitude: 2 } },
+    ...(equipment
+      ? { equipment: equipment.config }
+      : { equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } }, control_tick_s: 1 }),
     ...options.config,
     asset_key: issued.key,
     link: { core_url: w.core.url },

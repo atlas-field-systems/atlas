@@ -446,7 +446,7 @@
   },
   {
     "phrase": "A simulated Asset runs only its script",
-    "why": "IP Asset work runs the real app; remaining scripts are tracked in the simulation migration inventory.",
+    "why": "IP Asset work runs the real app; only radio Assets and contract callers stay scripted.",
     "example": "A simulated Asset runs only its script and makes no decision of its own."
   }
 ]

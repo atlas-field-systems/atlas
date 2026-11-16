@@ -3,7 +3,7 @@ import { createClient, createLivePicture, follow } from "@atlas/sdk";
 import { scenario } from "../src/scenario.ts";
 import { assetApp } from "../src/asset-app.ts";
 import { reportingPeripheral } from "../src/peripheral.ts";
-import { ipAsset, radioAsset, plugin } from "../src/actors.ts";
+import { sdkAssetCaller, radioAsset, plugin } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 
 scenario({
@@ -39,7 +39,7 @@ scenario({
     "core/docs/api.md#read-the-picture",
   ],
   async run(w) {
-    const a = await ipAsset(w);
+    const a = await sdkAssetCaller(w);
     const asset_id = a.session.asset_id;
     const picture = createLivePicture(w.admin);
     w.onClose(() => picture.stop());
@@ -197,7 +197,7 @@ scenario({
   name: "gimbal snapshot resists older reports and radio registration keeps gateway",
   checks: ["core/docs/api.md#reads", "sdk/docs/live.md#live-picture"],
   async run(w) {
-    const a = await ipAsset(w, "asset", w.clock, {
+    const a = await sdkAssetCaller(w, "asset", w.clock, {
       entity_type: "ground_vehicle",
       commands: [],
       reports: ["gimbal"],
@@ -320,7 +320,7 @@ scenario({
     await w.complete(c.call("me"));
     w.network.once("admin", "/entities", { kind: "refuse", status: 503 });
     value(await w.complete(w.admin.call("entities")));
-    const a = await ipAsset(w);
+    const a = await sdkAssetCaller(w);
     const asset_id = a.session.asset_id;
     const sent = value(
       await w.complete(
@@ -389,7 +389,7 @@ scenario({
   name: "same millisecond queue reports keep emitted order inside a batch",
   checks: ["core/docs/api.md#reads", "sdk/docs/asset.md#report-outbox"],
   async run(w) {
-    const a = await ipAsset(w);
+    const a = await sdkAssetCaller(w);
     const asset_id = a.session.asset_id;
     const path = `/entities/assets/${asset_id}/reports`;
     value(

@@ -16,7 +16,7 @@ export const description: P["requests.asset"] = {
   reports: ["status", "settings"],
   settings: ["lights"],
 };
-export async function ipAsset(
+export async function sdkAssetCaller(
   w: World,
   name = "asset",
   clock: Clock = w.clock,

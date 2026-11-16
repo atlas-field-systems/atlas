@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createLivePicture, follow } from "@atlas/sdk";
 import { scenario } from "../src/scenario.ts";
 import { assetApp } from "../src/asset-app.ts";
-import { ipAsset, description } from "../src/actors.ts";
+import { sdkAssetCaller, description } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 
 for (const failure of ["entities", "tasks", "removed"] as const) {
@@ -127,7 +127,7 @@ scenario({
     "sdk/docs/live.md#live-picture",
   ],
   async run(w) {
-    const a = await ipAsset(w, "equipment", w.clock, {
+    const a = await sdkAssetCaller(w, "equipment", w.clock, {
       ...description,
       reports: ["status", "gimbal"],
       subsystems: [{ subsystem_id: "S1", label: "Drive" }],

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
-import { ipAsset } from "../src/actors.ts";
+import { sdkAssetCaller } from "../src/actors.ts";
 import { value } from "../src/world.ts";
 scenario({
   // SDK outbox contract: the app offers live acquisition only, with no retained-lane API.
@@ -10,7 +10,7 @@ scenario({
     "core/docs/api.md#reads",
   ],
   async run(w) {
-    const asset = await ipAsset(w);
+    const asset = await sdkAssetCaller(w);
     const asset_id = asset.session.asset_id;
     const path = `/entities/assets/${asset_id}/reports`;
     const original = w.clock.now();
