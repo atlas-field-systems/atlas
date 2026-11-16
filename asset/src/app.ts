@@ -56,22 +56,20 @@ export async function startApp(
       return ("request_id" in r && r.request_id !== undefined) ||
         (r.type === "report.status" && r.kind === "task" && r.task_state !== "active") ||
         r.type === "report.failsafe" ||
-        (r.type === "report.status" && r.kind === "subsystem" && r.condition !== "healthy");
+        (r.type === "report.status" && r.kind === "subsystem" &&
+          pendingReports.findLast(value => value.type === "report.status" &&
+            value.kind === "subsystem" && value.subsystem_id === r.subsystem_id) === r);
     }
     function report(reports: LocalReport[]) {
       if (!running) {
         for (const value of reports) log.report(value);
         for (const value of reports) {
-          if (pendingReports.length >= config.log_queue_limit) {
+          pendingReports.push(value);
+          if (pendingReports.length > config.log_queue_limit) {
             const discard = pendingReports.findIndex(r => !mustKeep(r));
             if (discard >= 0) pendingReports.splice(discard, 1);
-            else if (!mustKeep(value)) {
-              log.gap(clock.now(), "pre-registration report queue full");
-              continue;
-            }
             if (discard >= 0) log.gap(clock.now(), "pre-registration report queue full");
           }
-          pendingReports.push(value);
         }
         return;
       }
