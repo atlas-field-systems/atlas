@@ -14,9 +14,9 @@ three. The app sends equipment commands to the flight controller and reports the
 observed outcomes. The operator sees the reported vehicle behavior.
 
 Core and the SDK are built. The Asset app runs over IP, with
-[initial flight and failure scenarios verified in ArduPilot SITL](../simulations/docs/asset.md#run-the-initial-sitl-scenarios).
+[initial flight and failure scenarios verified in ArduPilot SITL](https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md#run-the-initial-sitl-scenarios).
 The gateway, SiK Fieldlink, and Command Interface remain planned. The
-[Asset status](../asset/README.md#implementation-gaps) lists the remaining
+[Asset status](https://github.com/atlas-field-systems/atlas/blob/main/asset/README.md#implementation-gaps) lists the remaining
 implementation gaps and unverified hardware; this field setup is not yet verified.
 
 The Pi can reach Core while vehicle equipment is still

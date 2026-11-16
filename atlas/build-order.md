@@ -28,7 +28,7 @@ built. Until then the owner judges Atlas from simulation results.
 
 1. **Do Atlas Tasks and failsafes fit a real autopilot?** The initial Asset
    runtime now runs against ArduPilot SITL. The
-   [Asset simulations](../simulations/docs/asset.md#run-the-initial-sitl-scenarios)
+   [Asset simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md#run-the-initial-sitl-scenarios)
    document the verified scenarios and remaining conformance target. Hardware
    behavior remains unverified.
 2. **How much does the radio really carry?** Atlas uses a slow link's
@@ -65,8 +65,8 @@ found.
 ## The steps
 
 1. **The Asset app, built whole.** The IP runtime and initial ArduPilot SITL
-   scenarios are built; [implementation gaps](../asset/README.md#implementation-gaps)
-   remain. [Simulations](../simulations/README.md#simulated-assets) now use the
+   scenarios are built; [implementation gaps](https://github.com/atlas-field-systems/atlas/blob/main/asset/README.md#implementation-gaps)
+   remain. [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets) now use the
    real app for IP Asset work.
 2. **The gateway app and the Meshtastic Fieldlink**, over a simulated radio
    link, with the two radios on the bench. Planned; neither runtime nor the

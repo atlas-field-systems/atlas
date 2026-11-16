@@ -36,6 +36,6 @@ Contributors read [AGENTS.md](AGENTS.md).
 ## Read intended use as intended use
 
 These pages describe the owner's intended use of Atlas. They do not prove that a
-capability exists. The [repository overview](../README.md) points to each part's
+capability exists. The [repository overview](https://github.com/atlas-field-systems/atlas/blob/main/README.md) points to each part's
 current implementation status. The first field flight remains planned.
 Repository archival, deletion, and replacement remain separate decisions.

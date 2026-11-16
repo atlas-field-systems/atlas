@@ -1,6 +1,6 @@
 # Using Atlas
 
-This page describes the intended operation. See the [repository overview](../README.md)
+This page describes the intended operation. See the [repository overview](https://github.com/atlas-field-systems/atlas/blob/main/README.md)
 for what is built and what remains planned.
 
 An operator uses the Command Interface to watch Assets and request work.
