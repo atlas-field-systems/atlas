@@ -124,19 +124,22 @@ const schema = z
       );
     if ((c.default_ground_speed_mps ?? 0) > (c.max_ground_speed_mps ?? Infinity))
       fail(["default_ground_speed_mps"], "exceeds max_ground_speed_mps");
-    for (const kind of c.description.commands) {
+    const movement = c.description.commands.filter(isCommand);
+    for (const kind of c.description.commands)
       if (kind !== "failsafe" && !isCommand(kind))
         fail(["description", "commands"], `unsupported command ${kind}`);
-      if (isCommand(kind)) {
-        if (!c.completion_tolerances[kind]) fail(["completion_tolerances", kind], "required for movement");
-        if (!c.command_timeouts[kind]) fail(["command_timeouts", kind], "required for movement");
-      }
+    const reachable = new Set(movement);
+    if (movement.length) reachable.add("hold");
+    if ((c.initial_settings.failsafe_policy ?? []).some(rule =>
+      rule.conditions.some(condition => condition.kind === "battery_below" && condition.critical)))
+      reachable.add("return_to_home");
+    for (const kind of reachable) {
+      if (!c.completion_tolerances[kind]) fail(["completion_tolerances", kind], "required for reachable movement");
+      if (!c.command_timeouts[kind]) fail(["command_timeouts", kind], "required for reachable movement");
     }
-    if (c.description.commands.some(isCommand)) {
+    if (movement.length) {
       if (c.equipment.kind === "gpsd" || c.equipment.kind === "peripheral")
         fail(["description", "commands"], "acquisition-only equipment cannot execute movement");
-      if (!c.completion_tolerances.hold) fail(["completion_tolerances", "hold"], "required for internal Hold");
-      if (!c.command_timeouts.hold) fail(["command_timeouts", "hold"], "required for internal Hold");
       if (c.default_ground_speed_mps === undefined) fail(["default_ground_speed_mps"], "required for movement");
       if (c.max_ground_speed_mps === undefined) fail(["max_ground_speed_mps"], "required for movement");
     }

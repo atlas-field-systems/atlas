@@ -175,23 +175,9 @@ export function createLivePicture(
           assets.delete(e.record.asset_id);
           tasks.delete(e.record.asset_id);
           break;
-        case "asset.described": {
-          const a = assets.get(e.record.asset_id!);
-          if (a) {
-            a.description = e.record;
-            for (const key of Object.keys(a.subsystems))
-              if (!e.record.subsystems?.some((s) => s.subsystem_id === key))
-                delete a.subsystems[key];
-            for (const key of Object.keys(a.gimbals))
-              if (
-                !e.record.cameras?.some(
-                  (c) => c.camera_id === key && c.mount === "gimbal",
-                )
-              )
-                delete a.gimbals[key];
-          }
-          break;
-        }
+        case "asset.described":
+          void load();
+          return;
         case "asset.contact": {
           const a = assets.get(e.record.asset_id!);
           if (a) a.contact = e.record;

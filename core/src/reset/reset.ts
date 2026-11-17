@@ -1,3 +1,7 @@
+import * as administration from "../pillars/administration.ts";
+import * as entities from "../pillars/entities.ts";
+import * as taskPillar from "../pillars/tasks.ts";
+import * as objects from "../pillars/objects.ts";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { access, open, readdir, rename, rm } from "node:fs/promises";
@@ -39,11 +43,7 @@ export function clearRun(
     for (const table of [...tables].reverse())
       if (table.runScoped)
         tx.run(`DELETE FROM "${table.name}" WHERE run_id=?`, runId);
-    for (const table of ["gateways", "plugins"])
-      tx.run(
-        `DELETE FROM ${table} WHERE removed=1 AND contact_run_id=?`,
-        runId,
-      );
+    administration.clearRemoved(tx, runId);
     tx.run(
       "UPDATE runs SET ended_at=?,outcome='archived',zip_name=? WHERE run_id=?",
       tx.now,
@@ -162,14 +162,14 @@ export async function stopRun(
     await add("events.jsonl", eventLines());
     for (const table of tables) {
       if (table.name === "events") continue;
-      if (!table.runScoped && !["gateways", "plugins"].includes(table.name))
+      if (!table.runScoped && !table.archiveRunColumn)
         continue;
       async function* rows() {
         let offset = 0;
         while (true) {
           const page = store.read((tx) =>
             tx.all<Record<string, unknown>>(
-              `SELECT * FROM "${table.name}" WHERE ${table.runScoped ? "run_id" : "contact_run_id"}=? ORDER BY rowid LIMIT 256 OFFSET ?`,
+              `SELECT * FROM "${table.name}" WHERE ${table.runScoped ? "run_id" : table.archiveRunColumn}=? ORDER BY rowid LIMIT 256 OFFSET ?`,
               run.run_id,
               offset,
             ),
@@ -193,28 +193,16 @@ export async function stopRun(
     }
     let objectAfter = "";
     while (true) {
-      const page = store.read((tx) =>
-        tx.all<{
-          object_id: string;
-          file: string;
-          sha256: string;
-          record: string;
-        }>(
-          "SELECT object_id,file,sha256,record FROM objects WHERE run_id=? AND object_id>? ORDER BY object_id LIMIT 256",
-          run.run_id,
-          objectAfter,
-        ),
-      );
+      const page = store.read(tx => objects.archiveFiles(tx, run.run_id, objectAfter));
       for (const object of page) {
         const name = `objects/${object.object_id}`;
         await add(
           name,
-          createReadStream(join(env.paths.objectsDir(run.run_id), object.file)),
+          createReadStream(object.path),
         );
-        const record = JSON.parse(object.record);
         if (
           files[name]!.sha256 !== object.sha256 ||
-          files[name]!.size !== record.size_bytes
+          files[name]!.size !== object.size_bytes
         )
           throw new Error(
             `Object ${object.object_id} differs from stored evidence`,
@@ -358,32 +346,12 @@ export function writeSummary(
     lines.push(
       `Unexpected stop after ${new Date(resume.last_sign_of_life).toISOString()}; resumed ${new Date(resume.resumed_at).toISOString()}, estimated downtime ${resume.resumed_at - resume.last_sign_of_life} ms.`,
     );
-  const assets = store.read((tx) =>
-    tx.all<{
-      asset_id: string;
-      gateway_id: string | null;
-      first: number;
-      last: number;
-    }>(
-      "SELECT a.asset_id,a.gateway_id,MIN(e.time) first,MAX(e.time) last FROM assets a LEFT JOIN events e ON e.run_id=a.run_id AND e.asset_id=a.asset_id AND (e.kind IN ('asset.registered','asset.described','asset.contact') OR e.kind LIKE 'report.%') WHERE a.run_id=? GROUP BY a.asset_id",
-      runId,
-    ),
-  );
+  const assets = store.read(tx => entities.summaryAssets(tx, runId));
   for (const asset of assets)
     lines.push(
       `Asset ${asset.asset_id}, gateway ${asset.gateway_id ?? "none"}, first heard ${asset.first}, last heard ${lastHeard(asset.asset_id) ?? asset.last}.`,
     );
-  const tasks = store.read((tx) =>
-    tx.all<{
-      asset_id: string;
-      task_id: number;
-      state: string;
-      state_time: number;
-    }>(
-      "SELECT asset_id,task_id,state,state_time FROM tasks WHERE run_id=? ORDER BY asset_id,task_id",
-      runId,
-    ),
-  );
+  const tasks = store.read(tx => taskPillar.summaryTasks(tx, runId));
   for (const task of tasks) {
     const late = task.state === "dropped" ? store.read((tx) =>
       tx.get<{ record: string }>(

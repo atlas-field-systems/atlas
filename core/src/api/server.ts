@@ -321,8 +321,7 @@ export async function startServer(
       }
       const login = url.pathname === "/administration/login";
       const scope = login ? "login" : principal.scope;
-      const passwordRequest =
-        login || route.path === "/administration/accounts";
+      const passwordRequest = route.body.kind === "core" && route.body.password;
       let fp: string;
       if (passwordRequest) {
         loginKey = JSON.stringify([scope, key]);

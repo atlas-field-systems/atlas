@@ -105,3 +105,12 @@ test("config.md: reporting-only initial settings may be omitted but control sett
   input.description = { commands: [], reports: ["telemetry"] };
   assert.deepEqual(parseConfig(input).initial_settings, {});
 });
+
+for (const profile of ["completion_tolerances", "command_timeouts"]) test(`config.md and docs/failsafes.md: critical fallback requires internal Return to home ${profile}`, async () => {
+  const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  input.description.commands = ["takeoff", "land", "hold", "failsafe"];
+  input.safe_action = { kind: "land" };
+  input.initial_settings.failsafe_policy = [{ rule_id: "CB", priority: 99, conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } }];
+  delete input[profile].return_to_home;
+  assert.throws(() => parseConfig(input), new RegExp(`${profile}[\\s\\S]*return_to_home`));
+});

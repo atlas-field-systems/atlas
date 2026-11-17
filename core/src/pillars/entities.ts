@@ -400,16 +400,7 @@ export function listAssets(tx: ReadTx): {
         tx.runId,
       )
       .map((r) => assetEntry(tx, r)),
-    gateways: admin.exportRows(tx).gateways.map((row) => {
-      if (
-        !row ||
-        typeof row !== "object" ||
-        !("gateway_id" in row) ||
-        typeof row.gateway_id !== "string"
-      )
-        throw new Error("Invalid gateway row");
-      return admin.gatewayContact(tx, row.gateway_id);
-    }),
+    gateways: admin.listGatewayContacts(tx),
   };
 }
 export function getAsset(
@@ -720,18 +711,6 @@ export function tracksWithSource(
     .map((r) => JSON.parse(r.record));
 }
 
-export function exportRows(tx: ReadTx): {
-  assets: unknown[];
-  tracks: unknown[];
-  geofeatures: unknown[];
-} {
-  return {
-    assets: tx.all("SELECT * FROM assets WHERE run_id=?", tx.runId),
-    tracks: tx.all("SELECT * FROM tracks WHERE run_id=?", tx.runId),
-    geofeatures: tx.all("SELECT * FROM geofeatures WHERE run_id=?", tx.runId),
-  };
-}
-
 export function assetIdInUse(tx: ReadTx, id: string): boolean {
   return !!tx.get(
     "SELECT 1 FROM assets WHERE run_id=? AND asset_id=?",
@@ -871,4 +850,16 @@ export function lastHeard(tx: ReadTx, asset_id: string): number | undefined {
     tx.runId,
     asset_id,
   )?.last_heard;
+}
+
+export function summaryAssets(tx: ReadTx, runId: number) {
+  return tx.all<{
+      asset_id: string;
+      gateway_id: string | null;
+      first: number;
+      last: number;
+    }>(
+      "SELECT a.asset_id,a.gateway_id,MIN(e.time) first,MAX(e.time) last FROM assets a LEFT JOIN events e ON e.run_id=a.run_id AND e.asset_id=a.asset_id AND (e.kind IN ('asset.registered','asset.described','asset.contact') OR e.kind LIKE 'report.%') WHERE a.run_id=? GROUP BY a.asset_id",
+      runId,
+    );
 }

@@ -172,12 +172,19 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
     },
     drain: settle,
     async close(evidenceDirectory?: string) {
-      for (const fn of cleanup) await fn();
-      for (const c of clients) c.close();
-      network.close();
-      await settle();
-      const stopped = await complete(core.stop());
-      if (!stopped.archived) throw new Error(stopped.explanation);
+      const errors: unknown[] = [];
+      async function attempt(fn: () => unknown) {
+        try { await fn(); } catch (error) { errors.push(error); }
+      }
+      for (const fn of cleanup) await attempt(fn);
+      for (const c of clients) await attempt(() => c.close());
+      await attempt(() => network.close());
+      await attempt(settle);
+      await attempt(async () => {
+        const stopped = await complete(core.stop());
+        if (!stopped.archived) throw new Error(stopped.explanation);
+      });
+      if (errors.length) throw new AggregateError(errors, "Cleanup failed; world retained at " + root);
       if (evidenceDirectory) {
         for (const entry of await readdir(root, { withFileTypes: true })) {
           if (entry.isDirectory() && (entry.name === "archive" || entry.name.endsWith("-archives")))

@@ -8,6 +8,9 @@ import { parseConfig, type Config } from "./config.ts";
 import { outsideBoundary } from "./boundary.ts";
 import {
   commands,
+  descending,
+  nextStage,
+  updateExecution,
   isOverride,
   prepare,
   vehicleStep,
@@ -193,7 +196,7 @@ export function reduce(
     else effects.push({ kind: "response", rule, action, status: "failed", explanation });
     effects.push({ kind: "clear" });
     const failedStandingOverride = state.override === "stand" || state.execution?.override === "stand";
-    const descending = (action.kind === "land" || action.kind === "return_to_home") && state.execution?.execution.step === 2;
+    const inDescent = descending(state.execution?.execution);
     state.execution = null;
     if (failedStandingOverride) {
       state.override = "rearm";
@@ -201,7 +204,7 @@ export function reduce(
     }
     if (criticalFallback(rule, action, now, fallback))
       activate({ kind: "return_to_home" }, rule, now, true);
-    else if (!descending) stop(now);
+    else if (!inDescent) stop(now);
   }
   function criticalFallback(
     rule: ComponentsFailsafeRule | null,
@@ -344,15 +347,7 @@ export function reduce(
       )
         break;
       try {
-        const action = event.task.kind === "land" || event.task.kind === "return_to_home"
-          ? { ...event.task, transit_altitude: w.execution.transit_altitude }
-          : event.task;
-        const execution = prepare(action, state.settings, state.measurements, event.now, config);
-        if (event.task.kind === "land" || event.task.kind === "return_to_home") {
-          execution.speed = w.execution.speed;
-          execution.step = Math.min(w.execution.step, 1);
-        }
-        execution.started = w.execution.started;
+        const execution = updateExecution(w.execution, event.task, state.settings, state.measurements, event.now, config);
         const updated = { ...w, task: event.task, execution };
         if (updated.pausedAt === null) {
           const command = vehicleStep({ execution, measurements: state.measurements, config, now: event.now });
@@ -553,7 +548,7 @@ export function reduce(
         const result = progress(ctx);
         if (result === "next") {
           issue(
-            { ...w, execution: { ...w.execution, step: w.execution.step + 1 } },
+            { ...w, execution: nextStage(w.execution) },
             now,
           );
         } else if (result === "completed") {
