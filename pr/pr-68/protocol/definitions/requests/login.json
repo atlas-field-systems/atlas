@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/login.json",
+  "title": "Login request",
+  "description": "The body of POST /administration/login.",
+  "type": "object",
+  "required": [
+    "operator_id",
+    "password"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "operator_id": {
+      "$ref": "../variables/operator_id.json"
+    },
+    "password": {
+      "$ref": "../variables/password.json"
+    }
+  },
+  "examples": [
+    {
+      "operator_id": "ADM",
+      "password": "example-password"
+    }
+  ]
+}

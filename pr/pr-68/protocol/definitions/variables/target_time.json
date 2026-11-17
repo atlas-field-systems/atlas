@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/target_time.json",
+  "title": "target_time",
+  "description": "A time a Plugin input refers to, such as the time a weather forecast is for. Milliseconds since 1970, UTC. It is not the record's own time.",
+  "type": "integer",
+  "minimum": 0,
+  "examples": [
+    1793671200000
+  ]
+}

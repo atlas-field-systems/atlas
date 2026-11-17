@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/ground_speed_mps.json",
+  "title": "ground_speed_mps",
+  "description": "Horizontal speed over the ground, in metres per second. Measured in telemetry; requested in a move_to Task.",
+  "type": "number",
+  "minimum": 0,
+  "examples": [
+    4.2
+  ]
+}

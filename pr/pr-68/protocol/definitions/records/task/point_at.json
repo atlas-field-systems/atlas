@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task/point_at.json",
+  "title": "point_at",
+  "description": "Aim the Asset's pointing equipment, such as a camera turret, at a position: target. Atlas gives only where to look. The Asset works out how to aim there from its own position, installation, and calibration. If target has no altitude, the Asset chooses the height it aims at. The Task completes once the Asset observes the aim, and the Asset holds that aim until its next command.",
+  "type": "object",
+  "required": [
+    "kind",
+    "target"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "point_at"
+    },
+    "target": {
+      "$ref": "../../components/position.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "point_at",
+      "target": {
+        "latitude": 42.2758,
+        "longitude": -71.8041
+      }
+    },
+    {
+      "kind": "point_at",
+      "target": {
+        "latitude": 42.2758,
+        "longitude": -71.8041,
+        "altitudes": [
+          {
+            "altitude_m": 120,
+            "altitude_reference": "msl"
+          }
+        ]
+      }
+    }
+  ]
+}
