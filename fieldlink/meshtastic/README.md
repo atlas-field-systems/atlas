@@ -1,14 +1,16 @@
 # Meshtastic Fieldlink
 
-The Meshtastic Fieldlink carries Atlas over LoRa radios running Meshtastic, to
-many Assets in a mesh. It has a gateway side and an Asset side.
+The Meshtastic Fieldlink is sketched to carry Atlas over LoRa radios running
+Meshtastic, to many Assets in a mesh, with a gateway side and an Asset side.
 [What every Fieldlink is](../README.md) and the [gateway app](../../gateway/README.md)
 are on their own pages. This folder is the home for all Meshtastic-specific
 documentation: radio behavior, listening and the local picture, integration
 proposals, bench measurements, and historical references. Other parts link here.
 Documentation location does not change which component owns runtime behavior.
 
-**Planning.** Nothing is built.
+**Documentation only for now.** Nothing is built. The owner has left this as
+reference material and potential concepts for future use. The existing sketch
+below records the intended link; the optional concepts are listed separately.
 
 ## Hardware and software
 
@@ -37,90 +39,94 @@ sends over the radio only what each Asset does not already have.
 - **Definitions hash.** Each radio sends its hash when its link opens, and the
   gateway compares it with its own.
 
-## Listening and shared updates
+## Potential concepts
 
-**Pre-build design; not implemented.** The owner asked to bring the earlier
-link's listening ideas into current docs before building. The mechanisms below
-are proposals, with radio choices still subject to the
-[bench measurement](../../atlas/build-order.md#new-failsafe-and-radio-decisions-wait).
+These ideas from earlier Meshtastic work are options we could use. None is
+selected for implementation or a decision that must be settled before a build.
+They can be considered separately if work resumes.
+
+### Listening and shared updates
+
+- **Passive listening.** An Asset could use readable, authenticated reports
+  already traveling from peers to the gateway, without requesting extra traffic.
+- **Local picture.** An Asset could retain selected heard records for its
+  modules to read locally, without waiting for a radio exchange.
+- **Shared updates.** A gateway could broadcast a Core picture update once for
+  several authorized listeners, including Assets that did not request it.
+- **Combined subscriptions.** The gateway could combine requests to keep the
+  same record current, send a current snapshot to a new subscriber, and stop
+  updates when no subscriber needs them.
+- **Discovery index.** A compact list of available records could let Assets
+  request details without receiving the whole picture first.
+- **Changes with full-record recovery.** Compact updates could avoid repeating
+  unchanged data; complete snapshots could repair missing updates or bases,
+  including for passive listeners.
+
+For example, A could subscribe to a Track while B merely listens. Both could
+keep the gateway's shared update. B would subscribe only if it needed continued
+updates itself. Requested updates and repairs would still cost airtime.
 
 ### Local picture
 
-An Asset keeps a local picture of other Assets, Observations, Tracks, and
-places from readable, authenticated traffic it receives. Its modules read
-that picture locally without waiting for a radio exchange. A subscription
-means “keep this information coming”; an Asset can also use information it
-hears without requesting it. Listening alone sends no additional traffic.
-
-The communications module owns this picture and which heard records it keeps.
-The Fieldlink supplies complete records and their verified source. Hearing
-another Asset's reports does not turn them into this Asset's own measurements
+If adopted, a local picture could hold other Assets, Observations, Tracks, and
+places. The communications module would own it and select which heard records
+to keep; the Fieldlink would supply complete records and their verified source.
+Hearing another Asset's reports does not turn them into this Asset's own measurements
 or cause it to report them again as its Observations. Hearing a Task for another
 Asset does not put it in this Asset's queue. Core remains the shared picture's
 authority, and [following a Track](../../atlas/goal.md#kept-in-mind-for-later)
 remains future work.
 
-The picture is partial: silence does not mean an item was deleted. Records keep
-their original source and measurement time, separate from when they were heard.
-A repeated or relayed report must not appear fresher, and a delayed older update
-must not replace newer evidence. An incomplete or unverifiable record is skipped.
-Hearing a peer does not establish contact with Core. The picture follows the
+Such a picture would be partial: silence would not mean an item was deleted.
+Records would need to keep their original source and measurement time, separate
+from when they were heard. A repeated or relayed report must not appear fresher,
+and a delayed older update must not replace newer evidence. An incomplete or
+unverifiable record is skipped.
+Hearing a peer does not establish contact with Core. Any picture must respect the
 Asset's existing [run and restart boundaries](../../asset/docs/README.md#start-and-connect).
 
-Still to design: the local read and subscription interfaces; which records are
-useful to keep; ordering and deletion handling; freshness and memory limits;
-and how [local evidence](../../asset/docs/logging.md) records what was heard and used. The old
-link's file-based cache, TTLs, and version fields are not selected contracts.
+Questions if selected: useful records, local read interfaces, ordering,
+deletion handling, freshness, memory limits, and how
+[local evidence](../../asset/docs/logging.md) records what was heard and used.
+The old link's file-based cache, TTLs, and version fields are not selected contracts.
 
-### One transmission can serve several listeners
+### Considerations if selected
 
-Reports an Asset already sends toward its gateway can also be readable by
-listening peers. Gateway-originated updates carry Core's picture, including
-Tracks and places. Both paths can feed a listener's local picture.
-
-Asset A asks to keep a Track current. The gateway sends an update on the shared
-link. A and B can both keep that update, even if B did not ask for it. If B
-later needs continuing updates, it subscribes too. This saves sending the same
-update separately for each listener; requested updates and any repairs still
-cost airtime.
-
-- **Readable shared traffic.** Use a shared transmission path for picture
-  updates that other authorized listeners can read. The historical implementation
+- **Readable shared traffic.** Shared updates would need a transmission path
+  that other authorized listeners can read. The historical implementation
   deliberately broadcast these updates. Do not assume a radio exposes unicast
   traffic addressed to another node, or that peers can read its encrypted
-  direct messages. Confirm the selected firmware's receive path on the bench.
+  direct messages. A candidate firmware's receive path would need bench verification.
 - **Authenticated sources.** A listener needs proof of the sender and replay
-  rejection, not just knowledge of the channel key. Select the authentication
-  and encryption together so shared readability does not weaken identity.
+  rejection, not just knowledge of the channel key. Authentication and encryption
+  would need to preserve identity while allowing shared readability.
   Definitions compatibility also applies before passing a record to the Asset.
-- **Combined interests.** The gateway combines Assets' subscriptions and sends
-  each relevant change once for listeners to share. A new interest needs the
-  current record as well as later updates. Subscription lifetime, renewal,
-  removal, and recovery after disconnection remain to be designed.
+  Radio-to-Asset attribution and run boundaries would need to hold across
+  gateway restarts and Core Reset.
+- **Subscription lifecycle.** Subscription lifetime, renewal, removal, and
+  recovery after disconnection are open questions if subscriptions are adopted.
 - **Existing delivery responsibilities.** Picture subscriptions do not replace
   Task delivery or acknowledgements of final reports. Overhearing is not an
   acknowledgement on behalf of a recipient, nor proof that Core stored a report.
   A passive listener does not request a retransmission merely because it missed
   an update. Active subscription recovery must fit the available airtime.
 
-Picture reads and subscription aggregation go through the
+Any picture reads and subscription aggregation would go through the
 [gateway interface](../../gateway/README.md#the-gateway-interface). The exact
 interface is open; the Fieldlink still never calls the SDK directly. The
 current [Asset link](../../sdk/docs/asset.md#the-asset-link) does not expose
-local-picture reads or subscriptions; that extension is also not designed yet.
+local-picture reads or subscriptions; no extension is selected here.
 
-### Options to measure
+Discovery indexes and compact changes would need measurements showing that
+they save airtime for actual consumers. A listener missing a change's base
+would need to skip it until a complete record could be recovered. Encoding,
+ordering, recovery triggers, and their cost are open; this does not add
+version fields to Protocol records. Radio choices remain subject to the
+[existing measurement decision](../../atlas/build-order.md#new-failsafe-and-radio-decisions-wait).
 
-- **Discovery index.** Advertise which picture records are available so an
-  Asset can request details without first receiving the whole picture. Measure
-  whether the index saves airtime for actual consumers before selecting it.
-- **Changes with full-record recovery.** Compact updates could avoid repeating
-  unchanged data. A listener missing the required base skips a change until it
-  can recover a complete record. Full snapshots could repair gaps, including
-  for passive listeners. Encoding, ordering, recovery triggers, and their cost
-  are open; this does not add version fields to Protocol records.
+### Possible evaluation scenarios
 
-### Scenarios to verify
+If a concept is taken up, these scenarios could help evaluate it:
 
 - A peer keeps an Asset report already traveling to the gateway without sending
   a request, acknowledging for the gateway, or reporting it as its own observation.
@@ -146,7 +152,7 @@ records, provisioning exchange, and reliability guarantees are not adopted here.
 
 ## Radio measurement
 
-While this Fieldlink is built, two Meshtastic radios are connected to the build
+When this Fieldlink is built, two Meshtastic radios are connected to the build
 computer and send messages to each other. Their measured numbers belong in this
 folder, and the simulated radio link uses them. This is the
 [decided bench work](../../atlas/decision-log.md#build-and-test), not completed evidence.
@@ -157,10 +163,10 @@ unknown. Measure the available airtime before selecting how the link
 Radio settings trade capacity against range; the bench measurement establishes
 capacity under its tested conditions, not field range.
 
-## Not designed yet
+## Open engineering questions
 
-- How listeners verify radio-to-Asset attribution and the current run, including
-  across a gateway restart or Core Reset.
+These questions remain for a future build; they are not work scheduled now.
+
 - The compact encoding, frame size, retry timing, and contact timing.
 - How the Fieldlink works out how much room it has before it
   [asks the Asset for reports](../../asset/docs/communications.md#report-from-local-state).

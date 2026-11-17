@@ -455,8 +455,8 @@
     "example": "On a mesh radio link every radio hears the others."
   },
   {
-    "phrase": "(passive listening|listening in|local picture) (is|remains) (only )?(a later idea|later work|out of scope)",
-    "why": "The owner brought listening into current pre-build design documentation; implementation and detailed mechanisms are not yet approved.",
-    "example": "Passive listening remains later work."
+    "phrase": "Pre-build design;|Meshtastic pre-build design|Listening design before the radio build",
+    "why": "The owner left Meshtastic as documentation and optional concepts for future use, with no concept selected or requiring a decision before building.",
+    "example": "Pre-build design; not implemented."
   }
 ]

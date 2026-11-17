@@ -19,4 +19,4 @@ Open question: how accurate the elevation must be.
 
 ## Passive listening
 
-Moved into the current [Meshtastic pre-build design](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#listening-and-shared-updates).
+See the optional [Meshtastic concepts](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#potential-concepts), kept as documentation for possible future use.

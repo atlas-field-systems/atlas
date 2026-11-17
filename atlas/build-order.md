@@ -41,7 +41,7 @@ see later, so the gateway app and the simulated radio link are shaped by it.
 Building for SiK first would shape them around SiK's one-drone,
 point-to-point link.
 
-The [Meshtastic folder](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md) owns its design and bench work.
+The [Meshtastic folder](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md) owns its sketch, potential concepts, and bench plan.
 
 ## New failsafe and radio decisions wait
 
@@ -57,7 +57,7 @@ found.
    remain. [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets) now use the
    real app for IP Asset work.
 2. **The gateway app and the Meshtastic Fieldlink**, over a simulated radio
-   link. Planned; see the [Meshtastic design and bench work](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md).
+   link. Meshtastic stays documentation only for now; see its [sketch and potential concepts](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md).
 3. **The SiK Fieldlink.** Planned.
 4. **Simulation tools and the full simulation.** The existing harness runs
    Core, SDK, and Asset IP scenarios. Radio simulation and tools for writing
