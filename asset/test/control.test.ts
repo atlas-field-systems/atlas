@@ -597,11 +597,11 @@ test("docs/README.md: updating a descending Land preserves transit height, speed
   const { config, state: start } = await setup();
   const task = { ...hold, kind: "land", landing_position: { latitude: 2, longitude: 2 } } as const;
   const state = reduce(start, { kind: "task", task, now: 0 }, config).state;
-  state.execution!.execution.step = 2;
+  state.execution!.execution.stage = "descend";
   state.measurements.position!.value.altitudes = [{ altitude_m: 2, altitude_reference: "launch" }];
   const result = reduce(state, { kind: "update", task: { ...task, landing_position: { latitude: 3, longitude: 3 } }, now: 1 }, config);
   assert.equal(result.state.execution!.execution.transit_altitude?.altitude_m, 5);
-  assert.equal(result.state.execution!.execution.step, 1);
+  assert.equal(result.state.execution!.execution.stage, "transit");
   assert.equal(result.state.execution!.execution.started, 0);
   assert.equal(result.state.execution!.execution.speed, state.execution!.execution.speed);
 });
@@ -717,17 +717,17 @@ test("docs/README.md and docs/failsafes.md: queue pull requires ordinary unpause
   }
 });
 
-for (const step of [0, 1, 2]) for (const reason of ["refused", "timeout"]) {
-  test(`docs/failsafes.md: Land ${reason} at step ${step} stops only before descent`, async () => {
+for (const stage of ["climb", "transit", "descend"] as const) for (const reason of ["refused", "timeout"]) {
+  test(`docs/failsafes.md: Land ${reason} during ${stage} stops only before descent`, async () => {
     const { config, state: start } = await setup();
     let state = reduce(start, { kind: "task", task: { ...hold, kind: "land", landing_position: { latitude: 2, longitude: 2 }, transit_altitude: { altitude_m: 10, altitude_reference: "launch" } }, now: 0 }, config).state;
     assert.ok(state.execution);
-    state.execution.execution.step = step;
+    state.execution.execution.stage = stage;
     const now = reason === "timeout" ? 120001 : 1;
     for (const m of Object.values(state.measurements)) if (m && "time" in m) m.time = now;
     const result = reduce(state, reason === "timeout" ? { kind: "tick", now, hasWork: false } : { kind: "command_failed", now, execution_id: state.commandId, explanation: "equipment refused" }, config);
     assert.ok(result.effects.some(e => e.kind === "task" && e.status === "failed"));
-    assert.equal(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"), step < 2);
+    assert.equal(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"), stage !== "descend");
   });
 }
 
@@ -797,7 +797,7 @@ for (const source of ["operator", "critical"] as const) test(`docs/failsafes.md:
     ? { kind: "task", task: { ...hold, kind: "land" }, now: 0 }
     : { kind: "tick", now: 0, hasWork: false }, config);
   assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "land"));
-  assert.equal(result.state.execution?.execution.step, 2);
+  assert.equal(result.state.execution?.execution.stage, "descend");
   result.state.measurements.armed = { value: false, source: "vehicle", time: 1 };
   result.state.measurements.airborne = { value: false, source: "vehicle", time: 1 };
   result = reduce(result.state, { kind: "tick", now: 1, hasWork: false }, config);

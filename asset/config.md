@@ -59,6 +59,8 @@ Fail-safe activates a policy response and has no execution entry or movement
 configuration. A reporting-only Asset needs neither movement configuration nor
 initial settings. Movement also requires the Hold tolerance and timeout even when
 Hold is not advertised, because handback and command failures use it internally.
+A critical battery rule also requires Return-to-home tolerances and timeout for
+its fixed fallback, even when Return to home is not advertised.
 Acquisition-only `gpsd` and `peripheral` equipment cannot advertise movement commands.
 The configured safe action is unused when no commands are listed.
 

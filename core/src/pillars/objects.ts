@@ -200,28 +200,15 @@ export function objectForImagery(tx: ReadTx, object_id: string): void {
   if (!row.geotiff) refuse("not_geotiff", "Imagery requires a GeoTIFF");
 }
 
-export function exportRows(tx: ReadTx): {
-  objects: unknown[];
-  files: {
-    object_id: string;
-    path: string;
-    size_bytes: number;
-    sha256: string;
-  }[];
-} {
-  const rows = tx.all<ObjectRow & { object_id: string; sha256: string }>(
-    "SELECT * FROM objects WHERE run_id=?",
-    tx.runId,
-  );
-  return {
-    objects: rows,
-    files: rows.map((r) => ({
-      object_id: r.object_id,
-      path: join(tx.env.paths.objectsDir(tx.runId), r.file),
-      size_bytes: JSON.parse(r.record).size_bytes,
-      sha256: r.sha256,
-    })),
-  };
+export function archiveFiles(tx: ReadTx, runId: number, after: string) {
+  return tx.all<{ object_id: string; file: string; sha256: string; record: string }>(
+    "SELECT object_id,file,sha256,record FROM objects WHERE run_id=? AND object_id>? ORDER BY object_id LIMIT 256", runId, after,
+  ).map(row => ({
+    object_id: row.object_id,
+    path: join(tx.env.paths.objectsDir(runId), row.file),
+    sha256: row.sha256,
+    size_bytes: (JSON.parse(row.record) as ObjectRecord).size_bytes,
+  }));
 }
 
 type ObjectRow = {

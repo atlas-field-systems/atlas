@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS asset_keys (
   {
     owner: "administration",
     name: "gateways",
+    archiveRunColumn: "contact_run_id",
     runScoped: false,
     ddl: `
 CREATE TABLE IF NOT EXISTS gateways (
@@ -82,6 +83,7 @@ CREATE TABLE IF NOT EXISTS gateways (
   {
     owner: "administration",
     name: "plugins",
+    archiveRunColumn: "contact_run_id",
     runScoped: false,
     ddl: `
 CREATE TABLE IF NOT EXISTS plugins (
@@ -517,18 +519,18 @@ export function listPlugins(tx: ReadTx): {
     }));
 }
 
-export function exportRows(tx: ReadTx): {
-  gateways: unknown[];
-  plugins: unknown[];
-} {
-  return {
-    gateways: tx.all(
-      "SELECT gateway_id,contact_run_id,contact FROM gateways WHERE removed=0",
-    ),
-    plugins: tx.all(
-      "SELECT plugin_id,description,contact_run_id,contact FROM plugins WHERE removed=0",
-    ),
-  };
+export function listGatewayContacts(tx: ReadTx): Contact[] {
+  return tx.all<{ gateway_id: string }>("SELECT gateway_id FROM gateways WHERE removed=0")
+    .map(row => gatewayContact(tx, row.gateway_id));
+}
+
+export function clearRemoved(tx: Tx, runId: number): void {
+  for (const table of ["gateways", "plugins"])
+    tx.run(`DELETE FROM ${table} WHERE removed=1 AND contact_run_id=?`, runId);
+}
+
+export function pluginExists(tx: ReadTx, plugin_id: string): boolean {
+  return !!tx.get("SELECT 1 FROM plugins WHERE plugin_id=? AND removed=0", plugin_id);
 }
 
 const derive = (

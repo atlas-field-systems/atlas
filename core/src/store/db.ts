@@ -46,6 +46,7 @@ export interface TableDef {
   name: string;
   ddl: string;
   runScoped: boolean;
+  archiveRunColumn?: string;
 }
 
 export function openStore(env: Env, tables: readonly TableDef[]): Store {

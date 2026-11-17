@@ -367,6 +367,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     const target = url(path, query);
     let flight: Promise<Result<T>> | undefined;
     let reportAttempts = 0;
+    let verifyRetry = false;
     function fence(): Result<T> | undefined {
       if (boundEpoch !== epoch)
         return {
@@ -385,13 +386,17 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
           explanation: "Attempt belongs to another session",
         };
     }
+    function retryRequest(): Promise<Result<T>> {
+      verifyRetry = true;
+      return send();
+    }
     function unknown(): Result<T> {
       emit("request.unknown", { key: key ?? "" });
       return {
         ok: false,
         error: "unknown",
         explanation: "Core may have accepted the request",
-        retry: send,
+        retry: retryRequest,
       };
     }
     const send = (): Promise<Result<T>> =>
@@ -403,11 +408,14 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
             const stop = fence();
             if (stop) return stop;
             if (clock.now() >= deadline) return unknown();
-            if (needsVerify) {
+            if (needsVerify || verifyRetry) {
               const verified = await verifyRun(deadline - clock.now());
               const stopped = fence();
               if (stopped) return stopped;
               if (clock.now() >= deadline) return unknown();
+              if (verified.ok) verifyRetry = false;
+              else if (verified.status === 507)
+                return { ...verified, retry: retryRequest };
               if (
                 !verified.ok &&
                 verified.error !== "unknown" &&
@@ -421,7 +429,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
                 };
             }
             try {
-              if (needsVerify) throw new Error("Core unavailable");
+              if (needsVerify || verifyRetry) throw new Error("Core unavailable");
               const h = new Headers();
               if (key) h.set("Idempotency-Key", key);
               if (method !== "GET")
@@ -444,7 +452,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
                 const afterParse = fence();
                 if (afterParse) return afterParse;
                 return !result.ok && response.status === 507
-                  ? { ...result, retry: send }
+                  ? { ...result, retry: retryRequest }
                   : result;
               }
               emit("request.retry_status", { status: response.status });

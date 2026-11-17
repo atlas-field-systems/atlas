@@ -13,8 +13,8 @@ type Preparation = {
   position: ComponentsPosition;
   config: Config;
 };
+type Stage = "execute" | "climb" | "transit" | "descend";
 type Resolved = {
-  initialStep?: number;
   destination?: ComponentsPosition;
   transit_altitude?: ComponentsAltitude;
   speed: number;
@@ -23,7 +23,7 @@ export interface Execution extends Resolved {
   kind: CommandKind;
   action: ComponentsFailsafeResponse;
   started: number;
-  step: number;
+  stage: Stage;
 }
 type Context = {
   execution: Execution;
@@ -97,6 +97,7 @@ function move(c: Context) {
   };
 }
 const landing = {
+  stage: "descend" as const,
   mode: 9,
   command: (c: Context) => ({
     kind: "land" as const,
@@ -107,6 +108,7 @@ const landing = {
 };
 const transitSteps = [
   {
+    stage: "climb",
     mode: 4,
     command: (c: Context) => {
       const p = position(c);
@@ -127,7 +129,7 @@ const transitSteps = [
       );
     },
   },
-  { mode: 4, command: move, complete: atDestination },
+  { stage: "transit", mode: 4, command: move, complete: atDestination },
   landing,
 ] as const;
 export const commands = {
@@ -135,6 +137,7 @@ export const commands = {
     prepare: (p: Preparation): Resolved => ({ speed: speed(p) }),
     steps: [
       {
+        stage: "execute",
         mode: 4,
         command: (c: Context) => {
           if (c.execution.action.kind !== "takeoff")
@@ -174,7 +177,7 @@ export const commands = {
       if (!altitudes?.length) throw new Error("current altitude unavailable");
       return { destination: { ...destination, altitudes }, speed: speed(p) };
     },
-    steps: [{ mode: 4, command: move, complete: atDestination }],
+    steps: [{ stage: "execute", mode: 4, command: move, complete: atDestination }],
     response: true,
     override: null,
   },
@@ -183,8 +186,6 @@ export const commands = {
       if (p.action.kind !== "land") throw new Error("invalid Land execution");
       if (p.action.geofeature_id && !p.action.landing_position)
         throw new Error("Land place has no position copy");
-      if (!p.action.landing_position && !p.action.transit_altitude)
-        return { speed: speed(p), initialStep: 2 };
       return transit(p, p.action.landing_position ?? p.position);
     },
     steps: transitSteps,
@@ -198,6 +199,7 @@ export const commands = {
     },
     steps: [
       {
+        stage: "climb",
         mode: 4,
         command: (c: Context) => ({
           ...transitSteps[0]!.command(c),
@@ -217,6 +219,7 @@ export const commands = {
     prepare: (p: Preparation): Resolved => ({ speed: speed(p) }),
     steps: [
       {
+        stage: "execute",
         mode: 4,
         command: () => ({ kind: "hold" as const }),
         complete: (c: Context): boolean => {
@@ -262,7 +265,7 @@ export function prepare(
     throw new Error("current vehicle state unavailable");
   if (action.kind === "land" && !action.geofeature_id &&
       !action.landing_position && !action.transit_altitude)
-    return { action, kind: "land", started: now, step: 2, speed: 0 };
+    return { action, kind: "land", started: now, stage: "descend", speed: 0 };
   const p = fresh(measurements.position, now, config.measurement_stale_after_s);
   if (!p) throw new Error("current vehicle state unavailable");
   const resolved = commands[action.kind].prepare({ action, settings, position: p, config });
@@ -271,21 +274,54 @@ export function prepare(
     kind: action.kind,
     started: now,
     ...resolved,
-    step: resolved.initialStep ?? 0,
+    stage: commands[action.kind].steps[0].stage,
   };
 }
 export function vehicleStep(c: Context): VehicleCommand {
-  const step = commands[c.execution.kind].steps[c.execution.step];
+  const step = commands[c.execution.kind].steps.find(step => step.stage === c.execution.stage);
   if (!step) throw new Error("vehicle step unavailable");
   return { ...step.command(c), mode: step.mode };
 }
 export function progress(c: Context): "running" | "next" | "completed" {
   const steps = commands[c.execution.kind].steps;
-  if (!steps[c.execution.step]?.complete(c)) return "running";
-  return c.execution.step + 1 < steps.length ? "next" : "completed";
+  const index = steps.findIndex(step => step.stage === c.execution.stage);
+  if (index < 0) throw new Error("vehicle stage unavailable");
+  if (!steps[index]!.complete(c)) return "running";
+  return index + 1 < steps.length ? "next" : "completed";
 }
 
 export function holdCommand(): VehicleCommand {
   const step = commands.hold.steps[0];
   return { ...step.command(), mode: step.mode };
+}
+
+export function nextStage(execution: Execution): Execution {
+  const steps = commands[execution.kind].steps;
+  const index = steps.findIndex(step => step.stage === execution.stage);
+  const next = index < 0 ? undefined : steps[index + 1];
+  if (!next) throw new Error("next vehicle stage unavailable");
+  return { ...execution, stage: next.stage };
+}
+
+export function descending(execution: Execution | undefined): boolean {
+  return execution?.stage === "descend";
+}
+
+export function updateExecution(
+  previous: Execution,
+  action: ComponentsFailsafeResponse,
+  settings: ComponentsSettings,
+  measurements: Measurements,
+  now: number,
+  config: Config,
+): Execution {
+  const landing = action.kind === "land" || action.kind === "return_to_home";
+  const execution = prepare(landing ? { ...action, transit_altitude: previous.transit_altitude } : action,
+    settings, measurements, now, config);
+  if (landing) {
+    execution.speed = previous.speed;
+    execution.stage = previous.stage === "climb" ? "climb" : "transit";
+  }
+  execution.started = previous.started;
+  return execution;
 }

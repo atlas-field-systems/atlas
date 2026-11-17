@@ -311,16 +311,6 @@ export function latestQueue(tx: ReadTx, asset_id: string): number[] {
   return row ? JSON.parse(row.task_ids) : [];
 }
 
-export function exportRows(tx: ReadTx): {
-  tasks: unknown[];
-  queues: unknown[];
-} {
-  return {
-    tasks: tx.all("SELECT * FROM tasks WHERE run_id=?", tx.runId),
-    queues: tx.all("SELECT * FROM queues WHERE run_id=?", tx.runId),
-  };
-}
-
 const rank: Record<TaskState, number> = {
   sent: 0,
   queued: 1,
@@ -360,4 +350,16 @@ function drop(tx: Tx, asset_id: string, states: TaskState[]): number[] {
     tx.append("task.dropped", { time: tx.now, asset_id, task_id });
   }
   return rows.map((r) => r.task_id);
+}
+
+export function summaryTasks(tx: ReadTx, runId: number) {
+  return tx.all<{
+      asset_id: string;
+      task_id: number;
+      state: string;
+      state_time: number;
+    }>(
+      "SELECT asset_id,task_id,state,state_time FROM tasks WHERE run_id=? ORDER BY asset_id,task_id",
+      runId,
+    );
 }

@@ -32,7 +32,7 @@ export type CoreBodies = {
 export type BodySpec =
   | { kind: "none" }
   | { kind: "protocol"; name: keyof ProtocolTypes }
-  | { kind: "core"; name: keyof CoreBodies }
+  | { kind: "core"; name: keyof CoreBodies; password: boolean }
   | { kind: "file" };
 
 type Common = {
@@ -64,7 +64,6 @@ export type ChangeRoute = Common & {
     req: Req<any>,
     prepared: any,
   ) => Reply | { first: Reply; ack: Reply };
-  secret: boolean;
 };
 export type Route = ReadRoute | StreamRoute | FileRoute | ChangeRoute;
 
@@ -89,7 +88,7 @@ function change<S extends BodySpec, P = undefined>(
     commit: (tx: Tx, req: Req<Body<S>>, prepared: P) => Reply;
   },
 ): ChangeRoute {
-  return { kind: "change", secret: false, ...r };
+  return { kind: "change", ...r };
 }
 function secret<S extends BodySpec, P = undefined>(
   r: Common & {
@@ -102,7 +101,7 @@ function secret<S extends BodySpec, P = undefined>(
     ) => { first: Reply; ack: Reply };
   },
 ): ChangeRoute {
-  return { kind: "change", secret: true, ...r };
+  return { kind: "change", ...r };
 }
 const issued = <A, K>(status: 200 | 201, i: Issued<A, K>) => ({
   first: { status, body: i.shown },
@@ -114,8 +113,15 @@ const created = (body: unknown): Reply => ({ status: 201, body });
 const accepted = (body: unknown): Reply => ({ status: 202, body });
 const P = <N extends keyof ProtocolTypes>(name: N) =>
   ({ kind: "protocol", name }) as const;
+const passwordBodies = {
+  login: true,
+  account: true,
+  reports: false,
+  attach: false,
+  answer: false,
+} satisfies { [K in keyof CoreBodies]: "password" extends keyof CoreBodies[K] ? true : false };
 const C = <N extends keyof CoreBodies>(name: N) =>
-  ({ kind: "core", name }) as const;
+  ({ kind: "core", name, password: passwordBodies[name] }) as const;
 const NONE = { kind: "none" } as const;
 const ACCOUNTS = ["account"] as const;
 const ADMIN = ["admin"] as const;
