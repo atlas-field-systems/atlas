@@ -19,14 +19,17 @@ import { closeAll } from "../src/cleanup.ts";
 import { equipmentWire } from "../src/equipment-wire.ts";
 import { checkAssetArchive } from "../src/asset-archive.ts";
 
-async function equipmentPort() {
-  const reservation = createServer();
-  reservation.listen(0, "127.0.0.1");
-  await once(reservation, "listening");
-  const address = reservation.address();
-  assert.ok(address && typeof address !== "string");
-  await new Promise<void>((resolve, reject) => reservation.close(error => error ? reject(error) : resolve()));
-  return address.port;
+async function equipmentPorts() {
+  const reservations = [createServer(), createServer()];
+  const ports = await Promise.all(reservations.map(async reservation => {
+    reservation.listen(0, "127.0.0.1");
+    await once(reservation, "listening");
+    const address = reservation.address();
+    assert.ok(address && typeof address !== "string");
+    return address.port;
+  }));
+  await Promise.all(reservations.map(reservation => new Promise<void>((resolve, reject) => reservation.close(error => error ? reject(error) : resolve()))));
+  return ports;
 }
 
 for (const scenario of [
@@ -67,8 +70,7 @@ for (const scenario of [
         join(root, "flight.parm"),
         `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\n${scenario === "rc-late-guided" ? "FLTMODE1 4\nFLTMODE4 5\n" : ""}${["subsystem", "takeover", "takeover-response"].includes(scenario) ? "FS_EKF_THRESH 0\n" : ""}FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nMAV_GCS_SYSID 255\nFS_OPTIONS 0\nBATT_CAPACITY ${scenario === "battery" ? 100 : scenario === "battery-layers" ? 1000 : 3300}\nBATT_LOW_MAH ${scenario === "battery" ? 15 : scenario === "battery-layers" ? 150 : 495}\nBATT_CRT_MAH ${scenario === "battery" ? 10 : scenario === "battery-layers" ? 100 : 330}\nBATT_LOW_VOLT 0\nBATT_CRT_VOLT 0\nBATT_FS_LOW_ACT 2\nBATT_FS_CRT_ACT 1\n`,
       );
-      const equipment = await equipmentPort();
-      const pilotPort = await equipmentPort();
+      const [equipment, pilotPort] = await equipmentPorts();
       const sitl = spawn(
         join(cache, "arducopter"),
         [
