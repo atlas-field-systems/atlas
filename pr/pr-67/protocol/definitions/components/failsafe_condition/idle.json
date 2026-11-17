@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/idle.json",
+  "title": "idle",
+  "description": "The Asset has had no Task for for_s: neither an active Task nor a queued Task that can start. A paused Asset with queued Tasks is not idle. A queued Task that waits for a Task the Asset has not received is not work. Telemetry does not reset the time, and each idle interval starts fresh.",
+  "type": "object",
+  "required": [
+    "kind",
+    "for_s"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "idle"
+    },
+    "for_s": {
+      "$ref": "../../variables/for_s.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "idle",
+      "for_s": 120
+    }
+  ]
+}
