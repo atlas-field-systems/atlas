@@ -63,11 +63,6 @@ other part of Atlas exists to serve those three.
 - **Not dependable yet.** Atlas is for experiments and makes no promise to
   work every time.
 
-## Listening design before the radio build
-
-The owner brought [listening and a local picture](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#local-picture)
-into the Meshtastic pre-build design; it is not implemented.
-
 ## Kept in mind for later
 
 The owner wants each of these one day. None is designed or built now. Today's
@@ -83,6 +78,8 @@ work must not rule them out, and must not grow to make room for them.
   send an Asset to where a Track is now. Later a command will make an Asset
   keep following a Track.
 - **Drops.** An Asset drops a package, such as first aid or supplies.
+
+Other optional ideas are listed in [Experimental ideas](experimental.md).
 
 ## How we know it works
 
