@@ -16,7 +16,7 @@
 
 ## Inside Core
 
-Core and Fusion run in one TypeScript process in one Docker container. Core is
+Core and Fusion run in one Go process in one Docker container. Core is
 built from [pillars](pillars.md) that keep current state in SQLite tables and an
 ordered [event log](api.md#the-event-log-and-live-stream) beside them
 ([storage](storage.md)). Plugins run in the second ring, each in its own

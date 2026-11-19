@@ -68,6 +68,7 @@ try {
       const selected = part === 'site' ? ['protocol', 'atlas/site']
         : part ? packages.slice(0, packages.indexOf(part) + 1) : [...packages, 'atlas/site'];
       for (const directory of selected) npm(directory, 'ci');
+      if (!part || part === 'core' || part === 'simulations') npm('core', 'run', 'build');
       console.log('\nSetup complete. Run npm run demo, or npm run check.');
       break;
     }

@@ -85,13 +85,12 @@ Each checks behavior its [Asset page](../../asset/docs/README.md) owns.
 
 ## Run the initial SITL scenarios
 
-Use Node 24 and install dependencies with `npm ci` in Protocol, Core, the SDK,
-Asset, and Simulations, in that order. From the repository root run:
+From the repository root, install the dependencies and build Core before
+starting the flight scenarios. See the [build prerequisites](../../README.md#start-here).
 
 ```sh
-node simulations/scripts/fetch-sitl.mjs
-cd simulations
-node --test sitl/flight.test.ts
+npm run setup -- simulations
+npm run check:sitl
 ```
 
 The downloader pins official Copter 4.7.2 and its default copter parameters by

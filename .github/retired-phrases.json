@@ -458,5 +458,10 @@
     "phrase": "Pre-build design;|Meshtastic pre-build design|Listening design before the radio build",
     "why": "The owner left Meshtastic as documentation and optional concepts for future use, with no concept selected or requiring a decision before building.",
     "example": "Pre-build design; not implemented."
+  },
+  {
+    "phrase": "Core and Fusion run in one TypeScript process|Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface use TypeScript",
+    "why": "Core and its in-process Fusion module use Go.",
+    "example": "Core and Fusion run in one TypeScript process."
   }
 ]

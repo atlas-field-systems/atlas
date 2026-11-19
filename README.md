@@ -10,8 +10,9 @@ outcomes back to Core. Protocol defines the records they share.
 
 ## Start here
 
-Use **Node 24 and npm on Linux**. The full checks also use `unzip` and
-`systemd-analyze`; the Asset service expects Node at `/usr/bin/node`.
+Use **Node 24 and npm on Linux**. Building Core also requires Go 1.22.2 or
+later and a C compiler. The full checks use `unzip` and `systemd-analyze`.
+The Asset service expects Node at `/usr/bin/node`.
 The full-disk simulation needs permission to mount tmpfs through passwordless
 sudo. Without that permission it reports a skip, not a verified disk-full case.
 Setup downloads npm dependencies. ArduPilot SITL is a separate, pinned download
@@ -24,8 +25,7 @@ npm run setup
 npm run demo
 ```
 
-Setup installs each package's locked dependencies in order, including the docs
-site. The demo runs real Core, SDK and Asset code with simulated equipment,
+Setup installs the locked dependencies and builds Core. The demo runs real Core, SDK and Asset code with simulated equipment,
 network and time. It demonstrates a settings Task completing across a lost
 acknowledgement and reconnection. It needs no radio, flight controller, account
 setup, or sudo. It prints the result and a fresh evidence directory containing

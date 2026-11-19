@@ -4,14 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test --test-timeout=120000 test/*.test.ts"
+    "build": "node scripts/bundle-protocol.mjs && go build -o bin/atlas-core ./cmd/atlas-core",
+    "pretest": "npm run build",
+    "test": "go test ./... && node --test --test-timeout=120000 test/*.test.ts"
   },
   "dependencies": {
     "@atlas/protocol": "file:../protocol"
   },
   "devDependencies": {
-    "typescript": "7.0.2",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "fflate": "^0.8.3",
+    "typescript": "7.0.2"
   },
   "exports": {
     ".": "./src/core.ts",

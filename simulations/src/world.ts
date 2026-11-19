@@ -2,7 +2,7 @@ import type { CoreConfig } from "../../core/src/config.ts";
 import { mkdtemp, writeFile, rm, readdir, cp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { setImmediate } from "node:timers/promises";
+import { setImmediate, setTimeout } from "node:timers/promises";
 import { startCore } from "@atlas/core";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import {
@@ -43,7 +43,7 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
       password_file: join(root, "password"),
     },
   };
-  let core = await startCore({ clock, config: coreConfig });
+  let core = await startCore({ clock: clock.forCore(), config: coreConfig });
   const clients: Client[] = [];
   const cleanup = new Set<() => unknown>();
   function client<C extends Credential>(
@@ -81,8 +81,11 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
       last = network.activity;
     while (quiet < 8) {
       guard(start);
-      await setImmediate();
-      if (!network.inFlight.length && last === network.activity) quiet++;
+      // Core runs in a separate OS process. Give loopback I/O a poll interval
+      // before considering the network quiet and advancing the simulated clock.
+      if (quiet === 0 && !network.inFlight.length) await setTimeout(1);
+      else await setImmediate();
+      if (!clock.pendingCallbacks && !network.inFlight.length && last === network.activity) quiet++;
       else quiet = 0;
       last = network.activity;
     }
@@ -151,7 +154,7 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
       const port = Number(new URL(core.url).port);
       const stopped = await complete(core.stop());
       if (!stopped.archived) throw new Error(stopped.explanation);
-      core = await startCore({ clock, config: { ...coreConfig, port } });
+      core = await startCore({ clock: clock.forCore(), config: { ...coreConfig, port } });
     },
     root,
     admin,

@@ -4,6 +4,7 @@ type Entry = { at: number; sequence: number; fn(): void; cancelled: boolean };
 export class SimClock implements Clock, CoreClock {
   private time = 1800000000000;
   private sequence = 0;
+  pendingCallbacks = 0;
   private timers: Entry[] = [];
   now() {
     return this.time;
@@ -38,6 +39,20 @@ export class SimClock implements Clock, CoreClock {
   moveTo(time: number) {
     if (time < this.time) throw new Error("Clock cannot go backwards");
     this.time = time;
+  }
+  // A remote timer can finish after the local callback returns. Keep virtual
+  // time stationary until Core has handled the fire and installed its next timer.
+  forCore(): CoreClock {
+    return {
+      now: () => this.now(),
+      after: (ms, fn) => this.after(ms, () => {
+        const result = fn();
+        if (result instanceof Promise) {
+          this.pendingCallbacks++;
+          void result.finally(() => { this.pendingCallbacks--; });
+        }
+      }),
+    };
   }
   shifted(offsetMs: number): Clock {
     return {

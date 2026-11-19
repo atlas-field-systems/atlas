@@ -56,14 +56,12 @@ for (const failure of ["entities", "tasks", "removed"] as const) {
           }),
         ),
       );
-      await w.settle();
-      assert.ok(
-        picture
-          .geofeatures()
-          .items.some(
-            (g) => g.geofeature_id === place.geofeature.geofeature_id,
-          ),
+      // The write response and the picture's SSE connection arrive independently.
+      const received = () => picture.geofeatures().items.find(
+        (item) => item.geofeature_id === place.geofeature.geofeature_id,
       );
+      await w.until(() => received() !== undefined);
+      assert.deepEqual(received(), place.geofeature);
       if (failure === "removed") assert.equal(picture.assets().items.length, 0);
     },
   });

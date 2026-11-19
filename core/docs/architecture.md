@@ -1,46 +1,47 @@
 # Core architecture
 
-`startCore({clock, config})` is the module interface. It returns the bound URL,
-run ID, debug URL, and `stop`. Outside programs use HTTP.
+[Core's executable](../cmd/atlas-core/) serves HTTP and runs Fusion in one Go
+process. It embeds the Protocol definitions and the shared validator. Build and
+start it as described in [configuration](../config.md).
 
-## Modules
+## Packages
 
-| Module | Owns |
+| Package under `core/` | Owns |
 | --- | --- |
-| `main.ts`, `core.ts` | Configuration, boot order, composition, signals |
-| `clock.ts`, `config.ts`, `ids.ts`, `log.ts` | Injected time, local configuration, short ID encoding, diagnostics |
-| `store/db.ts` | SQLite connection, synchronous transactions, commit notifications |
-| `api/event-kinds.ts` | Public event kind-to-record data |
-| `store/events.ts` | Event audience and request rules, append validation, settlement, filtering, pages |
-| `store/idempotency.ts`, `store/runs.ts` | Retry responses, recovery, counters |
-| `api/routes.ts`, `server.ts`, `auth.ts`, `errors.ts`, `stream.ts` | Route table, pipeline, authorization, refusals, SSE |
-| `pillars/` | Entities, Tasks, Objects, Administration, Fusion |
-| `contact.ts`, `plugins.ts`, `reset/` | Contact deadlines, Plugin interface, archives |
+| `cmd/atlas-core` | Startup, TLS, signals, shutdown and Reset |
+| `internal/api` | HTTP routes, caller authorization, keyed retries, contact deadlines and the event stream |
+| `internal/entities`, `internal/tasks`, `internal/objects`, `internal/administration` | The four state-owning [pillars](pillars.md) |
+| `internal/fusion` | The Observation follower and the replaceable function that proposes Track changes |
+| `internal/store` | The SQLite connection, schema, transaction serialization, run IDs and commit notifications |
+| `internal/state` | The current run and transaction, event append and settlement, and diagnostics emitted on commit |
+| `internal/protocol` | The embedded validator, package versions and definitions hash |
+| `internal/clock`, `internal/config`, `internal/diagnostics` | Time and deadlines, local configuration, and the rotating diagnostic log and loss ledger |
+| `internal/reset` | Run export, archive verification and checked clear |
 
-## Decisions that shape the code
+The build packages Protocol's browser entry point and the original definition
+bytes. At startup Go loads them into an embedded JavaScript runtime. Core and
+the SDK use the same [event kind registry](../src/api/event-kinds.ts). A
+mismatch between the registry and the packaged definitions fails startup.
 
-SQLite uses WAL, `synchronous=FULL`, and foreign keys. One synchronous transaction
-per change keeps admission and effects indivisible. The callback type rejects
-Promises. Slow work such as password hashing happens before the transaction.
-Routes may prepare with the Store to read credential hashes before scrypt.
+## Transactions and followers
 
-`api/event-kinds.ts` owns each kind's Protocol record and array flag.
-`store/events.ts` adds audience and request rules.
-Append validates records with Protocol. Each request kind names its recipient and answering event kinds; settlement
-requires both to match as well as `request_id`. There is no second requests table.
-Streams read pages from disk and keep only a cursor, never a backlog.
+One connection holds the SQLite database open in exclusive mode. A state change,
+its events and its retry acknowledgment commit in one transaction. Password
+hashing and streamed Object uploads finish before the transaction. Core checks
+the caller and retained retry key again when it admits the write.
 
-Global short IDs use a persistent sequence that skips account IDs. Per-run
-counters survive deletion. Fusion is a pure function plus an event follower,
-with its cursor committed alongside Track changes. Contact deadlines use the
-injected clock; persistent consequences belong to the offline transaction.
+Event readers subscribe to commit notifications before reading their next page
+from disk. Each stream keeps its cursor and one page. Fusion commits Track
+changes with the last Observation it processed. Contact deadlines restart on
+resume and retain the persisted arrival time as evidence. Before Reset, Core
+closes the streams, finishes admitted handlers and drains Fusion.
+[Storage](storage.md) describes the tables. [Reset](reset.md) describes the archive.
 
-## Schema ownership
+## Simulation host
 
-Each pillar exports its table definitions and owns its SQL. Shared storage
-owns runs, counters, events, and retry keys. [Storage](storage.md) lists the
-tables and [pillars](pillars.md#rules) defines access across owners.
-
-All pillars and the Plugin interface are implemented.
-[Reset](reset.md) writes and checks the archive before clearing the run.
-Contact stops and Fusion drains before Reset exports state.
+The TypeScript module still exposes `startCore({clock, config})`. It starts the
+same executable and returns the bound URL, run ID, debug URL and `stop()`.
+A private pipe carries clock and lifecycle messages between Core and the
+simulation. When a simulated timer fires, the host can wait until Core has
+handled it before advancing simulated time. A standalone server uses the
+operating system clock.

@@ -185,8 +185,8 @@ the calls.
 
 ## Stack
 
-- Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface
-  use TypeScript. Node 24 runs `.ts` directly, so Node programs have
+- Core and Fusion use Go. The SDK, gateways, Fieldlinks, the Asset app, and
+  the Command Interface use TypeScript. Node 24 runs `.ts` directly, so Node programs have
   no build step.
 - Core and Fusion ship as one Docker container running one process. Each Plugin
   may run in its own container. Gateways run on their own computers.

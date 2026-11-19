@@ -1,6 +1,10 @@
 # Core configuration
 
-Run `node src/main.ts <config.json>` with Node 24. Core loads a JSON object,
+Build with `npm run setup -- core` from the repository root. This requires Node 24,
+Go 1.22.2 or later, and a C compiler for SQLite. Run
+`core/bin/atlas-core <config.json>` to start the server. The executable embeds
+the Protocol validator and definitions. On startup it prints the bound URL,
+run ID and optional debug URL as one JSON line. Core loads a JSON object,
 then applies `ATLAS_CORE_<KEY>` environment overrides. Values use JSON syntax;
 a plain string is also accepted for string options. Unknown keys and invalid
 values stop startup with the option name and an explanation.

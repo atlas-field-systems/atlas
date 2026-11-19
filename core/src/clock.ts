@@ -1,25 +1,12 @@
-/**
- * Core reads time only from the Clock it is given at start.
- *
- * The shipped program passes `systemClock`. A simulation passes its own
- * simulated clock that implements this interface and fires timers when it
- * advances. Every time Core stamps (event `time`, record `time`, diagnostic
- * records) and every timer Core runs (contact deadlines, SSE keepalives, slow
- * reader limits) goes through this interface, so minutes of contact rules run
- * in milliseconds under simulation. (decision-log: "A part taking its clock
- * from outside ... is not a hook added only for tests".)
- *
- * Not on the clock: SQLite, the OS socket timeouts of node:http, and file I/O.
- * They are not product rules.
- */
 export interface Clock {
   /** Milliseconds since 1970 UTC (Protocol law 7). */
   now(): number;
   /**
    * Run `fn` once, `ms` from now on this clock. Returns a handle to cancel.
-   * A simulated clock fires due timers in deadline order when it advances.
+   * A remote callback resolves when Core has handled the timer. A simulated
+   * clock can wait for that completion before advancing to the next deadline.
    */
-  after(ms: number, fn: () => void): Timer;
+  after(ms: number, fn: () => void | Promise<void>): Timer;
 }
 
 export interface Timer {

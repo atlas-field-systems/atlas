@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { startHarness, protocol, clock } from "./harness.ts";
-import { readZip } from "../src/reset/zip.ts";
+import { readZip } from "./archive.ts";
 
 type Harness = Awaited<ReturnType<typeof startHarness>>;
 async function upload(

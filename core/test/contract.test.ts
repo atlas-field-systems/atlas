@@ -16,11 +16,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
-import { DatabaseSync } from "node:sqlite";
 import { createServer } from "node:net";
 import { startCore } from "../src/core.ts";
-import { readZip } from "../src/reset/zip.ts";
-import { checkZip } from "../src/reset/reset.ts";
+import { readZip, checkZip } from "./archive.ts";
 import { clock, stopCore } from "./harness.ts";
 import { startHarness, password, protocol } from "./harness.ts";
 
@@ -201,10 +199,10 @@ test("3. stored state and diagnostics contain no credentials [api.md#credential-
   }
 });
 
-async function child(configPath: string, traceSync = false) {
+async function child(configPath: string) {
   const process = spawn(
     globalThis.process.execPath,
-    [...(traceSync ? ["--trace-sync-io"] : []), "src/main.ts", configPath],
+    ["src/main.ts", configPath],
     { cwd: new URL("..", import.meta.url), stdio: ["ignore", "pipe", "pipe"] },
   );
   let output = "";
@@ -228,7 +226,6 @@ async function child(configPath: string, traceSync = false) {
   return {
     url,
     process,
-    diagnostics: () => error,
     async kill(signal: "SIGKILL" | "SIGTERM") {
       const exited = once(process, "exit");
       process.kill(signal);
@@ -790,113 +787,6 @@ test("invalid config names the option and exits 2 [config.md]", async () => {
 });
 
 
-test("full SQLite disk returns 507 and leaves no accepted change [storage.md#memory-and-full-disks]", async () => {
-  let connection: DatabaseSync | undefined;
-  const exec = DatabaseSync.prototype.exec;
-  DatabaseSync.prototype.exec = function(sql) {
-    connection = this;
-    return exec.call(this, sql);
-  };
-  let h: Awaited<ReturnType<typeof startHarness>>;
-  try { h = await startHarness(); }
-  finally { DatabaseSync.prototype.exec = exec; }
-  assert.ok(connection);
-  const db = connection;
-  try {
-    const pages = db.prepare("PRAGMA page_count").get()!.page_count;
-    db.exec(`PRAGMA max_page_count=${pages}`);
-    let refused = false;
-    for (let i = 0; i < 100; i++) {
-      const before = await h.call("GET", "/entities/geofeatures", { cookie: h.admin });
-      const response = await h.call("POST", "/entities/geofeatures", { cookie: h.admin, body: { kind: "line", name: "x".repeat(64), line: Array.from({ length: 32 }, () => ({ latitude: 1, longitude: 2 })) } });
-      if (response.status === 200) continue;
-      assert.equal(response.status, 507, JSON.stringify(response.body));
-      assert.equal(response.body.error, "storage_full");
-      assert.deepEqual((await h.call("GET", "/entities/geofeatures", { cookie: h.admin })).body, before.body);
-      refused = true;
-      break;
-    }
-    assert.ok(refused, "SQLite must reach its real page limit");
-  } finally {
-    db.exec("PRAGMA max_page_count=1073741823");
-    await h.close();
-  }
-});
-
-
-test("counting capped diagnostic losses uses asynchronous I/O [logging.md#when-logging-cannot-keep-up]", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "atlas-log-async-"));
-  let running: Awaited<ReturnType<typeof child>> | undefined;
-  try {
-    const cfg = join(dir, "config.json");
-    await writeFile(cfg, JSON.stringify({ data_directory: dir, port: 0, log_total_limit_bytes: 1 }));
-    running = await child(cfg, true);
-    for (let i = 0; i < 5; i++) {
-      const response: Response = await fetch(running.url + "/about");
-      assert.equal(response.status, 200);
-      await response.text();
-    }
-    assert.equal((await running.kill("SIGTERM"))[0], 0);
-    assert.doesNotMatch(running.diagnostics(), /at gap /, "loss accounting must not perform synchronous filesystem calls");
-    running = undefined;
-  } finally {
-    if (running?.process.exitCode === null) await running.kill("SIGKILL");
-    await rm(dir, { recursive: true, force: true });
-    await rm(dir + "-archive", { recursive: true, force: true });
-  }
-});
-
-
-test("debug flush includes records queued during a gap write [logging.md#read-the-log-while-core-runs]", () => {
-  const script = `
-    import { mock } from 'node:test';
-    import assert from 'node:assert/strict';
-    import * as fs from 'node:fs/promises';
-    import { join } from 'node:path';
-    import { tmpdir } from 'node:os';
-    const entered = Promise.withResolvers(), release = Promise.withResolvers();
-    let first = true;
-    mock.module('node:fs/promises', { namedExports: {
-      ...fs,
-      async appendFile(path, data, ...args) {
-        if (first) {
-          first = false;
-          await fs.mkdir(path);
-          try { return await fs.appendFile(path, data, ...args); }
-          finally { await fs.rm(path, { recursive: true }); }
-        }
-        await fs.appendFile(path, data, ...args);
-        if (JSON.parse(data).msg === 'diagnostic gaps') {
-          entered.resolve();
-          await release.promise;
-        }
-      }
-    } });
-    const real = await import('./src/log.ts');
-    mock.module('./src/log.ts', { namedExports: { ...real, startLog(...args) {
-      const log = real.startLog(...args);
-      return { ...log, readAfter(...args) { release.resolve(); return log.readAfter(...args); } };
-    } } });
-    const { startCore } = await import('./src/core.ts');
-    const { systemClock } = await import('./src/clock.ts');
-    const root = await fs.mkdtemp(join(tmpdir(), 'atlas-log-gap-'));
-    let core;
-    try {
-      core = await startCore({ clock: systemClock, config: { data_directory: join(root, 'data'), archive_directory: join(root, 'archive'), port: 0, debug_endpoint: true } });
-      await entered.promise;
-      await (await fetch(core.url + '/about')).text();
-      const records = await (await fetch(core.debugUrl)).text();
-      assert.ok(records.includes('/about'), 'debug flush must include the request queued during the gap append');
-    } finally {
-      release.resolve();
-      if (core) await core.stop();
-      await fs.rm(root, { recursive: true, force: true });
-    }
-  `;
-  const run = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--input-type=module", "-e", script], { cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 20000 });
-  assert.equal(run.status, 0, run.stderr);
-});
-
 test("PR53-4 account retries protect passwords with salted scrypt [api.md#callers-and-credentials]", async () => {
   const h = await startHarness();
   try {
@@ -941,52 +831,6 @@ test("PR53-4 account retries protect passwords with salted scrypt [api.md#caller
       await rm(snapshot, { recursive: true, force: true });
     }
   } finally {
-    await h.close();
-  }
-});
-
-test("PR53-6 prepared login cannot commit after stop grace [api.md#basics, reset.md#stopping-core-ends-the-run]", async () => {
-  const { createHook } = await import("node:async_hooks");
-  const h = await startHarness();
-  let hashes = 0;
-  let verification: number | undefined;
-  const stopped = Promise.withResolvers<Awaited<ReturnType<typeof h.stop>>>();
-  const hook = createHook({
-    init(id, type) {
-      if (type === "SCRYPTREQUEST" && ++hashes === 2) verification = id;
-    },
-    before(id) {
-      if (id !== verification) return;
-      hook.disable();
-      h.stop().then(stopped.resolve, stopped.reject);
-    },
-  });
-  try {
-    hook.enable();
-    const pending = h
-      .call("POST", "/administration/login", {
-        body: { operator_id: "ADM", password },
-      })
-      .catch(() => null);
-    const result = await stopped.promise;
-    await pending;
-    assert.ok(result.archived);
-    const { execFileSync } = await import("node:child_process");
-    const sessions = execFileSync(
-      "unzip",
-      ["-p", result.zip, "state/sessions.jsonl"],
-      { encoding: "utf8" },
-    )
-      .trim()
-      .split("\n")
-      .filter(Boolean);
-    assert.equal(
-      sessions.length,
-      1,
-      "only the session created before stop grace is archived",
-    );
-  } finally {
-    hook.disable();
     await h.close();
   }
 });

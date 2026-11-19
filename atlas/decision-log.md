@@ -145,6 +145,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-19 | Rewrite Core in Go. | The Core runtime. | [Stack](design-decisions.md#stack) |
 | 2026-11-15 | The real Asset app is built now, with no throwaway prototype first. | The Asset app. | [Build order](build-order.md#the-steps) |
 | 2026-11-14 | Meshtastic is the first Fieldlink built, and SiK is built on what it establishes. Meshtastic is closer to later Fieldlinks, so the gateway app and the simulation tools are shaped by it and not by SiK. | The order of the Fieldlinks. | [Build order](build-order.md#the-meshtastic-fieldlink-comes-first) |
 | 2026-11-14 | The radio is measured during the build: two Meshtastic radios are connected to the build computer and send messages to each other. | Building the Meshtastic Fieldlink. | [Meshtastic radio measurement](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#radio-measurement) |
