@@ -93,6 +93,12 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-19</td>
+<td>A Fieldlink&#39;s compact encoding may round numbers to a fixed precision: about 1 cm for positions, 10 cm for altitudes, 0.01° for angles, and 1 cm/s for speeds.</td>
+<td>Compact encodings on every Fieldlink. Which encoding a Fieldlink uses is not decided; Meshtastic&#39;s binary encoding is a proposal.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#rounding">Meshtastic binary encoding</a></td>
+</tr>
+<tr>
 <td>2026-11-15</td>
 <td>The Asset&#39;s link asks for reports. Whenever the link has room to send, it asks the Asset for up to that much, and the Asset answers with its most important waiting reports. How much room there is depends on the link and how good it is right now.</td>
 <td>The Asset link, on IP and every Fieldlink. How each Fieldlink works out its room is designed with that Fieldlink.</td>
