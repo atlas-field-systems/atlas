@@ -156,7 +156,7 @@ records, provisioning exchange, and reliability guarantees are not adopted here.
 [Open engineering questions](#open-engineering-questions) with one approach:
 carry Atlas records over the radio as binary, not JSON. This helps Atlas
 [use slow links fully and efficiently](../../atlas/scale.md#use-slow-links-fully-and-efficiently).
-The encoding does not depend on Meshtastic, so a later Fieldlink can reuse it as is.
+The encoding does not depend on Meshtastic, so a later Fieldlink can reuse it.
 
 ### Why binary works here
 
@@ -165,15 +165,20 @@ Both ends load the same definitions, and the
 each link opens. Since both ends hold the same schema, a field's position in the
 frame can say what it is, so no field names travel. On top of that:
 
-- **No `asset_id` on the radio.** The sending or receiving node already says
-  which Asset it is. The gateway fills the ID in from the radio identity.
+- **No `asset_id` on the radio** when the frame goes to or from that Asset's
+  own radio. The gateway fills the ID in from the radio identity. A record about
+  another Asset carries its ID.
 - **Short times.** Each frame carries one base time. Each report in it carries
-  a 2-byte offset from that time.
+  a 2-byte offset from that time; a report too far from the base time for the
+  offset goes in another frame.
+- **IDs as indexes.** IDs both ends already know, such as a subsystem from the
+  Asset's description or the operator in `requested_by`, become a 1-byte index.
 - **Enumerations as small numbers.** Values such as `degraded`, `launch` or
   `airplane` become an index into the list in the definition.
 - **Numbers as fixed-size integers.** For example, latitude and longitude as
   4-byte integers in units of 10⁻⁷ degrees (about 1 cm). Meshtastic uses the
-  same units for its own positions.
+  same units for its own positions. A value the integer cannot hold, such as an
+  altitude above about 3 km in a 2-byte field, is carried exactly instead.
 - **Text stays text**, with its length in front.
 
 ### Rough sizes
@@ -187,35 +192,38 @@ dictionary of field names and common values.
 | Telemetry: position, two altitudes, speed, heading | 267 B | 103 B | 20 B |
 | Battery | 83 B | 40 B | 4 B |
 | Task status | 109 B | 54 B | 6 B |
-| `move_to` Task | 220 B | 96 B | 17 B |
+| `move_to` Task | 220 B | 96 B | 19 B |
 | `coordinates` Observation with ADS-B details | 382 B | 135 B | 35 B |
 | `bearing` Observation | 347 B | 121 B | 28 B |
 | Subsystem degraded, with explanation | 179 B | 63 B | 43 B |
 | Failsafe response, with explanation | 203 B | 74 B | 37 B |
-| **Total** | **1790 B** | **686 B** | **190 B** |
+| **Total** | **1790 B** | **686 B** | **192 B** |
 
-Binary is about 10 times smaller than JSON overall. Records made only of numbers
-shrink 15 to 20 times. Records with free text shrink only 4 to 5 times, because
-the text itself is the floor.
+Binary is about 9 times smaller than JSON overall. Records made only of numbers
+and short values shrink 11 to 21 times. Records with free text shrink only 4 to
+6 times, because the text itself is the floor.
 
 ### Where the airtime goes
 
 Every packet has a fixed cost before it carries any Atlas data: the preamble,
 Meshtastic's 16-byte header, and its data wrapper. On the default LongFast
 preset (SF11, 250 kHz, coding rate 4/5), that is about 400 ms. 20 bytes of Atlas
-data add about 160 ms, and a full 233-byte payload takes about 2.1 s.
+data add about 160 ms, and a full 233-byte payload takes about 2.1 s. These
+figures are for the shared channel. Sending each frame as a Meshtastic direct
+message, which proves which radio sent it, adds about 12 bytes, or about 80 ms,
+and leaves about 12 bytes less room for Atlas data.
 
 A routine update (telemetry, battery, and Task status) is 473 bytes as JSON.
-That is more than one packet holds, so it needs about three packets and roughly
-4.5 s of airtime. As binary it is 34 bytes in one packet, about 640 ms. At that
-size, packing fields tighter saves little: making positions 1 to 2 m and speed and
-heading 1 byte each cuts it to 29 bytes, which saves about 6% of the airtime.
-So, after binary, the larger savings are:
+That is more than one packet holds, so it needs three packets and about 4.7 s
+of airtime. As binary it is 34 bytes, base time included, in one packet, about
+640 ms. At that size the fixed cost is about 60% of the packet's airtime, and
+each byte saved is only about 1% of it. So, after binary, the larger savings are:
 
 - **Fill each packet.** Several reports in one packet spread the fixed cost.
-- **Send only what changed.** The gateway already keeps each Asset's state
-  ([Gateway and Asset](#gateway-and-asset)), and Fieldlinks
-  [may skip unchanged Observation fields](../../protocol/docs/decisions.md#the-shared-picture).
+- **Send only what changed**, as in
+  [changes with full-record recovery](#listening-and-shared-updates). The
+  receiver still rebuilds each complete record, and
+  [Protocol allows it](../../protocol/docs/decisions.md#the-shared-picture).
 - **Mind relays.** Each relay hop sends the whole packet again, so every byte
   saved is saved once per hop.
 
@@ -223,10 +231,10 @@ So, after binary, the larger savings are:
 
 - **One generic codec built from the definitions**, not a hand-written layout
   for each record. A new record or field gets an encoding without new
-  Fieldlink code. Protocol still defines no short keys; the codec belongs to
-  this Fieldlink.
+  Fieldlink code.
 - **Byte-aligned fields and variable-length integers.** No bit-level packing or
-  custom compressor, because they would save only about 5% more airtime.
+  custom compressor, because each byte they save is about 1% of a packet's
+  airtime.
 - **A precision table in this Fieldlink.** It says how finely each kind of number
   is kept: latitude and longitude, altitude, angles, speeds. A number the table
   does not cover is carried exactly.
@@ -237,12 +245,13 @@ Binary rounds numbers to the precision in the table, so a value that arrives may
 differ slightly from the value that was sent. The owner accepted rounding to
 about 1 cm for positions, 10 cm for altitudes, 0.01° for angles, and 1 cm/s for
 speeds ([decision log](../../atlas/decision-log.md#runs-and-identity)). That is
-finer than the GPS and sensors that produce these values.
+finer than the GPS and sensors that produce these values. Rounding never makes a
+value Protocol forbids, such as a heading of 360°; such a value is carried exactly.
 
 ### Still to check
 
-The sizes above leave out Meshtastic's encryption overhead, acknowledgements,
-and relay hops. The [radio measurement](#radio-measurement) replaces these
+The sizes above leave out acknowledgements and relay hops, and the airtime
+figures assume the shared channel unless they say otherwise. The [radio measurement](#radio-measurement) replaces these
 estimates with measured airtime.
 
 ## Radio measurement
