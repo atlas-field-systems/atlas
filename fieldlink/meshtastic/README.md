@@ -165,8 +165,9 @@ Both ends load the same definitions, and the
 each link opens. Since both ends hold the same schema, a field's position in the
 frame can say what it is, so no field names travel. On top of that:
 
-- **No `asset_id` on the radio** when the frame goes to or from that Asset's
-  own radio. The gateway fills the ID in from the radio identity. A record about
+- **No `asset_id` on the radio** when the frame goes between the gateway and
+  that Asset's own radio. The gateway fills the ID in from the radio identity,
+  and the Asset already knows its own ID. A record about
   another Asset carries its ID.
 - **Short times.** Each frame carries one base time. Each report in it carries
   a 2-byte offset from that time; a report too far from the base time for the
@@ -195,9 +196,9 @@ dictionary of field names and common values.
 | `move_to` Task | 220 B | 96 B | 19 B |
 | `coordinates` Observation with ADS-B details | 382 B | 135 B | 35 B |
 | `bearing` Observation | 347 B | 121 B | 28 B |
-| Subsystem degraded, with explanation | 179 B | 63 B | 43 B |
+| Subsystem degraded, with explanation | 179 B | 63 B | 44 B |
 | Failsafe response, with explanation | 203 B | 74 B | 37 B |
-| **Total** | **1790 B** | **686 B** | **192 B** |
+| **Total** | **1790 B** | **686 B** | **193 B** |
 
 Binary is about 9 times smaller than JSON overall. Records made only of numbers
 and short values shrink 11 to 21 times. Records with free text shrink only 4 to
@@ -213,11 +214,12 @@ figures are for the shared channel. Sending each frame as a Meshtastic direct
 message, which proves which radio sent it, adds about 12 bytes, or about 80 ms,
 and leaves about 12 bytes less room for Atlas data.
 
-A routine update (telemetry, battery, and Task status) is 473 bytes as JSON.
-That is more than one packet holds, so it needs three packets and about 4.7 s
-of airtime. As binary it is 34 bytes, base time included, in one packet, about
-640 ms. At that size the fixed cost is about 60% of the packet's airtime, and
-each byte saved is only about 1% of it. So, after binary, the larger savings are:
+A routine update (telemetry, battery, and Task status) is 475 bytes as a JSON
+`reports` batch. That is more than two packets hold, so it needs three packets
+and about 4.7 s of airtime. As binary it is 34 bytes, base time included, in one
+packet, about 640 ms. At that size the fixed cost is about 60% of the packet's
+airtime, and each byte saved is on average only about 1% of it. So, after binary,
+the larger savings are:
 
 - **Fill each packet.** Several reports in one packet spread the fixed cost.
 - **Send only what changed**, as in
@@ -233,8 +235,8 @@ each byte saved is only about 1% of it. So, after binary, the larger savings are
   for each record. A new record or field gets an encoding without new
   Fieldlink code.
 - **Byte-aligned fields and variable-length integers.** No bit-level packing or
-  custom compressor, because each byte they save is about 1% of a packet's
-  airtime.
+  custom compressor, because each byte they save is on average about 1% of a
+  packet's airtime.
 - **A precision table in this Fieldlink.** It says how finely each kind of number
   is kept: latitude and longitude, altitude, angles, speeds. A number the table
   does not cover is carried exactly.
@@ -251,8 +253,9 @@ value Protocol forbids, such as a heading of 360°; such a value is carried exac
 ### Still to check
 
 The sizes above leave out acknowledgements and relay hops, and the airtime
-figures assume the shared channel unless they say otherwise. The [radio measurement](#radio-measurement) replaces these
-estimates with measured airtime.
+figures assume the shared channel unless they say otherwise. The
+[radio measurement](#radio-measurement) replaces these estimates with measured
+airtime.
 
 ## Radio measurement
 
