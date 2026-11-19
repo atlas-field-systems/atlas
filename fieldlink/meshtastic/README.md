@@ -150,6 +150,113 @@ are design references, not current contracts. Its listening path was wired, but
 its documented version ordering and cache expiry were incomplete. Its domain
 records, provisioning exchange, and reliability guarantees are not adopted here.
 
+## Proposal: binary encoding
+
+**A proposal, not a decision.** It answers the compact-encoding question in
+[Open engineering questions](#open-engineering-questions) with one approach:
+carry Atlas records over the radio as binary, not JSON. This helps Atlas
+[use slow links fully and efficiently](../../atlas/scale.md#use-slow-links-fully-and-efficiently).
+The encoding does not depend on Meshtastic, so a later Fieldlink can reuse it.
+
+### Why binary works here
+
+Both ends load the same definitions, and the
+[definitions hash](../README.md#what-every-fieldlink-provides) is checked when
+each link opens. Since both ends hold the same schema, a field's position in the
+frame can say what it is, so no field names travel. On top of that:
+
+- **No `asset_id` on the radio** when the frame goes between the gateway and
+  that Asset's own radio. The gateway fills the ID in from the radio identity,
+  and the Asset already knows its own ID. A record about
+  another Asset carries its ID.
+- **Short times.** Each frame carries one base time. Each report in it carries
+  a 2-byte offset from that time; a report too far from the base time for the
+  offset goes in another frame.
+- **IDs as indexes.** IDs both ends already know, such as a subsystem from the
+  Asset's description or the operator in `requested_by`, become a 1-byte index.
+- **Enumerations as small numbers.** Values such as `degraded`, `launch` or
+  `airplane` become an index into the list in the definition.
+- **Numbers as fixed-size integers.** For example, latitude and longitude as
+  4-byte integers in units of 10⁻⁷ degrees (about 1 cm). Meshtastic uses the
+  same units for its own positions. A value the integer cannot hold, such as an
+  altitude above about 3 km in a 2-byte field, is carried exactly instead.
+- **Text stays text**, with its length in front.
+
+### Rough sizes
+
+These are hand counts of this layout applied to Protocol's own examples, not
+measurements of a built encoder. "Deflate" is compressed JSON with a shared
+dictionary of field names and common values.
+
+| Record | JSON | Deflate | Binary |
+| --- | --- | --- | --- |
+| Telemetry: position, two altitudes, speed, heading | 267 B | 103 B | 20 B |
+| Battery | 83 B | 40 B | 4 B |
+| Task status | 109 B | 54 B | 6 B |
+| `move_to` Task | 220 B | 96 B | 19 B |
+| `coordinates` Observation with ADS-B details | 382 B | 135 B | 35 B |
+| `bearing` Observation | 347 B | 121 B | 28 B |
+| Subsystem degraded, with explanation | 179 B | 63 B | 44 B |
+| Failsafe response, with explanation | 203 B | 74 B | 37 B |
+| **Total** | **1790 B** | **686 B** | **193 B** |
+
+Binary is about 9 times smaller than JSON overall. Records made only of numbers
+and short values shrink 11 to 21 times. Records with free text shrink only 4 to
+6 times, because the text itself is the floor.
+
+### Where the airtime goes
+
+Every packet has a fixed cost before it carries any Atlas data: the preamble,
+Meshtastic's 16-byte header, and its data wrapper. On the default LongFast
+preset (SF11, 250 kHz, coding rate 4/5), that is about 400 ms. 20 bytes of Atlas
+data add about 160 ms, and a full 233-byte payload takes about 2.1 s. These
+figures are for the shared channel. Sending each frame as a Meshtastic direct
+message, which proves which radio sent it, adds about 12 bytes, or about 80 ms,
+and leaves about 12 bytes less room for Atlas data.
+
+A routine update (telemetry, battery, and Task status) is 475 bytes as a JSON
+`reports` batch. That is more than two packets hold, so it needs three packets
+and about 4.7 s of airtime. As binary it is 34 bytes, base time included, in one
+packet, about 640 ms. At that size the fixed cost is about 60% of the packet's
+airtime, and each byte saved is on average only about 1% of it. So, after binary,
+the larger savings are:
+
+- **Fill each packet.** Several reports in one packet spread the fixed cost.
+- **Send only what changed**, as in
+  [changes with full-record recovery](#listening-and-shared-updates). The
+  receiver still rebuilds each complete record, and
+  [Protocol allows it](../../protocol/docs/decisions.md#the-shared-picture).
+- **Mind relays.** Each relay hop sends the whole packet again, so every byte
+  saved is saved once per hop.
+
+### Keeping it simple
+
+- **One generic codec built from the definitions**, not a hand-written layout
+  for each record. A new record or field gets an encoding without new
+  Fieldlink code.
+- **Byte-aligned fields and variable-length integers.** No bit-level packing or
+  custom compressor, because each byte they save is on average about 1% of a
+  packet's airtime.
+- **A precision table in this Fieldlink.** It says how finely each kind of number
+  is kept: latitude and longitude, altitude, angles, speeds. A number the table
+  does not cover is carried exactly.
+
+### Rounding
+
+Binary rounds numbers to the precision in the table, so a value that arrives may
+differ slightly from the value that was sent. The owner accepted rounding to
+about 1 cm for positions, 10 cm for altitudes, 0.01° for angles, and 1 cm/s for
+speeds ([decision log](../../atlas/decision-log.md#runs-and-identity)). That is
+finer than the GPS and sensors that produce these values. Rounding never makes a
+value Protocol forbids, such as a heading of 360°; such a value is carried exactly.
+
+### Still to check
+
+The sizes above leave out acknowledgements and relay hops, and the airtime
+figures assume the shared channel unless they say otherwise. The
+[radio measurement](#radio-measurement) replaces these estimates with measured
+airtime.
+
 ## Radio measurement
 
 When this Fieldlink is built, two Meshtastic radios are connected to the build
@@ -167,7 +274,8 @@ capacity under its tested conditions, not field range.
 
 These questions remain for a future build; they are not work scheduled now.
 
-- The compact encoding, frame size, retry timing, and contact timing.
+- The compact encoding, frame size, retry timing, and contact timing. One
+  approach for the encoding is the [binary encoding proposal](#proposal-binary-encoding).
 - How the Fieldlink works out how much room it has before it
   [asks the Asset for reports](../../asset/docs/communications.md#report-from-local-state).
   Meshtastic firmware reports how full its send queue is and how busy the
