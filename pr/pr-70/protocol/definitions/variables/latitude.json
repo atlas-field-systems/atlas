@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/latitude.json",
+  "title": "latitude",
+  "description": "Latitude in WGS84 degrees, north positive.",
+  "type": "number",
+  "minimum": -90,
+  "maximum": 90,
+  "examples": [
+    42.2746
+  ]
+}
