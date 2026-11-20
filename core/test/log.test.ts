@@ -61,6 +61,7 @@ test("a torn record after a saved gap is counted once and its number stays reser
   assert.deepEqual(restarted.gaps(), expected);
   const records = (await restarted.readAfter(1, 10)).map(line => JSON.parse(line));
   assert.equal(records.find(record => record.msg === notice.msg)?.n, 4);
+  assert.deepEqual((await gapRecords(restarted)).flat(), expected);
 });
 
 test("a partial write and the record appended to it are visible as losses [core/docs/logging.md#when-logging-cannot-keep-up]", async t => {

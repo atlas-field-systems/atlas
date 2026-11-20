@@ -15,20 +15,49 @@ export type DiagRecord = { level: Level; area: string; msg: string } & Record<
   string,
   unknown
 >;
+type Gap = {
+  lost: number;
+  from_n: number;
+  to_n: number;
+  at: number;
+  why: string;
+};
+const truncatedRecord = "truncated record; original bytes retained";
 
 export interface DiagnosticLog {
   record(r: DiagRecord): void;
   openRun(runId: number): Promise<void>;
   readAfter(n: number, limit: number): Promise<string[]>;
-  gaps(): {
-    lost: number;
-    from_n: number;
-    to_n: number;
-    at: number;
-    why: string;
-  }[];
+  gaps(): Gap[];
   flush(): Promise<void>;
   lastRecordTime(runId: number): number | null;
+}
+
+function addGap(gaps: Gap[], entry: Gap) {
+  const last = gaps.at(-1);
+  if (last && last.why === entry.why && last.to_n + 1 === entry.from_n) {
+    last.lost += entry.lost;
+    last.to_n = entry.to_n;
+  } else gaps.push(entry);
+}
+
+function unwrittenGaps(gaps: Gap[], written: Gap[]): Gap[] {
+  written.sort((a, b) => a.from_n - b.from_n);
+  const pending: Gap[] = [];
+  for (const gap of gaps) {
+    let from = gap.from_n;
+    for (const reported of written) {
+      if (reported.from_n > gap.to_n) break;
+      if (reported.why !== gap.why || reported.to_n < from) continue;
+      if (from < reported.from_n)
+        pending.push({ ...gap, from_n: from, to_n: reported.from_n - 1, lost: reported.from_n - from });
+      from = reported.to_n + 1;
+      if (from > gap.to_n) break;
+    }
+    if (from <= gap.to_n)
+      pending.push({ ...gap, from_n: from, lost: gap.to_n - from + 1 });
+  }
+  return pending;
 }
 
 export function startLog(
@@ -50,16 +79,9 @@ export function startLog(
     total = 0,
     queue: string[] = [],
     writing: Promise<void> | null = null;
-  const gaps: {
-    lost: number;
-    from_n: number;
-    to_n: number;
-    at: number;
-    why: string;
-  }[] = [];
+  const gaps: Gap[] = [];
+  let pendingGaps: Gap[] = [];
   let gapVersion = 0,
-    writtenGapVersion = 0,
-    writtenThrough = 0,
     atLimit = false;
   const levels: Level[] = ["error", "warn", "info", "debug", "trace"];
   const files = (dir: string) =>
@@ -82,18 +104,9 @@ export function startLog(
   }
   const gap = (number: number, why: string) => {
     gapVersion++;
-    const last = gaps.at(-1);
-    if (last && last.why === why && last.to_n === number - 1) {
-      last.lost++;
-      last.to_n = number;
-    } else
-      gaps.push({
-        lost: 1,
-        from_n: number,
-        to_n: number,
-        at: clock.now(),
-        why,
-      });
+    const entry = { lost: 1, from_n: number, to_n: number, at: clock.now(), why };
+    addGap(gaps, entry);
+    if (!atLimit) addGap(pendingGaps, { ...entry });
     if (gapFile) void persistGaps();
   };
   let savingGaps: Promise<void> | null = null;
@@ -135,15 +148,8 @@ export function startLog(
           gap(JSON.parse(line).n, "write failure");
         }
       }
-      if (!atLimit && gapVersion !== writtenGapVersion) {
-        const version = gapVersion;
-        const pending = gaps
-          .filter((g) => g.to_n > writtenThrough)
-          .map((g) => ({
-            ...g,
-            from_n: Math.max(g.from_n, writtenThrough + 1),
-            lost: g.to_n - Math.max(g.from_n, writtenThrough + 1) + 1,
-          }));
+      if (!atLimit && pendingGaps.length) {
+        const pending = pendingGaps;
         const line =
           JSON.stringify({
             n: n + 1,
@@ -160,13 +166,13 @@ export function startLog(
             fileBytes = 0;
           }
           n++;
+          pendingGaps = [];
           try {
             await appendFile(join(directory, `core-${file}.jsonl`), line);
             total += bytes;
             fileBytes += bytes;
-            writtenGapVersion = version;
-            writtenThrough = pending.at(-1)?.to_n ?? writtenThrough;
           } catch (error) {
+            pendingGaps = pending.concat(pendingGaps);
             process.stderr.write(`Core diagnostic gap record write failed: ${String(error)}\n`);
           }
         }
@@ -197,17 +203,28 @@ export function startLog(
     async openRun(id) {
       directory = join(options.directory, `run-${id}`);
       mkdirSync(directory, { recursive: true });
-      const truncated: number[] = [];
+      const truncated = new Set<number>();
+      const written: Gap[] = [];
       for (const line of lines(id)) {
         try {
           const record = JSON.parse(line);
           n = Math.max(n, record.n);
-          if (record.area === "log" && Array.isArray(record.gaps)) {
-            gaps.push(...record.gaps);
-            writtenThrough = record.gaps.at(-1)?.to_n ?? writtenThrough;
-          }
+          if (record.area === "log" && Array.isArray(record.gaps))
+            written.push(...record.gaps);
         } catch {
-          truncated.push(++n);
+          const prefix = /^\{"n":(\d+)(?=[,}]|$)/.exec(line);
+          const leading = Number(prefix?.[1]);
+          const number = Number.isSafeInteger(leading) ? leading : n + 1;
+          truncated.add(number);
+          n = Math.max(n, number);
+          // An append after a partial write can share the same physical line.
+          for (const match of line.matchAll(/(?<!^)\{"n":(\d+),"at":[\d.e+-]+,"level":"(?:error|warn|info|debug|trace)"/g)) {
+            const appended = Number(match[1]);
+            if (Number.isSafeInteger(appended) && appended > n) {
+              truncated.add(appended);
+              n = appended;
+            }
+          }
           process.stderr.write(`Core could not recover a diagnostic record for run ${id}\n`);
         }
       }
@@ -215,16 +232,17 @@ export function startLog(
       gapFile = join(options.gapDirectory, `run-${id}.json`);
       try {
         const saved = JSON.parse(readFileSync(gapFile, "utf8"));
-        gaps.splice(0, gaps.length, ...saved);
+        gaps.push(...saved);
       } catch (error) {
         if (
           !(error instanceof Error && Reflect.get(error, "code") === "ENOENT")
-        )
-          throw error;
+        ) throw error;
+        gaps.push(...written);
       }
+      pendingGaps = unwrittenGaps(gaps, written);
       for (const number of truncated)
-        if (!gaps.some((g) => g.from_n <= number && number <= g.to_n))
-          gap(number, "truncated record; original bytes retained");
+        if (!gaps.some((g) => g.why === truncatedRecord && g.from_n <= number && number <= g.to_n))
+          gap(number, truncatedRecord);
       await persistGaps();
       n = Math.max(n, ...gaps.map((g) => g.to_n));
       atLimit = gaps.some((g) => g.why === "total limit");
