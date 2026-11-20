@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const packages = ['protocol', 'core', 'sdk', 'asset', 'simulations'];
-const checks = ['docs', ...packages, 'site'];
+const checks = ['docs', 'lint', ...packages, 'site'];
 const [command, part, ...extra] = process.argv.slice(2);
 
 function run(directory, command, args, env = {}) {
@@ -28,6 +28,10 @@ function check(part) {
     case 'docs':
       node('.', '.github/scripts/check-links.mjs');
       node('.', '.github/scripts/check-retired.mjs');
+      break;
+    case 'lint':
+      node('.', 'scripts/lint.mjs', ...packages);
+      node('.', '--test', 'scripts/lint.test.mjs');
       break;
     case 'protocol':
       npm(part, 'run', 'check');
@@ -61,12 +65,13 @@ try {
   if (process.versions.node.split('.')[0] !== '24')
     throw new Error(`Use Node 24 (found ${process.versions.node}).`);
   if (extra.length || !['setup', 'check', 'sitl', 'demo'].includes(command) ||
-      (part && !(command === 'check' ? checks : command === 'setup' ? [...packages, 'site'] : []).includes(part)))
-    throw new Error('Usage: npm run setup [-- protocol|core|sdk|asset|simulations|site]; npm run check [-- docs|protocol|core|sdk|asset|simulations|site]; npm run check:sitl; npm run demo');
+      (part && !(command === 'check' ? checks : command === 'setup' ? [...packages, 'site', 'lint'] : []).includes(part)))
+    throw new Error('Usage: npm run setup [-- protocol|core|sdk|asset|simulations|site|lint]; npm run check [-- docs|lint|protocol|core|sdk|asset|simulations|site]; npm run check:sitl; npm run demo');
   switch (command) {
     case 'setup': {
-      const selected = part === 'site' ? ['protocol', 'atlas/site']
-        : part ? packages.slice(0, packages.indexOf(part) + 1) : [...packages, 'atlas/site'];
+      const selected = part === 'lint' ? ['.']
+        : part === 'site' ? ['protocol', 'atlas/site']
+        : part ? packages.slice(0, packages.indexOf(part) + 1) : ['.', ...packages, 'atlas/site'];
       for (const directory of selected) npm(directory, 'ci');
       console.log('\nSetup complete. Run npm run demo, or npm run check.');
       break;

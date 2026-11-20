@@ -1,5 +1,5 @@
 // Proves the CLI and the site have nothing hardcoded: add a brand-new definition
-// in a temporary copy of definitions/, and both tools must pick it up unchanged.
+// in a scratch copy of definitions/, and both tools must pick it up unchanged.
 import { test } from 'node:test';
 import { loadProtocol } from '@atlas/protocol/browser';
 import { readDefinitionFiles } from '../lib/node-definitions.mjs';
