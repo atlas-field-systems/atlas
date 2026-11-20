@@ -13,6 +13,9 @@ The SDK reports every step, not only errors:
 - The definitions check and any mismatch, with both hashes.
 - The event stream: opens, closes, keepalives, idle timeouts, reconnect delays,
   `401`, and the cursor after each handled event.
+  An unexpected stream interruption includes the error. An SDK-initiated
+  abort, such as a deliberate stop or idle timeout, emits no interruption
+  or reader cancellation failure.
 - The Asset helpers: batches sent, resent and acknowledged; lists applied or
   ignored; Tasks handed to the app, finished, cancelled or cleared.
 

@@ -89,6 +89,7 @@ export function follow(
         if (terminal()) break;
         if (checked.ok) {
           controller = new AbortController();
+          const { signal } = controller;
           try {
             await options.beforeOpen?.();
             if (terminal()) break;
@@ -99,7 +100,7 @@ export function follow(
             const response = await internal(client).streamFetch(
               cursor,
               { asset_id: options.asset_id, everything: options.everything },
-              controller.signal,
+              signal,
             );
             opening.cancel();
             if (!response.ok) {
@@ -208,12 +209,14 @@ export function follow(
               } finally {
                 idle?.cancel();
                 await reader.cancel().catch(() => {
-                  internal(client).emit("stream.reader_cancel_failed", { cursor });
+                  if (!signal.aborted && !terminal())
+                    internal(client).emit("stream.reader_cancel_failed", { cursor });
                 });
               }
             }
-          } catch {
-            internal(client).emit("stream.interrupted", { cursor });
+          } catch (error) {
+            if (!signal.aborted && !terminal())
+              internal(client).emit("stream.interrupted", { cursor, error: String(error) });
           } finally {
             opening?.cancel();
             stale = true;
