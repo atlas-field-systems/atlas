@@ -89,12 +89,22 @@ const moduleBoundaries = {
 
 const runtime = ['core', 'sdk', 'asset'].map(part => `${part}/src/**/*.{ts,mjs}`);
 const syntax = (message, ...selectors) => selectors.map(selector => ({ selector, message }));
-const catchCall = 'CallExpression:matches([callee.property.name="catch"], [callee.property.value="catch"])';
+const rejectionHandlers = ['catch', 'then'].map((method, index) =>
+  `CallExpression:matches([callee.property.name="${method}"], [callee.property.value="${method}"]) > .arguments:nth-child(${index + 1}):matches(ArrowFunctionExpression, FunctionExpression)`,
+);
+const constant = ':matches(Literal, Identifier[name=/^(undefined|NaN|Infinity)$/], TemplateLiteral[expressions.length=0], UnaryExpression[operator="void"]:matches([argument.type="Literal"], [argument.type="Identifier"][argument.name="undefined"]))';
 const catchRestrictions = syntax(messages.catch,
   'CatchClause[body.body.length=0]',
-  `${catchCall}[arguments.0.body.type="BlockStatement"][arguments.0.body.body.length=0]`,
-  `${catchCall}[arguments.0.body.type="Identifier"][arguments.0.body.name="undefined"]`,
+  'CatchClause[body.body.length=1][body.body.0.type="ReturnStatement"][body.body.0.argument=null]',
+  ...rejectionHandlers.flatMap(handler => [
+    `${handler} > .body${constant}`,
+    `${handler} > BlockStatement.body[body.length=0]`,
+    `${handler} > BlockStatement.body[body.length=1] > ReturnStatement[argument=null]`,
+    `${handler} > BlockStatement.body[body.length=1] > ReturnStatement > .argument${constant}`,
+  ]),
 );
+const timers = String.raw`/^(node:)?timers(\/promises)?$/`;
+const timersSource = `:matches(Literal[value=${timers}], TemplateLiteral[expressions.length=0][quasis.0.value.cooked=${timers}])`;
 
 export default [
   { ignores: ['**/node_modules/', '**/dist/', '**/build/', 'protocol/_site/', 'protocol/types.d.ts', 'simulations/.runs/'] },
@@ -131,7 +141,7 @@ export default [
     }));
   }),
   {
-    files: runtime,
+    files: [...runtime, 'protocol/lib/**/*.mjs'],
     rules: { 'no-restricted-syntax': ['error', ...catchRestrictions] },
   },
   {
@@ -147,9 +157,14 @@ export default [
         { object: 'performance', property: 'now', message: messages.clock },
       ],
       'no-restricted-syntax': ['error', ...catchRestrictions, ...syntax(messages.clock,
-        'NewExpression[arguments.length=0]:matches([callee.name="Date"], [callee.property.name="Date"], [callee.property.value="Date"])',
+        ':matches(NewExpression[arguments.length=0], CallExpression):matches([callee.name="Date"], [callee.property.name="Date"], [callee.property.value="Date"])',
         'MemberExpression:matches([object.property.name="Date"], [object.property.value="Date"], [object.property.name="performance"], [object.property.value="performance"]):matches([property.name="now"], [property.value="now"])',
-        'ImportDeclaration[source.value=/^(node:)?timers(\\/promises)?$/] > ImportSpecifier[imported.name=/^set(Timeout|Interval)$/]',
+        'MemberExpression:matches([object.name="AbortSignal"], [object.property.name="AbortSignal"], [object.property.value="AbortSignal"]):matches([property.name="timeout"], [property.value="timeout"])',
+        'MemberExpression:matches([object.name="scheduler"], [object.property.name="scheduler"], [object.property.value="scheduler"]):matches([property.name="wait"], [property.value="wait"])',
+        ':matches(VariableDeclarator[init.name="globalThis"] > ObjectPattern.id, AssignmentExpression[right.name="globalThis"] > ObjectPattern.left) > Property:matches([key.name=/^set(Timeout|Interval)$/], [key.value=/^set(Timeout|Interval)$/])',
+        `:matches(ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportType) > .source${timersSource}`,
+        `TSExternalModuleReference > .expression${timersSource}`,
+        `CallExpression[callee.name="require"] > .arguments:nth-child(1)${timersSource}`,
       )],
     },
   },
