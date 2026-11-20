@@ -21,6 +21,8 @@ import type { Clock } from "./clock.ts";
 import type { CoreConfig, Paths } from "./config.ts";
 import type { DiagnosticLog } from "./log.ts";
 
+export type { Clock, CoreConfig };
+
 export interface CoreOptions {
   clock: Clock;
   config: Partial<CoreConfig>;
@@ -157,7 +159,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     stopContact = () => contact.stop();
     contact.resume();
     const follower = fusion.startFusion(store, fusion.onePerObservation);
-    const streams = startStreams(store, options.clock, config.stream_keepalive_s * 1000);
+    const streams = startStreams(store, options.clock, config.stream_keepalive_s * 1000, log);
     const server = await startServer(env, store, contact, streams);
     process.stdout.write(
       JSON.stringify({

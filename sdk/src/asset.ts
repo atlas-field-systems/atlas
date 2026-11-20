@@ -296,12 +296,9 @@ export function runAsset(
     options.current,
     options.onReports,
   );
-  let fail!: (error: unknown) => void;
-  const failed = new Promise<never>((_, reject) => {
-    fail = reject;
+  const failed = new Promise<{ kind: "failed"; error: unknown }>((resolve) => {
+    outbox.onFailed((error) => resolve({ kind: "failed", error }));
   });
-  failed.catch(() => {});
-  outbox.onFailed(fail);
   const stopServing = link.serve(outbox);
   const queue = options.queue
     ? createQueue(
@@ -318,14 +315,16 @@ export function runAsset(
     : undefined;
   let stopped = false;
   let wakeStop: (() => void) | undefined;
-  function untilStopped<T>(pending: Promise<T>): Promise<T | undefined> {
-    return Promise.race([
+  async function untilStopped<T>(pending: Promise<T>): Promise<T | undefined> {
+    const result = await Promise.race([
       failed,
-      pending,
+      pending.then((value) => ({ kind: "result", value }) as const),
       new Promise<undefined>((resolve) => {
         wakeStop = () => resolve(undefined);
       }),
     ]);
+    if (result?.kind === "failed") throw result.error;
+    return result?.value;
   }
   async function rejoin() {
     const settings: Report = {
@@ -377,7 +376,12 @@ export function runAsset(
         }
       } finally {
         // A link may leave next() pending even after return().
-        void iterator.return?.().catch(() => {});
+        const closeFailed = () => emit("stream.iterator_close_failed");
+        try {
+          void iterator.return?.().catch(closeFailed);
+        } catch {
+          closeFailed();
+        }
       }
       return { reason: stopped ? "stopped" : "closed" };
     } finally {

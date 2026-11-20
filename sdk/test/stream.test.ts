@@ -1,9 +1,9 @@
 import { test } from "node:test";
+import { once } from "node:events";
+import { createServer } from "node:http";
 import assert from "node:assert/strict";
 import { loadPackagedProtocol } from "@atlas/protocol";
-import { createClient } from "../src/client.ts";
-import { follow } from "../src/stream.ts";
-import { systemClock as clock } from "../src/clock.ts";
+import { createClient, follow, systemClock as clock } from "../src/index.ts";
 
 for (const shape of ["line", "frame"] as const) {
   test(
@@ -46,3 +46,64 @@ for (const shape of ["line", "frame"] as const) {
     },
   );
 }
+
+for (const scenario of ["deliberate stop", "open timeout", "network drop"] as const)
+  test(`follow reports failures once after ${scenario} [sdk/docs/logging.md]`, { timeout: 5000 }, async t => {
+    const protocol = await loadPackagedProtocol();
+    const dropConnection = Promise.withResolvers<() => void>();
+    const server = createServer((request, response) => {
+      if (request.url === "/about") {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify({ run_id: 1, definitions_hash: protocol.hash, core_version: "test", protocol_version: "test" }));
+        return;
+      }
+      if (scenario === "open timeout") return;
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      response.flushHeaders();
+      dropConnection.resolve(() => response.destroy());
+    });
+    t.after(() => {
+      server.close();
+      server.closeAllConnections();
+    });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    assert.ok(address && typeof address === "object");
+    const names: string[] = [];
+    const reconnecting = Promise.withResolvers<void>();
+    const client = createClient({
+      protocol,
+      credential: { kind: "account" },
+      clock,
+      baseUrl: `http://127.0.0.1:${address.port}`,
+      fetch,
+      requestTimeoutMs: 200,
+      observer: event => {
+        names.push(event.name);
+        if (event.name === "stream.reconnect") reconnecting.resolve();
+      },
+    });
+    t.after(() => client.close());
+    assert.equal((await client.connect()).ok, true);
+
+    const opened = Promise.withResolvers<void>();
+    const stream = follow(client, {
+      after: 0,
+      onContact: contact => { if (contact.open) opened.resolve(); },
+    }, () => {});
+    t.after(() => stream.stop());
+    if (scenario !== "open timeout") await opened.promise;
+    if (scenario === "network drop") (await dropConnection.promise)();
+    if (scenario !== "deliberate stop") await reconnecting.promise;
+    stream.stop();
+    assert.equal((await stream.done).reason, "stopped");
+    const failures = names.filter(name => name.startsWith("stream.") &&
+      (name.endsWith("_failed") || name === "stream.interrupted" || name === "stream.open_timeout"));
+    assert.deepEqual(failures, {
+      "deliberate stop": [],
+      "open timeout": ["stream.open_timeout"],
+      "network drop": ["stream.interrupted"],
+    }[scenario]);
+    assert.ok(names.includes("stream.close"));
+  });

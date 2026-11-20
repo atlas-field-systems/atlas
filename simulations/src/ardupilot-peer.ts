@@ -8,7 +8,7 @@ import type { World } from "./world.ts";
 export async function ardupilotPeer(w: World) {
   const sockets = new Set<Socket>();
   const protocol = new MavLinkProtocolV2(1, 1);
-  let mode = 4, armed = false, altitude = 0;
+  let mode = 4, armed = false, altitude = 0, verticalSpeedCms = 0;
   let latitude = 1e7, longitude = 2e7;
   const commands: { time: number; command: number }[] = [];
   const targets: { time: number; latitude: number; longitude: number }[] = [];
@@ -26,7 +26,7 @@ export async function ardupilotPeer(w: World) {
     Object.assign(ekf, { flags: 0x3ff, velocityVariance: 0, posHorizVariance: 0, posVertVariance: 0, compassVariance: 0, terrainAltVariance: 0 });
     out(socket, ekf);
     const position = new common.GlobalPositionInt();
-    Object.assign(position, { timeBootMs: 0, lat: latitude, lon: longitude, alt: Math.round((100 + altitude) * 1000), relativeAlt: Math.round(altitude * 1000), vx: 0, vy: 0, vz: 0, hdg: 0 });
+    Object.assign(position, { timeBootMs: 0, lat: latitude, lon: longitude, alt: Math.round((100 + altitude) * 1000), relativeAlt: Math.round(altitude * 1000), vx: 0, vy: 0, vz: verticalSpeedCms, hdg: 0 });
     out(socket, position);
     const battery = new common.SysStatus();
     Object.assign(battery, { batteryRemaining: 80 });
@@ -87,5 +87,6 @@ export async function ardupilotPeer(w: World) {
     config: { kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, heartbeat_s: 1, stream_rate_hz: 5, extended_state_interval_us: 200000 } satisfies Extract<ReturnType<typeof parseConfig>["equipment"], { kind: "ardupilot" }>,
     commands,
     targets,
+    setVerticalSpeedCms(speed: number) { verticalSpeedCms = speed; },
   };
 }

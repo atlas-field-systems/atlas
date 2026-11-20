@@ -265,7 +265,7 @@ export async function startApp(
       log.record({ kind: "outbox_blocked", time: clock.now(), failure });
       process.stderr.write(`Asset outbox blocked: ${failure.error}: ${failure.explanation}\n`);
     });
-    void running.done.then(
+    const sessionFinished = running.done.then(
       end => {
         log.record({ kind: "session_ended", time: clock.now(), end });
         if (!stopped) process.stderr.write(`Asset session ended: ${end.reason}\n`);
@@ -320,7 +320,7 @@ export async function startApp(
         }
         running?.stop();
         client.close();
-        await running?.done.catch(() => {});
+        await sessionFinished;
         await equipmentStopped;
         await uploads;
         return log.close(running?.asset_id ?? "unregistered", reason);

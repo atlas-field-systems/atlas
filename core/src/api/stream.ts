@@ -2,6 +2,7 @@ import * as entities from "../pillars/entities.ts";
 import { pageAfter } from "../store/events.ts";
 import type { ServerResponse } from "node:http";
 import type { Clock } from "../clock.ts";
+import type { DiagnosticLog } from "../log.ts";
 import type { Store } from "../store/db.ts";
 import type { Audience } from "../store/events.ts";
 import type { Principal } from "./auth.ts";
@@ -41,7 +42,12 @@ export interface Streams {
   closeAll(): void;
 }
 
-export function startStreams(store: Store, clock: Clock, keepaliveMs: number): Streams {
+export function startStreams(
+  store: Store,
+  clock: Clock,
+  keepaliveMs: number,
+  log: DiagnosticLog,
+): Streams {
   const closers = new Set<() => void>();
   return {
     closeAll() {
@@ -60,14 +66,12 @@ export function startStreams(store: Store, clock: Clock, keepaliveMs: number): S
         deadline?.cancel();
         keepalive?.cancel();
         closers.delete(close);
-        store.read((tx) =>
-          tx.env.log.record({
-            level: "info",
-            area: "api",
-            msg: "event stream disconnected",
-            route: "/events",
-          }),
-        );
+        log.record({
+          level: "info",
+          area: "api",
+          msg: "event stream disconnected",
+          route: "/events",
+        });
         res.destroy();
       };
       const pump = () => {
@@ -99,7 +103,14 @@ export function startStreams(store: Store, clock: Clock, keepaliveMs: number): S
             }
             if (page.length < 256) break;
           }
-        } catch {
+        } catch (error) {
+          log.record({
+            level: "error",
+            area: "api",
+            msg: "event stream failed",
+            route: "/events",
+            error: String(error),
+          });
           close();
         }
       };
@@ -124,14 +135,12 @@ export function startStreams(store: Store, clock: Clock, keepaliveMs: number): S
         "cache-control": "no-cache",
       });
       res.flushHeaders();
-      store.read((tx) =>
-        tx.env.log.record({
-          level: "info",
-          area: "api",
-          msg: "event stream connected",
-          route: "/events",
-        }),
-      );
+      log.record({
+        level: "info",
+        area: "api",
+        msg: "event stream connected",
+        route: "/events",
+      });
       pump();
       keepalive = clock.after(keepaliveMs, alive);
     },

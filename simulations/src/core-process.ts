@@ -3,7 +3,7 @@ import { once } from "node:events";
 import { writeFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CoreConfig } from "../../core/src/config.ts";
+import type { CoreConfig } from "@atlas/core";
 
 export async function spawnCore(
   root: string,

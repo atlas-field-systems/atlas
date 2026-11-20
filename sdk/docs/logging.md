@@ -11,8 +11,11 @@ The SDK reports every step, not only errors:
 - Requests: each attempt, its status, retries with their key, `unknown` results,
   and validation failures with their paths.
 - The definitions check and any mismatch, with both hashes.
-- The event stream: opens, closes, keepalives, idle timeouts, reconnect delays,
+- The event stream: opens, closes, keepalives, open and idle timeouts, reconnect delays,
   `401`, and the cursor after each handled event.
+  If Core does not answer the stream request in time, the SDK emits
+  `stream.open_timeout`. An unexpected stream interruption includes the error.
+  A deliberate stop closes the stream without reporting a failure.
 - The Asset helpers: batches sent, resent and acknowledged; lists applied or
   ignored; Tasks handed to the app, finished, cancelled or cleared.
 
@@ -33,5 +36,6 @@ failure emits `reports.recording_failed` and never prevents sending.
 - **Observer errors never break requests.** The SDK calls the observer through
   `queueMicrotask`, catches what it throws, and attaches a handler to any promise
   it returns without awaiting it. The SDK does not report an observer failure to
-  that same observer.
+  that same observer. It counts the undelivered events and includes the count
+  in a later `diagnostics.gap` event.
 - **Gaps are visible.** If the SDK drops events, it counts them and reports the count.

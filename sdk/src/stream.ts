@@ -89,17 +89,22 @@ export function follow(
         if (terminal()) break;
         if (checked.ok) {
           controller = new AbortController();
+          const { signal } = controller;
           try {
             await options.beforeOpen?.();
             if (terminal()) break;
             opening = clock.after(
               internal(client).options.requestTimeoutMs ?? 10000,
-              () => controller?.abort(),
+              () => {
+                if (signal.aborted) return;
+                internal(client).emit("stream.open_timeout", { cursor });
+                controller?.abort();
+              },
             );
             const response = await internal(client).streamFetch(
               cursor,
               { asset_id: options.asset_id, everything: options.everything },
-              controller.signal,
+              signal,
             );
             opening.cancel();
             if (!response.ok) {
@@ -127,6 +132,7 @@ export function follow(
                 );
               };
               resetIdle();
+              let interrupted = false;
               try {
                 while (!terminal()) {
                   const chunk = await reader.read();
@@ -205,13 +211,22 @@ export function follow(
                       error: "SSE frame too large",
                     };
                 }
+              } catch (error) {
+                interrupted = true;
+                throw error;
               } finally {
                 idle?.cancel();
-                await reader.cancel().catch(() => {});
+                if (interrupted || signal.aborted || terminal()) reader.releaseLock();
+                else
+                  await reader.cancel().catch(() => {
+                    if (!signal.aborted && !terminal())
+                      internal(client).emit("stream.reader_cancel_failed", { cursor });
+                  });
               }
             }
-          } catch {
-            /* Network loss is recovered from the last handled cursor. */
+          } catch (error) {
+            if (!signal.aborted && !terminal())
+              internal(client).emit("stream.interrupted", { cursor, error: String(error) });
           } finally {
             opening?.cancel();
             stale = true;
