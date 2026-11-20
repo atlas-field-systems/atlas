@@ -88,6 +88,21 @@ test("docs/logging.md: a failed archive is retained and never retried on restart
   assert.ok((await readdir(config.log_directory)).includes("1000"));
 });
 
+test("docs/logging.md: an unreadable earlier operation never stops the app starting", async t => {
+  const root = await mkdtemp(join(tmpdir(), "atlas-unreadable-"));
+  const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
+  config.log_directory = join(root, "logs");
+  config.archive_directory = join(root, "archives");
+  const { chmod, mkdir } = await import("node:fs/promises");
+  const unreadable = join(config.log_directory, "500");
+  await mkdir(unreadable, { recursive: true });
+  await chmod(unreadable, 0o000);
+  t.after(async () => { await chmod(unreadable, 0o700); await rm(root, { recursive: true, force: true }); });
+  const log = await createLog(config, 1000);
+  await log.close("A", "stopped");
+  assert.equal((await readdir(config.archive_directory)).length, 1);
+});
+
 test("docs/logging.md: detail and message filters remove diagnostic content and credentials", async t => {
   const root = await mkdtemp(join(tmpdir(), "atlas-filter-"));
   t.after(() => rm(root, { recursive: true, force: true }));

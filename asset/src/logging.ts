@@ -95,10 +95,12 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   const earlier = (await readdir(config.log_directory, { withFileTypes: true })).filter(e => e.isDirectory()).map(e => join(config.log_directory, e.name));
   const recovery = (async () => {
     for (const directory of earlier) {
-      if (await exists(join(directory, "archive-failed.json")) || !await exists(join(directory, "operation.json"))) continue;
-      await archive(directory, clock.now(), "unexpected stop", false).catch(error => {
+      try {
+        if (await exists(join(directory, "archive-failed.json")) || !await exists(join(directory, "operation.json"))) continue;
+        await archive(directory, clock.now(), "unexpected stop", false);
+      } catch (error) {
         process.stderr.write(`Asset recovery failed; local records retained: ${error}\n`);
-      });
+      }
     }
   })();
   const directory = join(config.log_directory, String(start));
