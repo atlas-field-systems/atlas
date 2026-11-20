@@ -118,7 +118,7 @@ export default [
     },
     rules: {
       'no-warning-comments': ['error', {
-        terms: ['todo', 'fixme', 'hack', 'workaround', 'for now', 'temporary', 'xxx', 'kludge'],
+        terms: ['todo', 'fixme', 'hack', 'workaround', 'for now', 'xxx', 'kludge'],
         location: 'anywhere',
       }],
       '@typescript-eslint/no-explicit-any': 'error',

@@ -10,4 +10,4 @@ for (const result of results)
 
 const formatter = await lint.loadFormatter('stylish');
 process.stdout.write(await formatter.format(results));
-if (results.some(result => result.errorCount)) process.exitCode = 1;
+if (results.some(result => result.errorCount || result.warningCount)) process.exitCode = 1;

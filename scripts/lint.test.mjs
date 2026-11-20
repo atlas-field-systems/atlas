@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { ESLint } from 'eslint';
 
@@ -89,4 +92,16 @@ test('Atlas lint reports violations and honors the file boundaries', async () =>
   assert.equal(disabled.messages.find(item => item.severity === 2)?.ruleId, '@typescript-eslint/no-explicit-any');
   assert.equal(await lint.isPathIgnored('protocol/_site/app.mjs'), true);
   assert.equal(await lint.isPathIgnored('protocol/types.d.ts'), true);
+});
+
+test('Atlas lint exits unsuccessfully on warnings [atlas/CHARTER.md#test-what-matters]', async t => {
+  const directory = await mkdtemp('core/src/lint-test-');
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const file = join(directory, 'probe.ts');
+  await writeFile(file, '/* eslint-disable no-warning-comments */\nexport {};\n');
+
+  const result = spawnSync(process.execPath, ['scripts/lint.mjs', file], { encoding: 'utf8' });
+  assert.match(result.stdout, /has no effect because you have 'noInlineConfig'/);
+  assert.match(result.stdout, /0 errors, 1 warning/);
+  assert.equal(result.status, 1);
 });

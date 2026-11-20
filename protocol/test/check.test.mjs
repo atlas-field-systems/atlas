@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 
 const check = (defs) => spawnSync('node', ['scripts/check.mjs'], { env: { ...process.env, ATLAS_DEFINITIONS: defs }, encoding: 'utf8' });
 
-// Runs the check on a scratch copy of definitions/ after one change to it.
+// Runs the check on a temporary copy of definitions/ after one change to it.
 // edit(file, change) rewrites one definition; add(file, schema) writes a new one and lists it
 // in index.json; write(file, value) writes any JSON file as given.
 const broken = (change) => {
