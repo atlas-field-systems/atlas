@@ -197,6 +197,7 @@ export function startLog(
     async openRun(id) {
       directory = join(options.directory, `run-${id}`);
       mkdirSync(directory, { recursive: true });
+      const truncated: number[] = [];
       for (const line of lines(id)) {
         try {
           const record = JSON.parse(line);
@@ -206,6 +207,7 @@ export function startLog(
             writtenThrough = record.gaps.at(-1)?.to_n ?? writtenThrough;
           }
         } catch {
+          truncated.push(++n);
           process.stderr.write(`Core could not recover a diagnostic record for run ${id}\n`);
         }
       }
@@ -220,6 +222,10 @@ export function startLog(
         )
           throw error;
       }
+      for (const number of truncated)
+        if (!gaps.some((g) => g.from_n <= number && number <= g.to_n))
+          gap(number, "truncated record; original bytes retained");
+      await persistGaps();
       n = Math.max(n, ...gaps.map((g) => g.to_n));
       atLimit = gaps.some((g) => g.why === "total limit");
       const names = files(directory);
