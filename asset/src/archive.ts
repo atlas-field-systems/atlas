@@ -22,8 +22,7 @@ export async function inventory(directory: string, prefix = ""): Promise<Archive
 }
 export async function writeZip(directory: string, path: string, files: ArchiveFile[]) {
   const output = createWriteStream(path, { flags: "wx" });
-  const done = finished(output);
-  void done.catch(() => {});
+  const done = Promise.allSettled([finished(output)]);
   const zip = new Zip((error, chunk, final) => {
     if (error) output.destroy(error);
     else if (final) output.end(chunk);
@@ -36,16 +35,19 @@ export async function writeZip(directory: string, path: string, files: ArchiveFi
       for await (const chunk of createReadStream(join(directory, file.path))) {
         entry.push(chunk, false);
         if (output.writableNeedDrain) await once(output, "drain");
-        if (output.destroyed) await done;
+        if (output.destroyed) {
+          const [result] = await done;
+          if (result.status === "rejected") throw result.reason;
+        }
       }
       entry.push(new Uint8Array(), true);
     }
     zip.end();
+    const [result] = await done;
+    if (result.status === "rejected") throw result.reason;
+  } finally {
+    if (!output.writableFinished) output.destroy();
     await done;
-  } catch (error) {
-    output.destroy();
-    await done.catch(() => {});
-    throw error;
   }
 }
 export async function verifyZip(path: string, files: ArchiveFile[]) {

@@ -117,7 +117,7 @@ test("docs/logging.md: SDK gaps and shutdown diagnostic gaps are listed with int
   const zip = unzipSync(await readFile(await log.close("A", "stopped")));
   const manifest = JSON.parse(strFromU8(zip["manifest.json"]));
   assert.ok(manifest.gaps.some((gap: { start: number; end: number; dropped: number }) => gap.start === 1500 && gap.end === 1500 && gap.dropped === 7));
-  assert.match(strFromU8(zip["summary.md"]), /SDK diagnostic queue full/);
+  assert.match(strFromU8(zip["summary.md"]), /SDK diagnostics lost/);
   assert.ok(Object.entries(zip).some(([name, bytes]) => name.startsWith("diagnostics/") && strFromU8(bytes).includes('"dropped":7')));
 });
 

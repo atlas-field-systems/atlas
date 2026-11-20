@@ -44,29 +44,29 @@ export function ardupilot(
   let radioFailed = false;
   let batteryAction: "BATT_FS_LOW_ACT" | "BATT_FS_CRT_ACT" | undefined;
   const listeners = new Set<(id: number, value: unknown) => void>();
-  function wait<T>(
+  function wait(
     signal: AbortSignal,
-    accept: (id: number, value: unknown) => T | undefined,
+    accept: (id: number, value: unknown) => true | undefined,
   ) {
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<{ ok: true } | { ok: false; error: unknown }>((resolve) => {
       const close = () => {
         listeners.delete(receive);
         signal.removeEventListener("abort", abort);
       };
       const abort = () => {
         close();
-        reject(signal.reason);
+        resolve({ ok: false, error: signal.reason });
       };
       const receive = (id: number, value: unknown) => {
         try {
           const result = accept(id, value);
           if (result !== undefined) {
             close();
-            resolve(result);
+            resolve({ ok: true });
           }
         } catch (error) {
           close();
-          reject(error);
+          resolve({ ok: false, error });
         }
       };
       listeners.add(receive);
@@ -346,11 +346,12 @@ export function ardupilot(
           await command(id, params);
           signal.throwIfAborted();
           written = true;
-          await ack;
+          const result = await ack;
+          if (!result.ok) throw result.error;
           signal.throwIfAborted();
         } catch (error) {
           current.abort(error);
-          await ack.catch(() => {});
+          await ack;
           throw error;
         }
       };
@@ -366,11 +367,12 @@ export function ardupilot(
           signal.throwIfAborted();
           pendingGuided = number === 4;
           await mode(number);
-          await confirmed;
+          const result = await confirmed;
+          if (!result.ok) throw result.error;
           signal.throwIfAborted();
         } catch (error) {
           current.abort(error);
-          await confirmed.catch(() => {});
+          await confirmed;
           throw error;
         }
       };

@@ -207,11 +207,13 @@ export function follow(
                 }
               } finally {
                 idle?.cancel();
-                await reader.cancel().catch(() => {});
+                await reader.cancel().catch(() => {
+                  internal(client).emit("stream.reader_cancel_failed", { cursor });
+                });
               }
             }
           } catch {
-            /* Network loss is recovered from the last handled cursor. */
+            internal(client).emit("stream.interrupted", { cursor });
           } finally {
             opening?.cancel();
             stale = true;

@@ -32,9 +32,13 @@ export function diagnostics(clock: Clock, observer?: Observer) {
         dropped = 0;
       }
       for (const event of pending.splice(0)) {
+        const lost = event.name === "diagnostics.gap" ? Number(event.detail.dropped) : 1;
+        const failed = () => { dropped += lost; };
         try {
-          Promise.resolve(observer(event)).catch(() => {});
-        } catch {}
+          Promise.resolve(observer(event)).catch(failed);
+        } catch {
+          failed();
+        }
       }
     });
   };
