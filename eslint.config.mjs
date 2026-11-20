@@ -96,6 +96,7 @@ const constant = ':matches(Literal, Identifier[name=/^(undefined|NaN|Infinity)$/
 const catchRestrictions = syntax(messages.catch,
   'CatchClause[body.body.length=0]',
   'CatchClause[body.body.length=1][body.body.0.type="ReturnStatement"][body.body.0.argument=null]',
+  `CatchClause > BlockStatement.body[body.length=1] > ReturnStatement > .argument${constant}`,
   ...rejectionHandlers.flatMap(handler => [
     `${handler} > .body${constant}`,
     `${handler} > BlockStatement.body[body.length=0]`,
@@ -147,10 +148,12 @@ export default [
   {
     files: runtime,
     ignores: ['core/src/clock.ts', 'sdk/src/clock.ts'],
+    languageOptions: { globals: { global: 'readonly' } },
     rules: {
       'no-restricted-globals': ['error', {
         globals: ['setTimeout', 'setInterval'].map(name => ({ name, message: messages.clock })),
         checkGlobalObject: true,
+        globalObjects: ['global'],
       }],
       'no-restricted-properties': ['error',
         { object: 'Date', property: 'now', message: messages.clock },
@@ -161,7 +164,7 @@ export default [
         'MemberExpression:matches([object.property.name="Date"], [object.property.value="Date"], [object.property.name="performance"], [object.property.value="performance"]):matches([property.name="now"], [property.value="now"])',
         'MemberExpression:matches([object.name="AbortSignal"], [object.property.name="AbortSignal"], [object.property.value="AbortSignal"]):matches([property.name="timeout"], [property.value="timeout"])',
         'MemberExpression:matches([object.name="scheduler"], [object.property.name="scheduler"], [object.property.value="scheduler"]):matches([property.name="wait"], [property.value="wait"])',
-        ':matches(VariableDeclarator[init.name="globalThis"] > ObjectPattern.id, AssignmentExpression[right.name="globalThis"] > ObjectPattern.left) > Property:matches([key.name=/^set(Timeout|Interval)$/], [key.value=/^set(Timeout|Interval)$/])',
+        ':matches(VariableDeclarator[init.name=/^global(This)?$/] > ObjectPattern.id, AssignmentExpression[right.name=/^global(This)?$/] > ObjectPattern.left) > Property:matches([key.name=/^set(Timeout|Interval)$/], [key.value=/^set(Timeout|Interval)$/])',
         `:matches(ImportDeclaration, ExportNamedDeclaration, ExportAllDeclaration, ImportExpression, TSImportType) > .source${timersSource}`,
         `TSExternalModuleReference > .expression${timersSource}`,
         `CallExpression[callee.name="require"] > .arguments:nth-child(1)${timersSource}`,

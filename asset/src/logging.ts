@@ -14,7 +14,13 @@ const gapSchema = z.object({ start: z.number(), end: z.number(), dropped: z.numb
 type Gap = z.infer<typeof gapSchema>;
 const levels = { trace: 0, debug: 1, info: 2, warn: 3, error: 4 };
 async function exists(path: string) {
-  try { await access(path); return true; } catch { return false; }
+  try {
+    await access(path);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return false;
+    throw error;
+  }
 }
 async function lines(path: string, consume: (line: string) => Promise<void>) {
   if (!await exists(path)) return;
