@@ -58,7 +58,8 @@ reporting and Task execution stay with the app. For equipment, it takes the
 shared simulated ArduPilot (`src/ardupilot-peer.ts`) or a TCP reporting
 peripheral (`src/peripheral.ts`). Without either, the app is stationary and runs
 its control loop once a second. Failsafe and takeover scenarios still
-script their own ArduPilot peers to time each mode change.
+script their own ArduPilot peers to time each mode change. Driver contract
+tests connect simulated equipment to `@atlas/asset/ardupilot`.
 
 Every IP Asset doing Asset work in a scenario is the real app, as the
 [owner decided](../atlas/decision-log.md#build-and-test). Two kinds of scripted

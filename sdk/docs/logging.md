@@ -33,5 +33,6 @@ failure emits `reports.recording_failed` and never prevents sending.
 - **Observer errors never break requests.** The SDK calls the observer through
   `queueMicrotask`, catches what it throws, and attaches a handler to any promise
   it returns without awaiting it. The SDK does not report an observer failure to
-  that same observer.
+  that same observer. It counts the undelivered events and includes the count
+  in a later `diagnostics.gap` event.
 - **Gaps are visible.** If the SDK drops events, it counts them and reports the count.

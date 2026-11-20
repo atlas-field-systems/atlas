@@ -181,8 +181,8 @@ check nothing, so these rules guard against that first.
   change the owner can see. A check that cannot fail protects nothing, so break
   a rule on purpose now and then and confirm a test catches it.
 - **Enforce in code, not prose.** A rule that CI, a lint, or a type can check is
-  checked that way, as Atlas already checks links and retired phrases. A
-  written rule is the fallback.
+  checked that way, as Atlas already checks lint rules, links, and retired
+  phrases. A written rule is the fallback.
 - **No flaky tests.** A test that sometimes fails with no change is a bug in the
   test or the part, fixed at once and never retried until it passes. Simulated
   time and recorded seeds make every run repeatable.
