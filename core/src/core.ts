@@ -21,6 +21,8 @@ import type { Clock } from "./clock.ts";
 import type { CoreConfig, Paths } from "./config.ts";
 import type { DiagnosticLog } from "./log.ts";
 
+export type { Clock, CoreConfig };
+
 export interface CoreOptions {
   clock: Clock;
   config: Partial<CoreConfig>;

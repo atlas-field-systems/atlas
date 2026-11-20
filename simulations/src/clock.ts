@@ -1,5 +1,5 @@
 import type { Clock, Timer } from "@atlas/sdk";
-import type { Clock as CoreClock } from "../../core/src/clock.ts";
+import type { Clock as CoreClock } from "@atlas/core";
 type Entry = { at: number; sequence: number; fn(): void; cancelled: boolean };
 export class SimClock implements Clock, CoreClock {
   private time = 1800000000000;

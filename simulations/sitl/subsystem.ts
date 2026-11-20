@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { connect } from "node:net";
 import { once } from "node:events";
-import { send, common, MavLinkProtocolV2 } from "node-mavlink";
+import { send, common, MavLinkProtocolV2 } from "../src/mavlink.ts";
 
 import { writeFile } from "node:fs/promises";
 

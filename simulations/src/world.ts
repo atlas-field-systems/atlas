@@ -1,9 +1,8 @@
-import type { CoreConfig } from "../../core/src/config.ts";
 import { mkdtemp, writeFile, rm, readdir, cp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setImmediate } from "node:timers/promises";
-import { startCore } from "@atlas/core";
+import { startCore, type CoreConfig } from "@atlas/core";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import {
   createClient,
