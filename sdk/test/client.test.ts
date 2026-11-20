@@ -33,7 +33,7 @@ test("client refuses non-loopback HTTP before sending credentials", async () => 
   assert.equal(sends, 0);
 });
 
-test("a later diagnostic gap counts events lost to a throwing observer [sdk/docs/logging.md#rules]", async t => {
+test("a later diagnostic gap counts observer throws and rejections [sdk/docs/logging.md#rules]", async t => {
   const protocol = await loadPackagedProtocol();
   const delivered: Diagnostic[] = [];
   const client = createClient({
@@ -50,6 +50,7 @@ test("a later diagnostic gap counts events lost to a throwing observer [sdk/docs
       });
     },
     observer(event) {
+      if (event.name === "validation.failed" && event.counter === 2) return Promise.reject(new Error("observer unavailable"));
       if (event.name === "validation.failed") throw new Error("observer unavailable");
       delivered.push(event);
     },

@@ -95,7 +95,11 @@ export function follow(
             if (terminal()) break;
             opening = clock.after(
               internal(client).options.requestTimeoutMs ?? 10000,
-              () => controller?.abort(),
+              () => {
+                if (signal.aborted) return;
+                internal(client).emit("stream.open_timeout", { cursor });
+                controller?.abort();
+              },
             );
             const response = await internal(client).streamFetch(
               cursor,
@@ -128,6 +132,7 @@ export function follow(
                 );
               };
               resetIdle();
+              let interrupted = false;
               try {
                 while (!terminal()) {
                   const chunk = await reader.read();
@@ -206,12 +211,17 @@ export function follow(
                       error: "SSE frame too large",
                     };
                 }
+              } catch (error) {
+                interrupted = true;
+                throw error;
               } finally {
                 idle?.cancel();
-                await reader.cancel().catch(() => {
-                  if (!signal.aborted && !terminal())
-                    internal(client).emit("stream.reader_cancel_failed", { cursor });
-                });
+                if (interrupted || signal.aborted || terminal()) reader.releaseLock();
+                else
+                  await reader.cancel().catch(() => {
+                    if (!signal.aborted && !terminal())
+                      internal(client).emit("stream.reader_cancel_failed", { cursor });
+                  });
               }
             }
           } catch (error) {
