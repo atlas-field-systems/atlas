@@ -59,7 +59,7 @@ test("a later diagnostic gap counts events lost to a throwing observer [sdk/docs
     assert.equal(client.validate("requests.login", {}).ok, false);
 
   await Promise.resolve();
-  assert.deepEqual(delivered, []);
+  assert.equal(delivered.length, 0);
   assert.equal((await client.connect()).ok, true);
   assert.deepEqual(
     delivered.filter(event => event.name === "diagnostics.gap").map(event => event.detail.dropped),
