@@ -3,7 +3,7 @@ import { createServer, type Socket } from "node:net";
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { minimal, common, ardupilotmega, MavLinkPacketParser, MavLinkPacketSplitter, MavLinkProtocolV2, send, type MavLinkPacket } from "../src/mavlink.ts";
+import { minimal, common, ardupilotmega, MavLinkPacketParser, MavLinkPacketSplitter, MavLinkProtocolV2, send, type MavLinkPacket } from "node-mavlink";
 import { scenario } from "../src/scenario.ts";
 import { value } from "../src/world.ts";
 import { startApp, parseConfig } from "@atlas/asset";

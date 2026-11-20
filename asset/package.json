@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./ardupilot": "./src/ardupilot.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "test": "node --test test/*.test.ts",

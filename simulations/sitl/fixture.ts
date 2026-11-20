@@ -9,7 +9,7 @@ import {
   MavLinkPacketSplitter,
   MavLinkPacketParser,
   MavLinkProtocolV2,
-} from "../src/mavlink.ts";
+} from "node-mavlink";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
@@ -478,7 +478,7 @@ export async function flightFixture(t: TestContext, scenario: Scenario) {
     pilot
       .pipe(new MavLinkPacketSplitter())
       .pipe(new MavLinkPacketParser())
-      .on("data", (packet: import("../src/mavlink.ts").MavLinkPacket) => {
+      .on("data", (packet: import("node-mavlink").MavLinkPacket) => {
         if (packet.header.msgid !== minimal.Heartbeat.MSG_ID) return;
         const heartbeat = packet.protocol.data(
           packet.payload,

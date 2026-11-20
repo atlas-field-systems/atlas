@@ -8,7 +8,7 @@ import {
   MavLinkPacketSplitter,
   MavLinkPacketParser,
   MavLinkProtocolV2,
-} from "../src/mavlink.ts";
+} from "node-mavlink";
 
 import { readFile, writeFile, readdir } from "node:fs/promises";
 

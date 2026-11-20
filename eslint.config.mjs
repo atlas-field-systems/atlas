@@ -15,7 +15,7 @@ const partFiles = part => `${part}/**/*.{ts,mjs}`;
 
 const messages = {
   clock: 'Use the injected clock (clock.now() or clock.after()). See simulations/README.md#what-each-part-allows.',
-  flight: 'Keep node-mavlink in the Asset driver or simulated equipment under simulations/src. See atlas/CHARTER.md#keep-judgment-sharp.',
+  flight: 'Keep node-mavlink in the Asset driver, its tests, or Simulations. See atlas/CHARTER.md#keep-judgment-sharp.',
   validator: 'Validate shared records through Protocol. Keep AJV in Protocol and Zod in Asset runtime. See atlas/CHARTER.md#keep-judgment-sharp.',
   part: 'Use an allowed Atlas package import. Keep private modules inside their part. See atlas/CHARTER.md#keep-the-systems-replaceable and core/docs/architecture.md.',
   catch: 'Handle the error or record it through diagnostics in the owning part. See atlas/CHARTER.md#keep-evidence-honest and atlas/CHARTER.md#keep-judgment-sharp.',
@@ -39,9 +39,10 @@ const packages = (part, { flight = false, zod = false } = {}) => [
 const exceptions = {
   asset: [
     { files: ['asset/src/ardupilot.ts'], flight: true, zod: true },
+    { files: ['asset/test/**/*.{ts,mjs}'], flight: true },
     { files: ['asset/src/**/*.{ts,mjs}'], ignores: ['asset/src/ardupilot.ts'], zod: true },
   ],
-  simulations: [{ files: ['simulations/src/**/*.{ts,mjs}'], flight: true }],
+  simulations: [{ files: [partFiles('simulations')], flight: true }],
 };
 
 // The built-in import rule covers static package imports and exports. Resolving
