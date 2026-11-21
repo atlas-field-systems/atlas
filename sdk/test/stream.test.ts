@@ -107,3 +107,55 @@ for (const scenario of ["deliberate stop", "open timeout", "network drop"] as co
     }[scenario]);
     assert.ok(names.includes("stream.close"));
   });
+
+function fakeClient(protocol: Awaited<ReturnType<typeof loadPackagedProtocol>>, body: () => ReadableStream<Uint8Array>, observer?: (event: { name: string }) => void) {
+  return createClient({
+    protocol,
+    credential: { kind: "account" },
+    clock,
+    baseUrl: "http://127.0.0.1:8443",
+    observer,
+    async fetch(input) {
+      if (new URL(String(input)).pathname === "/about")
+        return Response.json({ run_id: 1, definitions_hash: protocol.hash, core_version: "test", protocol_version: "test" });
+      return new Response(body(), { headers: { "content-type": "text/event-stream" } });
+    },
+  });
+}
+
+test("an interrupted stream never passes error text to the observer [sdk/docs/logging.md#rules]", { timeout: 5000 }, async t => {
+  const protocol = await loadPackagedProtocol();
+  const events: unknown[] = [];
+  const interrupted = Promise.withResolvers<void>();
+  const client = fakeClient(protocol, () => new ReadableStream(), event => {
+    events.push(event);
+    if (event.name === "stream.interrupted") interrupted.resolve();
+  });
+  t.after(() => client.close());
+  assert.equal((await client.connect()).ok, true);
+  const stream = follow(client, {
+    after: 0,
+    beforeOpen: () => { throw new Error("Authorization: Bearer secret-key-value"); },
+  }, () => {});
+  await interrupted.promise;
+  stream.stop();
+  await stream.done;
+  assert.equal(JSON.stringify(events).includes("secret-key-value"), false);
+});
+
+test("stopping from a contact callback cancels the stream source [sdk/docs/live.md#follow-completion]", { timeout: 5000 }, async t => {
+  const protocol = await loadPackagedProtocol();
+  let cancelled = 0;
+  const client = fakeClient(protocol, () => new ReadableStream({
+    start(controller) { controller.enqueue(new TextEncoder().encode(": keepalive\n\n")); },
+    cancel() { cancelled++; },
+  }));
+  t.after(() => client.close());
+  assert.equal((await client.connect()).ok, true);
+  const stream = follow(client, {
+    after: 0,
+    onContact: contact => { if (contact.open) stream.stop(); },
+  }, () => {});
+  assert.equal((await stream.done).reason, "stopped");
+  assert.equal(cancelled, 1);
+});

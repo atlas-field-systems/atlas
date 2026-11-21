@@ -216,7 +216,8 @@ export function follow(
                 throw error;
               } finally {
                 idle?.cancel();
-                if (interrupted || signal.aborted || terminal()) reader.releaseLock();
+                // An errored stream cannot be cancelled; every other exit releases its source.
+                if (interrupted) reader.releaseLock();
                 else
                   await reader.cancel().catch(() => {
                     if (!signal.aborted && !terminal())
@@ -226,7 +227,8 @@ export function follow(
             }
           } catch (error) {
             if (!signal.aborted && !terminal())
-              internal(client).emit("stream.interrupted", { cursor, error: String(error) });
+              // Error text can carry credentials, so only its type reaches the observer.
+              internal(client).emit("stream.interrupted", { cursor, error: error instanceof Error ? error.name : typeof error });
           } finally {
             opening?.cancel();
             stale = true;
