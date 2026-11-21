@@ -39,6 +39,12 @@ export interface Follow {
   done: Promise<FollowEnd>;
   stop(): void;
 }
+// Error text and even names can carry credentials, so only a fixed category reaches the observer.
+const errorCategories = new Set(["TypeError", "AbortError", "TimeoutError", "SyntaxError", "RangeError"]);
+function errorCategory(error: unknown) {
+  return error instanceof Error && errorCategories.has(error.name) ? error.name : "Error";
+}
+
 export function follow(
   client: Client,
   options: {
@@ -115,7 +121,6 @@ export function follow(
               stale = false;
               attempts = 0;
               internal(client).emit("stream.open");
-              heard();
               const reader = response.body.getReader(),
                 decoder = new TextDecoder();
               let buffer = "",
@@ -134,8 +139,12 @@ export function follow(
               resetIdle();
               let interrupted = false;
               try {
+                heard();
                 while (!terminal()) {
-                  const chunk = await reader.read();
+                  const chunk = await reader.read().catch((error: unknown) => {
+                    interrupted = true;
+                    throw error;
+                  });
                   if (chunk.done) break;
                   resetIdle();
                   buffer += decoder.decode(chunk.value, { stream: true });
@@ -211,15 +220,13 @@ export function follow(
                       error: "SSE frame too large",
                     };
                 }
-              } catch (error) {
-                interrupted = true;
-                throw error;
               } finally {
                 idle?.cancel();
                 // An errored stream cannot be cancelled; every other exit releases its source.
                 if (interrupted) reader.releaseLock();
                 else
-                  await reader.cancel().catch(() => {
+                  // A source that never settles its cancellation must not hold up a stop.
+                  void reader.cancel().catch(() => {
                     if (!signal.aborted && !terminal())
                       internal(client).emit("stream.reader_cancel_failed", { cursor });
                   });
@@ -227,8 +234,7 @@ export function follow(
             }
           } catch (error) {
             if (!signal.aborted && !terminal())
-              // Error text can carry credentials, so only its type reaches the observer.
-              internal(client).emit("stream.interrupted", { cursor, error: error instanceof Error ? error.name : typeof error });
+              internal(client).emit("stream.interrupted", { cursor, error: errorCategory(error) });
           } finally {
             opening?.cancel();
             stale = true;

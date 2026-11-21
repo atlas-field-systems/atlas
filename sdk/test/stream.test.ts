@@ -159,3 +159,62 @@ test("stopping from a contact callback cancels the stream source [sdk/docs/live.
   assert.equal((await stream.done).reason, "stopped");
   assert.equal(cancelled, 1);
 });
+
+test("a throwing contact callback still cancels a readable source [sdk/docs/live.md#follow-completion]", { timeout: 5000 }, async t => {
+  const protocol = await loadPackagedProtocol();
+  let cancelled = 0;
+  let thrown = false;
+  const client = fakeClient(protocol, () => new ReadableStream({
+    start(controller) { controller.enqueue(new TextEncoder().encode(": keepalive\n\n")); },
+    cancel() { cancelled++; },
+  }));
+  t.after(() => client.close());
+  assert.equal((await client.connect()).ok, true);
+  const closed = Promise.withResolvers<void>();
+  const stream = follow(client, {
+    after: 0,
+    onContact: contact => {
+      if (!contact.open) return closed.resolve();
+      if (!thrown) { thrown = true; throw new Error("callback failed"); }
+    },
+  }, () => {});
+  await closed.promise;
+  stream.stop();
+  await stream.done;
+  assert.equal(cancelled >= 1, true);
+});
+
+test("a stop finishes even when the source never settles its cancellation [sdk/docs/live.md#follow-completion]", { timeout: 5000 }, async t => {
+  const protocol = await loadPackagedProtocol();
+  const client = fakeClient(protocol, () => new ReadableStream({
+    start(controller) { controller.enqueue(new TextEncoder().encode(": keepalive\n\n")); },
+    cancel: () => new Promise<void>(() => {}),
+  }));
+  t.after(() => client.close());
+  assert.equal((await client.connect()).ok, true);
+  const stream = follow(client, {
+    after: 0,
+    onContact: contact => { if (contact.open) stream.stop(); },
+  }, () => {});
+  assert.equal((await stream.done).reason, "stopped");
+});
+
+test("an error whose name carries text still reaches the observer only as a fixed category [sdk/docs/logging.md#rules]", { timeout: 5000 }, async t => {
+  const protocol = await loadPackagedProtocol();
+  const events: unknown[] = [];
+  const interrupted = Promise.withResolvers<void>();
+  const client = fakeClient(protocol, () => new ReadableStream(), event => {
+    events.push(event);
+    if (event.name === "stream.interrupted") interrupted.resolve();
+  });
+  t.after(() => client.close());
+  assert.equal((await client.connect()).ok, true);
+  const stream = follow(client, {
+    after: 0,
+    beforeOpen: () => { throw new DOMException("x", "secret-key-value"); },
+  }, () => {});
+  await interrupted.promise;
+  stream.stop();
+  await stream.done;
+  assert.equal(JSON.stringify(events).includes("secret-key-value"), false);
+});
