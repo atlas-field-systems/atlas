@@ -42,7 +42,8 @@ export interface Follow {
 // Error text and even names can carry credentials, so only a fixed category reaches the observer.
 const errorCategories = new Set(["TypeError", "AbortError", "TimeoutError", "SyntaxError", "RangeError"]);
 function errorCategory(error: unknown) {
-  return error instanceof Error && errorCategories.has(error.name) ? error.name : "Error";
+  const name: unknown = error instanceof Error ? error.name : undefined;
+  return typeof name === "string" && errorCategories.has(name) ? name : "Error";
 }
 
 export function follow(
@@ -224,12 +225,15 @@ export function follow(
                 idle?.cancel();
                 // An errored stream cannot be cancelled; every other exit releases its source.
                 if (interrupted) reader.releaseLock();
-                else
-                  // A source that never settles its cancellation must not hold up a stop.
+                else {
+                  // A source that never settles its cancellation must not hold up a stop, and
+                  // the outer cleanup aborts the signal before a rejection lands, so decide now.
+                  const report = !signal.aborted && !terminal();
+                  const at = cursor;
                   void reader.cancel().catch(() => {
-                    if (!signal.aborted && !terminal())
-                      internal(client).emit("stream.reader_cancel_failed", { cursor });
+                    if (report) internal(client).emit("stream.reader_cancel_failed", { cursor: at });
                   });
+                }
               }
             }
           } catch (error) {

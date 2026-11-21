@@ -218,3 +218,40 @@ test("an error whose name carries text still reaches the observer only as a fixe
   await stream.done;
   assert.equal(JSON.stringify(events).includes("secret-key-value"), false);
 });
+
+test("an error name that changes between reads never reaches the observer [sdk/docs/logging.md#rules]", { timeout: 5000 }, async t => {
+  const protocol = await loadPackagedProtocol();
+  const events: unknown[] = [];
+  const interrupted = Promise.withResolvers<void>();
+  const client = fakeClient(protocol, () => new ReadableStream(), event => {
+    events.push(event);
+    if (event.name === "stream.interrupted") interrupted.resolve();
+  });
+  t.after(() => client.close());
+  assert.equal((await client.connect()).ok, true);
+  let reads = 0;
+  const shifty = new Error("x");
+  Object.defineProperty(shifty, "name", { get: () => (reads++ === 0 ? "TypeError" : "secret-key-value") });
+  const stream = follow(client, { after: 0, beforeOpen: () => { throw shifty; } }, () => {});
+  await interrupted.promise;
+  stream.stop();
+  await stream.done;
+  assert.equal(JSON.stringify(events).includes("secret-key-value"), false);
+});
+
+test("a source that refuses cancellation after an invalid frame is reported [sdk/docs/logging.md]", { timeout: 5000 }, async t => {
+  const protocol = await loadPackagedProtocol();
+  const names: string[] = [];
+  const chunk = new TextEncoder().encode("x".repeat(1024 * 1024));
+  let sent = 0;
+  const client = fakeClient(protocol, () => new ReadableStream({
+    pull(controller) { if (sent++ < 18) controller.enqueue(chunk); },
+    cancel: () => Promise.reject(new Error("refused")),
+  }), event => names.push(event.name));
+  t.after(() => client.close());
+  assert.equal((await client.connect()).ok, true);
+  const stream = follow(client, { after: 0 }, () => {});
+  assert.equal((await stream.done).reason, "invalid_event");
+  await new Promise<void>(resolve => setImmediate(resolve));
+  assert.ok(names.includes("stream.reader_cancel_failed"));
+});
