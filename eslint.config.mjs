@@ -11,7 +11,7 @@ const parts = {
   asset: ['sdk(?:/|$)', 'protocol(?:/|$)'],
   simulations: null,
 };
-const partFiles = part => `${part}/**/*.{ts,mjs}`;
+const partFiles = part => `${part}/**/*.{ts,mts,cts,js,mjs,cjs}`;
 
 const messages = {
   clock: 'Use the injected clock (clock.now() or clock.after()). See simulations/README.md#what-each-part-allows.',
@@ -39,8 +39,8 @@ const packages = (part, { flight = false, zod = false } = {}) => [
 const exceptions = {
   asset: [
     { files: ['asset/src/ardupilot.ts'], flight: true, zod: true },
-    { files: ['asset/test/**/*.{ts,mjs}'], flight: true },
-    { files: ['asset/src/**/*.{ts,mjs}'], ignores: ['asset/src/ardupilot.ts'], zod: true },
+    { files: ['asset/test/**/*.{ts,mts,cts,js,mjs,cjs}'], flight: true },
+    { files: ['asset/src/**/*.{ts,mts,cts,js,mjs,cjs}'], ignores: ['asset/src/ardupilot.ts'], zod: true },
   ],
   simulations: [{ files: [partFiles('simulations')], flight: true }],
 };
@@ -87,7 +87,7 @@ const moduleBoundaries = {
   },
 };
 
-const runtime = ['core', 'sdk', 'asset'].map(part => `${part}/src/**/*.{ts,mjs}`);
+const runtime = ['core', 'sdk', 'asset'].map(part => `${part}/src/**/*.{ts,mts,cts,js,mjs,cjs}`);
 const syntax = (message, ...selectors) => selectors.map(selector => ({ selector, message }));
 const rejectionHandlers = ['catch', 'then'].map((method, index) =>
   `CallExpression:matches([callee.property.name="${method}"], [callee.property.value="${method}"]) > .arguments:nth-child(${index + 1}):matches(ArrowFunctionExpression, FunctionExpression)`,
@@ -142,7 +142,7 @@ export default [
     }));
   }),
   {
-    files: [...runtime, 'protocol/lib/**/*.mjs'],
+    files: [...runtime, 'protocol/lib/**/*.mjs', 'protocol/cli/**/*.mjs'],
     rules: { 'no-restricted-syntax': ['error', ...catchRestrictions] },
   },
   {
@@ -158,6 +158,8 @@ export default [
       'no-restricted-properties': ['error',
         { object: 'Date', property: 'now', message: messages.clock },
         { object: 'performance', property: 'now', message: messages.clock },
+        { object: 'process', property: 'hrtime', message: messages.clock },
+        { object: 'process', property: 'uptime', message: messages.clock },
       ],
       'no-restricted-syntax': ['error', ...catchRestrictions, ...syntax(messages.clock,
         ':matches(NewExpression[arguments.length=0], CallExpression):matches([callee.name="Date"], [callee.property.name="Date"], [callee.property.value="Date"])',
