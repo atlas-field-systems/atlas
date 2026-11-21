@@ -142,7 +142,7 @@ export default [
     }));
   }),
   {
-    files: [...runtime, 'protocol/lib/**/*.mjs', 'protocol/cli/**/*.mjs'],
+    files: [...runtime, 'protocol/lib/**/*.{ts,mts,cts,js,mjs,cjs}', 'protocol/cli/**/*.{ts,mts,cts,js,mjs,cjs}'],
     rules: { 'no-restricted-syntax': ['error', ...catchRestrictions] },
   },
   {
@@ -164,6 +164,8 @@ export default [
       'no-restricted-syntax': ['error', ...catchRestrictions, ...syntax(messages.clock,
         ':matches(NewExpression[arguments.length=0], CallExpression):matches([callee.name="Date"], [callee.property.name="Date"], [callee.property.value="Date"])',
         'MemberExpression:matches([object.property.name="Date"], [object.property.value="Date"], [object.property.name="performance"], [object.property.value="performance"]):matches([property.name="now"], [property.value="now"])',
+        'MemberExpression:matches([object.property.name="process"], [object.property.value="process"]):matches([property.name="hrtime"], [property.name="uptime"], [property.value="hrtime"], [property.value="uptime"])',
+        'ImportDeclaration[source.value=/^(node:)?process$/] > ImportSpecifier[imported.name=/^(hrtime|uptime)$/]',
         'MemberExpression:matches([object.name="AbortSignal"], [object.property.name="AbortSignal"], [object.property.value="AbortSignal"]):matches([property.name="timeout"], [property.value="timeout"])',
         'MemberExpression:matches([object.name="scheduler"], [object.property.name="scheduler"], [object.property.value="scheduler"]):matches([property.name="wait"], [property.value="wait"])',
         ':matches(VariableDeclarator[init.name=/^global(This)?$/] > ObjectPattern.id, AssignmentExpression[right.name=/^global(This)?$/] > ObjectPattern.left) > Property:matches([key.name=/^set(Timeout|Interval)$/], [key.value=/^set(Timeout|Interval)$/])',
