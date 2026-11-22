@@ -69,13 +69,15 @@ own page. The rules are the same for all of them.
   cryptography, such as a Meshtastic node's public key or a Reticulum identity.
   This **radio identity** names one radio. It stays with the gateway and its
   Fieldlink; Core never holds it.
-- **Only that radio can speak as its Asset.** The gateway accepts a frame for
-  `asset_id` X only when it comes from X's radio identity, and it rejects
-  replayed frames. A shared channel key alone is not enough: another radio, or
-  anyone holding a leaked channel key, must not be able to pretend to be X.
+- **No bug makes one radio speak as another.** Each Fieldlink stops this at
+  the source: a frame's sender comes from the sending radio's own identity, set
+  by the link itself, never from a value the Asset app or a person fills in. The
+  gateway accepts a frame for `asset_id` X only when it comes from X's radio
+  identity, and it rejects replayed frames. Stopping someone who holds a radio's
+  keys, such as from a lost or captured radio, is not required.
 - **Joining the field link is the Fieldlink's own step**, such as receiving a
   private channel's key. A radio that has joined can appear as a new Asset, but
-  it can never speak as an Asset that is already some other radio.
+  it is never taken for an Asset that is already some other radio.
 - **The definitions hash is checked each time a radio's link opens.** A
   gateway-and-Asset Fieldlink compares the radio's hash with the gateway's. A
   gateway-only Fieldlink runs the Asset app on the gateway with the gateway's
