@@ -458,5 +458,10 @@
     "phrase": "Pre-build design;|Meshtastic pre-build design|Listening design before the radio build",
     "why": "The owner left Meshtastic as documentation and optional concepts for future use, with no concept selected or requiring a decision before building.",
     "example": "Pre-build design; not implemented."
+  },
+  {
+    "phrase": "shared (channel )?key alone is not enough|(holding|holds) a leaked (channel |shared )?key",
+    "why": "A Fieldlink stops bugs from making one radio speak as another at the source; stopping someone who holds a radio's keys is not required.",
+    "example": "A shared channel key alone is not enough: anyone holding a leaked channel key must not pretend to be X."
   }
 ]

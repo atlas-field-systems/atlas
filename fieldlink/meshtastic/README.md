@@ -97,8 +97,8 @@ The old link's file-based cache, TTLs, and version fields are not selected contr
   deliberately broadcast these updates. Do not assume a radio exposes unicast
   traffic addressed to another node, or that peers can read its encrypted
   direct messages. A candidate firmware's receive path would need bench verification.
-- **Authenticated sources.** A listener needs proof of the sender and replay
-  rejection, not just knowledge of the channel key. Authentication and encryption
+- **Authenticated sources.** A listener needs the sender's radio identity, as
+  the gateway gets it, and replay rejection. Authentication and encryption
   would need to preserve identity while allowing shared readability.
   Definitions compatibility also applies before passing a record to the Asset.
   Radio-to-Asset attribution and run boundaries would need to hold across
