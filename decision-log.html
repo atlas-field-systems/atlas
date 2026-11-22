@@ -93,6 +93,12 @@ back.</p>
 </tr>
 </thead>
 <tbody><tr>
+<td>2026-11-22</td>
+<td>A Fieldlink stops a bug or misconfiguration from making one radio speak as another Asset, at the source: a frame&#39;s sender comes from the sending radio&#39;s own identity, never from a value the Asset app or a person fills in. Stopping someone who holds a radio&#39;s keys, such as from a lost or captured radio, is not required.</td>
+<td>Every Fieldlink. Replaces the rule that anyone holding a leaked shared key must not be able to pose as another Asset. The gateway still checks each frame&#39;s radio identity and rejects replays.</td>
+<td><a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#what-every-fieldlink-provides">What every Fieldlink provides</a></td>
+</tr>
+<tr>
 <td>2026-11-19</td>
 <td>A Fieldlink&#39;s compact encoding may round numbers to a fixed precision: about 1 cm for positions, 10 cm for altitudes, 0.01° for angles, and 1 cm/s for speeds.</td>
 <td>Compact encodings on every Fieldlink. Which encoding a Fieldlink uses is not decided; Meshtastic&#39;s binary encoding is a proposal.</td>
