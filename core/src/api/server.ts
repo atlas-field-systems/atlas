@@ -15,7 +15,7 @@ import {
   callerFor,
   unregisteredMismatch,
 } from "../pillars/administration.ts";
-import { Refusal, refuse, checkOrRefuse } from "./errors.ts";
+import { Refusal, refuse } from "./errors.ts";
 import { fingerprint, lookup, retain } from "../store/idempotency.ts";
 import { audienceFor } from "./stream.ts";
 import type { Env } from "../core.ts";
@@ -199,7 +199,7 @@ export async function startServer(
           "definitions_mismatch",
           "Use the definitions hash reported by GET /about",
         );
-      const request: Req<any> = {
+      const request: Req = {
         params,
         query: url.searchParams,
         body: undefined,
@@ -254,6 +254,7 @@ export async function startServer(
       if (typeof key !== "string" || !key.length || key.length > 64)
         refuse("invalid", "Idempotency-Key must contain 1 to 64 characters");
       let bytes: Buffer;
+      let json: unknown;
       let upload: objects.ReceivedFile | undefined;
       const runId = store.read((tx) => tx.runId);
       if (route.body.kind === "file") {
@@ -269,7 +270,6 @@ export async function startServer(
           await objects.abandon(env, runId, upload);
           throw error;
         }
-        request.body = upload;
         bytes = Buffer.from(
           JSON.stringify({
             sha256: upload.sha256,
@@ -288,37 +288,13 @@ export async function startServer(
           chunks.push(chunk);
         }
         bytes = Buffer.concat(chunks);
-        let value: unknown;
         try {
-          value = bytes.length ? JSON.parse(bytes.toString()) : undefined;
+          json = bytes.length ? JSON.parse(bytes.toString()) : undefined;
         } catch {
           refuse("invalid", "Malformed JSON");
         }
-        if (route.body.kind === "protocol")
-          request.body = checkOrRefuse(env.protocol, route.body.name, value);
-        else if (route.body.kind === "core") {
-          const name = route.body.name;
-          if (name === "answer") {
-            const type =
-              value && typeof value === "object" && "type" in value
-                ? value.type
-                : null;
-            if (type !== "plugin.result" && type !== "plugin.failure")
-              refuse("invalid", "Expected a Plugin answer");
-            request.body = checkOrRefuse(env.protocol, type, value);
-          } else
-            request.body = checkOrRefuse(
-              env.protocol,
-              `requests.${name}`,
-              value,
-            );
-        } else if (
-          value !== undefined &&
-          value !== null &&
-          JSON.stringify(value) !== "{}"
-        )
-          refuse("invalid", "This route takes no body");
       }
+      const change = route.bind(request, env.protocol, { json, upload });
       const login = url.pathname === "/administration/login";
       const scope = login ? "login" : principal.scope;
       const passwordRequest = route.body.kind === "core" && route.body.password;
@@ -339,7 +315,7 @@ export async function startServer(
             key,
           ),
         );
-        const body = JSON.stringify(request.body);
+        const body = JSON.stringify(change.body);
         if (prior && !(await verifyPassword(prior.fingerprint, body)))
           refuse(
             "idempotency_conflict",
@@ -354,7 +330,7 @@ export async function startServer(
           query: url.searchParams.toString(),
           body: bytes,
         });
-      const prepared = await route.prepare?.(request, store);
+      const commit = await change.prepare(store);
       let storedUpload = false;
       let reply;
       let acknowledgmentBody: unknown;
@@ -386,7 +362,7 @@ export async function startServer(
           if (logout && !callerFor(tx, credential))
             refuse("unauthenticated", "Session has ended");
           const before = tx.get<{ n: number }>("SELECT total_changes() n")!.n;
-          const result = route.commit(tx, request, prepared);
+          const result = commit(tx);
           const first = "first" in result ? result.first : result;
           const keep = "ack" in result ? result.ack : result;
           acknowledgmentBody = keep.body;

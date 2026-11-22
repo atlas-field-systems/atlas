@@ -7,7 +7,7 @@ import { minimal, common, ardupilotmega, MavLinkPacketParser, MavLinkPacketSplit
 import { equipmentWire } from "../src/equipment-wire.ts";
 import { scenario } from "../src/scenario.ts";
 import { value } from "../src/world.ts";
-import { startApp, parseConfig } from "../../asset/src/index.ts";
+import { startApp, parseConfig } from "@atlas/asset";
 
 for (const options of [0, 4]) scenario({
   name: `radio failsafe persists without its RTL heartbeat, FS_OPTIONS=${options}`,

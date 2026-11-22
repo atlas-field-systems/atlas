@@ -1,47 +1,50 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile, appendFile, readdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { copyFile, mkdir, readFile, writeFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { unzipSync, zipSync, strFromU8 } from "fflate";
-import { parseConfig } from "@atlas/asset";
-import { createLog } from "../../asset/src/logging.ts";
+import { assetApp } from "../src/asset-app.ts";
+import { scenario } from "../src/scenario.ts";
 import { checkAssetArchive } from "../src/asset-archive.ts";
 
-test("asset/docs/logging.md: recovery checker accepts only a torn final report with gap evidence", { timeout: 10000 }, async t => {
-  const root = await mkdtemp(join(tmpdir(), "atlas-check-archive-"));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const config = parseConfig(JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8")));
-  config.log_directory = join(root, "logs");
-  config.archive_directory = join(root, "archives");
-  const log = await createLog(config, 1000);
-  log.report({ type: "report.status", kind: "task", task_id: 1, task_state: "completed", time: 1500 });
-  const history = join(config.log_directory, "1000", "reports/history.jsonl");
-  let report = "";
-  while (!report.endsWith("\n")) {
-    report = await readFile(history, "utf8").catch(() => "");
-    await new Promise(resolve => setImmediate(resolve));
-  }
-  await appendFile(history, "{");
-  const next = await createLog(config, 2000);
-  await next.close("B", "stopped");
-  const names = await readdir(config.archive_directory);
-  const recovered = join(config.archive_directory, names.find(name => name.includes("unregistered"))!);
-  assert.equal((await checkAssetArchive(recovered, false)).reports.length, 1);
-  const base = unzipSync(await readFile(recovered));
-  for (const variant of ["torn", "normal", "complete-malformed", "earlier-malformed", "missing-gap"]) {
-    const zip = { ...base };
-    const manifest = JSON.parse(strFromU8(zip["manifest.json"]));
-    manifest.normal = variant === "normal";
-    manifest.gaps = variant === "missing-gap" ? [] : [{ start: 1000, end: 2000, dropped: 1, reason: "incomplete report line; original bytes retained" }];
-    zip["summary.md"] = Buffer.from(strFromU8(zip["summary.md"]) + "\nthe app stopped unexpectedly; this record may be incomplete\n" + manifest.gaps.map((g: { reason: string }) => g.reason).join("\n"));
-    zip["reports/history.jsonl"] = Buffer.from(variant === "earlier-malformed" ? '{\n' + report : report + '{' + (variant === "complete-malformed" ? '\n' : ''));
-    manifest.files = Object.entries(zip).filter(([path]) => path !== "manifest.json").map(([path, bytes]) => ({ path, size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") }));
-    zip["manifest.json"] = Buffer.from(JSON.stringify(manifest));
-    const path = join(root, `${variant}.zip`);
-    await writeFile(path, zipSync(zip));
-    if (variant === "torn") assert.equal((await checkAssetArchive(path, false)).reports.length, 1);
-    else await assert.rejects(checkAssetArchive(path, manifest.normal), variant);
-  }
+scenario({
+  name: "recovery checker accepts only a torn final report with gap evidence",
+  checks: ["asset/docs/logging.md#export-the-assets-reset-zip"],
+  async run(w) {
+    const app = await assetApp(w);
+    const { log_directory, archive_directory } = app.config;
+    const [live] = await readdir(log_directory);
+
+    // Seed the files an interrupted operation would leave on disk.
+    const earlier = join(log_directory, "1000");
+    await mkdir(join(earlier, "reports"), { recursive: true });
+    await mkdir(join(earlier, "diagnostics"));
+    for (const file of ["config.json", "versions.json"])
+      await copyFile(join(log_directory, live, file), join(earlier, file));
+    await writeFile(join(earlier, "operation.json"),
+      JSON.stringify({ start: 1000, asset_id: "unregistered", archive_directory }));
+    const report = JSON.stringify({ type: "report.status", kind: "task", task_id: 1, task_state: "completed", time: 1500 }) + "\n";
+    await writeFile(join(earlier, "reports/history.jsonl"), report + "{");
+    await w.advance(1000);
+    await app.restart();
+    await app.stop();
+    const names = await readdir(archive_directory);
+    const recovered = join(archive_directory, names.find(name => name.includes("unregistered"))!);
+    assert.equal((await checkAssetArchive(recovered, false)).reports.length, 1);
+    const base = unzipSync(await readFile(recovered));
+    for (const variant of ["torn", "normal", "complete-malformed", "earlier-malformed", "missing-gap"]) {
+      const zip = { ...base };
+      const manifest = JSON.parse(strFromU8(zip["manifest.json"]));
+      manifest.normal = variant === "normal";
+      manifest.gaps = variant === "missing-gap" ? [] : [{ start: 1000, end: 2000, dropped: 1, reason: "incomplete report line; original bytes retained" }];
+      zip["summary.md"] = Buffer.from(strFromU8(zip["summary.md"]) + "\nthe app stopped unexpectedly; this record may be incomplete\n" + manifest.gaps.map((g: { reason: string }) => g.reason).join("\n"));
+      zip["reports/history.jsonl"] = Buffer.from(variant === "earlier-malformed" ? '{\n' + report : report + '{' + (variant === "complete-malformed" ? '\n' : ''));
+      manifest.files = Object.entries(zip).filter(([path]) => path !== "manifest.json").map(([path, bytes]) => ({ path, size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") }));
+      zip["manifest.json"] = Buffer.from(JSON.stringify(manifest));
+      const path = join(w.root, `${variant}.zip`);
+      await writeFile(path, zipSync(zip));
+      if (variant === "torn") assert.equal((await checkAssetArchive(path, false)).reports.length, 1);
+      else await assert.rejects(checkAssetArchive(path, manifest.normal), variant);
+    }
+  },
 });

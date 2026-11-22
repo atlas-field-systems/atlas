@@ -14,7 +14,13 @@ const gapSchema = z.object({ start: z.number(), end: z.number(), dropped: z.numb
 type Gap = z.infer<typeof gapSchema>;
 const levels = { trace: 0, debug: 1, info: 2, warn: 3, error: 4 };
 async function exists(path: string) {
-  try { await access(path); return true; } catch { return false; }
+  try {
+    await access(path);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return false;
+    throw error;
+  }
 }
 async function lines(path: string, consume: (line: string) => Promise<void>) {
   if (!await exists(path)) return;
@@ -27,7 +33,9 @@ async function replaceFile(path: string, data: string | Uint8Array) {
     await writeFile(temporary, data);
     await rename(temporary, path);
   } catch (error) {
-    await rm(temporary, { force: true }).catch(() => {});
+    await rm(temporary, { force: true }).catch(cleanupError => {
+      process.stderr.write(`Asset evidence cleanup failed: ${cleanupError}\n`);
+    });
     throw error;
   }
 }
@@ -71,9 +79,13 @@ async function archive(directory: string, end: number, reason: string, normal: b
     await rm(directory, { recursive: true });
     return path;
   } catch (error) {
-    await rm(`${path}.partial`, { force: true }).catch(() => {});
+    await rm(`${path}.partial`, { force: true }).catch(cleanupError => {
+      process.stderr.write(`Asset incomplete archive cleanup failed: ${cleanupError}\n`);
+    });
     const explanation = String(error);
-    await writeFile(join(directory, "archive-failed.json"), JSON.stringify({ time: end, reason: explanation })).catch(() => {});
+    await writeFile(join(directory, "archive-failed.json"), JSON.stringify({ time: end, reason: explanation })).catch(markerError => {
+      process.stderr.write(`Asset archive failure marker could not be written: ${markerError}\n`);
+    });
     process.stderr.write(`Asset archive failed; local records retained, no retry: ${explanation}\n`);
     throw error;
   }
@@ -83,10 +95,12 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   const earlier = (await readdir(config.log_directory, { withFileTypes: true })).filter(e => e.isDirectory()).map(e => join(config.log_directory, e.name));
   const recovery = (async () => {
     for (const directory of earlier) {
-      if (await exists(join(directory, "archive-failed.json")) || !await exists(join(directory, "operation.json"))) continue;
-      await archive(directory, clock.now(), "unexpected stop", false).catch(error => {
+      try {
+        if (await exists(join(directory, "archive-failed.json")) || !await exists(join(directory, "operation.json"))) continue;
+        await archive(directory, clock.now(), "unexpected stop", false);
+      } catch (error) {
         process.stderr.write(`Asset recovery failed; local records retained: ${error}\n`);
-      });
+      }
     }
   })();
   const directory = join(config.log_directory, String(start));
@@ -147,7 +161,7 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
     const kind = String(safe.kind ?? safe.name ?? "diagnostic");
     const time = safe.time ?? safe.at ?? clock.now();
     if (kind === "reports.gap") drop(time, "SDK report queue full", safe.detail.dropped);
-    if (kind === "diagnostics.gap") drop(time, "SDK diagnostic queue full", safe.detail.dropped);
+    if (kind === "diagnostics.gap") drop(time, "SDK diagnostics lost", safe.detail.dropped);
     if (kind === "effect" || (kind === "input" && ["task", "contact", "settings", "cancel", "update"].includes(safe.event?.kind))) retain("history.jsonl", { time, ...safe });
     const level = safe.level ?? (/failed|error|blocked/.test(kind) ? "error" : /lost|gap|closed/.test(kind) ? "warn" : ["input", "effect", "observation", "report"].includes(kind) ? "trace" : "info");
     if (levels[z.enum(["trace", "debug", "info", "warn", "error"]).parse(level)] < levels[config.log_level]) return;
@@ -177,7 +191,9 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
         fileBytes += size;
       } catch { bytes -= size; drop(item.time, "diagnostic write failure"); }
     }
-    await persistGap().catch(() => {});
+    await persistGap().catch(error => {
+      process.stderr.write(`Asset diagnostic loss accounting failed: ${error}\n`);
+    });
   }
   record({ kind: "startup", time: start, config: inspectConfig(config) });
   return {

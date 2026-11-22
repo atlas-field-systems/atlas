@@ -145,6 +145,7 @@ just changed.
   it refuses unless every CI check on the PR head passed and `main` would get
   exactly the tree those checks tested.
 - CI must be green before any merge. Each part's checks run in `.github/workflows/` when that folder changes.
+  `npm run check -- lint` runs the workspace [lint rules](eslint.config.mjs) and their self-test.
   Docs changes run `node .github/scripts/check-links.mjs` and
   `node .github/scripts/check-retired.mjs` from the repository root.
 - No CDN dependencies: ship application code and assets in the repo or package. The Command Interface may use external basemap tile services for its [connected command-station use](command-interface/docs/README.md#operators-and-connectivity).

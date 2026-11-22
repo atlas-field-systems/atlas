@@ -1,5 +1,6 @@
 import type { Store } from "../store/db.ts";
-import { refuse } from "./errors.ts";
+import { checkOrRefuse, refuse } from "./errors.ts";
+import type { Protocol } from "@atlas/protocol";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { ReadTx, Tx } from "../store/db.ts";
 import type { Principal, Who, ActsFor } from "./auth.ts";
@@ -55,15 +56,19 @@ export type FileRoute = Common & {
     req: Req,
   ) => { path: string; content_type: string; size_bytes: number };
 };
+type SecretReply = { first: Reply; ack: Reply };
+type ChangeReply = Reply | SecretReply;
+type Commit = (tx: Tx) => ChangeReply;
+type BodyInput = { json: unknown; upload: objects.ReceivedFile | undefined };
+
 export type ChangeRoute = Common & {
   kind: "change";
   body: BodySpec;
-  prepare?: (req: Req<any>, store: Store) => Promise<unknown>;
-  commit: (
-    tx: Tx,
-    req: Req<any>,
-    prepared: any,
-  ) => Reply | { first: Reply; ack: Reply };
+  bind(
+    req: Req,
+    protocol: Protocol,
+    input: BodyInput,
+  ): { body: unknown; prepare(store: Store): Promise<Commit> };
 };
 export type Route = ReadRoute | StreamRoute | FileRoute | ChangeRoute;
 
@@ -81,28 +86,64 @@ type Body<S> = S extends {
 function read(r: Omit<ReadRoute, "kind">): ReadRoute {
   return { kind: "read", ...r };
 }
-function change<S extends BodySpec, P = undefined>(
-  r: Common & {
-    body: S;
-    prepare?: (req: Req<Body<S>>, store: Store) => Promise<P>;
-    commit: (tx: Tx, req: Req<Body<S>>, prepared: P) => Reply;
-  },
-): ChangeRoute {
-  return { kind: "change", ...r };
+function parseBody<S extends BodySpec>(
+  spec: S,
+  protocol: Protocol,
+  input: BodyInput,
+): Body<S>;
+function parseBody(
+  spec: BodySpec,
+  protocol: Protocol,
+  { json, upload }: BodyInput,
+): Body<BodySpec> {
+  switch (spec.kind) {
+    case "file":
+      if (!upload) refuse("invalid", "Expected a file upload");
+      return upload;
+    case "protocol":
+      return checkOrRefuse<ProtocolTypes[typeof spec.name]>(protocol, spec.name, json);
+    case "core": {
+      const { name } = spec;
+      if (name !== "answer")
+        return checkOrRefuse<CoreBodies[typeof name]>(protocol, `requests.${name}`, json);
+      const type = json && typeof json === "object" && "type" in json ? json.type : null;
+      if (type !== "plugin.result" && type !== "plugin.failure")
+        refuse("invalid", "Expected a Plugin answer");
+      return checkOrRefuse<ProtocolTypes[typeof type]>(protocol, type, json);
+    }
+    case "none":
+      if (json !== undefined && json !== null && JSON.stringify(json) !== "{}")
+        refuse("invalid", "This route takes no body");
+      return undefined;
+  }
 }
-function secret<S extends BodySpec, P = undefined>(
-  r: Common & {
-    body: S;
-    prepare?: (req: Req<Body<S>>, store: Store) => Promise<P>;
-    commit: (
-      tx: Tx,
-      req: Req<Body<S>>,
-      prepared: P,
-    ) => { first: Reply; ack: Reply };
-  },
-): ChangeRoute {
-  return { kind: "change", ...r };
+function defineChange<R extends ChangeReply>() {
+  return function <S extends BodySpec>(
+    r: Common & { body: S } & (
+      | { commit: (tx: Tx, req: Req<Body<S>>) => R }
+      | { prepare: (req: Req<Body<S>>, store: Store) => Promise<(tx: Tx) => R> }
+    ),
+  ): ChangeRoute {
+    return {
+      kind: "change",
+      ...r,
+      bind(req, protocol, input) {
+        const body = parseBody(r.body, protocol, input);
+        const request = { ...req, body };
+        return {
+          body,
+          async prepare(store) {
+            return "prepare" in r
+              ? r.prepare(request, store)
+              : (tx) => r.commit(tx, request);
+          },
+        };
+      },
+    };
+  };
 }
+const change = defineChange<Reply>();
+const secret = defineChange<SecretReply>();
 const issued = <A, K>(status: 200 | 201, i: Issued<A, K>) => ({
   first: { status, body: i.shown },
   ack: { status, body: i.ack },
@@ -149,11 +190,6 @@ async function verifyLogin(
   if (!hash || !(await admin.verifyPassword(hash, req.body.password)))
     refuse("unauthenticated", "Invalid account or password");
   return hash;
-}
-async function hashNewPassword(
-  req: Req<CoreBodies["account"]>,
-): Promise<string> {
-  return admin.hashPassword(req.body.password);
 }
 function creatingCall(tx: ReadTx, r: Req<unknown>): number | null {
   if (r.who.caller.kind !== "plugin") return null;
@@ -529,18 +565,20 @@ export const ROUTES: readonly Route[] = [
     doc: "callers-and-credentials",
     who: ["public"],
     body: C("login"),
-    prepare: verifyLogin,
-    commit: (tx, r, verifiedHash) => {
-      if (admin.passwordHashOf(tx, r.body.operator_id) !== verifiedHash)
-        refuse("unauthenticated", "Account changed during login");
-      const s = admin.createSession(tx, r.body.operator_id);
-      return {
-        first: {
-          status: 200,
-          body: s.ack,
-          headers: { "set-cookie": s.shown.cookie },
-        },
-        ack: ok(s.ack),
+    prepare: async (r, store) => {
+      const verifiedHash = await verifyLogin(r, store);
+      return (tx) => {
+        if (admin.passwordHashOf(tx, r.body.operator_id) !== verifiedHash)
+          refuse("unauthenticated", "Account changed during login");
+        const s = admin.createSession(tx, r.body.operator_id);
+        return {
+          first: {
+            status: 200,
+            body: s.ack,
+            headers: { "set-cookie": s.shown.cookie },
+          },
+          ack: ok(s.ack),
+        };
       };
     },
   }),
@@ -569,8 +607,10 @@ export const ROUTES: readonly Route[] = [
     doc: "accounts-and-provisioning",
     who: ADMIN,
     body: C("account"),
-    prepare: hashNewPassword,
-    commit: (tx, r, hash) => created(admin.addAccount(tx, r.body, hash)),
+    prepare: async (r) => {
+      const hash = await admin.hashPassword(r.body.password);
+      return (tx) => created(admin.addAccount(tx, r.body, hash));
+    },
   }),
   change({
     method: "DELETE",

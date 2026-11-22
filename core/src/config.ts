@@ -127,10 +127,13 @@ export async function readConfigFile(
   for (const [key, value] of Object.entries(env))
     if (key.startsWith("ATLAS_CORE_") && value !== undefined) {
       const name = key.slice(11).toLowerCase();
-      let parsed: unknown = value;
+      let parsed: unknown;
       try {
         parsed = JSON.parse(value);
-      } catch {}
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error;
+        parsed = value;
+      }
       config = { ...config, [name]: parsed };
     }
   return config;

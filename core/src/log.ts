@@ -71,7 +71,9 @@ export function startLog(
     let names: string[];
     try {
       names = files(dir);
-    } catch {
+    } catch (error) {
+      if (!(error instanceof Error && Reflect.get(error, "code") === "ENOENT"))
+        process.stderr.write(`Core could not list diagnostics for run ${id}: ${String(error)}\n`);
       return;
     }
     for (const name of names)
@@ -164,7 +166,9 @@ export function startLog(
             fileBytes += bytes;
             writtenGapVersion = version;
             writtenThrough = pending.at(-1)?.to_n ?? writtenThrough;
-          } catch {}
+          } catch (error) {
+            process.stderr.write(`Core diagnostic gap record write failed: ${String(error)}\n`);
+          }
         }
       }
     })().finally(() => {
@@ -201,7 +205,9 @@ export function startLog(
             gaps.push(...record.gaps);
             writtenThrough = record.gaps.at(-1)?.to_n ?? writtenThrough;
           }
-        } catch {}
+        } catch {
+          process.stderr.write(`Core could not recover a diagnostic record for run ${id}\n`);
+        }
       }
       mkdirSync(options.gapDirectory, { recursive: true });
       gapFile = join(options.gapDirectory, `run-${id}.json`);
@@ -237,7 +243,9 @@ export function startLog(
           for await (const line of reader) {
             try {
               if (JSON.parse(line).n > after) result.push(line);
-            } catch {}
+            } catch {
+              process.stderr.write("Core skipped a malformed diagnostic record during debug read\n");
+            }
             if (result.length >= limit) return result;
           }
         } finally {
@@ -259,7 +267,9 @@ export function startLog(
       for (const line of lines(id)) {
         try {
           at = Math.max(at ?? 0, JSON.parse(line).at);
-        } catch {}
+        } catch {
+          process.stderr.write(`Core could not read a diagnostic timestamp for run ${id}\n`);
+        }
       }
       return at;
     },

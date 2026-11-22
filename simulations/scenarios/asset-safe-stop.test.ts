@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { minimal, common, ardupilotmega, MavLinkPacketParser, MavLinkPacketSplitter, MavLinkProtocolV2, send, type MavLinkPacket } from "node-mavlink";
 import { scenario } from "../src/scenario.ts";
 import { value } from "../src/world.ts";
-import { startApp, parseConfig } from "../../asset/src/index.ts";
+import { startApp, parseConfig } from "@atlas/asset";
 
 for (const failure of ["disconnect", "settings"] as const) scenario({
   name: `asset/docs/failsafes.md: safe stop after ${failure}`,
