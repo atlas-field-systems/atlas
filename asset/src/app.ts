@@ -1,6 +1,7 @@
 import {
   systemClock,
   type Clock,
+  type LinkFailure,
   type Report,
   type Room,
   type AssetFile,
@@ -197,6 +198,10 @@ export async function startApp(
       dispatch({ kind: "measurements", measurements });
       running?.outbox.changed();
     });
+    function reportBlocked(failure: LinkFailure) {
+      log.record({ kind: "outbox_blocked", time: clock.now(), failure });
+      process.stderr.write(`Asset outbox blocked: ${failure.error}: ${failure.explanation}\n`);
+    }
     const registration = connection.register({
       clock,
       heartbeatMs: config.reporting.heartbeat_s * 1000,
@@ -234,7 +239,8 @@ export async function startApp(
           now: clock.now(),
         });
       },
-    }, assetId => {
+    }, (assetId, outbox) => {
+      outbox.onBlocked(reportBlocked);
       const task = state.execution?.task;
       if (task) dispatch({ kind: "cancel", id: task.task_id, now: clock.now() });
       log.identify(assetId);
@@ -254,11 +260,9 @@ export async function startApp(
     report(pendingReports.splice(0));
     for (const file of pendingFiles) uploadFile(file);
     pendingFiles.length = 0;
-    running.outbox.onBlocked((failure) => {
-      log.record({ kind: "outbox_blocked", time: clock.now(), failure });
-      process.stderr.write(`Asset outbox blocked: ${failure.error}: ${failure.explanation}\n`);
-    });
-    const sessionFinished = running.done.then(
+    running.outbox.onBlocked(reportBlocked);
+    const session = running;
+    const sessionFinished = session.done.then(
       end => {
         log.record({ kind: "session_ended", time: clock.now(), end });
         if (!stopped) process.stderr.write(`Asset session ended: ${end.reason}\n`);
@@ -304,7 +308,7 @@ export async function startApp(
         let deadline: ReturnType<Clock["after"]> | undefined;
         try {
           await Promise.race([
-            running?.outbox.flush(),
+            session.outbox.flush(),
             new Promise<void>((resolve) => {
               deadline = clock.after(config.final_report_wait_s * 1000, resolve);
             }),
@@ -312,13 +316,13 @@ export async function startApp(
         } finally {
           deadline?.cancel();
         }
-        running?.stop();
+        session.stop();
         try { await connection.close(); }
         catch (failure) { log.record({ kind: "cleanup_failed", explanation: String(failure) }); }
         await sessionFinished;
         await equipmentStopped;
         await uploads;
-        return log.close(running?.asset_id ?? "unregistered", reason);
+        return log.close(session.asset_id, reason);
       })();
       return stopping;
     }
@@ -327,7 +331,7 @@ export async function startApp(
         if (!stopped) void stop("Fieldlink ended").catch(error => process.stderr.write(`${error}\n`));
       });
     }
-    return { get asset_id() { return running?.asset_id ?? "unregistered"; }, stop, done: running.done };
+    return { get asset_id() { return session.asset_id; }, stop, done: session.done };
   } catch (error) {
     for (const close of cleanup.reverse()) {
       try { await close(); }

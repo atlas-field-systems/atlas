@@ -29,6 +29,8 @@ For the IP link, startup refuses `initial_settings.link_loss_after_s` when it
 is at or below Core's keepalive interval. The SDK reads the interval from
 Core before registration; inspection alone cannot check a remote Core.
 See [Core contact](../core/docs/api.md#contact).
+For Meshtastic, inspection and startup refuse values below 15 seconds.
+See [Meshtastic timing](../fieldlink/meshtastic/README.md#first-implementation).
 
 ## Inspect a configuration
 
@@ -73,7 +75,7 @@ The configured safe action is unused when no commands are listed.
 | `link.kind` | Fieldlink selection | Use `meshtastic` and omit `asset_key` and `link.core_url` |
 | `link.port` | Local Meshtastic radio serial port | Required for Meshtastic |
 | `link.python` | Python with the Meshtastic client installed | Defaults to `python3` |
-| `link.gateway` | Gateway radio's public key | Required for Meshtastic as 64 lowercase hexadecimal characters |
+| `link.gateway` | Gateway radio's public key | Required for Meshtastic as 64 lowercase hexadecimal characters with at least one nonzero digit |
 | `link.discovery_channel` | Radio slot for the shared private channel | Integer from 0 through 7, default 0 |
 | `description` | Protocol registration body | Lists reports, commands, settings, cameras, and subsystems supported by this configuration |
 | `equipment` | Equipment kind and connection | Options for each kind are listed above |

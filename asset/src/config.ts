@@ -106,7 +106,7 @@ const schema = z.union([
       kind: z.literal("meshtastic"),
       port: z.string().min(1),
       python: z.string().min(1).default("python3"),
-      gateway: z.string().regex(/^[0-9a-f]{64}$/),
+      gateway: z.string().regex(/^(?!0{64}$)[0-9a-f]{64}$/),
       discovery_channel: z.int().min(0).max(7).default(0),
     }),
   }),
@@ -121,6 +121,8 @@ const schema = z.union([
   .superRefine((c, ctx) => {
     const fail = (path: string[], message: string) =>
       ctx.addIssue({ code: "custom", path, message });
+    if (c.asset_key === undefined && (c.initial_settings.link_loss_after_s ?? 15) < 15)
+      fail(["initial_settings", "link_loss_after_s"], "Meshtastic requires at least 15 seconds");
     if (
       c.description.commands.includes("takeoff") &&
       !(c.initial_settings.failsafe_policy ?? []).some((r) =>

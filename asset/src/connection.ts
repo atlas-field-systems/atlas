@@ -9,7 +9,7 @@ type Session = Pick<ReturnType<typeof runAsset>, "asset_id" | "queue" | "outbox"
 };
 
 interface AssetConnection {
-  register(options: AssetOptions, onRejoin?: (assetId: string) => void): Promise<Session>;
+  register(options: AssetOptions, onRejoin?: (assetId: string, outbox: Session["outbox"]) => void): Promise<Session>;
   close(): void | Promise<void>;
 }
 
@@ -37,7 +37,7 @@ export async function createAssetConnection(
 
   const controller = new AbortController();
   const { signal } = controller;
-  let radioDone: Promise<void> | undefined;
+  let opening: ReturnType<typeof openAsset> | undefined;
   return {
     async register(operations, onRejoin) {
       signal.throwIfAborted();
@@ -48,15 +48,15 @@ export async function createAssetConnection(
       const ended = Promise.withResolvers<FollowEnd>();
       void ended.promise.catch(error => emit("meshtastic.session_failed", { explanation: String(error) }));
       let current: ReturnType<typeof runAsset> | undefined;
-      const { link, failure, done } = await openAsset({
+      opening = openAsset({
         openRadio: signal => (options.openRadio ?? openMeshtasticRadio)({ port, python, signal, discoveryChannel: discovery_channel }),
         gateway, profile: { hash: protocol.hash, description: config.description },
         offlineMs: lossAfter === undefined ? undefined : Math.ceil(lossAfter * 1000),
         signal, now: () => options.clock.now(),
         onError: error => emit("meshtastic.exchange_failed", { explanation: String(error) }),
         onRegister({ assetId, after, lastTaskId }, link) {
-          if (current) onRejoin?.(assetId);
           const session = runAsset(link, { asset_id: assetId, after, last_task_id: lastTaskId }, operations, emit);
+          if (current) onRejoin?.(assetId, session.outbox);
           current = session;
           first.resolve(session);
           let replaced = false;
@@ -69,7 +69,7 @@ export async function createAssetConnection(
           };
         },
       });
-      radioDone = done;
+      const { link, failure } = await opening;
       const finish = () => signal.aborted ? ended.resolve({ reason: "stopped" }) : ended.reject(failure.reason);
       const finished = AbortSignal.any([signal, failure]);
       finished.addEventListener("abort", finish, { once: true });
@@ -87,7 +87,9 @@ export async function createAssetConnection(
     },
     async close() {
       controller.abort();
-      await radioDone;
+      // Startup owns an open failure. Closing still waits for its cleanup.
+      const [result] = await Promise.allSettled([opening]);
+      if (result.status === "fulfilled") await result.value?.done;
     },
   };
 }

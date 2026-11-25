@@ -86,11 +86,16 @@ test("config.md: inspection removes URL credentials", async () => {
 test("config.md: Meshtastic uses a gateway radio identity instead of a Core credential", async () => {
   const raw = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
   delete raw.asset_key;
+  raw.initial_settings.link_loss_after_s = 15;
   const link = { kind: "meshtastic", port: "/dev/ttyUSB0", gateway: "ab".repeat(32) };
   assert.deepEqual(inspectConfig(parseConfig({ ...raw, link })).link, { ...link, python: "python3", discovery_channel: 0 });
   assert.deepEqual(inspectConfig(parseConfig({ ...raw, link: { ...link, discovery_channel: 7 } })).link, {
     ...link, python: "python3", discovery_channel: 7,
   });
+  assert.throws(() => parseConfig({
+    ...raw, link, initial_settings: { ...raw.initial_settings, link_loss_after_s: 14.9 },
+  }), /link_loss_after_s/);
+  assert.throws(() => parseConfig({ ...raw, link: { ...link, gateway: "0".repeat(64) } }), /gateway/);
   assert.throws(() => parseConfig({ ...raw, asset_key: "unexpected", link }), /asset_key/);
   assert.throws(() => parseConfig({ ...raw, link: { ...link, gateway: "!12345678" } }), /gateway/);
   assert.throws(() => parseConfig({ ...raw, link: { ...link, discovery_channel: 8 } }), /discovery_channel/);
