@@ -2,9 +2,9 @@ name: asset
 on:
   push:
     branches: [main]
-    paths: ['package.json', 'scripts/workspace.mjs', 'asset/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'asset/**', 'fieldlink/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
   pull_request:
-    paths: ['package.json', 'scripts/workspace.mjs', 'asset/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'asset/**', 'fieldlink/**', 'simulations/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/asset.yml']
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

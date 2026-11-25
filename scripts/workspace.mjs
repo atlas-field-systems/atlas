@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const packages = ['protocol', 'core', 'sdk', 'asset', 'simulations'];
+const packages = ['protocol', 'core', 'sdk', 'fieldlink/meshtastic', 'gateway', 'asset', 'simulations'];
 const checks = ['docs', 'lint', ...packages, 'site'];
 const [command, part, ...extra] = process.argv.slice(2);
 
@@ -54,6 +54,13 @@ function check(part) {
       npm(part, 'test');
       node(part, 'src/main.ts', 'inspect', 'examples/copter.json');
       break;
+    case 'fieldlink/meshtastic':
+      types(part);
+      npm(part, 'test');
+      break;
+    case 'gateway':
+      npm(part, 'run', 'check');
+      break;
     case 'site':
       npm('atlas/site', 'run', 'check');
       npm('atlas/site', 'run', 'build');
@@ -66,7 +73,7 @@ try {
     throw new Error(`Use Node 24 (found ${process.versions.node}).`);
   if (extra.length || !['setup', 'check', 'sitl', 'demo'].includes(command) ||
       (part && !(command === 'check' ? checks : command === 'setup' ? [...packages, 'site', 'lint'] : []).includes(part)))
-    throw new Error('Usage: npm run setup [-- protocol|core|sdk|asset|simulations|site|lint]; npm run check [-- docs|lint|protocol|core|sdk|asset|simulations|site]; npm run check:sitl; npm run demo');
+    throw new Error(`Usage: npm run setup [-- ${[...packages, 'site', 'lint'].join('|')}]; npm run check [-- ${checks.join('|')}]; npm run check:sitl; npm run demo`);
   switch (command) {
     case 'setup': {
       const selected = part === 'lint' ? ['.']

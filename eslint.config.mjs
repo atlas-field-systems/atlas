@@ -8,7 +8,7 @@ const parts = {
   protocol: [],
   core: ['protocol(?:/|$)'],
   sdk: ['protocol(?:/|$)', 'core/event-kinds$'],
-  asset: ['sdk(?:/|$)', 'protocol(?:/|$)'],
+  asset: ['sdk(?:/|$)', 'protocol(?:/|$)', 'meshtastic-fieldlink(?:/|$)'],
   simulations: null,
 };
 const partFiles = part => `${part}/**/*.{ts,mts,cts,js,mjs,cjs}`;
@@ -110,7 +110,7 @@ const timersSource = `:matches(Literal[value=${timers}], TemplateLiteral[express
 export default [
   { ignores: ['**/node_modules/', '**/dist/', '**/build/', 'protocol/_site/', 'protocol/types.d.ts', 'simulations/.runs/'] },
   {
-    files: Object.keys(parts).map(partFiles),
+    files: [...Object.keys(parts), 'fieldlink', 'gateway'].map(partFiles),
     languageOptions: { parser },
     linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: 'error' },
     plugins: {

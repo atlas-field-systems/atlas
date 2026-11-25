@@ -2,9 +2,9 @@ name: lint
 on:
   push:
     branches: [main]
-    paths: ['protocol/**', 'core/**', 'sdk/**', 'asset/**', 'simulations/**', 'package*.json', 'eslint.config.mjs', 'scripts/workspace.mjs', 'scripts/lint.mjs', 'scripts/lint.test.mjs', '.github/workflows/lint.yml']
+    paths: ['protocol/**', 'core/**', 'sdk/**', 'asset/**', 'fieldlink/**', 'gateway/**', 'simulations/**', 'package*.json', 'eslint.config.mjs', 'scripts/workspace.mjs', 'scripts/lint.mjs', 'scripts/lint.test.mjs', '.github/workflows/lint.yml']
   pull_request:
-    paths: ['protocol/**', 'core/**', 'sdk/**', 'asset/**', 'simulations/**', 'package*.json', 'eslint.config.mjs', 'scripts/workspace.mjs', 'scripts/lint.mjs', 'scripts/lint.test.mjs', '.github/workflows/lint.yml']
+    paths: ['protocol/**', 'core/**', 'sdk/**', 'asset/**', 'fieldlink/**', 'gateway/**', 'simulations/**', 'package*.json', 'eslint.config.mjs', 'scripts/workspace.mjs', 'scripts/lint.mjs', 'scripts/lint.test.mjs', '.github/workflows/lint.yml']
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
