@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash, randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import { loadPackagedProtocol } from "@atlas/protocol";
 import { createClient, follow, systemClock } from "@atlas/sdk";
 import type { AssetEvent, AtlasEvent, Follow, Result } from "@atlas/sdk";
@@ -45,10 +46,9 @@ type Asset = {
   binding: Binding;
   session: string;
   after: number;
-  refreshing: number;
   removed?: true;
   queue: AssetEvent[];
-  reports: Set<Promise<unknown>>;
+  reports: Map<number, () => Promise<void>>;
   stream?: Follow;
   streamError?: Error;
   streamRetry?: NodeJS.Timeout;
@@ -57,10 +57,8 @@ type Asset = {
 };
 type ContactWrite = {
   contact: Contact;
-  asset?: Asset;
   result: ReturnType<typeof Promise.withResolvers<void>>;
 };
-type ContactWriter = { pending: ContactWrite[]; done: Promise<void> };
 type Signup = {
   session: string;
   operation: string;
@@ -70,15 +68,16 @@ type Signup = {
 };
 type Core = Awaited<ReturnType<typeof createGatewayCore>>;
 
-export function createGatewayHost(core: Core, run: number): GatewayHost & { close(): void } {
+export function createGatewayHost(core: Core, run: number, lifetime?: AbortSignal): GatewayHost & { close(): void } {
+  const closing = new AbortController();
+  const signal = lifetime ? AbortSignal.any([lifetime, closing.signal]) : closing.signal;
   const { client, hash: coreHash, withKey } = core;
   const assets = new Map<string, Asset>();
   const peers = new Map<string, Asset>();
   const carried = new Set<string>();
   const signups = new Map<string, Signup>();
   const events = new Set<(assetId: string) => void>();
-  const contactWrites = new Map<string, ContactWriter>();
-  const failedOffline = new Map<string, Contact>();
+  const contactWrites = new Map<string, ContactWrite[]>();
 
   function assetFor(assetId: string): Asset {
     const asset = assets.get(assetId);
@@ -93,72 +92,91 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
     asset.streamRetry = undefined;
   }
 
-  function checkRemoval<T>(asset: Asset, result: Result<T>) {
+  function checkRemoval<T>(assetId: string, result: Result<T>) {
     if (!result.ok && (result.status === 403 || result.status === 404)) {
-      asset.removed = true;
-      carried.delete(asset.binding.assetId);
-      stop(asset);
-      throw new AssetRemoved(`Core removed radio Asset ${asset.binding.assetId}`);
-    }
-  }
-
-  async function sendContact(assetId: string, contact: Contact, asset?: Asset) {
-    const response = await client.call("putContact", {
-      retry: false,
-      params: { asset_id: assetId },
-      body: { asset_id: assetId, contact: contact.open ? "online" : "offline", time: contact.lastHeard },
-    });
-    if (asset) checkRemoval(asset, response);
-    if (asset || response.ok || (response.status !== 403 && response.status !== 404)) requireValue(response);
-  }
-
-  function writeContact(assetId: string, contact: Contact, asset = assets.get(assetId)) {
-    const result = Promise.withResolvers<void>();
-    const pending = { contact, asset, result };
-    const active = contactWrites.get(assetId);
-    if (active) {
-      const latest = active.pending.at(-1);
-      if (latest && latest.contact.open === contact.open) {
-        latest.result.resolve();
-        active.pending.pop();
+      const asset = assets.get(assetId);
+      if (asset) {
+        asset.removed = true;
+        stop(asset);
       }
-      active.pending.push(pending);
-      return result.promise;
+      carried.delete(assetId);
+      throw new AssetRemoved(`Core removed radio Asset ${assetId}`);
     }
-    const writer: ContactWriter = {
-      pending: [pending],
-      done: Promise.resolve().then(async () => {
-        let write: ContactWrite | undefined;
-        while ((write = writer.pending.shift())) {
-          const { contact, asset, result } = write;
-          try {
-            if (asset && (asset.removed || assets.get(assetId) !== asset)) {
-              result.resolve();
-              continue;
-            }
-            const offline = failedOffline.get(assetId);
-            if (contact.open && offline) {
-              await sendContact(assetId, offline, asset);
-              failedOffline.delete(assetId);
-            }
-            await sendContact(assetId, contact, asset);
-            if (!contact.open) failedOffline.delete(assetId);
-            result.resolve();
-          } catch (error) {
-            if (error instanceof AssetRemoved) failedOffline.delete(assetId);
-            else if (!contact.open) failedOffline.set(assetId, contact);
-            result.reject(error);
-          }
-        }
-        contactWrites.delete(assetId);
-      }),
-    };
-    contactWrites.set(assetId, writer);
+  }
+
+  async function retry<T>(send: () => Promise<T>): Promise<T> {
+    let backoff = 250;
+    while (true) {
+      signal.throwIfAborted();
+      try {
+        return await send();
+      } catch (error) {
+        if (error instanceof AssetRemoved || error instanceof ReportRefused) throw error;
+      }
+      await delay(backoff, undefined, { signal });
+      backoff = Math.min(backoff * 2, 5_000);
+    }
+  }
+
+  async function drainContacts(assetId: string, pending: ContactWrite[]) {
+    try {
+      while (pending[0]) {
+        const write = pending[0];
+        const confirmed = await retry(async () => {
+          const contact = write.contact;
+          const result = await client.call("putContact", {
+            retry: false,
+            params: { asset_id: assetId },
+            body: { asset_id: assetId, contact: contact.open ? "online" : "offline", time: contact.lastHeard },
+          });
+          checkRemoval(assetId, result);
+          requireValue(result);
+          return contact;
+        });
+        // A newer reading may have joined this transition while it was in flight.
+        if (confirmed !== write.contact) continue;
+        pending.shift();
+        write.result.resolve();
+        const asset = assets.get(assetId);
+        if (!confirmed.open && asset && !asset.stream) start(asset);
+      }
+    } catch (error) {
+      for (const write of pending) write.result.reject(error);
+    } finally {
+      contactWrites.delete(assetId);
+    }
+  }
+
+  function writeContact(assetId: string, contact: Contact, replay = false): Promise<void> {
+    const asset = assets.get(assetId);
+    if (asset?.removed) throw new AssetRemoved(`Core removed radio Asset ${assetId}`);
+    const pending = contactWrites.get(assetId) ?? [];
+    const latest = pending.at(-1);
+    if (latest?.contact.open === contact.open) {
+      if (latest.contact.lastHeard < contact.lastHeard) latest.contact = contact;
+      if (asset) asset.contact = latest.contact;
+      return latest.result.promise;
+    }
+    if (asset) {
+      asset.contact = contact;
+      if (!contact.open && !replay) {
+        stop(asset);
+        asset.queue.length = 0;
+        asset.streamError = undefined;
+      }
+    }
+    const result = Promise.withResolvers<void>();
+    pending.push({ contact, result });
+    if (!contactWrites.has(assetId)) {
+      contactWrites.set(assetId, pending);
+      void drainContacts(assetId, pending);
+    }
     return result.promise;
   }
 
   function start(asset: Asset, replayContact = false) {
     const { assetId } = asset.binding;
+    if (signal.aborted || asset.removed || contactWrites.get(assetId)?.some(write => !write.contact.open)) return;
     const stream = follow(client, {
       after: asset.after,
       async beforeOpen() {
@@ -166,8 +184,12 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         const contact = asset.contact;
         const refresh = replayContact;
         replayContact = true;
-        if (refresh && contact) await writeContact(assetId, contact, asset);
+        // This stream is already waiting to open and has no prefetched work.
+        if (refresh && contact) await writeContact(assetId, contact, true);
         return asset.after;
+      },
+      onContact({ open }) {
+        if (open) asset.streamError = undefined;
       },
     }, event => {
       if (!isAssetEvent(event)) return;
@@ -213,7 +235,8 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
     async bind(peer: string, profile: Profile): Promise<Binding> {
       if (profile.hash !== coreHash) throw new Error("Cannot bind incompatible Protocol definitions");
       const prior = peers.get(peer);
-      if (prior && !prior.removed && prior.session === profile.session) return prior.binding;
+      if (prior && !prior.removed && prior.session === profile.session && assets.has(prior.binding.assetId))
+        return prior.binding;
       let signup = signups.get(peer);
       if (!signup || signup.session !== profile.session) {
         signup = { session: profile.session, operation: randomUUID(), time: Date.now() };
@@ -221,9 +244,10 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
       }
       if (prior) {
         stop(prior);
-        peers.delete(peer);
         assets.delete(prior.binding.assetId);
-        await Promise.allSettled([...prior.reports, contactWrites.get(prior.binding.assetId)?.done]);
+        // An earlier SDK timeout can leave the old report's outcome unknown.
+        await Promise.allSettled([...prior.reports.values()].map(send => retry(send)));
+        signal.throwIfAborted();
       }
       const { operation, time } = signup;
       let binding: Binding;
@@ -241,12 +265,15 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
           body: { ...profile.description, asset_id: assetId, time },
         }));
         if (description.ok) {
-          await writeContact(assetId, { open: false, lastHeard: time });
-          const tasks = requireValue(await client.call("tasks", { params: { asset_id: assetId } }));
-          binding = { run, assetId, after: tasks.as_of, lastTaskId: tasks.items.at(-1)?.task.task_id ?? 0 };
-          break;
-        }
-        if (description.status !== 403 && description.status !== 404) requireValue(description);
+          try {
+            await writeContact(assetId, { open: false, lastHeard: time });
+            const tasks = requireValue(await client.call("tasks", { params: { asset_id: assetId } }));
+            binding = { run, assetId, after: tasks.as_of, lastTaskId: tasks.items.at(-1)?.task.task_id ?? 0 };
+            break;
+          } catch (error) {
+            if (!(error instanceof AssetRemoved)) throw error;
+          }
+        } else if (description.status !== 403 && description.status !== 404) requireValue(description);
         signup.replaced = assetId;
         signup.assetId = undefined;
       }
@@ -256,9 +283,8 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         binding,
         session: profile.session,
         after: binding.after,
-        refreshing: 0,
         queue: [],
-        reports: new Set(),
+        reports: new Map(),
         streamBackoff: 250,
       };
       peers.set(peer, asset);
@@ -278,50 +304,37 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         asset.streamError = undefined;
         throw error;
       }
-      if (asset.refreshing || asset.stream?.stale !== false) return;
+      if (asset.stream?.stale !== false) return;
       while (asset.queue[0] && asset.queue[0].event_id <= asset.after) asset.queue.shift();
       return asset.queue[0];
     },
     async store(assetId, submission, reports) {
       const asset = assetFor(assetId);
-      const writing = withKey(keyFor("reports", run, assetId, asset.session, submission), () =>
-        client.call("sendReports", { params: { asset_id: assetId }, body: { reports } }));
-      asset.reports.add(writing);
-      try {
-        const result = await writing;
-        checkRemoval(asset, result);
-        if (!result.ok && result.status !== undefined && result.status >= 400 && result.status < 500 && result.status !== 401)
+      const pending = asset.reports.get(submission);
+      if (pending) return pending();
+
+      const key = keyFor("reports", run, assetId, asset.session, submission);
+      let writing: Promise<void> | undefined;
+      const send = () => writing ??= (async () => {
+        const result = await withKey(key, () =>
+          client.call("sendReports", { params: { asset_id: assetId }, body: { reports } }));
+        if (!result.ok && result.status !== undefined && result.status >= 400 && result.status < 500 && result.status !== 401) {
+          asset.reports.delete(submission);
+          checkRemoval(assetId, result);
           throw new ReportRefused(`${result.error}: ${result.explanation}`);
+        }
         const { stored } = requireValue(result);
         if (stored !== reports.length) throw new Error("Core did not confirm the complete report batch");
-      } finally {
-        asset.reports.delete(writing);
-      }
+        asset.reports.delete(submission);
+      })().finally(() => { writing = undefined; });
+      asset.reports.set(submission, send);
+      return send();
     },
     async contact(assetId, open, lastHeard) {
-      const contact = { open, lastHeard };
-      const asset = assets.get(assetId);
-      if (!asset) return writeContact(assetId, contact);
-      if (asset.removed) throw new AssetRemoved(`Core removed radio Asset ${assetId}`);
-      asset.contact = contact;
-      if (open) return writeContact(assetId, contact, asset);
-      // Core drops requests in the offline transaction. Discard prefetched work
-      // while that write is pending, then replay from the radio's cursor.
-      if (asset.refreshing++ === 0) {
-        stop(asset);
-        asset.queue.length = 0;
-        asset.streamError = undefined;
-      }
-      let failed = true;
-      try {
-        await writeContact(assetId, contact, asset);
-        failed = false;
-      } finally {
-        if (--asset.refreshing === 0 && assets.get(assetId) === asset && !asset.removed)
-          start(asset, failed);
-      }
+      return writeContact(assetId, { open, lastHeard });
     },
     close() {
+      closing.abort();
       for (const asset of assets.values()) stop(asset);
       assets.clear();
     },

@@ -21,10 +21,9 @@ message. The Asset requires `link_loss_after_s` to be at least 15 seconds
 at startup and refuses shorter values in settings requests and Tasks. A join waits if
 measured turns leave too little room for established Assets to check in.
 The gateway reports a radio offline 14,900 ms after its last reply, even if
-the radio's replacement app fails to register. Queued contact writes preserve
-each transition. The gateway combines consecutive readings of the same state.
-It retries failed writes with backoff. A failed offline write must reach Core
-before the next online write. On a link that
+the radio's replacement app fails to register. Meshtastic reports each
+transition through [the gateway host's contact queue](../../gateway/README.md#gateway-contact).
+On a link that
 loses 5% of messages at random, a healthy Asset briefly shows offline about
 once an hour; its next check-in restores it. The gateway backs off unanswered
 offline probes up to 30 seconds between attempts. A discovery announcement

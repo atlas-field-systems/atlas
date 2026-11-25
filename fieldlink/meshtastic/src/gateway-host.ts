@@ -16,6 +16,7 @@ export interface GatewayHost {
   refuseDefinitions(peer: string, profile: { hash: string; session: string }): Promise<void>;
   next(assetId: string, after: number): AssetEvent | undefined;
   store(assetId: string, submission: number, reports: Report[]): Promise<void>;
+  // Queues a transition until Core confirms it in order or the Asset is removed.
   contact(assetId: string, open: boolean, lastHeard: number): Promise<void>;
 }
 

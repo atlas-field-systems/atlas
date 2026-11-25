@@ -104,10 +104,12 @@ async function withMesh(w: World, run: (mesh: {
   const heartbeat = core.client.holdContact();
   const errors: unknown[] = [];
   function startGateway() {
-    const host = createGatewayHost(core, run_id);
     const stop = new AbortController();
-    const done = serveGateway({ radio: mesh.radio(gateway), host,
-      signal: AbortSignal.any([signal, stop.signal]), now: () => w.clock.now(), onError: error => errors.push(error) }).finally(() => host.close());
+    const radio = mesh.radio(gateway);
+    const lifetime = AbortSignal.any([signal, stop.signal]);
+    const host = createGatewayHost(core, run_id, AbortSignal.any([lifetime, radio.failure]));
+    const done = serveGateway({ radio, host,
+      signal: lifetime, now: () => w.clock.now(), onError: error => errors.push(error) }).finally(() => host.close());
     void done.catch(() => {});
     return { done, stop: () => stop.abort() };
   }
@@ -674,8 +676,8 @@ scenario({
   },
 });
 
-for (const [bound, failFirst] of [[false, false], [true, false], [true, true]]) scenario({
-  name: failFirst ? "Meshtastic retries a failed offline transition before reporting online"
+for (const [bound, failure] of [[false, ""], [true, ""], [true, "offline"], [true, "online"]] as const) scenario({
+  name: failure ? `Meshtastic retries a failed ${failure} transition before the next state`
     : `Meshtastic preserves queued contact transitions for a ${bound ? "bound" : "carried"} Asset`,
   checks: ["fieldlink/meshtastic/README.md#first-implementation"],
   async run(w) {
@@ -691,7 +693,7 @@ for (const [bound, failFirst] of [[false, false], [true, false], [true, true]]) 
         if (writes.length === 1) {
           started.resolve();
           await release.promise;
-          if (failFirst) return new Response(null, { status: 503 });
+          if (failure) return new Response(null, { status: 503 });
         }
       }
       return fetch(input, init);
@@ -704,31 +706,40 @@ for (const [bound, failFirst] of [[false, false], [true, false], [true, true]]) 
         commands: [], reports: ["settings"], settings: ["lights"],
       } });
       if (!bound) await host.carried();
-      await host.contact(assetId, true, w.clock.now());
-      const time = w.clock.now();
+      await host.contact(assetId, failure !== "online", w.clock.now());
+      const time = w.clock.now() + 10;
       stalled = true;
-      const first = host.contact(assetId, !failFirst, time);
-      const firstSettled = failFirst ? assert.rejects(first, /unknown/) : first;
+      const first = host.contact(assetId, failure !== "offline", time);
+      void first.catch(() => {});
       await started.promise;
       let taskId: number | undefined;
-      if (!failFirst) {
+      if (!failure) {
         // The Asset must be online to accept a Task while the refresh is blocked.
         const sent = value(await w.complete(w.admin.call("sendTasks", {
           params: { asset_id: assetId }, body: { tasks: [{ kind: "settings", settings: { lights: "on" } }] },
         })));
         taskId = sent.task_ids[0];
       }
-      const queued = [host.contact(assetId, true, time + 1), host.contact(assetId, true, time + 2),
-        host.contact(assetId, false, time + 2), host.contact(assetId, true, time + 3)];
+      const refreshes = failure === "online" ? [] :
+        [host.contact(assetId, true, time + 1), host.contact(assetId, true, time + 2)];
+      const queued = [...refreshes, host.contact(assetId, false, time + 2), host.contact(assetId, true, time + 3)];
       release.resolve();
-      await Promise.all([firstSettled, ...queued]);
+      await Promise.all([first, ...queued]);
       if (taskId !== undefined) {
         const tasks = requireValue(await core.client.call("tasks", { params: { asset_id: assetId } }));
         assert.equal(tasks.items.find(item => item.task.task_id === taskId)?.state, "dropped");
       }
       assert.deepEqual(writes.map(({ contact, time }) => [contact, time]),
-        [...(failFirst ? [["offline", time], ["offline", time]] : [["online", time]]),
-          ["online", time + 2], ["offline", time + 2], ["online", time + 3]]);
+        [...(failure === "offline" ? [["offline", time], ["offline", time], ["online", time + 2]]
+          : failure === "online" ? [["online", time], ["online", time]] : [["online", time], ["online", time + 2]]),
+          ["offline", time + 2], ["online", time + 3]]);
+      if (failure === "online") {
+        await w.until(() => w.events.filter(event => event.kind === "asset.contact" &&
+          event.record.asset_id === assetId && event.record.time >= time).length === 3);
+        assert.deepEqual(w.events.flatMap(event => event.kind === "asset.contact" &&
+          event.record.asset_id === assetId && event.record.time >= time ? [event.record.contact] : []),
+        ["online", "offline", "online"]);
+      }
     } finally {
       release.resolve();
       host.close();
@@ -738,8 +749,9 @@ for (const [bound, failFirst] of [[false, false], [true, false], [true, true]]) 
   },
 });
 
-scenario({
-  name: "Meshtastic drains a retired app's reports before the replacement signs up",
+for (const timeout of [false, true]) scenario({
+  name: timeout ? "Meshtastic resolves a retired app's timed-out report before signing up"
+    : "Meshtastic drains a retired app's reports before the replacement signs up",
   checks: ["core/docs/api.md#radio-assets", "core/docs/api.md#operator-requests"],
   async run(w) {
     const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
@@ -747,12 +759,21 @@ scenario({
     const storing = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     const described = Promise.withResolvers<void>();
+    const late = Promise.withResolvers<void>();
+    const reportKeys: (string | null)[] = [];
     let replacing = false;
     const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
       const path = new URL(String(input)).pathname;
       if (path.endsWith("/reports")) {
-        storing.resolve();
-        await release.promise;
+        reportKeys.push(new Headers(init?.headers).get("Idempotency-Key"));
+        if (reportKeys.length === 1) {
+          storing.resolve();
+          await release.promise;
+          // The first request was already on its way to Core when the SDK timed out.
+          const response = await fetch(input, { ...init, signal: undefined });
+          late.resolve();
+          return response;
+        }
       }
       const response = await fetch(input, init);
       if (replacing && path.endsWith("/description")) described.resolve();
@@ -774,16 +795,135 @@ scenario({
         type: "report.status", kind: "queue", asset_id: assetId, time: w.clock.now(), task_ids: [taskId],
       }]);
       await storing.promise;
+      if (timeout) await assert.rejects(report, /unknown/);
       replacing = true;
       const replacement = host.bind("radio", { ...profile, session: "new" });
       // Let an unsynchronized description reach Core while the old report is blocked.
-      await Promise.race([described.promise, delay(500)]);
+      if (!timeout) {
+        await Promise.race([described.promise, delay(500)]);
+        release.resolve();
+        await report;
+      }
+      const registered = await replacement;
       release.resolve();
-      const [, registered] = await Promise.all([report, replacement]);
+      await late.promise;
       assert.equal(registered.assetId, assetId);
       const tasks = requireValue(await core.client.call("tasks", { params: { asset_id: assetId } }));
       assert.equal(tasks.items.find(item => item.task.task_id === taskId)?.state, "dropped");
       assert.deepEqual(tasks.held, []);
+      if (timeout) {
+        assert.equal(reportKeys.length, 2);
+        assert.ok(reportKeys[0]);
+        assert.equal(reportKeys[0], reportKeys[1]);
+      }
+    } finally {
+      release.resolve();
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic commits queued silence when a replacement signup fails",
+  checks: ["gateway/README.md#gateway-contact"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const holding = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    let replacing = false;
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
+      const path = new URL(String(input)).pathname;
+      if (replacing && path.endsWith("/contact") && typeof init?.body === "string" &&
+          init.body.includes('"contact":"online"')) {
+        holding.resolve();
+        await release.promise;
+      }
+      if (replacing && path.endsWith("/description"))
+        return Response.json({ error: "storage_full", explanation: "signup failed" }, { status: 507 });
+      return fetch(input, init);
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const host = createGatewayHost(core, run_id);
+    const profile = { hash: core.hash, description: { commands: [], reports: ["settings"], settings: ["lights"] } } satisfies Omit<Parameters<GatewayHost["bind"]>[1], "session">;
+    try {
+      const { assetId } = await host.bind("radio", { ...profile, session: "old" });
+      await host.contact(assetId, true, w.clock.now());
+      replacing = true;
+      const refreshing = host.contact(assetId, true, w.clock.now());
+      await holding.promise;
+      const offline = host.contact(assetId, false, w.clock.now());
+      const replacement = assert.rejects(host.bind("radio", { ...profile, session: "new" }), /signup failed/);
+      release.resolve();
+      await Promise.all([refreshing, offline, replacement]);
+      const asset = value(await w.complete(w.admin.call("asset", { params: { asset_id: assetId } })));
+      assert.equal(asset.item.contact.contact, "offline");
+    } finally {
+      release.resolve();
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic resume waits for an unheard offline write before replaying work",
+  checks: ["core/docs/api.md#operator-requests", "gateway/README.md#gateway-contact"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const holding = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const seen = Promise.withResolvers<AssetEvent>();
+    let restarting = false;
+    let attempts = 0;
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
+      if (restarting && String(input).endsWith("/contact") && typeof init?.body === "string" &&
+          init.body.includes('"contact":"offline"')) {
+        if (++attempts === 1) {
+          holding.resolve();
+          await release.promise;
+          return Response.json({ error: "storage_full", explanation: "temporary failure" }, { status: 507 });
+        }
+      }
+      return fetch(input, init);
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    let host = createGatewayHost(core, run_id);
+    const profile = { hash: core.hash, session: "boot",
+      description: { commands: [], reports: ["settings"], settings: ["lights"] },
+    } satisfies Parameters<GatewayHost["bind"]>[1];
+    try {
+      const binding = await host.bind("radio", profile);
+      const { assetId, after } = binding;
+      await host.contact(assetId, true, w.clock.now());
+      const change = (lights: "on" | "off") => w.complete(w.admin.call("changeSettings", {
+        params: { asset_id: assetId }, body: { settings: { lights } },
+      }));
+      value(await change("off"));
+      host.close();
+
+      host = createGatewayHost(core, run_id);
+      await host.carried();
+      restarting = true;
+      const offline = host.contact(assetId, false, w.clock.now());
+      void offline.catch(() => {});
+      await holding.promise;
+      host.onEvent(() => {
+        const event = host.next(assetId, after);
+        if (event?.kind === "settings.requested") seen.resolve(event);
+      });
+      await host.bind("radio", { ...profile, resume: binding });
+      const deliveredEarly = await Promise.race([seen.promise, delay(250)]);
+      release.resolve();
+      assert.equal(deliveredEarly, undefined, "the radio received a request pending offline removal");
+      await offline;
+      await host.contact(assetId, true, w.clock.now());
+      value(await change("on"));
+      const event = await w.complete(seen.promise);
+      assert.equal(event.kind, "settings.requested");
+      assert.equal(event.record.settings.lights, "on");
     } finally {
       release.resolve();
       host.close();

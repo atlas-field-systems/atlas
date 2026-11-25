@@ -50,12 +50,13 @@ async function main(signal: AbortSignal) {
         const unsubscribe = client.onStatus(status => {
           if (status.phase !== "connected") run.abort();
         });
-        const host = createGatewayHost(core, run_id);
+        const lifetime = AbortSignal.any([signal, run.signal]);
+        const host = createGatewayHost(core, run_id, AbortSignal.any([lifetime, radio.failure]));
         const heartbeat = client.holdContact();
         process.stdout.write(`${JSON.stringify({ fieldlink: config.fieldlink, run_id })}\n`);
         try {
           await serveGateway({
-            radio, host, signal: AbortSignal.any([signal, run.signal]), onError: logFailure,
+            radio, host, signal: lifetime, onError: logFailure,
             timing: { ...meshtasticTiming, timeoutMs: config.timeout_ms },
           });
         } finally {

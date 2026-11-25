@@ -51,7 +51,6 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
   let waiting: { peer: string; register: boolean; resolve: (packet: Envelope) => void } | undefined;
   const operations = new Set<Promise<void>>();
   const bindingPeers = new Set<string>();
-  const contacts = new Map<string, AbortController>();
   const reportError = (error: unknown) => { if (!signal.aborted) onError?.(error); };
   const stopReceive = receiveEnvelopes(radio, key => waiting?.peer === key, (key, packet) => {
     if (packet.session === session && packet.seq === seq && waiting?.peer === key) waiting.resolve(packet);
@@ -99,28 +98,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
 
   function contact(assetId: string, open: boolean, lastHeard: number, peer?: Peer) {
     if (open) unheard.delete(assetId);
-    contacts.get(assetId)?.abort();
-    const attempt = new AbortController();
-    contacts.set(assetId, attempt);
-    const retrySignal = AbortSignal.any([signal, attempt.signal]);
-    background((async () => {
-      let backoff = 250;
-      try {
-        while (!retrySignal.aborted) {
-          try {
-            await host.contact(assetId, open, lastHeard);
-            return;
-          } catch (error) {
-            if (error instanceof AssetRemoved) throw error;
-            reportError(error);
-          }
-          await delay(backoff, undefined, { signal: retrySignal }).catch(() => {});
-          backoff = Math.min(backoff * 2, 5_000);
-        }
-      } finally {
-        if (contacts.get(assetId) === attempt) contacts.delete(assetId);
-      }
-    })(), peer);
+    background(host.contact(assetId, open, lastHeard), peer);
   }
 
   async function exchange(peer: Peer, packet: Envelope) {
@@ -191,7 +169,6 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
               peers.delete(id);
               const assetId = prior.binding?.registration.assetId;
               if (assetId && prior.state.kind === "ready" && prior.state.deadline !== undefined) {
-                contacts.get(assetId)?.abort();
                 unheard.set(assetId, { deadline: prior.state.deadline, lastHeard: toContactTime(prior.state.heardAt) });
               }
             }
@@ -239,9 +216,9 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
           binding.receipt = { kind: "refused", id: toStore.id };
         } finally {
           delete binding.storing;
+          if (storing.followup && peer.state.kind === "ready" && peers.get(keyFor(peer)) === peer)
+            peer.state = hasWork(peer.state);
         }
-        if (storing.followup && peer.state.kind === "ready" && peers.get(keyFor(peer)) === peer)
-          peer.state = hasWork(peer.state);
       })(), peer);
     }
   }
