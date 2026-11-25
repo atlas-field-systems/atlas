@@ -11,7 +11,7 @@ import {
 import { frameBytes, isDescription, isReport, maxReplyFrames, wireSize, type Envelope } from "./wire.ts";
 
 type Poll = Extract<Envelope, { kind: "poll" }>;
-type Binding = { registration: Registration; cursor: number; receipt?: Poll["receipt"]; oversize?: number; storing?: true };
+type Binding = { registration: Registration; cursor: number; receipt?: Poll["receipt"]; oversize?: number; storing?: { followup: boolean } };
 type Peer = {
   key: string; boot: string; state: PeerTiming;
   binding?: Binding;
@@ -154,7 +154,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
       return;
     }
     const assetId = binding?.registration.assetId;
-    let event: Poll["event"];
+    let event: ReturnType<GatewayHost["next"]>;
     if (peer.state.kind === "ready" && canDeliver(peer.state) && binding && assetId) {
       try {
         event = host.next(assetId, binding.cursor);
@@ -186,7 +186,15 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
             peer.refusal = "definitions";
           } else if (isDescription(protocol, reply.description)) {
             const { hash, description, resume } = reply;
-            for (const [id, prior] of peers) if (prior !== peer && prior.key === peer.key) peers.delete(id);
+            for (const [id, prior] of peers) {
+              if (prior === peer || prior.key !== peer.key) continue;
+              peers.delete(id);
+              const assetId = prior.binding?.registration.assetId;
+              if (assetId && prior.state.kind === "ready" && prior.state.deadline !== undefined) {
+                contacts.get(assetId)?.abort();
+                unheard.set(assetId, { deadline: prior.state.deadline, lastHeard: toContactTime(prior.state.heardAt) });
+              }
+            }
             const registration = await host.bind(peer.key, { session: peer.boot, hash, description, resume });
             if (signal.aborted) return;
             peer.binding = { registration, cursor: registration.after };
@@ -210,13 +218,16 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
     const submission = reply.submission;
     const toStore = submission && !binding.storing && submission.id > (binding.receipt?.id ?? 0)
       ? submission : undefined;
-    const state = replied(peer.state, received, timing, Boolean(poll.event || (reply.waiting && !binding.storing && !toStore)));
+    const followup = Boolean(poll.event || reply.waiting);
+    if (binding.storing && followup) binding.storing.followup = true;
+    const state = replied(peer.state, received, timing, followup && !binding.storing && !toStore);
     peer.state = packet.kind === "registered" ? hasWork(state) : state;
     contact(assetId, true, heardAt, peer);
     wake?.abort();
     if (poll.event && event && reply.cursor >= event.event_id) binding.cursor = reply.cursor;
     if (toStore) {
-      binding.storing = true;
+      const storing = { followup };
+      binding.storing = storing;
       background((async () => {
         try {
           if (!toStore.reports.every((report): report is Report => isReport(protocol, report) && report.asset_id === assetId))
@@ -229,7 +240,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
         } finally {
           delete binding.storing;
         }
-        if (reply.waiting && peer.state.kind === "ready" && peers.get(keyFor(peer)) === peer)
+        if (storing.followup && peer.state.kind === "ready" && peers.get(keyFor(peer)) === peer)
           peer.state = hasWork(peer.state);
       })(), peer);
     }

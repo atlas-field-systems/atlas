@@ -132,6 +132,80 @@ test("reports waiting behind a submission trigger a follow-up after storage", { 
   }, 4_500);
 });
 
+for (const reason of ["event", "later waiting reply"] as const) {
+  test(`a pending report defers the follow-up after ${reason}`, { timeout: 11_000 }, async () => {
+    const storing = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    await exercise({
+      next(_, after) {
+        if (reason === "event" && after < 2) return {
+          kind: "tasks.requested", event_id: 2, time: 1,
+          record: [{ kind: "hold", task_id: 1, asset_id: "B", time: 1, requested_by: "OP" }],
+        };
+      },
+      async store() { storing.resolve(); await release.promise; },
+    }, async mesh => {
+      await join(mesh);
+      const poll = await mesh.next();
+      assert.equal(poll.kind, "poll");
+      assert.equal(Boolean(poll.event), reason === "event");
+      await mesh.respond(poll, {
+        cursor: reason === "event" ? 2 : 1,
+        submission: { id: 1, reports: [
+          { type: "report.status", kind: "task", asset_id: "B", time: 1, task_id: 1, task_state: "active" },
+        ] },
+      });
+      await storing.promise;
+      let receipt: Promise<Envelope>;
+      try {
+        if (reason === "later waiting reply") {
+          const routine = await mesh.next();
+          assert.equal(routine.kind, "poll");
+          assert.equal(routine.receipt, undefined);
+          await mesh.respond(routine, { waiting: true });
+        }
+        receipt = mesh.next();
+        assert.equal(await Promise.race([receipt, delay(1_800)]), undefined, "follow-up ran before Core stored the report");
+      } finally {
+        release.resolve();
+      }
+      const following = await Promise.race([receipt, delay(1_800)]);
+      assert.equal(following?.kind, "poll", "receipt waited for the routine poll");
+      assert.deepEqual(following.receipt, { kind: "stored", id: 1 });
+    }, 4_500);
+  });
+}
+
+test("a failed replacement bind preserves the old app's offline deadline", { timeout: 19_000 }, async () => {
+  const first = nonce(), replacement = nonce();
+  const offline = Promise.withResolvers<{ lastHeard: number; at: number }>();
+  let heardAt = 0;
+  await exercise({
+    async bind(_, profile) {
+      if (profile.session === replacement) throw new Error("Core could not bind the replacement");
+      return { run: 1, assetId: "B", after: 1, lastTaskId: 0 };
+    },
+    async contact(_, open, lastHeard) {
+      if (open) heardAt = lastHeard;
+      else offline.resolve({ lastHeard, at: Date.now() });
+    },
+  }, async mesh => {
+    await join(mesh, first);
+    const poll = await mesh.next();
+    assert.equal(poll.kind, "poll");
+    await mesh.respond(poll);
+    mesh.announce(replacement);
+    const register = await mesh.next();
+    assert.equal(register.kind, "register");
+    await mesh.respond(register);
+    const result = await Promise.race([offline.promise, delay(15_000, undefined, { ref: false })]);
+    assert.ok(result, "Core never heard that the old app went offline");
+    assert.equal(result.lastHeard, heardAt);
+    assert.ok(result.at - heardAt >= meshtasticTiming.offlineMs);
+    assert.ok(result.at - heardAt < meshtasticTiming.offlineMs + 500);
+  });
+});
+
 test("a replacement profile retires the previous radio app while Core binds it", { timeout: 7_000 }, async () => {
   const binding = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
