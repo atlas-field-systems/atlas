@@ -1,52 +1,163 @@
-# Atlas language
+# Atlas
 
-Behavior belongs to the owning subsystem; shared formats belong to Protocol.
+Atlas helps operators understand field systems, request work, and retain evidence.
 
-| Term | Meaning |
-| --- | --- |
-| Capture | A Task that asks a camera for a photo or clip. See [capture files](asset/docs/README.md#capture-files). |
-| Asset | An Atlas participant that reports information and may offer equipment-control capabilities. |
-| Gateway | A system on its own computer, outside Core, that uplinks to the Core API and carries Atlas across field links using Fieldlinks. Each radio network has one gateway, and a Core may run several gateways. A gateway is not an Asset. See [Gateway](gateway/README.md). |
-| Gateway app | The framework every gateway runs. It connects to Core, registers the Assets its radio hears, installs Fieldlinks, and runs one through its stable gateway interface. See [Gateway](gateway/README.md). |
-| Fieldlink | A separately released package that carries Atlas across one kind of field link, defined by its radio hardware and the software over it, such as SiK with MAVLink or LoRa with Meshtastic. It holds both ends: a gateway side and, unless the vehicle runs no Atlas software, an Asset side. A gateway runs one at a time. See [Fieldlink](fieldlink/README.md). |
-| Radio identity | The identity one radio has on its field link, made with that link's own cryptography, such as a Meshtastic node's public key. It stays with the gateway and its Fieldlink; Core does not hold it. See [what every Fieldlink provides](fieldlink/README.md#what-every-fieldlink-provides). |
-| Simulation | A run of real Atlas parts together in a simulated world, with simulated links, Assets, time, and faults, that checks an end-to-end rule. A simulated pass does not prove real flight or radio performance. See [Simulations](simulations/README.md). |
-| Run | Everything between one start of Core and the next deliberate stop. A crash of Core resumes the run. See [Runs and identity](atlas/runs-and-identity.md). |
-| Registration | An Asset joining the current run and getting its `asset_id` from Core. See [Runs and identity](atlas/runs-and-identity.md#keys-and-registration). |
-| Reset | Ending a run by stopping Core on purpose. There is no Reset request or button. See [Runs and identity](atlas/runs-and-identity.md#a-run-and-reset). |
-| Reset ZIP | One part's own archive of a run or operation, for people and AI agents to investigate it. Core, each Asset, and each gateway write their own. See [Core Reset](core/docs/reset.md). |
-| Pillar | A part of Core that owns one share of its state behind a small interface, such as Entities, Tasks, or Objects. See [Core pillars](core/docs/pillars.md). |
-| Event log | Core's append-only `events` table: every accepted request and Asset report, in order. Live updates and history are read from it; current state lives in ordinary tables. |
-| Shared picture | Everything the Entities pillar holds about the field: Assets, Observations, Tracks, and geo features. The Command Interface draws its map from it. Nothing in it expires during a run. |
-| Observation | What one Asset currently reports seeing of one target, named by the Asset and its own `observation_id`. Evidence, not a conclusion. Operators may call it a sighting. |
-| Track | Fusion's conclusion about one target, resting on one or more Observations. Only Fusion creates, changes, or removes one. |
-| Geo feature | A place on the map: a point, line, area, or imagery, with an optional name. Operators and admins create, change, and delete them; Plugins and Assets may create them. Operators may call it a place. |
-| Imagery | A geo feature that shows one GeoTIFF Object on the map, where the file says it belongs. It can only be renamed. See [geo features](core/docs/api.md#geo-features). |
-| Object | A file Core holds, with a description of what it is. An Object never changes; a different file is a new Object. Operators, Plugins, and Assets add Objects. It may be attached to one geo feature. Objects are not Entities. |
-| Plugin | A program beside Core, in the second ring, that offers actions. It connects out to Core with its own key and reaches Core only through its Plugin interface. Plugins do not direct Assets. See [Plugins](atlas/plugins.md). |
-| Plugin interface | The Core API calls a Plugin's key may use. |
-| Plugin action | One thing a Plugin offers to do, such as find the buildings in an area. The Plugin describes it and its inputs, built from Protocol's common pieces; Protocol does not list actions. |
-| Plugin call | One run of a Plugin action with its inputs. It ends with a result or a failure, or is dropped if the Plugin goes offline or is removed first. |
-| View filter | An operator's choice to hide items in their own view, such as old sightings or a Track they disagree with. It belongs to one browser and one run, never changes the shared picture, and other operators never see it. |
-| Result overlay | A Plugin's listed results drawn on one operator's map. It never enters the shared picture; the operator saves an item as a place to share it. |
-| Asset module | A part of the Asset app that owns a behavior, such as communications or platform movement. |
-| Equipment driver | A part of an Asset that talks to external equipment to acquire state, control it, or both. Use the full term. |
-| Communications module | The Asset module that manages the SDK and routes Atlas requests and reports. |
-| Movement module | The Asset module that carries out commands for physical platform movement. |
-| Movement profile | Platform-specific execution behavior and parameters used by a movement module, distinct from an autopilot flight mode. |
-| Command | A request to perform a supported action, such as Takeoff or Land. |
-| Request body | What an operator sends to Core to ask for work or a settings change. It is not a record: Core adds the time, the IDs, and who asked to make the record. |
-| Supported setting | A setting an Asset lists in its description. Supporting a setting is separate from knowing its current value. |
-| Pause | A setting that stops an Asset's movement in place. The active Task stays active and continues when the Asset is set running again. Pause is not Hold. See [pause](asset/docs/README.md#pause). |
-| Contact | Whether Core is hearing from an Asset or gateway (online) or not (offline), with the time it was last heard. Contact is not proof of two-way communication. |
-| Provisioning | An admin adding or removing an account, or the key of an Asset on IP, a gateway, or a Plugin. Provisioning carries across runs; Assets themselves join by [registration](atlas/runs-and-identity.md#keys-and-registration). |
-| Task | One instance of requested work with a reported execution outcome. |
-| Hold | A command, like Land, that stops an Asset where it is and keeps it there. It keeps no earlier work to resume, so it is not pause. |
-| Subsystem | A part of an Asset, hardware or equipment software, that the Asset declares and reports a condition for, such as a GPS receiver or camera. |
-| Subsystem condition | A subsystem's health: unknown, healthy, degraded, or faulted. Not a failsafe condition. There is no overall Asset condition. |
-| Failsafe policy | An Asset's complete list of failsafe rules. It is one setting, always replaced whole. |
-| Failsafe condition | A test of an Asset's equipment, contact, or work state, used in a failsafe rule. |
-| Failsafe rule | Conditions, a priority, and a configured response, named by its rule ID. |
-| Failsafe response | A command the Asset supports and its parameters. It runs once each time its rule fires; only a critical battery rule falls back, to Return to home. A response always stops ordinary work; an Asset that should keep working has no rule for that situation. |
-| Failsafe task | One locally started execution of a failsafe response, using ordinary Task execution. It has no Core task number; its rule and start time name it. |
-| Failsafe state | The Asset's [operation-long lock on ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation). A rule or the operator's Fail-safe command starts it. |
+## Language
+
+### Runs and identity
+
+**Run**:
+The period from when Core starts to its next deliberate stop. A Core crash resumes the same **Run**. [Runs and identity](atlas/runs-and-identity.md)
+
+**Registration**:
+An **Asset** joining the current **Run** and receiving its Asset ID from Core. [Keys and registration](atlas/runs-and-identity.md#keys-and-registration)
+_Avoid_: Sign-up
+
+**Provisioning**:
+Admin setup that carries across **Runs**, including adding or removing accounts and connection keys for **Assets** on IP, **Gateways**, and **Plugins**. [What carries over](atlas/runs-and-identity.md#what-carries-over)
+
+**Reset**:
+A deliberate stop of Core that ends the **Run**. [Run and Reset](atlas/runs-and-identity.md#a-run-and-reset)
+
+**Reset ZIP**:
+One part's archive of a **Run** or operation for people and AI agents to investigate. Core, each **Asset**, and each **Gateway** write their own. [Core Reset](core/docs/reset.md)
+
+**Radio identity**:
+A radio's own identity, established by its field link's cryptography and kept by its **Gateway** and **Fieldlink**. [What every Fieldlink provides](fieldlink/README.md#what-every-fieldlink-provides)
+_Avoid_: Core key for a radio's identity
+
+**Contact**:
+Core's view of whether an **Asset** or **Gateway** is online or offline, along with when Core last heard from it. It measures incoming communication only. [Contact](core/docs/api.md#contact)
+
+### The picture
+
+**Event log**:
+Core's append-only log of accepted requests and **Asset** reports in order. Readers use it for live updates and history. [Core storage](core/docs/storage.md)
+
+**Shared picture**:
+The field state held by the Entities **Pillar** and shown on the Command Interface map, including **Assets**, **Observations**, **Tracks**, and **Geo features**. Entries stay until changed or removed, or until the **Run** ends. [Entities](core/docs/api.md#entities)
+
+**Observation**:
+One **Asset**'s latest report of what it sees of one target, identified by that Asset and the observation ID it chose. It is evidence for conclusions such as **Tracks**. [Observations](core/docs/api.md#observations)
+_Avoid_: Sighting (operator-facing label)
+
+**Track**:
+Fusion's conclusion about one target, based on one or more **Observations**. Fusion alone creates, changes, or removes a **Track**. [Tracks](core/docs/api.md#tracks)
+
+**Geo feature**:
+A point, line, area, or **Imagery** on the map, with an optional name. Operators and admins can create, change, and delete **Geo features**, and **Plugins** and **Assets** can create them. [Geo features](core/docs/api.md#geo-features)
+_Avoid_: Place (operator-facing label)
+
+**Imagery**:
+A **Geo feature** that shows one GeoTIFF **Object** at the location the file specifies. Only its name can be edited. [Geo features](core/docs/api.md#geo-features)
+
+**View filter**:
+An operator's choice to hide items from their own view, such as old **Observations** or a **Track** they disagree with. It is private to one browser and **Run** and leaves the **Shared picture** unchanged. [View filters](command-interface/docs/README.md#hide-items-in-your-own-view)
+
+### Work
+
+**Command**:
+A request to perform a supported action, such as Takeoff or Land.
+
+**Task**:
+One piece of requested work with a reported outcome.
+
+**Request body**:
+What an operator sends to Core to ask for work or a settings change. Core uses it to make a record. [Protocol laws](protocol/docs/laws.md)
+
+**Capture**:
+A **Task** that asks a camera for a photo or clip. [Capture files](asset/docs/README.md#capture-files)
+
+**Supported setting**:
+A setting an **Asset** lists in its description, whether or not the current value is known. [Asset settings](asset/docs/README.md)
+
+**Pause**:
+A setting that stops an **Asset**'s movement in place. The current **Task** stays active and continues when the **Asset** is set running again. [Pause](asset/docs/README.md#pause)
+
+**Hold**:
+A **Command** that stops an **Asset** where it is and holds it there. It keeps no earlier work to resume. [Hold](asset/docs/README.md#pause)
+
+### Failsafes
+
+**Subsystem**:
+A declared part of an **Asset** with its own **Subsystem condition**, such as a GPS receiver, camera, or equipment software component. [Subsystem conditions](asset/docs/status.md)
+
+**Subsystem condition**:
+The reported health of one **Subsystem**. Its values are unknown, healthy, degraded, or faulted. [Subsystem conditions](asset/docs/status.md)
+
+**Failsafe policy**:
+An **Asset**'s complete set of **Failsafe rules**, configured and replaced as one setting. [Failsafes](asset/docs/failsafes.md)
+
+**Failsafe condition**:
+A test of an **Asset**'s equipment, **Contact**, or work state, used in a **Failsafe rule**.
+
+**Failsafe rule**:
+A rule identified by its rule ID, with **Failsafe conditions**, a priority, and a configured **Failsafe response**. [Failsafes](asset/docs/failsafes.md#configure-conditions-as-well-as-responses)
+
+**Failsafe response**:
+A supported **Command** with its parameters, run once each time its **Failsafe rule** fires. The response always stops ordinary work. [Failsafe responses](asset/docs/failsafes.md#a-failsafe-activates-a-configured-task)
+
+**Failsafe task**:
+One local run of a **Failsafe response** using the ordinary **Task** path. Its **Failsafe rule** and start time identify it. [Failsafe tasks](asset/docs/failsafes.md#a-failsafe-activates-a-configured-task)
+
+**Failsafe state**:
+An **Asset**'s lock on ordinary work for the rest of its operation. A **Failsafe rule**, the operator's Fail-safe **Command**, or the flight controller taking over starts it. [Lock ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation)
+
+### Plugins and Objects
+
+**Object**:
+A file held by Core, separate from Entities, with a description and an optional attachment to one **Geo feature**. Operators, **Plugins**, and **Assets** can add **Objects**, and a different file is a new **Object**. [Objects](core/docs/api.md#objects)
+
+**Plugin**:
+A program running beside Core that offers **Plugin actions** and connects with its own key through the **Plugin interface**. It cannot direct **Assets**. [Plugins](atlas/plugins.md)
+
+**Plugin interface**:
+The part of the Core API available to a **Plugin** through its key. [Plugins](core/docs/api.md#plugins)
+
+**Plugin action**:
+One thing a **Plugin** offers to do, such as finding the buildings in an area. The **Plugin** describes the action and its inputs using Protocol's common pieces. [Plugins](atlas/plugins.md)
+
+**Plugin call**:
+One run of a **Plugin action** with its inputs. It ends with a result or failure, or is dropped if the **Plugin** goes offline or is removed first. [Plugins](core/docs/api.md#plugins)
+
+**Result overlay**:
+A **Plugin**'s listed results drawn privately on one operator's map. The operator can share an item by saving it as a **Geo feature**. [Plugin results](command-interface/docs/plugins-and-objects.md#run-a-plugin)
+
+### Parts and links
+
+**Asset**:
+An Atlas participant that reports information and may offer equipment control.
+
+**Gateway**:
+A system on its own computer that connects Core to one field radio network through a **Fieldlink**. Each network has one **Gateway**, and Core can serve several. [Gateway](gateway/README.md)
+
+**Gateway app**:
+The framework every **Gateway** runs to connect to Core and register the **Assets** its radio hears. It installs **Fieldlinks** and runs one at a time through its stable gateway interface. [Gateway](gateway/README.md)
+
+**Fieldlink**:
+A separately released package that carries Atlas over one kind of field link, defined by its radio hardware and software. It holds a **Gateway** side, plus an **Asset** side when the vehicle runs Atlas software. [Fieldlink](fieldlink/README.md)
+
+**Pillar**:
+A part of Core that owns one share of its state behind a small interface, such as Entities, **Tasks**, or **Objects**. [Core pillars](core/docs/pillars.md)
+
+**Simulation**:
+A test of an end-to-end rule using real Atlas parts with simulated links, **Assets**, time, and faults. Its results apply to the simulated world. [Simulations](simulations/README.md)
+
+### Asset software
+
+**Asset module**:
+A part of the **Asset** app that owns a behavior, such as communications or platform movement.
+
+**Equipment driver**:
+A part of an **Asset** that talks to external equipment to read its state, control it, or both. [Modules and equipment drivers](asset/docs/assets.md#modules-and-equipment-drivers)
+_Avoid_: Driver
+
+**Communications module**:
+The **Asset module** that manages the SDK and routes Atlas requests and reports. [Communications](asset/docs/communications.md)
+
+**Movement module**:
+The **Asset module** that carries out **Commands** to physically move the platform. [Movement module and profiles](asset/docs/assets.md#movement-module-and-profiles)
+
+**Movement profile**:
+Platform-specific behavior and parameters used by a **Movement module**. [Movement module and profiles](asset/docs/assets.md#movement-module-and-profiles)
+_Avoid_: Autopilot flight mode

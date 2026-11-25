@@ -82,7 +82,7 @@ The module also tells other modules when internet access is available, for
 modules that call external APIs. A field radio is not assumed to carry internet
 traffic.
 
-Optional local-picture and subscription ideas live with the [Meshtastic concepts](../../fieldlink/meshtastic/README.md#potential-concepts).
+Optional local-picture and subscription ideas are in the [drawer](../../docs/drawer/meshtastic-listening.md).
 
 ## Several links
 

@@ -2,7 +2,7 @@
 
 > **Historical.** Findings from the earlier throwaway prototypes, kept for
 > their lessons. Several open points here have since been decided; current
-> rules live in the [decision log](../decision-log.md) and the pages it links.
+> rules live in the [ADRs](../../docs/adr/) and the pages they link.
 
 ## Outcome
 

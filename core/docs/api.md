@@ -644,7 +644,7 @@ follows [Reads](#reads).
 | `DELETE /objects/{object_id}` | Account | Deletes the Object: hides it and its file for the rest of the run; `200 {event_id}` |
 
 All files, including photos and clips, are Objects
-([decision log](../../atlas/decision-log.md#the-picture-and-plugins)).
+([ADR-0014](../../docs/adr/0014-every-file-is-an-object-and-goes-through-core.md)).
 
 - **An upload is the file itself.** The body is the file's bytes and its
   `Content-Type` header is the file's type. `name` is required and

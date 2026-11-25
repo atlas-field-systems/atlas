@@ -7,7 +7,7 @@ and how it reaches Core.
 **Every behavior value is configurable per Asset.** Tolerances, timeouts, waits,
 and limits that shape how an Asset behaves are set in that Asset's
 configuration, never fixed in the app, because Assets set up differently respond
-differently ([decision log](../atlas/decision-log.md#operations-and-setup)). A
+differently ([Asset ADR-0007](docs/adr/0007-behavior-values-live-in-each-assets-configuration.md)). A
 default here is only a starting point.
 
 ## Startup configuration and live settings

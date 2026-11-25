@@ -5,7 +5,7 @@ checks that they work end to end. It is where Atlas's integration tests and
 evals live. It is a test harness, not a product: nothing in it ships to a field.
 
 **Built for Core, the SDK, and the initial Asset IP runtime.** The first version runs
-[Protocol, Core, and the SDK](../atlas/decision-log.md#build-and-test) together.
+[Protocol, Core, and the SDK](../docs/adr/0003-build-each-part-whole-one-part-at-a-time.md) together.
 [Core and SDK simulations](docs/core-and-sdk.md) lists its scenarios and fault rules.
 [Asset simulations](docs/asset.md) covers real Asset acquisition and ArduPilot SITL.
 
@@ -61,7 +61,7 @@ its control loop once a second. Failsafe and takeover scenarios still
 script their own ArduPilot peers to time each mode change.
 
 Every IP Asset doing Asset work in a scenario is the real app, as the
-[owner decided](../atlas/decision-log.md#build-and-test). Two kinds of scripted
+[owner decided](../docs/adr/0002-simulations-prove-atlas-works.md). Two kinds of scripted
 caller remain, and neither stands in for the Asset app:
 
 - **Radio Assets** (`radioAsset` in `src/actors.ts`) behind a scripted

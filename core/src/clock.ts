@@ -6,7 +6,7 @@
  * advances. Every time Core stamps (event `time`, record `time`, diagnostic
  * records) and every timer Core runs (contact deadlines, SSE keepalives, slow
  * reader limits) goes through this interface, so minutes of contact rules run
- * in milliseconds under simulation. (decision-log: "A part taking its clock
+ * in milliseconds under simulation. (Charter, Test what matters: "A part taking its clock
  * from outside ... is not a hook added only for tests".)
  *
  * Not on the clock: SQLite, the OS socket timeouts of node:http, and file I/O.

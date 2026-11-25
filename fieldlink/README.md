@@ -75,6 +75,9 @@ own page. The rules are the same for all of them.
   gateway accepts a frame for `asset_id` X only when it comes from X's radio
   identity, and it rejects replayed frames. Stopping someone who holds a radio's
   keys, such as from a lost or captured radio, is not required.
+- **A compact encoding may round numbers** to a fixed precision: about 1 cm
+  for positions, 10 cm for altitudes, 0.01° for angles, and 1 cm/s for speeds.
+  Which encoding each Fieldlink uses is its own choice.
 - **Joining the field link is the Fieldlink's own step**, such as receiving a
   private channel's key. A radio that has joined can appear as a new Asset, but
   it is never taken for an Asset that is already some other radio.

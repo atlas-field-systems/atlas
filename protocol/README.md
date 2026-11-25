@@ -125,7 +125,7 @@ records the comparison and the limits of compile-time checking.
 ## Layout
 
 - `definitions/`: `variables/`, `components/`, `records/`, `requests/`, and `index.json`. The examples in each definition are the validator's test vectors.
-- `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: working choices behind the records, below the [decision log](../atlas/decision-log.md). `docs/open-questions.md`: what is not decided.
+- `docs/laws.md`: the rules every definition follows. `docs/decisions.md`: working choices behind the records, below the accepted [ADRs](../docs/adr/). `docs/open-questions.md`: what is not decided.
 - `lib/`: the validator, loaders, API declarations, and shared viewer display helpers. `cli/`: terminal viewer. `site/`: web viewer.
 - `scripts/check.mjs`: checks every definition and its examples (`npm ci && npm run check && npm test`).
 

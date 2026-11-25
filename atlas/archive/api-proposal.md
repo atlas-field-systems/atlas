@@ -2,7 +2,7 @@
 
 > **Historical. Superseded.** This plan is kept for its reasoning only. It is
 > not a source for current rules, and some of it has been reversed. Current
-> rules live in the [decision log](../decision-log.md) and the pages it links.
+> rules live in the [ADRs](../../docs/adr/) and the pages they link.
 
 The owner selected this direction, and the docs were rewritten to follow it.
 

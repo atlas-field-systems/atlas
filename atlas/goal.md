@@ -1,8 +1,8 @@
 # The goal
 
 Who Atlas is for, the problem it solves, what it does and does not do, and how
-to tell it works. The [decision log](decision-log.md#the-goal) dates each
-decision.
+to tell it works. [ADR-0001](../docs/adr/0001-atlas-is-an-experiment-platform-for-one-field-tester.md)
+records the decision.
 
 ## Who it is for
 
@@ -65,21 +65,9 @@ other part of Atlas exists to serve those three.
 
 ## Kept in mind for later
 
-The owner wants each of these one day. None is designed or built now. Today's
-work must not rule them out, and must not grow to make room for them.
-
-- **Live video.** A video feed is an Object, and it plays only while someone
-  has it open. An example is a 5.8 GHz video receiver plugged into a gateway.
-  The operator links the feed to an Asset by hand, and then watches it on that
-  Asset's page.
-- **FPV drones.** A gateway that flies standard FPV drones with MAVLink over
-  ordinary drone radios, and brings back their video.
-- **Following a Track.** Today a command names a position, so an operator can
-  send an Asset to where a Track is now. Later a command will make an Asset
-  keep following a Track.
-- **Drops.** An Asset drops a package, such as first aid or supplies.
-
-Other optional ideas are listed in [Experimental ideas](experimental.md).
+Ideas the owner wants one day are in the [drawer](../docs/drawer/README.md).
+Today's work must not rule out the ones marked Keep room, and must not grow to
+make room for them.
 
 ## How we know it works
 
