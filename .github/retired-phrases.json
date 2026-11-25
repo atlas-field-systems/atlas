@@ -463,5 +463,10 @@
     "phrase": "shared (channel )?key alone is not enough|(holding|holds) a leaked (channel |shared )?key",
     "why": "A Fieldlink stops bugs from making one radio speak as another at the source; stopping someone who holds a radio's keys is not required.",
     "example": "A shared channel key alone is not enough: anyone holding a leaked channel key must not pretend to be X."
+  },
+  {
+    "phrase": "Meshtastic stays documentation only|Documentation only for now\\.\\*\\* Nothing is built",
+    "why": "The developer started the Meshtastic Fieldlink runtime.",
+    "example": "Meshtastic stays documentation only for now."
   }
 ]

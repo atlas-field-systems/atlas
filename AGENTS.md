@@ -26,9 +26,9 @@ Propose changes to the owner rather than making them quietly. See
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is built | Built |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | IP runtime, crash lifecycle and Reset ZIP verified in SITL |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
-| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Planning |
-| [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink package, holding both ends of its field link, released on its own | Planning; SiK and Meshtastic are sketched |
-| [simulations/](simulations/) | Atlas Simulations: the real parts run together in a simulated world, as end-to-end tests and evals. Each part's own unit tests stay in its folder | Built for Core, SDK, and initial Asset IP runtime |
+| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Meshtastic CLI in development |
+| [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink package, holding both ends of its field link, released on its own | Meshtastic runtime in development; SiK is sketched |
+| [simulations/](simulations/) | Atlas Simulations: the real parts run together in a simulated world, as end-to-end tests and evals. Each part's own unit tests stay in its folder | Built for Core, SDK, Asset IP, and the first Meshtastic workflow |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
 - Want the exact shape of a record? Go to `protocol/`.

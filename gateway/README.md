@@ -5,9 +5,32 @@ uplinks to the [Core API](../core/docs/api.md) over broadband IP, and talks to
 Assets over a radio through one installed [Fieldlink](../fieldlink/README.md). A
 gateway is not an Asset.
 
-**Planning.** Nothing is built. This page owns the gateway app: the framework
+The first CLI runs Meshtastic. This page owns the gateway app: the framework
 every gateway runs, how it installs and runs a Fieldlink, and the gateway
 interface it gives that Fieldlink.
+
+## Run the gateway
+
+From the repository root, use Node 24 and run `npm run setup -- gateway`.
+Provision a gateway key in Core and supply it as `ATLAS_GATEWAY_KEY`.
+Configure the radios as described in [Meshtastic](../fieldlink/meshtastic/README.md#first-implementation).
+
+Save a gateway configuration and run `node gateway/src/main.ts <config.json>`.
+
+```json
+{
+  "core_url": "https://core.example.com",
+  "fieldlink": "meshtastic",
+  "port": "/dev/ttyUSB0",
+  "python": "python3",
+  "discovery_channel": 0
+}
+```
+
+Set `port` to the local serial device. `python` defaults to `python3` and
+must point to the environment with the Meshtastic client. `discovery_channel`
+defaults to 0 and selects the radio's private channel slot.
+Set `timeout_ms` to a whole number from 1 to 2,350 ms to override the [Meshtastic reply window](../fieldlink/meshtastic/README.md#first-implementation).
 
 ## The gateway app is a framework
 
@@ -51,6 +74,8 @@ works with.
 
 - **A radio was heard.** The Fieldlink reports a new radio; the gateway app
   registers it and answers with its `asset_id`.
+- **Carried Assets.** See the
+  [Core API radio roster](../core/docs/api.md#radio-assets) for `carried()`.
 - **Per Asset**, the gateway app supplies its requests in event order, sends its
   reports, takes its contact, and stores its files: the
   [Asset link](../sdk/docs/asset.md#the-asset-link), on the gateway's own Core
@@ -132,7 +157,7 @@ the ZIP, as the [Asset does](../asset/docs/logging.md#when-logging-cannot-keep-u
 
 ## Scenarios
 
-Behavior tests come from these, once the gateway exists.
+Behavior tests come from these.
 
 - Switch on a radio on the private link. It appears as a new Asset with a
   Core-picked ID, registered by the gateway, and the radio learns its ID.
@@ -184,7 +209,7 @@ Behavior tests come from these, once the gateway exists.
 
 ## Not designed yet
 
-- The gateway app's configuration file and what its diagnostics record.
+- Gateway diagnostics and the general Fieldlink installer.
 - What each field link can carry. Atlas has [no set fleet size](../atlas/scale.md#fleet);
   each Fieldlink measures and states what its link supports.
 

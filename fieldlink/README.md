@@ -6,7 +6,7 @@ holds both ends of its link in one package: the side a
 [gateway](../gateway/README.md) runs, and the side an Asset's
 [communications module](../asset/docs/communications.md) runs.
 
-**Planning.** Nothing is built.
+The first runtime is [Meshtastic](meshtastic/README.md#first-implementation).
 
 | Fieldlink | Radio hardware | Radio software | Sides | Assets | Page |
 | --- | --- | --- | --- | --- | --- |

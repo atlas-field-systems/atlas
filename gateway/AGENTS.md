@@ -15,4 +15,4 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
   the [Core API](../core/docs/api.md), and how radio Assets register and keep
   their IDs lives in [Runs and identity](../atlas/runs-and-identity.md). Link to
   those rules; do not copy them.
-- Planning only: no code until the owner asks. Do not merge without the developer's approval.
+- Do not merge without the developer's approval.

@@ -102,12 +102,13 @@ That full simulation covers a whole operation and its failures:
 - A radio link fails, and an Asset flies out of range.
 - Hardware faults.
 
-The existing simulations run Protocol, Core, the SDK, and the initial Asset
-app over IP in CI. [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md) owns the current
+The existing simulations run Protocol, Core, the SDK, and the Asset app
+over IP in CI. The Meshtastic scenario also runs the gateway host and both
+ends of the Fieldlink over simulated radios. [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md) owns the current
 coverage and the callers that remain scripted.
 
-The full operation above still awaits the gateway app and Fieldlinks. The
-[build order](build-order.md) says what remains to build.
+The [build order](build-order.md) tracks the remaining work for the full
+operation.
 
 ## The test question
 

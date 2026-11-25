@@ -1,6 +1,6 @@
 # Meshtastic Fieldlink
 
-The Meshtastic Fieldlink is sketched to carry Atlas over LoRa radios running
+The Meshtastic Fieldlink carries Atlas over LoRa radios running
 Meshtastic, to many Assets in a mesh, with a gateway side and an Asset side.
 [What every Fieldlink is](../README.md) and the [gateway app](../../gateway/README.md)
 are on their own pages. This folder is the home for all Meshtastic-specific
@@ -8,9 +8,49 @@ documentation: radio behavior, listening and the local picture, integration
 proposals, bench measurements, and historical references. Other parts link here.
 Documentation location does not change which component owns runtime behavior.
 
-**Documentation only for now.** Nothing is built. The owner has left this as
-reference material and potential concepts for future use. The existing sketch
-below records the intended link; the optional concepts are listed separately.
+## First implementation
+
+The first slice runs one gateway and three Assets through one relay on ShortTurbo.
+The gateway polls each radio for reports and delivers Core Tasks in those same
+turns. Waiting Tasks and must-arrive reports go before routine check-ins when
+contact deadlines allow. Retries and routine check-ins share one schedule
+that reserves time to renew contact before it expires. On a clean link,
+healthy Assets receive authenticated polls no more than 10 seconds apart.
+An Asset can go about 14 seconds without hearing the gateway after one lost
+message, so set `link_loss_after_s` to at least 15 seconds. A join waits if
+measured turns leave too little room for established Assets to check in.
+Core shows a radio offline 14,900 ms after its last reply. The Asset counts
+authenticated polls as contact with its gateway.
+Running Assets promptly announce when they hear their gateway restart.
+The channel key alone protects a beacon, and a beacon can only prompt an announce.
+After prolonged silence a radio announces again. The same running Asset app
+rejoins after a gateway restart or a radio bridge failure. Its Tasks
+and pending reports carry over within the same Core run. If the Asset radio
+bridge fails, the running app sees contact lost.
+
+The link uses dictionary-compressed JSON in frames up to 180 bytes. A poll
+offers one frame of reply room and carries the receipt for the previous
+submission after Core stores it. Retries keep the same submission ID. The
+Asset chooses the reports through its SDK report source. An individual report
+can span frames. The reply window begins after the gateway submits the final
+poll frame. The 2,300 ms default comes from simulator measurements. A poll
+carrying an event allows another 150 ms for the Asset to queue its report,
+covering the example configs' 100 ms control tick plus 50 ms of margin. The
+reply can carry the Task's active report in the delivery exchange. Re-measure the window
+on physical radios.
+Tasks typically start within 10 seconds, and within 15 seconds while another
+Asset is dropping out. The gateway detects silence within 15 seconds.
+
+Provision each radio with ShortTurbo and a private 32-byte channel key for
+discovery. The gateway and each Asset radio must have the other's public key
+in their Meshtastic node databases. Put them on the same mesh and exchange
+Meshtastic NodeInfo in both directions before starting Atlas. With the Python
+client, use `sendData` to send each radio's own NodeInfo user record to the
+other node on `NODEINFO_APP`. Verify the peer's `user.publicKey` in each
+radio's `nodesByNum` before starting the gateway and Asset apps.
+Atlas transmissions use one relay hop. The radio bridge uses
+`meshtastic==2.7.11`. See the [gateway guide](../../gateway/README.md) and the
+[Asset link options](../../asset/config.md#options).
 
 ## Hardware and software
 
@@ -18,7 +58,7 @@ below records the intended link; the optional concepts are listed separately.
   computer, and one on each Asset, plugged into the computer that runs its
   Asset app.
 - **Radio software.** Meshtastic firmware: a private channel, a private app
-  port, and Meshtastic's encryption, routing, and per-hop acknowledgements.
+  port, and Meshtastic's encryption and routing. Atlas confirms delivery in a later poll.
 
 ## Gateway and Asset
 
@@ -35,7 +75,7 @@ sends over the radio only what each Asset does not already have.
 - **Radio identity.** Each Meshtastic node's public key.
 - **Only that radio speaking.** The gateway accepts a frame for an Asset only
   from that Asset's node key, and rejects replays.
-- **Joining.** Receiving the private channel's key.
+- **Joining.** A discovery announcement on the provisioned channel starts registration.
 - **Definitions hash.** Each radio sends its hash when its link opens, and the
   gateway compares it with its own.
 
@@ -43,7 +83,7 @@ sends over the radio only what each Asset does not already have.
 
 These ideas from earlier Meshtastic work are options we could use. None is
 selected for implementation or a decision that must be settled before a build.
-They can be considered separately if work resumes.
+They can be considered separately.
 
 ### Listening and shared updates
 

@@ -57,11 +57,11 @@ found.
    remain. [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets) now use the
    real app for IP Asset work.
 2. **The gateway app and the Meshtastic Fieldlink**, over a simulated radio
-   link. Meshtastic stays documentation only for now; see its [sketch and potential concepts](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md).
+   link. See the [first Meshtastic runtime](../fieldlink/meshtastic/README.md#first-implementation).
 3. **The SiK Fieldlink.** Planned.
 4. **Simulation tools and the full simulation.** The existing harness runs
-   Core, SDK, and Asset IP scenarios. Radio simulation and tools for writing
-   the full operation remain planned. That operation has Assets take off and
+   Core, SDK, Asset IP, and Meshtastic scenarios. The full operation and
+   the tools to build it remain planned. That operation has Assets take off and
    make Observations, other Assets tasked onto them, Fusion making Tracks,
    a radio link failing, and hardware faults.
 5. **The Command Interface.** Planned; no application code yet.
