@@ -16,7 +16,7 @@ disagree, fix one of them.
 
 ## Tasks
 
-- A **command** is something an Asset can do: takeoff, move_to, land, return_to_home, hold, point_at, capture, failsafe. A **Task** is one use of a command, or a settings change made when the Task runs (kind `settings`). [Every command is a Task](../../atlas/design-decisions.md#work-is-always-a-task).
+- A **command** is something an Asset can do: takeoff, move_to, land, return_to_home, hold, point_at, capture, failsafe. A **Task** is one use of a command, or a settings change made when the Task runs (kind `settings`). [Every command is a Task](../../docs/adr/0015-work-is-individual-tasks-there-are-no-plans.md).
 - takeoff takes a target altitude. move_to takes a destination; without an altitude, the Asset keeps its current one. land takes an optional landing position and an optional transit altitude; without a position, the Asset lands where it is when the Task starts. return_to_home flies to the `home_position` setting. hold stops the Asset where it is and completes once the hold is observed; the Asset then keeps holding, as it does with no Task to run. Hold is work, not pause: it keeps no earlier Task to resume. *[Owner decision](../../atlas/archive/decision-log.md#places-and-tasks).* point_at takes a target position; the Asset works out how to aim there and holds the aim until its next command. *[Owner decision](../../atlas/archive/decision-log.md#places-and-tasks).* failsafe fires the Asset's failsafe as if a rule had fired, running the rule with a `commanded` condition or, with none, the built-in safe action; it is always sent with `now`, completes once the Asset is in failsafe state, and is never a failsafe response. *[Owner decision](../../atlas/archive/decision-log.md#failsafes).*
 - `capture` names a declared `camera_id` and `media` (`photo` or `clip`). Only a clip takes `duration_s`, greater than zero and at most 60 seconds. The cap bounds a single capture so it cannot become an open-ended recording; it does not guarantee a file fits Core's Object limit. [Asset capture behavior](../../asset/docs/README.md#capture-files) owns completion and failure.
 - `move_to` reuses `ground_speed_mps` for requested horizontal speed. Telemetry measures the same quantity, so a second variable would duplicate its meaning. [Asset configuration](../../asset/config.md) owns the default and safe maximum.
@@ -87,7 +87,7 @@ disagree, fix one of them.
 ## Definitions hash
 
 During the first development run, parts use Protocol from this repository under
-the [release policy](../../atlas/design-decisions.md#changes-and-releases).
+the [release policy](../README.md#release-policy).
 
 - **The hash covers every definition file byte for byte**, descriptions and examples included, so programs agree only when they load the same files. Any file change, wording included, is a new Protocol version. Wording fixes wait for the next real release, and every part updates together. *[Owner decision](../../atlas/archive/decision-log.md#build-and-test).*
 - **Recipe.** Take every `.json` file in `definitions/`, `index.json` included. Name each by its path relative to `definitions/`, with `/` between folders, and sort the paths by their UTF-8 bytes. For each file in that order, append its path, a newline (byte `0x0A`), its length in bytes as a decimal number, a newline, and then its exact bytes. The hash is SHA-256 of the result, written as `sha256:` and 64 lowercase hex digits.
@@ -126,10 +126,10 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
 
 ## TypeScript types
 
-**Working choice, proposed for this draft.** Check in `types.d.ts`, generated
-from `definitions/` by `npm run types`. The owner may overturn this choice.
-This proposes a narrow exception to [no generated code](../../atlas/design-decisions.md#no-generated-code).
-Definitions remain the only authored shapes. No runtime code is generated.
+**Working choice.** Check in `types.d.ts`, generated from `definitions/` by
+`npm run types`. Atlas generates code where it is a good idea, judged case by
+case ([Charter](../../atlas/CHARTER.md#keep-designs-proven-and-lean)), and the
+measurements below show it is here. Definitions remain the only authored shapes.
 
 `@atlas/protocol/types` exposes `ProtocolTypes` through a types-only package
 export. Its keys are record names from law 5 and `requests.<file>` for requests.

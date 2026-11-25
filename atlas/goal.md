@@ -18,8 +18,8 @@ every time. The owner will say when that changes.
 
 ## The problem
 
-No open-source software does this. The software that does is built for
-militaries.
+One person needs to see the Observations from several Assets in one shared
+picture, and to send work to another Asset from that picture.
 
 A ground-control station such as QGroundControl is made for one drone. A radio
 plugs into a laptop, the laptop shows the drone, and the operator tells the
@@ -52,12 +52,12 @@ other part of Atlas exists to serve those three.
 - **Not for separate teams.** Everything connected to Atlas is trusted and sees
   everything, whether an operator or an Asset.
 - **Not a phone app for people in the field.** The screen is for someone at a
-  command station with internet
+  command station, which may be a laptop with no internet
   ([Command Interface](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/README.md#operators-and-connectivity)).
 - **Not for every vehicle.** Quadcopters come first. Other vehicles come later,
   each as its own kind of Asset.
 - **Not a mission planner.** Work is single Tasks, with no multi-step Plans
-  ([Design decisions](design-decisions.md#work-is-always-a-task)).
+  ([ADR-0015](../docs/adr/0015-work-is-individual-tasks-there-are-no-plans.md)).
 - **Not a long-term archive.** A run's data leaves Core at
   [Reset](runs-and-identity.md#a-run-and-reset).
 - **Not dependable yet.** Atlas is for experiments and makes no promise to
@@ -103,4 +103,4 @@ Hold every new idea against one question: is this overcomplicated?
 
 Atlas aims for systems that are simple and elegant. Complexity for its own
 sake is not worth having. When a hard problem needs complexity, look for the
-simpler solution first ([Proven and lean](design-decisions.md#proven-and-lean)).
+simpler solution first ([Proven and lean](CHARTER.md#keep-designs-proven-and-lean)).

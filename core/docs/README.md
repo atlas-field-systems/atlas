@@ -16,13 +16,13 @@
 
 ## Inside Core
 
-Core and Fusion run in one TypeScript process in one Docker container. Core is
+Core and Fusion run in one TypeScript process. A Docker container for it is
+[planned](../../README.md#stack). Core is
 built from [pillars](pillars.md) that keep current state in SQLite tables and an
 ordered [event log](api.md#the-event-log-and-live-stream) beside them
-([storage](storage.md)). Plugins run in the second ring, each in its own
-container if it needs one, connect out to Core with their own keys, and reach
+([storage](storage.md)). Plugins run in the second ring, connect out to Core with their own keys, and reach
 Core through its Plugin interface. See the
-[walled city](../../atlas/design-decisions.md#a-walled-city).
+[walled city](../../atlas/using-atlas.md#the-walled-city).
 
 Core takes its clock and its data directory from whoever starts it, so
 [Simulations](../../simulations/README.md#what-each-part-allows) can run it

@@ -156,7 +156,7 @@ design is otherwise deferred.
 ## Scope
 
 This proposal first froze scope to first flight. The owner then chose to
-[design the whole product and build it together](../design-decisions.md#design-the-whole-product-then-build-it),
+[design the whole product and build it together](https://github.com/atlas-field-systems/atlas/blob/d2d4a40ca0137d8ca5d4e226f185de5e7ad549be/atlas/design-decisions.md#design-the-whole-product-then-build-it),
 with geo features, Objects, Observations, Tracks, and Plugins included. The
 retained Core prototype is deleted; git keeps its history. Asset tests run
 against ArduPilot SITL.

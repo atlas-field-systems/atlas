@@ -17,7 +17,6 @@ This folder explains what Atlas is for and the environment its parts work in.
 8. [Settings](settings.md) explains quick changes to an Asset's configuration.
 9. [Plugins](plugins.md) explains Plugin actions with examples.
 10. [Scale](scale.md) gives design targets, and how Atlas uses slow links fully and efficiently.
-11. [Design decisions](design-decisions.md) lists project-wide choices, such as proven, lean designs.
 
 The [build order after the first version](build-order.md) says which parts
 come next.

@@ -1,21 +1,23 @@
 # First flight
 
-The planned first field setup uses a Raspberry Pi on the ground as the gateway,
-running the
-[SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md). The gateway runs
-the Asset app for an ArduPilot quadcopter and talks to it over a SiK radio link. It acts as the
-companion computer from the ground, much like using a ground-control station
-such as QGroundControl. The vehicle remains the Asset represented in Atlas.
+The planned first field setup is the
+[SiK tool](https://github.com/atlas-field-systems/atlas/blob/main/tools/sik/README.md).
+A Raspberry Pi on the ground runs the Asset app for an ArduPilot quadcopter.
+The app reaches Core over IP and talks to the vehicle over a SiK radio link.
+There is no gateway. The Pi acts as the companion computer from the ground,
+much like a ground-control station such as QGroundControl. The vehicle remains
+the Asset represented in Atlas.
 
 The operator drafts Takeoff, Move To a location, then Land in the Command
 Interface and sends them in one request. Core numbers the Tasks 1, 2, and 3 and
-sends them to the Asset at once. The Asset starts Takeoff only when it holds all
-three. The app sends equipment commands to the flight controller and reports the
-observed outcomes. The operator sees the reported vehicle behavior.
+sends each as soon as it accepts it. The Asset app starts Takeoff only once it
+has received all three. The app sends equipment commands to the flight
+controller and reports the observed outcomes. The operator sees the reported
+vehicle behavior.
 
 Core and the SDK are built. The Asset app runs over IP, with
 [initial flight and failure scenarios verified in ArduPilot SITL](https://github.com/atlas-field-systems/atlas/blob/main/simulations/docs/asset.md#run-the-initial-sitl-scenarios).
-The gateway, SiK Fieldlink, and Command Interface remain planned. The
+The SiK tool and the Command Interface remain planned. The
 [Asset status](https://github.com/atlas-field-systems/atlas/blob/main/asset/README.md#implementation-gaps) lists the remaining
 implementation gaps and unverified hardware; this field setup is not yet verified.
 
@@ -25,6 +27,23 @@ The operator can intervene locally at the Pi. Independent vehicle controls and
 ArduPilot protections remain part of the setup. While they are in control,
 operators [only watch](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control);
 their values are tuned in SITL before the first flight.
+
+## Check on the ground first
+
+Before anything flies, check the real Pi, radio pair, and vehicle together on
+the ground, with the propellers off.
+
+- The vehicle appears in the Command Interface as a new Asset, with a current
+  position and battery.
+- Pull the SiK radio from the Pi. The vehicle link shows faulted. Plug it back
+  in and it recovers. ArduPilot's ground-station failsafe acts only when armed,
+  so its response is checked in SITL instead.
+- Take control back by hand. Move the pilot's mode switch, and the Asset shows
+  the [flight controller in control](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#while-the-flight-controller-is-in-control).
+  Switch back to Guided, and the app reports it is back in control.
+- Stop the Asset app. The Asset shows offline.
+
+Fly only when every check passes.
 
 ## The flight commands
 
@@ -45,14 +64,14 @@ The Asset owns [platform-specific preparation and arming](https://github.com/atl
 ```mermaid
 sequenceDiagram
     participant Drone as ArduPilot vehicle
-    participant Pi as Asset app on the SiK gateway (ground Pi)
+    participant Pi as Asset app on the ground Pi (SiK tool)
     participant Core
     participant UI as Command Interface
     Drone->>Pi: Equipment state over SiK
     Pi->>Core: Registration, description and vehicle reports through the Core API
     Core-->>UI: Show the reported state
     UI->>Core: Send Takeoff, Move To and Land in one request
-    Core->>Pi: Tasks 1, 2 and 3, sent together
+    Core->>Pi: Tasks 1, 2 and 3, each sent once accepted
     Pi-->>Core: Report the queue it holds
     Core-->>UI: Show the reported queue
     Note over Pi: Run Takeoff, Move To, then Land in order
@@ -110,7 +129,7 @@ The Asset owns
 ## Keep the whole run for debugging
 
 When the operator spins down the system, Core and each Asset write their own
-Reset ZIP, and so does each gateway. The operator shuts the Assets
+Reset ZIP, and so does each gateway when one is used. The operator shuts the Assets
 down first, and then the admin stops Core on its own computer. Stopping Core
 ends the run ([Runs and identity](runs-and-identity.md#a-run-and-reset)).
 Core's ZIP holds:

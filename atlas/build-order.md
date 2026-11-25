@@ -4,9 +4,23 @@ The owner decided this order on 2026-11-14
 ([decision log](archive/decision-log.md#build-and-test)). The numbered steps are the
 working plan for carrying it out.
 
-Protocol, Core, and the SDK, with their simulations, form the built first version
-([Design decisions](design-decisions.md#design-the-whole-product-then-build-it)).
+Protocol, Core, and the SDK, with their simulations, form the built first version.
 This page orders the parts that follow.
+
+## Design the whole product, then build it
+
+Atlas is designed as the complete product before the real build. That covers
+Assets, Tasks, settings, reports, history, accounts, geo features, Objects,
+Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first.
+
+The build then goes one part at a time, in order, and each part is built whole
+([ADR-0003](../docs/adr/0003-build-each-part-whole-one-part-at-a-time.md)).
+The first version was Protocol, then Core, then the SDK, with the
+[Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md)
+that test them together. Building one part finds problems that change how the
+next is built, so each part starts from what the last one taught. Core's
+pillars, for example, were built together, not Entities first, then Tasks, then
+Objects, because they share much of their underlying code.
 
 ## The target is the full simulation
 
@@ -36,11 +50,12 @@ built. Until then the owner judges Atlas from simulation results.
 
 ## The Meshtastic Fieldlink comes first
 
-Meshtastic is the first Fieldlink, and SiK is built on what it establishes.
-Meshtastic is the fuller Fieldlink and is closer to the Fieldlinks Atlas will
+Meshtastic is the first Fieldlink. It is closer to the Fieldlinks Atlas will
 see later, so the gateway app and the simulated radio link are shaped by it.
-Building for SiK first would shape them around SiK's one-drone,
-point-to-point link.
+SiK is not a Fieldlink: first flight uses the
+[SiK tool](https://github.com/atlas-field-systems/atlas/blob/main/tools/sik/README.md),
+which runs the Asset app over IP and needs no gateway
+([ADR-0018](../docs/adr/0018-sik-is-equipment-used-through-an-atlas-tool-not-a-fieldlink.md)).
 
 The [Meshtastic folder](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md) owns its sketch and bench plan.
 
@@ -59,7 +74,7 @@ found.
    real app for IP Asset work.
 2. **The gateway app and the Meshtastic Fieldlink**, over a simulated radio
    link. Meshtastic stays documentation only for now; see its [sketch and potential concepts](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md).
-3. **The SiK Fieldlink.** Planned.
+3. **The SiK tool**, the Asset app and its MAVLink adapter on a ground Pi. Planned.
 4. **Simulation tools and the full simulation.** The existing harness runs
    Core, SDK, and Asset IP scenarios. Radio simulation and tools for writing
    the full operation remain planned. That operation has Assets take off and
@@ -68,4 +83,4 @@ found.
 5. **The Command Interface.** Planned; no application code yet.
 6. **First flight in the field** ([First flight](first-flight.md)). Planned.
 
-Each part is still built whole, as the design decisions say.
+Each part is still built whole, as [above](#design-the-whole-product-then-build-it).

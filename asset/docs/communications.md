@@ -8,24 +8,23 @@ reports back. The initial IP implementation runs; see its [implementation gaps](
 - **On IP**, the module uses the [SDK](../../sdk/README.md) client to make the
   [Core API's Asset calls](../../core/docs/api.md#asset-and-gateway-calls) over
   HTTPS and follow its event stream.
-- **On radio**, it uses a [Fieldlink](../../fieldlink/README.md#two-kinds-of-fieldlink).
-  When the Fieldlink has an Asset side, the module runs it, and the Fieldlink's
-  gateway side runs on the gateway, which makes the Core API calls for the Asset. The Asset holds no Core
+- **On radio**, it uses a [Fieldlink](../../fieldlink/README.md#both-sides-run-atlas).
+  The module runs the Fieldlink's Asset side, and the Fieldlink's gateway side
+  runs on the gateway, which makes the Core API calls for the Asset. The Asset holds no Core
   key and never calls the Core API. It authenticates to its gateway through its
   Fieldlink, as [every Fieldlink provides](../../fieldlink/README.md#what-every-fieldlink-provides),
   and learns its `asset_id` for the run from the gateway.
   The Fieldlink owns
   compact encoding, retries, duplicate handling, contact timing, and link
-  security for its medium ([walled city](../../atlas/design-decisions.md#a-walled-city)).
+  security for its medium ([Fieldlink](../../fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides)).
 
 Inside the Asset, both use one interface to receive requests in event order,
 send reports, and track contact. The rest of the Asset code is the same either
 way.
-When the Fieldlink is gateway-only, as
-[SiK](../../fieldlink/sik/README.md) does for the
-[first setup](assets.md#ardupilot-quadcopter), the app reaches Core through the
-gateway's connection, and the radio is an equipment-driver connection to the
-flight controller, not an Atlas link.
+In the [first setup](assets.md#ardupilot-quadcopter), the
+[SiK tool](../../tools/sik/README.md), the app reaches Core on IP, and the SiK
+radio is an equipment-driver connection to the flight controller, not an
+Atlas link.
 
 ## Requests and reports
 

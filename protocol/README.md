@@ -94,7 +94,20 @@ package's own folder, independent of the working directory or environment.
 
 Both entries are JavaScript ESM with hand-written declarations for this API.
 Record types come from [`@atlas/protocol/types`](#typescript-consumers). Protocol remains unpublished; programs
-use it from this repository under the [release policy](../atlas/design-decisions.md#changes-and-releases).
+use it from this repository under the [release policy](#release-policy).
+
+## Release policy
+
+- Every program in a deployment uses the same Protocol definitions. A change to
+  them reaches Core, gateways, Assets, and the Command Interface together.
+- The package version is the only version, and published packages never change
+  ([law 14](docs/laws.md)).
+- Any change to Protocol files, wording included, is a new version. Wording
+  fixes wait for the next real release, and every part updates together
+  ([Protocol ADR-0001](docs/adr/0001-any-change-to-protocol-is-a-new-version.md)).
+- Protocol stays unpublished during the first development run. Other parts use
+  it from this repository; it will be public later. Release goes through `prod`
+  ([branches and releases](../AGENTS.md#branches-and-releases)).
 
 ## Try it
 

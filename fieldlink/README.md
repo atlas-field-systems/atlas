@@ -8,13 +8,17 @@ holds both ends of its link in one package: the side a
 
 **Planning.** Nothing is built.
 
-| Fieldlink | Radio hardware | Radio software | Sides | Assets | Page |
-| --- | --- | --- | --- | --- | --- |
-| SiK | A SiK telemetry radio pair | MAVLink | Gateway only | One vehicle | [SiK](sik/README.md) |
-| Meshtastic | LoRa radios | Meshtastic firmware | Gateway and Asset | Many, in a mesh | [Meshtastic](meshtastic/README.md) |
+| Fieldlink | Radio hardware | Radio software | Assets | Page |
+| --- | --- | --- | --- | --- |
+| Meshtastic | LoRa radios | Meshtastic firmware | Many, in a mesh | [Meshtastic](meshtastic/README.md) |
 
 FLRC and other radios get their own Fieldlinks later. A mesh that mixes radio
 types is one Fieldlink covering both.
+
+A radio that only carries a vehicle's own protocol, with no Atlas message
+crossing it, is equipment, not a Fieldlink. SiK is one: first flight uses it
+through the [SiK tool](../tools/sik/README.md)
+([ADR-0018](../docs/adr/0018-sik-is-equipment-used-through-an-atlas-tool-not-a-fieldlink.md)).
 
 ## Packages and versions
 
@@ -30,20 +34,12 @@ types is one Fieldlink covering both.
   side. A Fieldlink never calls the SDK directly, so an SDK update does not
   touch any Fieldlink.
 
-## Two kinds of Fieldlink
+## Both sides run Atlas
 
-- **Gateway and Asset.** The Asset runs the [Asset app](../asset/README.md) with
-  this Fieldlink's Asset side, and Atlas records cross the radio in the
-  Fieldlink's compact encoding. Meshtastic works this way.
-- **Gateway only.** The vehicle speaks only its own protocol, such as MAVLink,
-  and runs no Atlas software. The Fieldlink runs on the gateway alone. Through
-  the gateway interface, the gateway runs the standard Asset app for the
-  vehicle, and the Fieldlink hands the radio connection to that app's
-  [equipment driver](../asset/docs/assets.md#modules-and-equipment-drivers),
-  which turns the vehicle's stream into Atlas reports and Tasks into vehicle
-  commands. SiK works this way.
-
-Either way the operator sees the same Asset.
+The Asset runs the [Asset app](../asset/README.md) with the Fieldlink's Asset
+side, and Atlas records cross the radio in the Fieldlink's compact encoding.
+The gateway side runs on the gateway. The operator sees the same Asset as one
+on IP.
 
 ## The Fieldlink moves messages; the Asset decides
 
@@ -81,10 +77,8 @@ own page. The rules are the same for all of them.
 - **Joining the field link is the Fieldlink's own step**, such as receiving a
   private channel's key. A radio that has joined can appear as a new Asset, but
   it is never taken for an Asset that is already some other radio.
-- **The definitions hash is checked each time a radio's link opens.** A
-  gateway-and-Asset Fieldlink compares the radio's hash with the gateway's. A
-  gateway-only Fieldlink runs the Asset app on the gateway with the gateway's
-  own definitions, so there is nothing to compare. A radio with different
+- **The definitions hash is checked each time a radio's link opens.** The
+  Fieldlink compares the radio's hash with the gateway's. A radio with different
   definitions is refused and not added as an Asset; operators see "a radio on
   gateway G1 was refused: different definitions", as they would for an Asset on
   IP.

@@ -9,9 +9,13 @@ in [Plugins and Objects](plugins-and-objects.md).
 
 ## Operators and connectivity
 
-This interface serves operators at a command station with internet access and a
-connection to Core. An interface for teams at the edge is a separate future
-tool. Offline basemap operation is not a requirement.
+This interface serves operators at a command station with a connection to
+Core. An interface for teams at the edge is a separate future tool.
+
+**A laptop with no internet is a supported command station.** Core, the
+Command Interface, and a Fieldlink's gateway can all run on one laptop. With no
+internet, Assets still connect, operators see them, and commands work. Only the
+background map fails. Offline basemap operation is not a requirement.
 
 Operators log in to their admin or operator
 [account](../../core/docs/api.md#callers-and-credentials). The session is an

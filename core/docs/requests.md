@@ -19,7 +19,7 @@ remain with the Asset. [Subsystem conditions](../../asset/docs/status.md) do not
 automatically gate commands. Configured [failsafes](../../asset/docs/failsafes.md)
 remain with the Asset runtime, including while disconnected from Core.
 This follows
-[decisions near their source](../../atlas/design-decisions.md#decisions-stay-near-their-source).
+[decisions near their source](../../atlas/CHARTER.md#keep-the-systems-replaceable).
 
 ## Scenario: paused work at capacity
 

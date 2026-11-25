@@ -319,11 +319,6 @@
     "example": "Files from Assets, such as drone photos, are not designed yet."
   },
   {
-    "phrase": "\\bPi (is|as) a direct-IP Asset\\b|\\bfirst (setup|flight)[^.]*\\b(with )?no gateway\\b",
-    "why": "First flight's ground Pi is a gateway in SiK mode.",
-    "example": "The Pi is a direct-IP Asset and calls the Core API itself."
-  },
-  {
     "phrase": "\\b(every|each) Fieldlink ships with the gateway app\\b|\\bnothing is (downloaded or )?installed separately\\b",
     "why": "Fieldlinks are separate packages, released and installed on their own.",
     "example": "Every Fieldlink ships with the gateway app."
@@ -469,5 +464,51 @@
     "unless": "\\b(old|archived?)\\b",
     "why": "The decision log was archived on 2026-11-25; accepted ADRs are authoritative.",
     "example": "The decision log is authoritative."
+  },
+  {
+    "phrase": "\\bSiK Fieldlink\\b|\\bSiK gateways?\\b|\\bgateway in SiK mode\\b|\\bfieldlink/sik\\b",
+    "why": "SiK is not a Fieldlink. First flight uses the SiK tool, with no gateway (ADR-0018).",
+    "example": "The Pi is the gateway, running the SiK Fieldlink."
+  },
+  {
+    "phrase": "\\bgateway-only Fieldlinks?\\b|\\bFieldlinks? (with|has) only a gateway (side|end)\\b|\\btwo kinds of Fieldlink\\b",
+    "why": "Every Fieldlink has a gateway side and an Asset side. A radio that carries no Atlas messages is equipment for an Atlas Tool (ADR-0018).",
+    "example": "SiK is a gateway-only Fieldlink."
+  },
+  {
+    "phrase": "\\b(ground )?Pi is (the|a) (site's )?gateway\\b",
+    "why": "First flight's ground Pi runs the Asset app over IP through the SiK tool; it is not a gateway (ADR-0018).",
+    "example": "The Pi is the site's gateway."
+  },
+  {
+    "phrase": "design-decisions\\.md|\\bdesign decisions page\\b",
+    "why": "The design decisions page is dissolved. Principles are in the Charter, mechanisms in each part's pages, and owner decisions in the ADRs.",
+    "example": "Read the charter and design-decisions.md first."
+  },
+  {
+    "phrase": "\\bno generated code\\b|\\bwritten by hand and read by people\\b|\\bdo not generate code\\b",
+    "why": "Atlas generates code where it is a good idea, judged case by case.",
+    "example": "Atlas code is written by hand and read by people."
+  },
+  {
+    "phrase": "\\bfew other tests\\b|\\bkeeps? few unit tests\\b",
+    "why": "Dense logic inside a part may have focused tests at its module's interface (ADR-0019).",
+    "example": "Few other tests, each at a contract."
+  },
+  {
+    "phrase": "\\b(ships?|runs?) (as|in) one Docker container\\b",
+    "unless": "\\bplanned\\b",
+    "why": "Docker is planned, not current. Today every part runs as Node from this repository.",
+    "example": "Core and Fusion ship as one Docker container running one process."
+  },
+  {
+    "phrase": "\\bcommand station with internet\\b",
+    "why": "A laptop with no internet is a supported command station; only the background map fails.",
+    "example": "The screen is for someone at a command station with internet."
+  },
+  {
+    "phrase": "\\bno open-source software does this\\b",
+    "why": "The problem is stated as the gap: one person sees Observations from several Assets and sends work to another from that picture.",
+    "example": "No open-source software does this."
   }
 ]

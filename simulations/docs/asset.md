@@ -14,8 +14,8 @@ interfaces and observe its state, reports, and diagnostics. Simulated
 equipment, time, and link faults let them run without hardware or live
 external services, interactively or in CI.
 
-The first Asset simulations connect the app to Core directly over IP. The
-gateway path, as in [first flight](../../atlas/first-flight.md), joins when the
+The Asset simulations connect the app to Core directly over IP, as in
+[first flight](../../atlas/first-flight.md). The gateway path joins when the
 gateway exists. Tracker scenarios cover the minimal reporting-only case.
 
 The [Simulated Assets inventory](../README.md#simulated-assets) owns the current

@@ -61,7 +61,7 @@ its control loop once a second. Failsafe and takeover scenarios still
 script their own ArduPilot peers to time each mode change.
 
 Every IP Asset doing Asset work in a scenario is the real app, as the
-[owner decided](../docs/adr/0002-simulations-prove-atlas-works.md). Two kinds of scripted
+[owner decided](../docs/adr/0019-simulations-prove-atlas-works-and-deep-modules-get-focused-tests.md). Two kinds of scripted
 caller remain, and neither stands in for the Asset app:
 
 - **Radio Assets** (`radioAsset` in `src/actors.ts`) behind a scripted
@@ -124,8 +124,9 @@ computer.
 When Atlas fails, in a simulation, a prototype, or the field:
 
 1. Write a test that makes the failure happen, and watch it fail. A failure
-   that crosses parts gets a simulation. A failure inside one part's contract,
-   such as the validator accepting a bad record, gets a test at that contract.
+   that crosses parts gets a simulation. A failure inside one part, such as
+   the validator accepting a bad record, gets a test at the interface of the
+   module it stays inside.
 2. If the failure shows a page was wrong or silent, fix the page first. The
    docs are the source, and the test cites them.
 3. Fix the part, and watch the test pass.

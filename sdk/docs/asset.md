@@ -49,8 +49,7 @@ narrow radio link, rejects the call, and the file stays in the Asset's
 [Reset ZIP](../../asset/docs/logging.md#export-the-assets-reset-zip).
 
 On IP, the SDK client provides it. On a radio Asset, the Fieldlink's Asset side
-provides it, and on a gateway-only Fieldlink the
-[gateway interface](../../gateway/README.md#the-gateway-interface) does. The
+provides it. The
 Asset app's code is the same on all of them. Because Fieldlinks are released on
 their own, this interface changes rarely, and each Fieldlink states which
 versions it works with.

@@ -54,13 +54,8 @@ works with.
 - **Per Asset**, the gateway app supplies its requests in event order, sends its
   reports, takes its contact, and stores its files: the
   [Asset link](../sdk/docs/asset.md#the-asset-link), on the gateway's own Core
-  connection. A gateway-and-Asset Fieldlink carries it over the radio to the
-  Asset app on the Asset.
-- **Run an Asset app here.** For a
-  [gateway-only Fieldlink](../fieldlink/README.md#two-kinds-of-fieldlink), the
-  gateway app runs the standard Asset app for the vehicle, with that Asset
-  link, and the Fieldlink hands the radio connection to the app's equipment
-  driver.
+  connection. The Fieldlink carries it over the radio to the Asset app on the
+  Asset.
 
 The gateway app logs both sides of the interface. The exact TypeScript
 interface is written with the first Fieldlink.
@@ -74,8 +69,7 @@ shows which gateway carries each Asset. Core authenticates the gateway with its
 key and trusts it for which radio Asset sent what. A gateway can register radio
 Assets, but it cannot register an Asset on IP or issue a Core key. On a mesh
 Fieldlink such as [Meshtastic](../fieldlink/meshtastic/README.md), Assets talk to each other and to the one gateway,
-and many Assets ride on it; a SiK gateway carries one vehicle. Two gateways
-in one network are out of scope.
+and many Assets ride on it. Two gateways in one network are out of scope.
 
 How radio Assets register, keep their IDs, and what happens when the gateway
 changes is in
@@ -148,8 +142,8 @@ Behavior tests come from these, once the gateway exists.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
 - Configure a Fieldlink whose radio is not plugged in. The gateway does not
   start and prints which radio it is missing.
-- Open the gateway's screen with internet, and press install on SiK. It is
-  installed with no other step.
+- Open the gateway's screen with internet, and press install on Meshtastic.
+  It is installed with no other step.
 - Install a newer version of the gateway's Fieldlink from a file, with no
   internet, and restart the gateway between runs. It runs the new version with
   the same gateway app.
@@ -180,7 +174,7 @@ Behavior tests come from these, once the gateway exists.
 - [The Asset link](../sdk/docs/asset.md#the-asset-link): the interface a
   Fieldlink gives the Asset app.
 - [Fieldlink](../fieldlink/README.md): what every Fieldlink is and provides,
-  and the first two, SiK and Meshtastic.
+  and the first one, Meshtastic.
 
 ## Not designed yet
 

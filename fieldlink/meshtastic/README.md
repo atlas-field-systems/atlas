@@ -23,7 +23,7 @@ below records the intended link; the optional concepts are listed separately.
 
 ## Gateway and Asset
 
-This is a [gateway-and-Asset Fieldlink](../README.md#two-kinds-of-fieldlink):
+As [every Fieldlink](../README.md#both-sides-run-atlas) does,
 each Asset runs the Asset app with this package's Asset side. On top of Meshtastic, the
 Fieldlink adds end-to-end acknowledgement of Tasks and final reports,
 idempotency by `task_id`, and per-Asset contact reports to Core. Protocol defines

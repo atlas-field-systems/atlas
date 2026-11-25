@@ -1,7 +1,7 @@
 # Atlas SDK
 
 The SDK is the TypeScript client for the [Core API](../core/docs/api.md). Programs
-outside Core's [inner wall](../atlas/design-decisions.md#a-walled-city) use it to reach Core:
+outside Core's [inner wall](../atlas/using-atlas.md#the-walled-city) use it to reach Core:
 
 - The Command Interface, in the browser, logged in to an operator or admin account.
 - Assets on IP, with their own key.

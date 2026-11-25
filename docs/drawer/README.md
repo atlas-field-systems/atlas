@@ -17,5 +17,7 @@ owner drops it.
 | [FPV drones](fpv-drones.md) | Yes |
 | [Following a Track](follow-a-track.md) | Yes |
 | [Drops](drops.md) | Yes |
+| [Atlas Tools ZIP](atlas-tools-zip.md) | Yes |
+| [Rough operator screen](rough-operator-screen.md) | Yes |
 | [Ground elevation at connect](ground-elevation.md) | No |
 | [Meshtastic listening and local picture](meshtastic-listening.md) | No |

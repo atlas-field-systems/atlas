@@ -135,7 +135,11 @@ A system on its own computer that connects Core to one field radio network throu
 The framework every **Gateway** runs to connect to Core and register the **Assets** its radio hears. It installs **Fieldlinks** and runs one at a time through its stable gateway interface. [Gateway](gateway/README.md)
 
 **Fieldlink**:
-A separately released package that carries Atlas over one kind of field link, defined by its radio hardware and software. It holds a **Gateway** side, plus an **Asset** side when the vehicle runs Atlas software. [Fieldlink](fieldlink/README.md)
+A separately released package that carries Atlas over one kind of field link, defined by its radio hardware and software. It holds both a **Gateway** side and an **Asset** side. [Fieldlink](fieldlink/README.md)
+
+**Atlas Tool**:
+A ready setup that packages existing Atlas parts with the glue for one kind of equipment, such as the SiK tool for first flight. It carries no Atlas messages over a field link, and no part depends on it. [Atlas Tools](tools/README.md)
+_Avoid_: Fieldlink, for a radio that carries only a vehicle's own protocol
 
 **Pillar**:
 A part of Core that owns one share of its state behind a small interface, such as Entities, **Tasks**, or **Objects**. [Core pillars](core/docs/pillars.md)

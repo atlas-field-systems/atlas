@@ -3,7 +3,7 @@
 **Built.** The Command Interface, Assets on IP, gateways, and Plugins use this API
 to talk to Core from outside its inner wall.
 Record shapes belong to [Protocol](../../protocol/README.md); this page names them and never redefines
-their fields. The [walled city](../../atlas/design-decisions.md#a-walled-city)
+their fields. The [walled city](../../atlas/using-atlas.md#the-walled-city)
 explains why the API is the only way in.
 
 ## Basics
@@ -245,9 +245,10 @@ when it includes a settings Task. Send the rule as a settings change first.
   1 for the Asset's first Task of the run, then 2, then 3. A `task_id` never
   changes and is never reused. The Asset runs its Tasks in `task_id` order, so
   the order never depends on when a Task arrives.
-- **Core sends every Task at once.** Each accepted request is one
-  `tasks.requested` event on the Asset's stream. Core never holds a Task back,
-  whatever the Asset is doing, so the Asset already has its work if contact ends.
+- **Core sends every Task as soon as it accepts it.** Each accepted request is
+  one `tasks.requested` event on the Asset's stream. Core never holds a Task
+  back, whatever the Asset is doing. Sending is not receiving: the Asset holds a
+  Task only once it arrives, and keeps the Tasks it holds if contact ends.
 - **Tasks sent together start together.** Each Task of a request carries
   `send_last`, the `task_id` of the request's last Task. The Asset starts none of
   them until it has received all of them. A Task that was cancelled counts as

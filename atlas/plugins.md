@@ -11,8 +11,9 @@ uses its tools, often open-source services, to gather and return information.
 ## Where Plugins sit
 
 - Plugins sit in the second ring of the
-  [walled city](design-decisions.md#a-walled-city). Each one runs on its own, in
-  its own container if it needs one, and connects out to Core with a key an
+  [walled city](using-atlas.md#the-walled-city). Each one runs on its own, in
+  its own container if it needs one once containers
+  [arrive](https://github.com/atlas-field-systems/atlas/blob/main/README.md#stack), and connects out to Core with a key an
   admin gave it. It reaches Core only through its Plugin interface, never its
   storage. The Plugin interface is the Core API with a Plugin key, not a second
   protocol. Reading the
