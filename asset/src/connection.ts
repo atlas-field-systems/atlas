@@ -7,9 +7,13 @@ import type { Config } from "./config.ts";
 type Session = Pick<ReturnType<typeof runAsset>, "asset_id" | "queue" | "outbox" | "done" | "stop"> & {
   link: AssetLink;
 };
+type SessionListeners = {
+  onContact: Parameters<AssetLink["onContact"]>[0];
+  onRejoin: (assetId: string, outbox: Session["outbox"]) => void;
+};
 
 interface AssetConnection {
-  register(options: AssetOptions, onRejoin?: (assetId: string, outbox: Session["outbox"]) => void): Promise<Session>;
+  register(options: AssetOptions, listeners: SessionListeners): Promise<Session>;
   close(): void | Promise<void>;
 }
 
@@ -18,6 +22,7 @@ export async function createAssetConnection(
   options: { clock: Clock; fetch: typeof fetch; observer: Observer; openRadio?: typeof openMeshtasticRadio },
 ): Promise<AssetConnection> {
   const protocol = await loadPackagedProtocol();
+  let unsubscribeContact: (() => void) | undefined;
   if (config.asset_key !== undefined) {
     const client = createClient({
       ...options,
@@ -26,12 +31,16 @@ export async function createAssetConnection(
       protocol,
     });
     return {
-      async register(options) {
+      async register(options, { onContact }) {
         const result = await startAsset(client, { ...options, description: config.description });
         if (!result.ok) throw new Error(result.explanation);
+        unsubscribeContact = result.value.link.onContact(onContact);
         return result.value;
       },
-      close: () => client.close(),
+      close() {
+        unsubscribeContact?.();
+        client.close();
+      },
     };
   }
 
@@ -39,7 +48,7 @@ export async function createAssetConnection(
   const { signal } = controller;
   let opening: ReturnType<typeof openAsset> | undefined;
   return {
-    async register(operations, onRejoin) {
+    async register(operations, { onContact, onRejoin }) {
       signal.throwIfAborted();
       const { gateway, port, python, discovery_channel } = config.link;
       const lossAfter = operations.settings().link_loss_after_s;
@@ -55,8 +64,9 @@ export async function createAssetConnection(
         signal, now: () => options.clock.now(),
         onError: error => emit("meshtastic.exchange_failed", { explanation: String(error) }),
         onRegister({ assetId, after, lastTaskId }, link) {
+          unsubscribeContact ??= link.onContact(onContact);
           const session = runAsset(link, { asset_id: assetId, after, last_task_id: lastTaskId }, operations, emit);
-          if (current) onRejoin?.(assetId, session.outbox);
+          if (current) onRejoin(assetId, session.outbox);
           current = session;
           first.resolve(session);
           let replaced = false;
@@ -86,6 +96,7 @@ export async function createAssetConnection(
       };
     },
     async close() {
+      unsubscribeContact?.();
       controller.abort();
       // Startup owns an open failure. Closing still waits for its cleanup.
       const [result] = await Promise.allSettled([opening]);

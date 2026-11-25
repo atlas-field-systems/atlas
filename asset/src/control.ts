@@ -376,7 +376,7 @@ export function reduce(
         break;
       }
       if (task.kind === "settings") {
-        if (task.settings.failsafe_policy !== undefined) {
+        if (task.settings.failsafe_policy !== undefined || (config.asset_key === undefined && task.settings.link_loss_after_s !== undefined)) {
           try {
             parseConfig({ ...config, initial_settings: { ...state.settings, ...task.settings } });
           } catch (error) {
@@ -441,7 +441,7 @@ export function reduce(
       if (state.phase === "failsafe" && event.request_id !== undefined &&
         event.settings.run_state !== undefined && event.settings.run_state !== state.settings.run_state)
         effects.push({ kind: "override", request_id: event.request_id });
-      if (event.settings.failsafe_policy !== undefined) {
+      if (event.settings.failsafe_policy !== undefined || (config.asset_key === undefined && event.settings.link_loss_after_s !== undefined)) {
         try {
           parseConfig({ ...config, initial_settings: { ...state.settings, ...event.settings } });
         } catch (error) {

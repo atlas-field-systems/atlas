@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { test } from "node:test";
@@ -864,6 +864,52 @@ scenario({
     }, async (input, init) => {
       if (restarted && String(input).endsWith("/contact") && typeof init?.body === "string" &&
           init.body.includes('"contact":"online"')) resumedAt ??= performance.now();
+      return fetch(input, init);
+    });
+  },
+});
+
+scenario({
+  name: "Meshtastic startup counts polls while its first reports wait for Core",
+  checks: ["fieldlink/meshtastic/README.md#first-implementation", "asset/docs/README.md#start-and-connect"],
+  timeout: 22_000,
+  async run(w) {
+    let storing = false;
+    const release = Promise.withResolvers<void>();
+    await withMesh(w, async ({ keys, start, mesh, gateway, until, ready }) => {
+      let polls = 0;
+      start(keys[0], { initial_settings: { link_loss_after_s: 15, failsafe_policy: [{
+        rule_id: "LINK", priority: 1, conditions: [{ kind: "contact_lost" }], response: { kind: "hold" },
+      }] } }, async () => {
+        const radio = mesh.radio(keys[0]);
+        receiveEnvelopes(radio, peer => peer === gateway, (_, packet) => {
+          if (packet.kind === "poll") polls++;
+        });
+        return radio;
+      });
+      try {
+        await until(() => storing, performance.now() + 12_000, "startup reports reached Core");
+        const first = polls;
+        await w.advance(8_000);
+        await until(() => polls > first, performance.now() + 7_500, "the gateway kept polling");
+        await w.advance(8_000);
+        assert.equal(ready(), 0, "startup was still waiting for a receipt");
+        const logs = join(w.root, keys[0], "logs");
+        const [run] = await readdir(logs);
+        const history = await readFile(join(logs, run, "history.jsonl"), "utf8").catch(error => {
+          if (error.code !== "ENOENT") throw error;
+          return "";
+        });
+        assert.doesNotMatch(history, /"kind":"response".*"rule_id":"LINK"/, "authenticated polls kept the failsafe inactive");
+        assert.match(history, /"kind":"contact".*"open":true/, "the app recorded authenticated polls during startup");
+      } finally {
+        release.resolve();
+      }
+    }, async (input, init) => {
+      if (String(input).endsWith("/reports")) {
+        storing = true;
+        await release.promise;
+      }
       return fetch(input, init);
     });
   },

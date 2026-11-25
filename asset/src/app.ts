@@ -239,11 +239,14 @@ export async function startApp(
           now: clock.now(),
         });
       },
-    }, (assetId, outbox) => {
-      outbox.onBlocked(reportBlocked);
-      const task = state.execution?.task;
-      if (task) dispatch({ kind: "cancel", id: task.task_id, now: clock.now() });
-      log.identify(assetId);
+    }, {
+      onContact: contact => dispatch({ kind: "contact", contact }),
+      onRejoin(assetId, outbox) {
+        outbox.onBlocked(reportBlocked);
+        const task = state.execution?.task;
+        if (task) dispatch({ kind: "cancel", id: task.task_id, now: clock.now() });
+        log.identify(assetId);
+      },
     }).then(session => {
       if (stopped) session.stop();
       return session;
@@ -273,7 +276,6 @@ export async function startApp(
         process.stderr.write(`Asset session failed: ${explanation}\n`);
       },
     );
-    const unsubscribe = running.link.onContact((contact) => dispatch({ kind: "contact", contact }));
     function tick() {
       if (stopped) return;
       try {
@@ -301,7 +303,6 @@ export async function startApp(
       if (stopping) return stopping;
       stopped = true;
       options.signal?.removeEventListener("abort", abort);
-      unsubscribe();
       timer?.cancel();
       const equipmentStopped = vehicle.stop();
       stopping = (async () => {

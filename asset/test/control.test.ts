@@ -803,3 +803,20 @@ for (const source of ["operator", "critical"] as const) test(`docs/failsafes.md:
   result = reduce(result.state, { kind: "tick", now: 1, hasWork: false }, config);
   assert.ok(result.effects.some(e => (e.kind === "task" || e.kind === "response") && e.status === "completed"));
 });
+
+test("Meshtastic first implementation: immediate settings and settings Tasks refuse short link-loss timeouts", async () => {
+  const raw = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  const config = parseConfig({
+    ...raw, asset_key: undefined,
+    link: { kind: "meshtastic", port: "simulated", gateway: "a".repeat(64) },
+    initial_settings: { ...raw.initial_settings, link_loss_after_s: 15 },
+  });
+  const state = initial(config, 0);
+  const settings = { link_loss_after_s: 14 };
+  const immediate = reduce(state, { kind: "settings", settings, request_id: 1, now: 1 }, config);
+  assert.equal(immediate.state.settings.link_loss_after_s, 15);
+  assert.ok(immediate.effects.some(effect => effect.kind === "diagnostic" && effect.explanation.includes("at least 15")));
+  const task = reduce(state, { kind: "task", task: { ...hold, kind: "settings", settings }, now: 1 }, config);
+  assert.equal(task.state.settings.link_loss_after_s, 15);
+  assert.ok(task.effects.some(effect => effect.kind === "task" && effect.status === "failed" && effect.explanation?.includes("at least 15")));
+});

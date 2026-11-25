@@ -17,7 +17,8 @@ contact deadlines allow. Retries and routine check-ins share one schedule
 that reserves time to renew contact before it expires. On a clean link,
 healthy Assets receive authenticated polls no more than 10 seconds apart.
 An Asset can go about 14 seconds without hearing the gateway after one lost
-message, so set `link_loss_after_s` to at least 15 seconds. A join waits if
+message. The Asset requires `link_loss_after_s` to be at least 15 seconds
+at startup and refuses shorter values in settings requests and Tasks. A join waits if
 measured turns leave too little room for established Assets to check in.
 The gateway reports a radio offline 14,900 ms after its last reply. It retries
 failed contact writes with backoff until they succeed or newer contact replaces
@@ -26,7 +27,7 @@ loses 5% of messages at random, a healthy Asset briefly shows offline about
 once an hour; its next check-in restores it. The gateway backs off unanswered
 offline probes up to 30 seconds between attempts. A discovery announcement
 makes the radio eligible for an immediate probe. The Asset counts authenticated
-polls as contact with its gateway.
+polls as contact with its gateway, including while it waits for its first report receipts.
 Running Assets promptly announce when they hear their gateway restart, and the
 gateway prioritizes a poll on resume. After restart, it counts each carried
 Asset's 14,900 ms deadline from the last-heard time in Core's roster. If Core has
