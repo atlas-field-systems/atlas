@@ -74,7 +74,7 @@ export function isEvent(protocol: Protocol, assetId: string, value: unknown): va
   switch (kind) {
     case "tasks.requested":
     case "tasks.updated":
-      return Array.isArray(record) && record.length > 0 && record.length <= 64 &&
+      return Array.isArray(record) && record.length > 0 && (kind === "tasks.updated" || record.length <= 64) &&
         record.every(task => belongsToAsset(task) && protocol.check("task", task).ok);
     case "cancel.requested": return belongsToAsset(record) && protocol.check("cancel", record).ok;
     case "task.dropped": return belongsToAsset(record) && typeof record === "object" && record !== null &&

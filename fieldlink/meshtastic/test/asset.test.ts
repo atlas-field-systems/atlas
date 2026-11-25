@@ -7,7 +7,7 @@ import { loadPackagedProtocol } from "@atlas/protocol";
 import type { LinkResult, ReportSource } from "@atlas/sdk";
 import { openAsset } from "../src/asset.ts";
 import type { Radio } from "../src/radio.ts";
-import { decodeFrames, encodeFrames, frameBytes, readFrame, type Envelope } from "../src/wire.ts";
+import { decodeFrames, encodeFrames, frameBytes, readFrame, wireSize, type Envelope } from "../src/wire.ts";
 
 test("a copter profile fits one frame and the Asset counts only current authenticated polls as contact", { timeout: 5_000 }, async t => {
   const { description } = JSON.parse(await readFile(new URL("../../../asset/examples/copter.json", import.meta.url), "utf8"));
@@ -155,6 +155,24 @@ test("a copter profile fits one frame and the Asset counts only current authenti
       } finally {
         stop();
       }
+    });
+    await t.test("a place update for the active Task and 64 queued Tasks fits and is acknowledged", async () => {
+      const record = Array.from({ length: 65 }, (_, index) => ({
+        kind: "move_to", geofeature_id: "G2", destination: { latitude: 42.2751, longitude: -71.8049 },
+        asset_id: "B", time: 1_800_000_000_000, task_id: index + 1, send_last: 65, requested_by: "ADM",
+      }));
+      const poll = { kind: "poll", session, seq: 11, boot, roomBytes: frameBytes } as const;
+      const requested = await turn({ ...poll, event: { kind: "tasks.requested", event_id: 11, record } });
+      assert.equal(requested?.kind === "reply" && requested.cursor, 8);
+      const events = link.events(8)[Symbol.asyncIterator]();
+      const delivered = events.next();
+      const update = { kind: "tasks.updated", event_id: 12, record };
+      const packet = { ...poll, seq: 12, event: update };
+      assert.ok(Number.isFinite(wireSize(packet)), "the poll fits within the transfer limit");
+      const reply = await turn(packet);
+      assert.equal(reply?.kind === "reply" && reply.cursor, 12);
+      assert.deepEqual((await delivered).value, update);
+      await events.return?.();
     });
   } finally {
     failure.abort();
