@@ -25,8 +25,9 @@ missing or incompatible options without moving equipment. The same check runs in
 CI without hardware. Flying configurations require a critical battery rule.
 The app loads one local JSON file.
 
-For the IP link, startup refuses `initial_settings.link_loss_after_s` when it
-is at or below Core's keepalive interval. The SDK reads the interval from
+For the IP link, startup requires the effective `link_loss_after_s` to exceed
+Core's keepalive interval. An omitted value uses the
+[Protocol default](../protocol/definitions/variables/link_loss_after_s.json). The SDK reads the interval from
 Core before registration; inspection alone cannot check a remote Core.
 See [Core contact](../core/docs/api.md#contact).
 For Meshtastic, inspection and startup refuse values below 15 seconds.

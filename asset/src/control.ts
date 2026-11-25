@@ -1,4 +1,4 @@
-import type { Task, QueueRequest } from "@atlas/sdk";
+import { defaultLinkLossAfterS, type Task, type QueueRequest } from "@atlas/sdk";
 import type {
   ComponentsSettings,
   ComponentsFailsafeRule,
@@ -270,7 +270,7 @@ export function reduce(
         case "contact_lost":
           holds = (
             now - state.lastHeard >=
-            (state.settings.link_loss_after_s ?? Infinity) * 1000
+            (state.settings.link_loss_after_s ?? defaultLinkLossAfterS) * 1000
           );
           break;
         case "idle":

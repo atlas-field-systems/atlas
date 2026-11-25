@@ -229,7 +229,9 @@ additions under the same bound and returns immediately without registering
 acknowledgement waits.
 
 After connecting and before registration, `startAsset` refuses an initial
-`link_loss_after_s` at or below Core's advertised `stream_keepalive_s`.
+`link_loss_after_s` at or below Core's advertised `stream_keepalive_s`, using
+the [Protocol default](../../protocol/definitions/variables/link_loss_after_s.json)
+when the setting is omitted.
 
 Report recording failures, including rejected asynchronous `onReports` callbacks,
 emit `reports.recording_failed` without stopping report delivery. Queue host

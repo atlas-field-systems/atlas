@@ -170,7 +170,8 @@ Conditions can include:
   critical battery rule
   [always fires](#an-override-with-hold-or-pause-re-arms-protection).
 - The operator's [Fail-safe command](#an-operator-can-fire-the-failsafe).
-- Contact loss, after the `link_loss_after_s` setting without contact.
+- Contact loss, after the [`link_loss_after_s`](../../protocol/definitions/variables/link_loss_after_s.json)
+  setting without contact, timed from startup or the latest contact reading.
 - Any of these, alone or combined.
 - No Tasks for a configured duration, including zero: neither an active Task nor
   a queued Task that can start. A paused mission with queued Tasks is not idle.

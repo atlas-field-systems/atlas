@@ -175,6 +175,25 @@ for (const priority of [40, 50, 60])
     assert.equal(result.effects.some(e => e.kind === "response" && e.rule?.rule_id === "FIRST" && e.status === "cancelled"), priority > 50);
   });
 
+test("docs/failsafes.md: contact loss defaults to 30 seconds since the last reading", async () => {
+  const raw = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  delete raw.initial_settings.link_loss_after_s;
+  raw.initial_settings.failsafe_policy.push({
+    rule_id: "LOST", priority: 50, conditions: [{ kind: "contact_lost" }], response: { kind: "land" },
+  });
+  const config = parseConfig(raw);
+  const { state } = reduce(initial(config, 0),
+    { kind: "contact", contact: { open: true, last_heard: 1000 } }, config);
+  const measured = reduce(state, { kind: "measurements", measurements: {
+    armed: { value: true, source: "vehicle", time: 30_999 },
+  } }, config);
+  const before = reduce(measured.state, { kind: "tick", now: 30_999, hasWork: false }, config);
+  assert.ok(!before.effects.some(effect => effect.kind === "response"));
+  const expired = reduce(before.state, { kind: "tick", now: 31_000, hasWork: false }, config);
+  assert.ok(expired.effects.some(effect => effect.kind === "response" &&
+    effect.status === "active" && effect.rule?.rule_id === "LOST"));
+});
+
 for (const override of ["hold", "pause"] as const)
   test(`docs/failsafes.md: ${override} re-arms contact and boundary rules and a lower critical level fires`, async () => {
     const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
