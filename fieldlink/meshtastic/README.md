@@ -19,7 +19,9 @@ healthy Assets receive authenticated polls no more than 10 seconds apart.
 An Asset can go about 14 seconds without hearing the gateway after one lost
 message, so set `link_loss_after_s` to at least 15 seconds. A join waits if
 measured turns leave too little room for established Assets to check in.
-Core shows a radio offline 14,900 ms after its last reply. The Asset counts
+Core shows a radio offline 14,900 ms after its last reply. On a link that
+loses 5% of messages at random, a healthy Asset briefly shows offline about
+once an hour; its next check-in restores it. The Asset counts
 authenticated polls as contact with its gateway.
 Running Assets promptly announce when they hear their gateway restart.
 The channel key alone protects a beacon, and a beacon can only prompt an announce.
