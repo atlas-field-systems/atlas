@@ -90,6 +90,7 @@ async function withMesh(w: World, run: (mesh: {
   ready(): number;
   restart(duringOutage?: () => Promise<void>): Promise<void>;
   gateway: string;
+  lastReply: Map<string, number>;
   serving(): Promise<void>;
   errors: unknown[];
 }) => Promise<void>, request?: typeof fetch) {
@@ -103,13 +104,20 @@ async function withMesh(w: World, run: (mesh: {
   const { run_id } = requireValue(await core.client.connect());
   const heartbeat = core.client.holdContact();
   const errors: unknown[] = [];
+  const lastReply = new Map<string, number>();
   function startGateway() {
     const stop = new AbortController();
     const radio = mesh.radio(gateway);
+    const unobserve = receiveEnvelopes(radio, () => true, (peer, packet) => {
+      if (packet.kind === "reply") lastReply.set(peer, Date.now());
+    });
     const lifetime = AbortSignal.any([signal, stop.signal]);
     const host = createGatewayHost(core, run_id, AbortSignal.any([lifetime, radio.failure]));
     const done = serveGateway({ radio, host,
-      signal: lifetime, now: () => w.clock.now(), onError: error => errors.push(error) }).finally(() => host.close());
+      signal: lifetime, now: () => w.clock.now(), onError: error => errors.push(error) }).finally(() => {
+      unobserve();
+      host.close();
+    });
     void done.catch(() => {});
     return { done, stop: () => stop.abort() };
   }
@@ -161,7 +169,7 @@ async function withMesh(w: World, run: (mesh: {
     }
     const carried = async () => requireValue(await core.client.call("carriedRadios")).assets;
     await run({ mesh, keys: ["b", "c", "d"].map(key => key.repeat(64)), start, until, waitForOnline, carried,
-      contacts, online, ready: () => readyApps, restart, gateway, serving: () => serving.done, errors });
+      contacts, online, ready: () => readyApps, restart, gateway, lastReply, serving: () => serving.done, errors });
   } finally {
     controller.abort();
     heartbeat.stop();
@@ -181,7 +189,9 @@ scenario({
   timeout: 145_000,
   async run(w) {
     let activeSubmissions = 0;
-    await withMesh(w, async ({ mesh, keys, start, until, contacts, online, ready, errors, gateway }) => {
+    let silentAsset: string | undefined;
+    let offlineAt: number | undefined;
+    await withMesh(w, async ({ mesh, keys, start, until, contacts, online, ready, errors, gateway, lastReply }) => {
       const polls = new Map<string, number[]>();
       function startObserved(key: string) {
         const times: number[] = [];
@@ -225,12 +235,17 @@ scenario({
         .filter(e => e.event_id > contacts(id, "online")[0].event_id);
       for (const id of ids) assert.equal(offlineAfterJoin(id).length, 0, `Asset ${id} stayed online through the Task burst`);
       const cut = performance.now();
+      silentAsset = second;
       mesh.silence(keys[1]);
-      await until(() => offlineAfterJoin(second).length > 0, cut + 15_000, "silent Asset went offline within 15 seconds");
-      const offlineAt = performance.now();
+      await until(() => offlineAfterJoin(second).length > 0, cut + 16_000, "operator saw the silent Asset go offline");
+      const heardAt = lastReply.get(keys[1]);
+      assert.ok(heardAt !== undefined && offlineAt !== undefined);
+      const elapsed = offlineAt - heardAt;
+      assert.ok(elapsed >= 14_900 && elapsed <= 15_000, `Core marked the Asset offline ${elapsed} ms after its last reply`);
+      const observedOffline = performance.now();
       const healthyPolls = [keys[0], keys[2]].map(key => polls.get(key) ?? []);
-      await until(() => healthyPolls.every(times => times.some(at => at >= offlineAt)),
-        offlineAt + 10_000, "both healthy Assets were polled after expiry");
+      await until(() => healthyPolls.every(times => times.some(at => at >= observedOffline)),
+        observedOffline + 10_000, "both healthy Assets were polled after expiry");
       for (const times of healthyPolls) {
         assert.ok(times.some(at => at < cut), "healthy Asset was polled before the cut");
         for (const [index, at] of times.slice(1).entries()) {
@@ -245,6 +260,8 @@ scenario({
 
     }, async (input, init) => {
       const response = await fetch(input, init);
+      if (silentAsset && response.ok && String(input).endsWith(`/entities/assets/${silentAsset}/contact`) &&
+          typeof init?.body === "string" && init.body.includes('"contact":"offline"')) offlineAt ??= Date.now();
       if (response.ok && String(input).endsWith("/reports") &&
           typeof init?.body === "string" && init.body.includes('"task_state":"active"') &&
           ++activeSubmissions === 1) {
