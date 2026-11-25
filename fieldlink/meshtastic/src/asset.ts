@@ -5,7 +5,7 @@ import type { AssetEvent, AssetLink, Batch, ReportSource } from "@atlas/sdk";
 import type { Description, Registration } from "./gateway-host.ts";
 import { nonce, receiveEnvelopes, sendEnvelope, type Radio } from "./radio.ts";
 import { eventReplyHoldMs, meshtasticTiming, relayGapMs } from "./turns.ts";
-import { isDescription, isEvent, wireSize, type Envelope } from "./wire.ts";
+import { frameBytes, isDescription, isEvent, maxReplyFrames, wireSize, type Envelope } from "./wire.ts";
 
 type GatewayTurn = Extract<Envelope, { kind: "register" | "registered" | "refused" | "poll" }>;
 const rediscoverMs = meshtasticTiming.offlineMs + relayGapMs;
@@ -65,13 +65,13 @@ export async function openAsset({ openRadio, gateway, profile, signal: lifetime,
       while (!signal.aborted && current === binding) {
         await available.promise;
         if (signal.aborted || current !== binding) break;
-        if (event && event.event_id > cursor) {
-          cursor = event.event_id;
-          yield event;
-        }
-        if (current !== binding) break;
+        const incoming = event;
         event = undefined;
         available = Promise.withResolvers<void>();
+        if (incoming && incoming.event_id > cursor) {
+          cursor = incoming.event_id;
+          yield incoming;
+        }
       }
       if (!lifetime.aborted) failure.throwIfAborted();
     },
@@ -151,6 +151,12 @@ export async function openAsset({ openRadio, gateway, profile, signal: lifetime,
         available.resolve();
         await delay(eventReplyHoldMs, undefined, { signal: AbortSignal.any([applied.signal, transport]) }).catch(() => {});
         stopWaiting?.();
+        // Core may drop unaccepted work before the next poll. Only the gateway
+        // can deliver it again.
+        if (event === incoming) {
+          event = undefined;
+          available = Promise.withResolvers<void>();
+        }
         reply.cursor = cursor;
       }
       if (!pending) {
@@ -161,10 +167,11 @@ export async function openAsset({ openRadio, gateway, profile, signal: lifetime,
       if (source?.mustArriveWaiting) reply.waiting = true;
       if (pending) {
         reply.submission = { id: pending.id, reports: pending.batch.reports };
-        if (wireSize(reply) === Infinity) {
+        if (wireSize(reply) > maxReplyFrames * frameBytes) {
           pending.batch.settle({ ok: false, error: "refused", explanation: "Report batch exceeds the Fieldlink transfer limit" });
           pending = undefined;
           delete reply.submission;
+          if (!source?.mustArriveWaiting) delete reply.waiting;
         }
       }
     }

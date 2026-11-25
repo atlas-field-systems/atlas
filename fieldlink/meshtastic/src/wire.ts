@@ -5,6 +5,8 @@ import type { Description, Registration } from "./gateway-host.ts";
 import { z } from "zod";
 
 export const frameBytes = 180;
+// Two relayed ShortTurbo reply frames fit the existing reply window.
+export const maxReplyFrames = 2;
 const header = 11;
 const chunkBytes = frameBytes - header;
 const maxParts = 24;
@@ -75,7 +77,8 @@ export function isEvent(protocol: Protocol, assetId: string, value: unknown): va
       return Array.isArray(record) && record.length > 0 && record.length <= 64 &&
         record.every(task => belongsToAsset(task) && protocol.check("task", task).ok);
     case "cancel.requested": return belongsToAsset(record) && protocol.check("cancel", record).ok;
-    case "task.dropped": return belongsToAsset(record) && protocol.check("drop", record).ok;
+    case "task.dropped": return belongsToAsset(record) && typeof record === "object" && record !== null &&
+      "task_id" in record && protocol.check("drop", record).ok;
     case "settings.requested": return belongsToAsset(record) && protocol.check("settings_change", record).ok;
     default: return false;
   }
