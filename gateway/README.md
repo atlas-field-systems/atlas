@@ -30,7 +30,9 @@ Save a gateway configuration and run `node gateway/src/main.ts <config.json>`.
 Set `port` to the local serial device. `python` defaults to `python3` and
 must point to the environment with the Meshtastic client. `discovery_channel`
 defaults to 0 and selects the radio's private channel slot.
-Set `timeout_ms` to a whole number from 1 to 2,350 ms to override the [Meshtastic reply window](../fieldlink/meshtastic/README.md#first-implementation).
+Set `timeout_ms` to a whole number from 1 to 2,345 ms to override the
+[Meshtastic reply window](../fieldlink/meshtastic/README.md#first-implementation).
+The upper limit is derived from the 14,900 ms offline cutoff.
 
 ## The gateway app is a framework
 
