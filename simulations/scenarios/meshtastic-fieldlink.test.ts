@@ -802,7 +802,9 @@ scenario({
       await online;
       await reopened.promise;
       assert.equal(await contact(), "online");
-      assert.equal(errors.filter(error => /event stream/.test(String(error))).length, 1);
+      const streamErrors = errors.filter(error => /event stream/.test(String(error)));
+      assert.equal(streamErrors.length, 1);
+      assert.equal(String(streamErrors[0]), `Error: Core event stream for Asset ${assetId} failed and will reconnect`);
       assert.equal(errors.filter(error => /contact write/.test(String(error))).length, 1);
     } finally {
       loseConfirmation.resolve();
@@ -1141,7 +1143,7 @@ scenario({
       value(await w.complete(w.admin.call("changeSettings", {
         params: { asset_id: assetId }, body: { settings: { lights: "off" } },
       })));
-      const error = await Promise.race([reported.promise, delay(1_000)]);
+      const error = await reported.promise;
       assert.match(String(error), /invalid_event/);
       assert.doesNotThrow(() => host.next(assetId, after));
       const recovered = Promise.withResolvers<void>();
@@ -1155,6 +1157,41 @@ scenario({
       } finally {
         unsubscribe();
       }
+    } finally {
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic stays quiet when a Core event stream ends during shutdown",
+  checks: ["gateway/README.md#the-gateway-interface"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const opened = Promise.withResolvers<void>();
+    const reply = Promise.withResolvers<Response>();
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, fetch(input, init) {
+      if (new URL(String(input)).pathname === "/events") {
+        opened.resolve();
+        return reply.promise;
+      }
+      return fetch(input, init);
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const lifetime = new AbortController();
+    const errors: unknown[] = [];
+    const host = createGatewayHost(core, run_id, lifetime.signal, error => errors.push(error));
+    try {
+      await host.bind("radio", { session: "boot", hash: core.hash, description: {
+        commands: [], reports: ["settings"], settings: ["lights"],
+      } });
+      await w.complete(opened.promise);
+      lifetime.abort();
+      reply.resolve(new Response("data: invalid JSON\n\n", { headers: { "Content-Type": "text/event-stream" } }));
+      await w.settle();
+      assert.deepEqual(errors, []);
     } finally {
       host.close();
       core.client.close();
