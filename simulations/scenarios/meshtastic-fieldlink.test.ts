@@ -284,7 +284,7 @@ scenario({
   seed: taskLatencySeed,
   timeout: 65_000 + 18_000 * singleTaskCount,
   async run(w) {
-    await withMesh(w, async ({ keys, start, until, waitForOnline, online, ready }) => {
+    await withMesh(w, async ({ keys, start, until, waitForOnline, online, ready, contacts }) => {
       for (const [i, key] of keys.entries()) {
         start(key);
         await waitForOnline(i + 1);
@@ -320,6 +320,10 @@ scenario({
         singles.push(...await measure([ids[Math.floor(rand() * ids.length)]], i % 2 ? "on" : "off", 10_000));
       }
       const burst = await measure(ids, "on", 15_000);
+      for (const id of ids) {
+        const joined = contacts(id, "online")[0].event_id;
+        assert.ok(contacts(id, "offline").every(event => event.event_id < joined), `Asset ${id} stayed online`);
+      }
       process.stdout.write(`Meshtastic Task start ms (seed ${taskLatencySeed}) ${JSON.stringify({ singles, burst })}\n`);
     });
   },
@@ -513,13 +517,13 @@ scenario({
         })) },
       })));
       const sentAt = performance.now();
-      const { task_ids } = await submit(recipient, 20);
+      const { task_ids } = await submit(recipient, 8);
       const firstTask = task_ids[0];
       await until(() => w.events.some(event => event.kind === "report.status" && event.record.kind === "task" &&
         event.record.asset_id === recipient && event.record.task_id === firstTask && event.record.task_state === "active"),
       sentAt + 10_000, "the large Task batch started");
       process.stdout.write(`Clean-link large-batch Task start: ${Math.round(performance.now() - sentAt)} ms\n`);
-      assert.equal(mesh.multiFrame.get(keys[2]), 4, "the Task batch used the full transfer budget");
+      assert.equal(mesh.multiFrame.get(keys[2]), 2, "the Task batch used the full transfer budget");
       await until(() => w.events.some(event => event.kind === "report.status" && event.record.kind === "queue" &&
         event.record.asset_id === recipient && event.record.task_ids.includes(task_ids[task_ids.length - 1])),
       performance.now() + 10_000, "the final Task in the batch reached the Asset");

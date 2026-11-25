@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { began, hasWork, joining, meshtasticTiming, nextTurn, noReply, observedTurn, relayGapMs, replied, wentOffline, type PeerTiming } from "../src/turns.ts";
+import { began, hasWork, joining, maxEventFrames, meshtasticTiming, nextTurn, noReply, observedTurn, relayGapMs, replied, requestProbe, wentOffline, type PeerTiming } from "../src/turns.ts";
 
 const timing = meshtasticTiming;
 const unanswered = timing.timeoutMs + 450;
@@ -18,13 +18,13 @@ test("work goes ahead of a due check-in whenever the earlier deadline has room",
   assert.deepEqual(nextTurn([urgent, work], now, timing, []), { kind: "exchange", peer: urgent });
 });
 
-test("a four-frame poll waits for at-risk check-ins and runs once they are fresh", () => {
+test("a maximum-size poll waits for at-risk check-ins and runs once they are fresh", () => {
   const asset = ready("Task recipient", now - 2_000);
   const work = { ...asset, state: hasWork(asset.state) };
   const older = ready("older check-in", now - 5_000);
   const newer = ready("newer check-in", now - 2_450);
   const samples = observedTurn([], 1_900);
-  const frames = (peer: typeof work) => peer === work ? 4 : 1;
+  const frames = (peer: typeof work) => peer === work ? maxEventFrames(timing) : 1;
   assert.deepEqual(nextTurn([work, older, newer], now, timing, samples, false, Infinity, frames),
     { kind: "exchange", peer: older });
   older.state = replied(older.state, now - 550, timing);
@@ -36,9 +36,65 @@ test("a due Asset can check in while its own large poll waits", () => {
   const oldest = ready("earliest check-in", now - 6_000);
   const work = { ...oldest, state: hasWork(oldest.state) };
   const other = ready("next check-in", now - 5_000);
-  const frames = (peer: typeof work) => peer === work ? 4 : 1;
+  const frames = (peer: typeof work) => peer === work ? maxEventFrames(timing) : 1;
   assert.deepEqual(nextTurn([work, other], now, timing, observedTurn([], 1_900), false, Infinity, frames),
     { kind: "exchange", peer: work, checkInOnly: true });
+});
+
+// fieldlink/meshtastic/README.md#first-implementation
+for (const [name, durations] of [
+  ["2,100 ms turns", [2_100]],
+  ["2,300 ms turns", [2_300]],
+  ["a slow two-frame reply in the sample window", [2_850, 2_100, 2_100]],
+  ["turns at the end of the event reply window", [2_905]],
+] as const) {
+  test(`a maximum-size event gets a turn after ${name}`, () => {
+    const recipient = ready("Task recipient", now - 500);
+    recipient.state = hasWork(recipient.state);
+    const peers = [ready("oldest", now - 5_000), ready("other", now - 3_000), recipient];
+    const frames = (peer: typeof recipient) => peer === recipient ? maxEventFrames(timing) : 1;
+    let samples = durations.reduce<number[]>((prior, duration) => observedTurn(prior, duration), []);
+    let time = now;
+    while (time - now < 10_000) {
+      const turn = nextTurn(peers, time, timing, samples, false, Infinity, frames);
+      assert.equal(turn.kind, "exchange");
+      if (turn.peer === recipient && !turn.checkInOnly) return;
+      const duration = durations[durations.length - 1];
+      const replyAt = time + duration;
+      turn.peer.state = replied(began(turn.peer.state, time, timing), replyAt, timing);
+      if (turn.peer === recipient) recipient.state = hasWork(recipient.state);
+      samples = observedTurn(samples, duration);
+      time = replyAt + relayGapMs;
+    }
+    assert.fail("maximum-size event had no delivery turn within 10 seconds");
+  });
+}
+
+// fieldlink/meshtastic/README.md#first-implementation
+test("a discovery-due probe gets a turn despite a continuous report backlog", () => {
+  const offline = wentOffline(ready("recovered").state);
+  assert.equal(offline.kind, "ready");
+  const recovered: { state: PeerTiming } = { state: requestProbe(offline, now) };
+  const backlog: { state: PeerTiming } = { state: replied(ready("backlog", now - 5_000).state, now - 5_000, timing, true) };
+  const other: { state: PeerTiming } = { state: ready("other", now - 3_000).state };
+  const peers = [backlog, other, recovered];
+  const samples = observedTurn([], 2_300);
+  for (let time = now; time < now + 20_000; time += 2_300 + relayGapMs) {
+    const turn = nextTurn(peers, time, timing, samples);
+    assert.equal(turn.kind, "exchange");
+    if (turn.peer === recovered) {
+      assert.ok(time >= now + timing.pollMs);
+      const checkIns = [backlog, other].map(({ state }) => {
+        assert.equal(state.kind, "ready");
+        return state.checkInBy;
+      }).sort((a, b) => a - b);
+      assert.ok(checkIns[0] >= time + 3_455);
+      assert.ok(checkIns[1] >= time + 3_455 + 2_850);
+      return;
+    }
+    turn.peer.state = replied(began(turn.peer.state, time, timing), time + 2_300, timing, turn.peer === backlog);
+  }
+  assert.fail("discovery-due probe was starved by the report backlog");
 });
 
 test("a reply with more work gets a follow-up ahead of other queued work", () => {

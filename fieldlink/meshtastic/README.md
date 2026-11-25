@@ -26,9 +26,11 @@ transition through [the gateway host's contact queue](../../gateway/README.md#ga
 On a link that
 loses 5% of messages at random, a healthy Asset briefly shows offline about
 once an hour; its next check-in restores it. The gateway backs off unanswered
-offline probes up to 30 seconds between attempts. A discovery announcement
-makes the radio eligible for an immediate probe. The Asset counts authenticated
-polls as contact with its gateway, including while it waits for its first report receipts.
+offline probes up to 30 seconds between attempts. A discovery announcement makes
+the radio eligible for an immediate probe. After one configured poll interval
+of waiting, the probe takes priority over queued work when contact deadlines
+allow. The Asset counts authenticated polls as contact with its gateway,
+including while it waits for its first report receipts.
 Running Assets promptly announce when they hear their gateway restart, and the
 gateway prioritizes a poll on resume. After restart, it counts each carried
 Asset's 14,900 ms deadline from the last-heard time in Core's roster. If Core has
@@ -55,8 +57,9 @@ carrying an event allows another 150 ms for the Asset to queue its report,
 covering the example configs' 100 ms control tick plus 50 ms of margin. The
 reply can carry the Task's active report in the delivery exchange. Re-measure the window
 on physical radios.
-A Core event can use up to four poll frames at the default timing. That fits about 50 short
-`move_to` Tasks, about 20 settings Tasks with distinct home positions, or 64 simple light settings Tasks.
+A Core event can use up to two poll frames at the default timing. Example batches
+that fit include about 25 short `move_to` Tasks, about eight settings Tasks with
+distinct home positions, or 64 simple light settings Tasks.
 Tasks typically start within 10 seconds, and within 15 seconds while another
 Asset is dropping out. The gateway detects silence within 15 seconds.
 

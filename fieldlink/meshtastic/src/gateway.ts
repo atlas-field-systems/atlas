@@ -6,7 +6,7 @@ import { nonce, receiveEnvelopes, sendEnvelope, type Radio } from "./radio.ts";
 import {
   began, canDeliver, eventReplyHoldMs, hasWork, joining, maxEventFrames, maxReplyTimeoutMs, meshtasticTiming,
   nextTurn, noReply, observedTurn, relayGapMs,
-  replied, seen, wentOffline, type PeerTiming, type Timing,
+  replied, requestProbe, seen, wentOffline, type PeerTiming, type Timing,
 } from "./turns.ts";
 import { frameBytes, isDescription, isReport, maxReplyFrames, wireSize, type Envelope } from "./wire.ts";
 
@@ -65,7 +65,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
     if (prior) {
       if (prior.state.kind === "joining") prior.state = seen(prior.state, now);
       else if (!canDeliver(prior.state)) {
-        prior.state = { ...prior.state, dueAt: now };
+        prior.state = requestProbe(prior.state, now);
         wake?.abort();
       }
       return;
