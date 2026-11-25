@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/in_menu.json",
+  "title": "in_menu",
+  "description": "On a Plugin action, it appears in the right-click menu of an area, a place, or a point on the map when it has exactly one input of that kind (area, geofeature, or position), and the item clicked fills that input. If left out, it means false.",
+  "type": "boolean",
+  "examples": [
+    true
+  ]
+}
