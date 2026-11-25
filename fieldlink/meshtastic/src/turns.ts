@@ -7,11 +7,21 @@ export interface Timing {
 export const meshtasticTiming: Timing = { pollMs: 6_500, timeoutMs: 2_300, offlineMs: 14_900 };
 export const relayGapMs = 550;
 export const eventReplyHoldMs = 150;
-// One-frame submission observed in the relayed ShortTurbo simulator.
-const pollSendMs = 450;
+// A full frame uses 365 ms plus 0.5 ms per byte in the relayed ShortTurbo simulator.
+const pollSendMs = 455;
 // Upper end of successful one-frame exchanges in the relayed ShortTurbo simulator.
 const successfulExchangeMs = 1_900;
-const unansweredExchange = (timing: Timing) => pollSendMs + timing.timeoutMs + eventReplyHoldMs;
+const eventExchange = (timing: Timing, frames: number) => frames * pollSendMs + timing.timeoutMs + eventReplyHoldMs;
+const unansweredExchange = (timing: Timing) => eventExchange(timing, 1);
+const checkInWindow = (timing: Timing) =>
+  Math.min(timing.offlineMs / 2 + relayGapMs, timing.offlineMs - 2 * unansweredExchange(timing) - relayGapMs);
+
+// After refreshing two other Assets, allow for the last relay gap and one successful
+// routine turn before the second check-in starts.
+export const maxEventFrames = (timing: Timing) => Math.max(1, Math.floor(
+  (checkInWindow(timing) - relayGapMs - (successfulExchangeMs + relayGapMs) -
+    timing.timeoutMs - eventReplyHoldMs - relayGapMs) / pollSendMs,
+));
 // Reserve three successful turns, two unanswered turns, and 100 ms for scheduling overhead.
 export const maxReplyTimeoutMs = ({ offlineMs }: Timing) =>
   Math.floor((offlineMs - 100 - 3 * (successfulExchangeMs + eventReplyHoldMs + relayGapMs)) / 2) -
@@ -49,16 +59,20 @@ export function replied(state: PeerTiming, now: number, timing: Timing, followup
   return {
     kind: "ready", dueAt: state.dueAt, heardAt: now, deadline: now + timing.offlineMs,
     // Cap clean poll gaps at 10 s and leave room for a lost exchange and retry.
-    checkInBy: now + Math.min(timing.offlineMs / 2 + relayGapMs, timing.offlineMs - 2 * unansweredExchange(timing) - relayGapMs),
+    checkInBy: now + checkInWindow(timing),
     work: followup ? "followup" : state.kind === "ready" ? state.work : undefined,
   };
 }
 
 export const canDeliver = (state: Ready) => state.deadline !== undefined;
-export const observedTurn = (samples: readonly number[], duration: number) => [...samples.slice(-4), duration + relayGapMs];
+// Multi-frame polls have their own budget and do not change the routine check-in estimate.
+export const observedTurn = (samples: number[], duration: number, frames = 1) =>
+  frames === 1 ? [...samples.slice(-4), duration + relayGapMs] : samples;
 
-export function nextTurn<T extends Peer>(roster: Iterable<T>, now: number, timing: Timing, samples: readonly number[], busy = false, startupDeadline = Infinity):
-  | { kind: "expire" | "offline" | "exchange"; peer: T; deferred?: T }
+export function nextTurn<T extends Peer>(roster: Iterable<T>, now: number, timing: Timing, samples: readonly number[], busy = false, startupDeadline = Infinity, pollFrames: (peer: T) => number = () => 1):
+  | { kind: "expire"; peer: T }
+  | { kind: "offline"; peer: T }
+  | { kind: "exchange"; peer: T; deferred?: T; checkInOnly?: true }
   | { kind: "unheard" }
   | { kind: "wait"; until: number } {
   const peers = [...roster];
@@ -90,10 +104,21 @@ export function nextTurn<T extends Peer>(roster: Iterable<T>, now: number, timin
   const candidate = join && now - join.state.dueAt >= timing.pollMs ? join : work ?? join ?? retry ?? due;
   if (candidate) {
     const checkIns = established.filter(peer => Number.isFinite(startBy(peer))).sort((a, b) => startBy(a) - startBy(b));
-    const firstMs = candidate === retry ? Math.max(unansweredMs, turnMs) : turnMs;
-    const others = checkIns.filter(peer => peer !== candidate);
-    if (others.some((peer, index) => startBy(peer) < now + firstMs + index * turnMs))
-      return { kind: "exchange", peer: checkIns[0], ...(candidate === join ? { deferred: join } : {}) };
+    const fits = (peer: T, frames: number) => {
+      const firstMs = Math.max(turnMs, frames > 1 ? eventExchange(timing, frames) + relayGapMs :
+        peer === retry ? unansweredMs : 0);
+      return checkIns.filter(other => other !== peer)
+        .every((other, index) => startBy(other) >= now + firstMs + index * turnMs);
+    };
+    if (!fits(candidate, pollFrames(candidate))) {
+      const peer = checkIns[0];
+      const frames = pollFrames(peer);
+      return {
+        kind: "exchange", peer,
+        ...(candidate === join ? { deferred: join } : {}),
+        ...(frames > 1 && !fits(peer, frames) ? { checkInOnly: true } : {}),
+      };
+    }
     return { kind: "exchange", peer: candidate };
   }
   return { kind: "wait", until: Math.min(nextDeadline, ...peers.map(({ state }) => state.kind === "joining"

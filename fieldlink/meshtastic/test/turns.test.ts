@@ -18,6 +18,29 @@ test("work goes ahead of a due check-in whenever the earlier deadline has room",
   assert.deepEqual(nextTurn([urgent, work], now, timing, []), { kind: "exchange", peer: urgent });
 });
 
+test("a four-frame poll waits for at-risk check-ins and runs once they are fresh", () => {
+  const asset = ready("Task recipient", now - 2_000);
+  const work = { ...asset, state: hasWork(asset.state) };
+  const older = ready("older check-in", now - 5_000);
+  const newer = ready("newer check-in", now - 2_450);
+  const samples = observedTurn([], 1_900);
+  const frames = (peer: typeof work) => peer === work ? 4 : 1;
+  assert.deepEqual(nextTurn([work, older, newer], now, timing, samples, false, Infinity, frames),
+    { kind: "exchange", peer: older });
+  older.state = replied(older.state, now - 550, timing);
+  assert.deepEqual(nextTurn([work, older, newer], now, timing, samples, false, Infinity, frames),
+    { kind: "exchange", peer: work });
+});
+
+test("a due Asset can check in while its own large poll waits", () => {
+  const oldest = ready("earliest check-in", now - 6_000);
+  const work = { ...oldest, state: hasWork(oldest.state) };
+  const other = ready("next check-in", now - 5_000);
+  const frames = (peer: typeof work) => peer === work ? 4 : 1;
+  assert.deepEqual(nextTurn([work, other], now, timing, observedTurn([], 1_900), false, Infinity, frames),
+    { kind: "exchange", peer: work, checkInOnly: true });
+});
+
 test("a reply with more work gets a follow-up ahead of other queued work", () => {
   const checkingIn = ready("check-in", now - 4_000);
   const queued = { ...checkingIn, state: hasWork(checkingIn.state) };

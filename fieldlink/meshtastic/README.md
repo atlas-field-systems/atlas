@@ -55,6 +55,8 @@ carrying an event allows another 150 ms for the Asset to queue its report,
 covering the example configs' 100 ms control tick plus 50 ms of margin. The
 reply can carry the Task's active report in the delivery exchange. Re-measure the window
 on physical radios.
+A Core event can use up to four poll frames at the default timing. That fits about 50 short
+`move_to` Tasks, about 20 settings Tasks with distinct home positions, or 64 simple light settings Tasks.
 Tasks typically start within 10 seconds, and within 15 seconds while another
 Asset is dropping out. The gateway detects silence within 15 seconds.
 

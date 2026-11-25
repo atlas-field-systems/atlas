@@ -21,7 +21,8 @@ function singleRelay(slowFragmentsFrom?: string) {
   const silent = new Set<string>();
   const announced = new Set<string>();
   const failures = new Map<string, AbortController>();
-  const multiFrame = new Set<string>();
+  const multiFrame = new Map<string, number>();
+  const rejected = new Map<string, (() => void)>();
   const relayQueue = new Map<string, number>();
   async function forward(sender: string, bytes: number, deliver: () => void) {
     // ShortTurbo airtime plus the firmware's scheduling delay on each hop.
@@ -42,7 +43,8 @@ function singleRelay(slowFragmentsFrom?: string) {
       failure: failure.signal,
       async send(peer, bytes) {
         assert.ok(bytes.length <= 180);
-        if (bytes[10] > 1) multiFrame.add(peer);
+        rejected.get(peer)?.();
+        if (bytes[10] > 1) multiFrame.set(peer, Math.max(bytes[10], multiFrame.get(peer) ?? 0));
         if (key === slowFragmentsFrom && bytes[9] > 0) await delay(1_200);
         await forward(key, bytes.length, () => {
           for (const receive of receivers.get(peer) ?? []) receive(key, bytes.slice());
@@ -73,7 +75,7 @@ function singleRelay(slowFragmentsFrom?: string) {
     };
   }
   return {
-    radio, announced, multiFrame, silence: (key: string) => silent.add(key),
+    radio, announced, multiFrame, rejected, silence: (key: string) => silent.add(key),
     fail: (key: string) => failures.get(key)?.abort(new Error("Radio bridge failed")),
   };
 }
@@ -213,6 +215,7 @@ scenario({
         const started = () => w.events.filter(event => event.kind === "report.status" && event.record.kind === "task" &&
           event.record.asset_id === assetId && event.record.task_id === taskId && event.record.task_state === "active");
         await until(() => started().length > 0, sentAt + 10_000, `Task started on ${assetId} within 10 seconds`);
+        process.stdout.write(`Clean-link Task start on ${assetId}: ${Math.round(performance.now() - sentAt)} ms\n`);
         return started;
       }
       for (const [index, key] of keys.slice(0, 2).entries()) {
@@ -479,6 +482,96 @@ scenario({
       if (response.ok && String(input).endsWith("/contact") && typeof init?.body === "string" &&
           init.body.includes('"contact":"offline"')) offlineAt = performance.now();
       return response;
+    });
+  },
+});
+
+scenario({
+  name: "Meshtastic keeps three Assets online through a large Task batch",
+  checks: ["fieldlink/meshtastic/README.md#first-implementation"],
+  timeout: 85_000,
+  async run(w) {
+    await withMesh(w, async ({ mesh, keys, start, until, online, contacts, waitForOnline, ready, lastReply, errors }) => {
+      for (const [i, key] of keys.entries()) {
+        start(key, { description: { commands: [], reports: ["settings", "status", "telemetry"],
+          settings: ["home_position", "lights", "run_state", "link_loss_after_s"] } });
+        await waitForOnline(i + 1);
+        await until(() => ready() === i + 1, performance.now() + 16_000, `Asset ${i + 1} ready`);
+      }
+      const ids = online();
+      const recipient = ids[2];
+      const submit = async (assetId: string, count: number) => value(await w.complete(w.admin.call("sendTasks", {
+        params: { asset_id: assetId }, body: { tasks: Array.from({ length: count }, (_, i) => ({
+          kind: "settings", settings: { home_position: {
+            latitude: Math.sin(i + 1) * 88, longitude: Math.cos(i + 1) * 178,
+            ...(count > 20 ? { altitudes: [
+              { altitude_reference: "msl" as const, altitude_m: Math.sin((i + 2) * 3) * 1_000 },
+              { altitude_reference: "ellipsoid" as const, altitude_m: Math.sin((i + 2) * 4) * 1_000 },
+              { altitude_reference: "launch" as const, altitude_m: Math.sin((i + 2) * 5) * 1_000 },
+            ] } : {}),
+          } },
+        })) },
+      })));
+      const sentAt = performance.now();
+      const { task_ids } = await submit(recipient, 20);
+      const firstTask = task_ids[0];
+      await until(() => w.events.some(event => event.kind === "report.status" && event.record.kind === "task" &&
+        event.record.asset_id === recipient && event.record.task_id === firstTask && event.record.task_state === "active"),
+      sentAt + 10_000, "the large Task batch started");
+      process.stdout.write(`Clean-link large-batch Task start: ${Math.round(performance.now() - sentAt)} ms\n`);
+      assert.equal(mesh.multiFrame.get(keys[2]), 4, "the Task batch used the full transfer budget");
+      await until(() => w.events.some(event => event.kind === "report.status" && event.record.kind === "queue" &&
+        event.record.asset_id === recipient && event.record.task_ids.includes(task_ids[task_ids.length - 1])),
+      performance.now() + 10_000, "the final Task in the batch reached the Asset");
+
+      const heard = lastReply.get(keys[0]) ?? 0;
+      const oversized = await submit(ids[0], 64);
+      const transferErrors = () => errors.filter(error => String(error).includes("exceeds the transfer limit"));
+      await until(() => transferErrors().length > 0 && (lastReply.get(keys[0]) ?? 0) > heard + 8_000,
+        performance.now() + 17_000, "the oversize event was reported and check-ins continued");
+      assert.equal(transferErrors().length, 1);
+      assert.ok(!w.events.some(event => event.kind === "report.status" && event.record.kind === "task" &&
+        event.record.asset_id === ids[0] && oversized.task_ids.includes(event.record.task_id)));
+      for (const id of ids) {
+        const joined = contacts(id, "online")[0].event_id;
+        assert.ok(contacts(id, "offline").every(event => event.event_id < joined), `Asset ${id} stayed online`);
+      }
+    });
+  },
+});
+
+scenario({
+  name: "Meshtastic retries a rejected poll without starving another Asset",
+  checks: ["fieldlink/meshtastic/README.md#first-implementation"],
+  timeout: 45_000,
+  async run(w) {
+    await withMesh(w, async ({ mesh, keys, start, waitForOnline, until, online, ready, lastReply, errors, contacts }) => {
+      for (const [i, key] of keys.slice(0, 2).entries()) {
+        start(key);
+        await waitForOnline(i + 1);
+      }
+      await until(() => ready() === 2, performance.now() + 12_000, "both Assets ready");
+      const [recipient, healthy] = online();
+      const failure = new Error("Unknown radio peer");
+      const attempts: number[] = [];
+      mesh.rejected.set(keys[0], () => {
+        attempts.push(performance.now());
+        if (attempts.length === 1) throw failure;
+      });
+      const { task_ids: [taskId] } = value(await w.complete(w.admin.call("sendTasks", {
+        params: { asset_id: recipient }, body: { tasks: [{ kind: "settings", settings: { lights: "on" } }] },
+      })));
+      const heard = lastReply.get(keys[1]);
+      await until(() => attempts.length >= 2 && lastReply.get(keys[1]) !== heard,
+        performance.now() + 10_000, "healthy Asset heard during the failed sends");
+      assert.ok(attempts[1] - attempts[0] < 5_000, "the failed poll did not wait for the next routine slot");
+      assert.equal(errors.filter(error => error === failure).length, 1);
+      mesh.rejected.delete(keys[0]);
+      await until(() => w.events.some(event => event.kind === "report.status" && event.record.kind === "task" &&
+        event.record.asset_id === recipient && event.record.task_id === taskId),
+      performance.now() + 5_000, "pending Task delivered after radio recovery");
+      const joined = contacts(healthy, "online")[0].event_id;
+      assert.ok(contacts(healthy, "offline").every(event => event.event_id < joined));
     });
   },
 });

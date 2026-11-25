@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { test } from "node:test";
 import { loadPackagedProtocol } from "@atlas/protocol";
@@ -6,12 +7,13 @@ import { serveGateway } from "../src/gateway.ts";
 import { AssetRemoved, type GatewayHost } from "../src/gateway-host.ts";
 import { nonce, receiveEnvelopes, sendEnvelope, type Radio } from "../src/radio.ts";
 import { meshtasticTiming } from "../src/turns.ts";
-import type { Envelope } from "../src/wire.ts";
+import { encodeFrames, type Envelope } from "../src/wire.ts";
 
 type Mesh = {
-  announce(boot: string): void;
+  announce(boot: string, radio?: string): void;
   next(): Promise<Envelope>;
   respond(packet: Envelope, reply?: Partial<Extract<Envelope, { kind: "reply" }>>): Promise<void>;
+  send(packet: Envelope): Promise<void>;
   errors: unknown[];
 };
 
@@ -19,18 +21,23 @@ async function exercise(
   overrides: Partial<GatewayHost>,
   run: (mesh: Mesh) => Promise<void>,
   pollMs = 1_500,
+  beforeSend?: (peer: string) => void,
 ) {
   const controller = new AbortController();
   const { signal } = controller;
   const { hash } = await loadPackagedProtocol();
   const peer = "b".repeat(64);
+  const radios = new Map<string, string>();
   let receive: Parameters<Radio["receive"]>[0] | undefined;
   const discovering = Promise.withResolvers<Parameters<Radio["discover"]>[0]>();
   const output = new AsyncQueue();
   const errors: unknown[] = [];
   const radio: Radio = {
     failure: signal,
-    async send(_, bytes) { outgoing(peer, bytes); },
+    async send(target, bytes) {
+      beforeSend?.(target);
+      outgoing(target, bytes);
+    },
     async announce() {},
     receive(listener) { receive = listener; return () => { receive = undefined; }; },
     discover(listener) { discovering.resolve(listener); return () => {}; },
@@ -39,7 +46,11 @@ async function exercise(
   let outgoing: Parameters<Radio["receive"]>[0] = () => {};
   receiveEnvelopes({ ...radio, receive(listener) { outgoing = listener; return () => {}; } },
     () => true, (_, packet) => output.push(packet));
-  const remote: Radio = { ...radio, async send(_, bytes) { receive?.(peer, bytes); } };
+  function send(packet: Envelope) {
+    const sender = radios.get(packet.boot) ?? peer;
+    const remote: Radio = { ...radio, async send(_, bytes) { receive?.(sender, bytes); } };
+    return sendEnvelope(remote, sender, packet, signal);
+  }
   const host: GatewayHost = {
     async carried() { return []; },
     onEvent: () => () => {},
@@ -54,15 +65,19 @@ async function exercise(
   try {
     const discover = await discovering.promise;
     await run({
-      announce: boot => discover(peer, boot, "discovery"),
+      announce(boot, target = peer) {
+        radios.set(boot, target);
+        discover(target, boot, "discovery");
+      },
       next: () => output.next(),
       async respond(packet, reply) {
         const { session, seq, boot } = packet;
         const response: Envelope = packet.kind === "register"
           ? { kind: "profile", session, seq, boot, hash, description: { commands: [], reports: ["settings"] } }
           : { kind: "reply", session, seq, boot, cursor: 1, ...reply };
-        await sendEnvelope(remote, peer, response, signal);
+        await send(response);
       },
+      send,
       errors,
     });
   } finally {
@@ -96,6 +111,78 @@ async function join(mesh: Mesh, boot = nonce()) {
   await mesh.respond(registered);
   return boot;
 }
+
+test("rejected sends with new work yield to the healthy radio after one retry", { timeout: 12_000 }, async () => {
+  const failing = "b".repeat(64), healthy = "c".repeat(64);
+  const failure = new Error("Unknown radio peer");
+  const tooMany = Promise.withResolvers<void>();
+  let notify: Parameters<GatewayHost["onEvent"]>[0] | undefined;
+  let rejecting = false;
+  let attempts = 0;
+  await exercise({
+    onEvent(listener) { notify = listener; return () => {}; },
+    async bind(radio) { return { run: 1, assetId: radio === failing ? "B" : "C", after: 1, lastTaskId: 0 }; },
+  }, async mesh => {
+    await join(mesh);
+    const firstPoll = await mesh.next();
+    assert.equal(firstPoll.kind, "poll");
+    await mesh.respond(firstPoll);
+    const healthyBoot = nonce();
+    mesh.announce(healthyBoot, healthy);
+    const register = await mesh.next();
+    assert.equal(register.kind, "register");
+    await mesh.respond(register);
+    const registered = await mesh.next();
+    assert.equal(registered.kind, "registered");
+    await mesh.respond(registered);
+    const initialCheckIn = await mesh.next();
+    assert.equal(initialCheckIn.boot, healthyBoot);
+    assert.equal(initialCheckIn.kind, "poll");
+    rejecting = true;
+    notify?.("B");
+    await mesh.respond(initialCheckIn);
+
+    const next = await Promise.race([mesh.next(), tooMany.promise]);
+    assert.ok(next, "the failing radio was sent a third poll ahead of the healthy radio");
+    assert.equal(next.boot, healthyBoot);
+    assert.equal(attempts, 2);
+    assert.equal(mesh.errors.filter(error => error === failure).length, 2);
+  }, 1_500, peer => {
+    if (!rejecting || peer !== failing) return;
+    // New Core events can arrive while the failed send is in flight.
+    notify?.("B");
+    if (++attempts === 3) tooMany.resolve();
+    throw failure;
+  });
+});
+
+test("registration has the same fragment limit as other replies", { timeout: 8_000 }, async () => {
+  let binds = 0;
+  await exercise({
+    async bind() { binds++; return { run: 1, assetId: "B", after: 1, lastTaskId: 0 }; },
+  }, async mesh => {
+    const protocol = await loadPackagedProtocol();
+    mesh.announce(nonce());
+    const register = await mesh.next();
+    assert.equal(register.kind, "register");
+    const { session, seq, boot } = register;
+    const profile: Envelope = { kind: "profile", session, seq, boot, hash: protocol.hash, description: {
+      commands: [], reports: ["settings"], subsystems: Array.from({ length: 12 }, (_, i) => ({
+        subsystem_id: `S${i}`, label: createHash("sha256").update(String(i)).digest("hex"),
+      })),
+    } };
+    assert.ok(protocol.check("requests.asset", profile.description).ok);
+    assert.ok(encodeFrames(profile, Buffer.alloc(8)).length > 2);
+    await mesh.send(profile);
+    const next = await mesh.next();
+    assert.equal(next.kind, "register");
+    assert.equal(binds, 0);
+    await mesh.respond(next);
+    const registered = await mesh.next();
+    assert.equal(registered.kind, "registered");
+    assert.equal(binds, 1);
+  });
+});
 
 // Meshtastic README, First implementation: Core storage and delivery run between radio turns.
 test("a dead Core stream still sends polls and reports the error", { timeout: 7_000 }, async () => {
