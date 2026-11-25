@@ -20,9 +20,11 @@ An Asset can go about 14 seconds without hearing the gateway after one lost
 message. The Asset requires `link_loss_after_s` to be at least 15 seconds
 at startup and refuses shorter values in settings requests and Tasks. A join waits if
 measured turns leave too little room for established Assets to check in.
-The gateway reports a radio offline 14,900 ms after its last reply. It retries
-failed contact writes with backoff until they succeed or newer contact replaces
-them. On a link that
+The gateway reports a radio offline 14,900 ms after its last reply, even if
+the radio's replacement app fails to register. Queued contact writes preserve
+each transition. The gateway combines consecutive readings of the same state.
+It retries failed writes with backoff. A failed offline write must reach Core
+before the next online write. On a link that
 loses 5% of messages at random, a healthy Asset briefly shows offline about
 once an hour; its next check-in restores it. The gateway backs off unanswered
 offline probes up to 30 seconds between attempts. A discovery announcement
@@ -45,6 +47,8 @@ Asset chooses the reports through its SDK report source. A reply can span up to
 two frames. If a batch exceeds that limit, the Asset refuses it once and the
 outbox records the refusal. Core storage runs between radio turns. A later poll
 carries the receipt, and duplicates of a pending submission share its write.
+If the poll carried an event or a reply indicated more reports were waiting,
+the gateway schedules a follow-up once storage finishes.
 The reply window begins after the gateway submits the final poll frame. The
 2,300 ms default fits two reply frames in the relayed ShortTurbo simulator. A poll
 carrying an event allows another 150 ms for the Asset to queue its report,

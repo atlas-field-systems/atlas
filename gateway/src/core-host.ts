@@ -48,8 +48,11 @@ type Asset = {
   refreshing: number;
   removed?: true;
   queue: AssetEvent[];
+  reports: Set<Promise<unknown>>;
   stream?: Follow;
   streamError?: Error;
+  streamRetry?: NodeJS.Timeout;
+  streamBackoff: number;
   contact?: Contact;
 };
 type ContactWrite = {
@@ -57,7 +60,7 @@ type ContactWrite = {
   asset?: Asset;
   result: ReturnType<typeof Promise.withResolvers<void>>;
 };
-type ContactWriter = { pending?: ContactWrite; done: Promise<void> };
+type ContactWriter = { pending: ContactWrite[]; done: Promise<void> };
 type Signup = {
   session: string;
   operation: string;
@@ -75,6 +78,7 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
   const signups = new Map<string, Signup>();
   const events = new Set<(assetId: string) => void>();
   const contactWrites = new Map<string, ContactWriter>();
+  const failedOffline = new Map<string, Contact>();
 
   function assetFor(assetId: string): Asset {
     const asset = assets.get(assetId);
@@ -85,6 +89,8 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
   function stop(asset: Asset) {
     asset.stream?.stop();
     asset.stream = undefined;
+    clearTimeout(asset.streamRetry);
+    asset.streamRetry = undefined;
   }
 
   function checkRemoval<T>(asset: Asset, result: Result<T>) {
@@ -96,35 +102,51 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
     }
   }
 
+  async function sendContact(assetId: string, contact: Contact, asset?: Asset) {
+    const response = await client.call("putContact", {
+      retry: false,
+      params: { asset_id: assetId },
+      body: { asset_id: assetId, contact: contact.open ? "online" : "offline", time: contact.lastHeard },
+    });
+    if (asset) checkRemoval(asset, response);
+    if (asset || response.ok || (response.status !== 403 && response.status !== 404)) requireValue(response);
+  }
+
   function writeContact(assetId: string, contact: Contact, asset = assets.get(assetId)) {
     const result = Promise.withResolvers<void>();
     const pending = { contact, asset, result };
     const active = contactWrites.get(assetId);
     if (active) {
-      active.pending?.result.resolve();
-      active.pending = pending;
+      const latest = active.pending.at(-1);
+      if (latest && latest.contact.open === contact.open) {
+        latest.result.resolve();
+        active.pending.pop();
+      }
+      active.pending.push(pending);
       return result.promise;
     }
     const writer: ContactWriter = {
-      pending,
+      pending: [pending],
       done: Promise.resolve().then(async () => {
-        while (writer.pending) {
-          const { contact, asset, result } = writer.pending;
-          writer.pending = undefined;
+        let write: ContactWrite | undefined;
+        while ((write = writer.pending.shift())) {
+          const { contact, asset, result } = write;
           try {
             if (asset && (asset.removed || assets.get(assetId) !== asset)) {
               result.resolve();
               continue;
             }
-            const response = await client.call("putContact", {
-              retry: false,
-              params: { asset_id: assetId },
-              body: { asset_id: assetId, contact: contact.open ? "online" : "offline", time: contact.lastHeard },
-            });
-            if (asset) checkRemoval(asset, response);
-            if (asset || response.ok || (response.status !== 403 && response.status !== 404)) requireValue(response);
+            const offline = failedOffline.get(assetId);
+            if (contact.open && offline) {
+              await sendContact(assetId, offline, asset);
+              failedOffline.delete(assetId);
+            }
+            await sendContact(assetId, contact, asset);
+            if (!contact.open) failedOffline.delete(assetId);
             result.resolve();
           } catch (error) {
+            if (error instanceof AssetRemoved) failedOffline.delete(assetId);
+            else if (!contact.open) failedOffline.set(assetId, contact);
             result.reject(error);
           }
         }
@@ -156,10 +178,15 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
       for (const listener of events) listener(assetId);
     });
     asset.stream = stream;
-    asset.streamError = undefined;
     void stream.done.then(end => {
-      if (asset.stream === stream && end.reason !== "stopped")
-        asset.streamError = new Error(`Core event stream for Asset ${assetId} ended (${end.reason})`);
+      if (asset.stream !== stream || end.reason === "stopped") return;
+      asset.streamError ??= new Error(`Core event stream for Asset ${assetId} ended (${end.reason})`);
+      if (end.reason !== "invalid_event" && end.reason !== "handler_failed") return;
+      asset.streamRetry = setTimeout(() => {
+        asset.streamRetry = undefined;
+        start(asset, true);
+      }, asset.streamBackoff);
+      asset.streamBackoff = Math.min(asset.streamBackoff * 2, 5_000);
     });
   }
 
@@ -196,7 +223,7 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         stop(prior);
         peers.delete(peer);
         assets.delete(prior.binding.assetId);
-        await contactWrites.get(prior.binding.assetId)?.done;
+        await Promise.allSettled([...prior.reports, contactWrites.get(prior.binding.assetId)?.done]);
       }
       const { operation, time } = signup;
       let binding: Binding;
@@ -231,6 +258,8 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         after: binding.after,
         refreshing: 0,
         queue: [],
+        reports: new Set(),
+        streamBackoff: 250,
       };
       peers.set(peer, asset);
       assets.set(assetId, asset);
@@ -240,21 +269,34 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
     },
     next(assetId, after) {
       const asset = assetFor(assetId);
-      asset.after = Math.max(asset.after, after);
-      if (asset.streamError) throw asset.streamError;
+      if (after > asset.after) {
+        asset.after = after;
+        asset.streamBackoff = 250;
+      }
+      if (asset.streamError) {
+        const error = asset.streamError;
+        asset.streamError = undefined;
+        throw error;
+      }
       if (asset.refreshing || asset.stream?.stale !== false) return;
       while (asset.queue[0] && asset.queue[0].event_id <= asset.after) asset.queue.shift();
       return asset.queue[0];
     },
     async store(assetId, submission, reports) {
       const asset = assetFor(assetId);
-      const result = await withKey(keyFor("reports", run, assetId, asset.session, submission), () =>
+      const writing = withKey(keyFor("reports", run, assetId, asset.session, submission), () =>
         client.call("sendReports", { params: { asset_id: assetId }, body: { reports } }));
-      checkRemoval(asset, result);
-      if (!result.ok && result.status !== undefined && result.status >= 400 && result.status < 500 && result.status !== 401)
-        throw new ReportRefused(`${result.error}: ${result.explanation}`);
-      const { stored } = requireValue(result);
-      if (stored !== reports.length) throw new Error("Core did not confirm the complete report batch");
+      asset.reports.add(writing);
+      try {
+        const result = await writing;
+        checkRemoval(asset, result);
+        if (!result.ok && result.status !== undefined && result.status >= 400 && result.status < 500 && result.status !== 401)
+          throw new ReportRefused(`${result.error}: ${result.explanation}`);
+        const { stored } = requireValue(result);
+        if (stored !== reports.length) throw new Error("Core did not confirm the complete report batch");
+      } finally {
+        asset.reports.delete(writing);
+      }
     },
     async contact(assetId, open, lastHeard) {
       const contact = { open, lastHeard };
@@ -276,7 +318,7 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         failed = false;
       } finally {
         if (--asset.refreshing === 0 && assets.get(assetId) === asset && !asset.removed)
-          start(asset, failed && asset.contact === contact);
+          start(asset, failed);
       }
     },
     close() {

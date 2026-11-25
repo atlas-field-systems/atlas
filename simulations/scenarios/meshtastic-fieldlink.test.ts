@@ -675,8 +675,8 @@ scenario({
 });
 
 for (const [bound, failFirst] of [[false, false], [true, false], [true, true]]) scenario({
-  name: failFirst ? "Meshtastic does not retry superseded contact"
-    : `Meshtastic only sends the latest queued contact for a ${bound ? "bound" : "carried"} Asset`,
+  name: failFirst ? "Meshtastic retries a failed offline transition before reporting online"
+    : `Meshtastic preserves queued contact transitions for a ${bound ? "bound" : "carried"} Asset`,
   checks: ["fieldlink/meshtastic/README.md#first-implementation"],
   async run(w) {
     const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
@@ -704,21 +704,139 @@ for (const [bound, failFirst] of [[false, false], [true, false], [true, true]]) 
         commands: [], reports: ["settings"], settings: ["lights"],
       } });
       if (!bound) await host.carried();
+      await host.contact(assetId, true, w.clock.now());
       const time = w.clock.now();
       stalled = true;
       const first = host.contact(assetId, !failFirst, time);
       const firstSettled = failFirst ? assert.rejects(first, /unknown/) : first;
       await started.promise;
-      const queued = [host.contact(assetId, true, time + 1), host.contact(assetId, false, time + 1),
-        host.contact(assetId, true, time + 2)];
+      let taskId: number | undefined;
+      if (!failFirst) {
+        // The Asset must be online to accept a Task while the refresh is blocked.
+        const sent = value(await w.complete(w.admin.call("sendTasks", {
+          params: { asset_id: assetId }, body: { tasks: [{ kind: "settings", settings: { lights: "on" } }] },
+        })));
+        taskId = sent.task_ids[0];
+      }
+      const queued = [host.contact(assetId, true, time + 1), host.contact(assetId, true, time + 2),
+        host.contact(assetId, false, time + 2), host.contact(assetId, true, time + 3)];
       release.resolve();
       await Promise.all([firstSettled, ...queued]);
+      if (taskId !== undefined) {
+        const tasks = requireValue(await core.client.call("tasks", { params: { asset_id: assetId } }));
+        assert.equal(tasks.items.find(item => item.task.task_id === taskId)?.state, "dropped");
+      }
       assert.deepEqual(writes.map(({ contact, time }) => [contact, time]),
-        [[failFirst ? "offline" : "online", time], ["online", time + 2]]);
+        [...(failFirst ? [["offline", time], ["offline", time]] : [["online", time]]),
+          ["online", time + 2], ["offline", time + 2], ["online", time + 3]]);
     } finally {
       release.resolve();
       host.close();
       original.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic drains a retired app's reports before the replacement signs up",
+  checks: ["core/docs/api.md#radio-assets", "core/docs/api.md#operator-requests"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const storing = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const described = Promise.withResolvers<void>();
+    let replacing = false;
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
+      const path = new URL(String(input)).pathname;
+      if (path.endsWith("/reports")) {
+        storing.resolve();
+        await release.promise;
+      }
+      const response = await fetch(input, init);
+      if (replacing && path.endsWith("/description")) described.resolve();
+      return response;
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const host = createGatewayHost(core, run_id);
+    const profile = { hash: core.hash, description: {
+      commands: [], reports: ["status"], settings: ["lights"],
+    } } satisfies Omit<Parameters<GatewayHost["bind"]>[1], "session">;
+    try {
+      const { assetId } = await host.bind("radio", { ...profile, session: "old" });
+      await host.contact(assetId, true, w.clock.now());
+      const sent = value(await w.complete(w.admin.call("sendTasks", {
+        params: { asset_id: assetId }, body: { tasks: [{ kind: "settings", settings: { lights: "on" } }] },
+      })));
+      const taskId = sent.task_ids[0];
+      const report = host.store(assetId, 1, [{
+        type: "report.status", kind: "queue", asset_id: assetId, time: w.clock.now(), task_ids: [taskId],
+      }]);
+      await storing.promise;
+      replacing = true;
+      const replacement = host.bind("radio", { ...profile, session: "new" });
+      // Let an unsynchronized description reach Core while the old report is blocked.
+      await Promise.race([described.promise, delay(500)]);
+      release.resolve();
+      const [, registered] = await Promise.all([report, replacement]);
+      assert.equal(registered.assetId, assetId);
+      const tasks = requireValue(await core.client.call("tasks", { params: { asset_id: assetId } }));
+      assert.equal(tasks.items.find(item => item.task.task_id === taskId)?.state, "dropped");
+      assert.deepEqual(tasks.held, []);
+    } finally {
+      release.resolve();
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic reports a terminal stream error once and resumes delivery",
+  checks: ["core/docs/api.md#radio-assets"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    let invalid = true;
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, fetch(input, init) {
+      if (invalid && new URL(String(input)).pathname === "/events") {
+        invalid = false;
+        return Promise.resolve(new Response("data: invalid JSON\n\n", { headers: { "Content-Type": "text/event-stream" } }));
+      }
+      return fetch(input, init);
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const host = createGatewayHost(core, run_id);
+    try {
+      const { assetId, after } = await host.bind("radio", { session: "boot", hash: core.hash, description: {
+        commands: [], reports: ["settings"], settings: ["lights"],
+      } });
+      await host.contact(assetId, true, w.clock.now());
+      value(await w.complete(w.admin.call("changeSettings", {
+        params: { asset_id: assetId }, body: { settings: { lights: "off" } },
+      })));
+      await w.until(() => {
+        try { host.next(assetId, after); }
+        catch (error) {
+          assert.match(String(error), /invalid_event/);
+          return true;
+        }
+        return false;
+      });
+      assert.doesNotThrow(() => host.next(assetId, after));
+      const recovered = Promise.withResolvers<void>();
+      const unsubscribe = host.onEvent(() => recovered.resolve());
+      try {
+        await Promise.race([recovered.promise, delay(2_000, undefined, { ref: false })]);
+        const event = host.next(assetId, after);
+        assert.equal(event?.kind, "settings.requested");
+        assert.equal(event.record.settings.lights, "off");
+      } finally {
+        unsubscribe();
+      }
+    } finally {
+      host.close();
       core.client.close();
     }
   },

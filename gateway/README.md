@@ -88,6 +88,9 @@ works with.
   driver.
 
 The gateway app logs both sides of the interface.
+It finishes sending the previous app's reports before it signs up a replacement.
+If a Core event stream ends due to an invalid event or a handler error, the
+gateway reports the failure once and retries from the Asset's acknowledged event.
 The [TypeScript interface](../fieldlink/meshtastic/src/gateway-host.ts) lives in
 Meshtastic and moves to Gateway when a second Fieldlink is added.
 
