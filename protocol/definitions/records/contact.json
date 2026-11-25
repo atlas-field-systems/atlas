@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/contact.json",
   "title": "Contact",
-  "description": "Whether an Asset, gateway, or Plugin is in contact. time is when it was last heard from, so an offline record keeps the last time it was heard. It names exactly one of asset_id, gateway_id, or plugin_id. Core records its own view in asset.contact, gateway.contact, and plugin.contact events. A gateway sends this record for each Asset it carries whenever its Fieldlink's view of that Asset changes, and Core takes that as its view.",
+  "description": "Whether an Asset, gateway, or Plugin is in contact. time is when it was last heard from, so an offline record keeps the last time it was heard. It names exactly one of asset_id, gateway_id, or plugin_id. Core records its own view in asset.contact, gateway.contact, and plugin.contact events. A radio reply supplies a new online reading for the gateway to send to Core. The gateway also sends each change in contact.",
   "type": "object",
   "required": [
     "time",

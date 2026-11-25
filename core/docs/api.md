@@ -383,11 +383,11 @@ A gateway makes the same calls on behalf of each Asset it carries, with its own
 key, once it has [registered the radio](#radio-assets). Its first subscription
 uses the registration answer’s `as_of`; an existing subscription stays open
 when another radio registers. It also sends
-`PUT /entities/assets/{asset_id}/contact` with a `contact` record whenever its
-Fieldlink's view of that Asset changes. Only a gateway may send it, for an Asset
-it carries, named by the path; any other caller gets `403`. Core
-authenticates the gateway and trusts it for which Asset sent what. Each Asset
-authenticates to the gateway, not to Core.
+`PUT /entities/assets/{asset_id}/contact` with a `contact` record. Each radio reply
+supplies a new online reading, and the gateway also reports each change in
+contact. Only a gateway may send it for an Asset it carries, named by the path.
+Any other caller gets `403`. Core authenticates the gateway and trusts it for
+which Asset sent what. Each Asset authenticates to the gateway, not to Core.
 
 A gateway runs on its own computer, apart from Core. Its link to Core is IP with
 broadband speed, so the gateway follows the event stream for every Asset it
