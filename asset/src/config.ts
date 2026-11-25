@@ -2,6 +2,7 @@ import { commands, isCommand } from "./commands.ts";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { loadPackagedProtocol } from "@atlas/protocol";
+import { assetProfileSizeError } from "@atlas/meshtastic-fieldlink";
 import type {
   ProtocolTypes as P,
   ComponentsPosition,
@@ -121,8 +122,12 @@ const schema = z.union([
   .superRefine((c, ctx) => {
     const fail = (path: string[], message: string) =>
       ctx.addIssue({ code: "custom", path, message });
-    if (c.asset_key === undefined && (c.initial_settings.link_loss_after_s ?? 15) < 15)
-      fail(["initial_settings", "link_loss_after_s"], "Meshtastic requires at least 15 seconds");
+    if (c.asset_key === undefined) {
+      if ((c.initial_settings.link_loss_after_s ?? 15) < 15)
+        fail(["initial_settings", "link_loss_after_s"], "Meshtastic requires at least 15 seconds");
+      const sizeError = assetProfileSizeError({ hash: protocol.hash, description: c.description });
+      if (sizeError) fail(["description"], sizeError);
+    }
     if (
       c.description.commands.includes("takeoff") &&
       !(c.initial_settings.failsafe_policy ?? []).some((r) =>

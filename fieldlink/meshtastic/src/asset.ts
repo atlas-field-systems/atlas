@@ -7,11 +7,23 @@ import { nonce, receiveEnvelopes, sendEnvelope, type Radio } from "./radio.ts";
 import { eventReplyHoldMs, meshtasticTiming, relayGapMs } from "./turns.ts";
 import { frameBytes, isDescription, isEvent, maxReplyFrames, wireSize, type Envelope } from "./wire.ts";
 
+type Profile = { hash: string; description: Description };
+const profileLimit = `Meshtastic registration reply must fit in ${maxReplyFrames} frames`;
+
+export function assetProfileSizeError({ hash, description }: Profile) {
+  // Budget for a resume with full-width IDs and counters as well as a fresh join.
+  if (wireSize({
+    kind: "profile", session: "17fc3895a6db042e", seq: Number.MAX_SAFE_INTEGER,
+    boot: "adf032eb68914c75", hash, description,
+    resume: { run: 8192164095374826, assetId: "X7KM", after: 7619230584610375, lastTaskId: 9999 },
+  }) > maxReplyFrames * frameBytes) return profileLimit;
+}
+
 type GatewayTurn = Extract<Envelope, { kind: "register" | "registered" | "refused" | "poll" }>;
 const rediscoverMs = meshtasticTiming.offlineMs + relayGapMs;
 
 export async function openAsset({ openRadio, gateway, profile, signal: lifetime, offlineMs = meshtasticTiming.offlineMs, now = Date.now, onError, onRegister }: {
-  openRadio(signal: AbortSignal): Promise<Radio>; gateway: string; profile: { hash: string; description: Description };
+  openRadio(signal: AbortSignal): Promise<Radio>; gateway: string; profile: Profile;
   signal: AbortSignal; offlineMs?: number; now?: () => number; onError?: (error: unknown) => void;
   onRegister(registration: Registration, link: AssetLink): () => void;
 }) {
@@ -24,6 +36,8 @@ export async function openAsset({ openRadio, gateway, profile, signal: lifetime,
   signal.throwIfAborted();
   if (profile.hash !== protocol.hash || !isDescription(protocol, profile.description))
     throw new Error("Invalid radio Asset profile");
+  const sizeError = assetProfileSizeError(profile);
+  if (sizeError) throw new RangeError(sizeError);
 
   const boot = nonce();
   const ready = Promise.withResolvers<void>();
@@ -100,7 +114,12 @@ export async function openAsset({ openRadio, gateway, profile, signal: lifetime,
       clearTimeout(discovery);
       discovery = setTimeout(announce, rediscoverMs);
       const resume = binding && { ...binding.registration, after: cursor };
-      await sendEnvelope(radio, gateway, { kind: "profile", ...turn, ...profile, resume }, transport);
+      const reply: Envelope = { kind: "profile", ...turn, ...profile, resume };
+      if (wireSize(reply) > maxReplyFrames * frameBytes) {
+        controller.abort(new RangeError(profileLimit));
+        return;
+      }
+      await sendEnvelope(radio, gateway, reply, transport);
       return;
     }
     if (packet.kind === "refused") {

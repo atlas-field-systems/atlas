@@ -31,6 +31,7 @@ Core's keepalive interval. An omitted value uses the
 Core before registration; inspection alone cannot check a remote Core.
 See [Core contact](../core/docs/api.md#contact).
 For Meshtastic, inspection and startup refuse values below 15 seconds.
+The Asset description must fit the [Meshtastic registration reply limit](../fieldlink/meshtastic/README.md#first-implementation).
 See [Meshtastic timing](../fieldlink/meshtastic/README.md#first-implementation).
 
 ## Inspect a configuration

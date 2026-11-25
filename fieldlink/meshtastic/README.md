@@ -43,7 +43,8 @@ The link uses dictionary-compressed JSON in frames up to 180 bytes. A poll
 offers one frame of reply room and carries the receipt for the previous
 submission after Core stores it. Retries keep the same submission ID. The
 Asset chooses the reports through its SDK report source. A reply can span up to
-two frames. If a batch exceeds that limit, the Asset refuses it once and the
+two frames. The compressed registration reply, including the Asset description and resume fields, must also fit in two frames.
+If a batch exceeds that limit, the Asset refuses it once and the
 outbox records the refusal. Core storage runs between radio turns. A later poll
 carries the receipt, and duplicates of a pending submission share its write.
 If the poll carried an event or a reply indicated more reports were waiting,

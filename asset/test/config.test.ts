@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -99,6 +100,27 @@ test("config.md: Meshtastic uses a gateway radio identity instead of a Core cred
   assert.throws(() => parseConfig({ ...raw, asset_key: "unexpected", link }), /asset_key/);
   assert.throws(() => parseConfig({ ...raw, link: { ...link, gateway: "!12345678" } }), /gateway/);
   assert.throws(() => parseConfig({ ...raw, link: { ...link, discovery_channel: 8 } }), /discovery_channel/);
+});
+
+test("config.md: both stock descriptions fit the Meshtastic registration reply", async () => {
+  for (const example of ["copter", "tracker"]) {
+    const raw = JSON.parse(await readFile(new URL(`../examples/${example}.json`, import.meta.url), "utf8"));
+    const { asset_key, ...radio } = raw;
+    const link = { kind: "meshtastic", port: "/dev/ttyUSB0", gateway: "ab".repeat(32) };
+    assert.doesNotThrow(() => parseConfig({ ...radio, link }));
+  }
+});
+
+test("config.md: refuses a Meshtastic description that exceeds two registration frames", async () => {
+  const raw = JSON.parse(await readFile(new URL("../examples/tracker.json", import.meta.url), "utf8"));
+  raw.description.subsystems = Array.from({ length: 16 }, (_, i) => ({
+    subsystem_id: `S${i}`,
+    label: createHash("sha256").update(String(i)).digest("hex"),
+  }));
+  assert.doesNotThrow(() => parseConfig(raw));
+  delete raw.asset_key;
+  raw.link = { kind: "meshtastic", port: "/dev/ttyUSB0", gateway: "ab".repeat(32) };
+  assert.throws(() => parseConfig(raw), /description[\s\S]*2.frames/);
 });
 
 test("config.md: ArduPilot observation rates have defaults and enforce wire limits", async () => {
