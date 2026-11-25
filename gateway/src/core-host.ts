@@ -122,23 +122,24 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
     try {
       while (pending[0]) {
         const write = pending[0];
-        const confirmed = await retry(async () => {
-          const contact = write.contact;
-          const result = await client.call("putContact", {
+        const contact = write.contact;
+        // Core must dedupe a delayed attempt even if it arrives after the next state.
+        const key = randomUUID();
+        await retry(async () => {
+          const result = await withKey(key, () => client.call("putContact", {
             retry: false,
             params: { asset_id: assetId },
             body: { asset_id: assetId, contact: contact.open ? "online" : "offline", time: contact.lastHeard },
-          });
+          }));
           checkRemoval(assetId, result);
           requireValue(result);
-          return contact;
         });
         // A newer reading may have joined this transition while it was in flight.
-        if (confirmed !== write.contact) continue;
+        if (contact !== write.contact) continue;
         pending.shift();
         write.result.resolve();
         const asset = assets.get(assetId);
-        if (!confirmed.open && asset && !asset.stream) start(asset);
+        if (!contact.open && asset && !asset.stream) start(asset);
       }
     } catch (error) {
       for (const write of pending) write.result.reject(error);

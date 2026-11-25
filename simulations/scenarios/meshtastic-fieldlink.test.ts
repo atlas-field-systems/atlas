@@ -704,12 +704,14 @@ for (const [bound, failure] of [[false, ""], [true, ""], [true, "offline"], [tru
     const release = Promise.withResolvers<void>();
     const writes: { contact: string; time: number }[] = [];
     let stalled = false;
+    let lateOnline: (() => Promise<Response>) | undefined;
     const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
       if (stalled && String(input).endsWith("/contact") && typeof init?.body === "string") {
         writes.push(JSON.parse(init.body));
         if (writes.length === 1) {
           started.resolve();
           await release.promise;
+          if (failure === "online") lateOnline = () => fetch(input, { ...init, signal: undefined });
           if (failure) return new Response(null, { status: 503 });
         }
       }
@@ -739,7 +741,8 @@ for (const [bound, failure] of [[false, ""], [true, ""], [true, "offline"], [tru
       }
       const refreshes = failure === "online" ? [] :
         [host.contact(assetId, true, time + 1), host.contact(assetId, true, time + 2)];
-      const queued = [...refreshes, host.contact(assetId, false, time + 2), host.contact(assetId, true, time + 3)];
+      const queued = [...refreshes, host.contact(assetId, false, time + 2)];
+      if (failure !== "online") queued.push(host.contact(assetId, true, time + 3));
       release.resolve();
       await Promise.all([first, ...queued]);
       if (taskId !== undefined) {
@@ -749,13 +752,19 @@ for (const [bound, failure] of [[false, ""], [true, ""], [true, "offline"], [tru
       assert.deepEqual(writes.map(({ contact, time }) => [contact, time]),
         [...(failure === "offline" ? [["offline", time], ["offline", time], ["online", time + 2]]
           : failure === "online" ? [["online", time], ["online", time]] : [["online", time], ["online", time + 2]]),
-          ["offline", time + 2], ["online", time + 3]]);
+          ["offline", time + 2], ...(failure === "online" ? [] : [["online", time + 3]])]);
       if (failure === "online") {
+        assert.ok(lateOnline);
+        const late = await lateOnline();
+        assert.ok(late.ok);
+        await late.body?.cancel();
+        const asset = value(await w.complete(w.admin.call("asset", { params: { asset_id: assetId } })));
+        assert.equal(asset.item.contact.contact, "offline", "a delayed retry must leave the last state intact");
         await w.until(() => w.events.filter(event => event.kind === "asset.contact" &&
-          event.record.asset_id === assetId && event.record.time >= time).length === 3);
+          event.record.asset_id === assetId && event.record.time >= time).length === 2);
         assert.deepEqual(w.events.flatMap(event => event.kind === "asset.contact" &&
           event.record.asset_id === assetId && event.record.time >= time ? [event.record.contact] : []),
-        ["online", "offline", "online"]);
+        ["online", "offline"]);
       }
     } finally {
       release.resolve();
