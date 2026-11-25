@@ -9,10 +9,11 @@ export function scenario(spec: {
   checks: string[];
   run(world: World): Promise<void>;
   seed?: number;
+  timeout?: number;
   config?: Parameters<typeof createWorld>[0];
   demo?: string[];
 }) {
-  test(spec.name, async () => {
+  test(spec.name, { timeout: spec.timeout }, async () => {
     await checkAnchors(spec.checks);
     const world = await createWorld(spec.config);
     const evidence = spec.demo ? process.env.ATLAS_DEMO_OUTPUT : undefined;

@@ -7,7 +7,7 @@ scenario({
   name: "gateway may act only for its radios and silence makes radios offline",
   checks: ["core/docs/api.md#radio-assets", "core/docs/api.md#contact"],
   async run(w) {
-    // Scripted radio: the gateway app and Fieldlink are not built.
+    // Scripted radio to exercise Core's gateway permissions directly.
     const radio = await radioAsset(w);
     const ip = await assetApp(w, { config: {
       description: { commands: [], reports: ["telemetry"] }, initial_settings: {},
@@ -62,7 +62,7 @@ scenario({
     "core/docs/api.md#contact",
   ],
   async run(w) {
-    // Scripted radios: the gateway app and Fieldlink are not built.
+    // Scripted radios to exercise Core's gateway isolation directly.
     const first = await radioAsset(w, "gateway-first");
     const second = await radioAsset(w, "gateway-second");
     const beats = [first.client.holdContact(), second.client.holdContact()];

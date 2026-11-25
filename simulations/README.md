@@ -65,8 +65,8 @@ Every IP Asset doing Asset work in a scenario is the real app, as the
 caller remain, and neither stands in for the Asset app:
 
 - **Radio Assets** (`radioAsset` in `src/actors.ts`) behind a scripted
-  gateway. The real app has no radio link until the gateway app and a Fieldlink
-  exist; these move to the app then.
+  gateway for Core contract coverage. The Meshtastic scenario runs the real
+  Asset app, gateway host, and both Fieldlink ends over a simulated radio.
 - **Contract callers** (`sdkAssetCaller`, and raw Core calls) check a contract
   the app cannot reach: the SDK's public Asset helpers, which any program on IP
   may use (a caller-supplied diagnostic observer, retry backoff, synchronous
@@ -86,6 +86,7 @@ Names under `scenarios/` end in `.test.ts`.
 | `everything` | Real IP apps with a separate SDK reader on the app's credential. |
 | `full-disk` | Real apps; a full Core disk refuses startup and peripheral captures without partial events. |
 | `gateways` | Real IP app and radio Assets. |
+| `meshtastic-fieldlink` | Real gateway host and Asset app through the Meshtastic Fieldlink, with simulated radios. |
 | `helper-lifecycles` | Real app for the startup handshake retry; SDK contract callers for consumer, consumer-error, and retained-lane lifecycles. |
 | `lost-responses` | Real app generates reports and retries; a raw changed-body replay checks the idempotency refusal. |
 | `offline` | Real app, network partition, and settings Tasks. |

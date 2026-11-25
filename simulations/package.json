@@ -11,7 +11,9 @@
     "@atlas/core": "file:../core",
     "@atlas/protocol": "file:../protocol",
     "@atlas/sdk": "file:../sdk",
-    "node-mavlink": "^2.3.0"
+    "node-mavlink": "^2.3.0",
+    "@atlas/meshtastic-fieldlink": "file:../fieldlink/meshtastic",
+    "@atlas/gateway": "file:../gateway"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
