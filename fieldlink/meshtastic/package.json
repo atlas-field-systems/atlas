@@ -1,0 +1,24 @@
+{
+  "name": "@atlas/meshtastic-fieldlink",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./radio": "./src/radio.ts",
+    "./wire": "./src/wire.ts",
+    "./gateway-host": "./src/gateway-host.ts"
+  },
+  "dependencies": {
+    "@atlas/protocol": "file:../../protocol",
+    "@atlas/sdk": "file:../../sdk",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "7.0.2"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts"
+  }
+}

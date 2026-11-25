@@ -1,0 +1,209 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { began, hasWork, joining, meshtasticTiming, nextTurn, noReply, observedTurn, relayGapMs, replied, wentOffline, type PeerTiming } from "../src/turns.ts";
+
+const timing = meshtasticTiming;
+const unanswered = timing.timeoutMs + 450;
+const now = 20_000;
+const ready = (name: string, heard = now - 3_000) =>
+  ({ name, state: replied(began(joining(heard - 1_000), heard - 1_000, timing), heard, timing) });
+const newcomer = { name: "new", state: joining(now) };
+
+test("work goes ahead of a due check-in whenever the earlier deadline has room", () => {
+  const asset = ready("task recipient");
+  const work = { ...asset, state: hasWork(asset.state) };
+  const due = ready("check-in", now - 6_000);
+  assert.deepEqual(nextTurn([work, due], now, timing, observedTurn([], 1_200)), { kind: "exchange", peer: work });
+  const urgent = ready("urgent", now - 9_000);
+  assert.deepEqual(nextTurn([urgent, work], now, timing, []), { kind: "exchange", peer: urgent });
+});
+
+test("a reply with more work gets a follow-up ahead of other queued work", () => {
+  const checkingIn = ready("check-in", now - 4_000);
+  const queued = { ...checkingIn, state: hasWork(checkingIn.state) };
+  const justReplied = { name: "reports waiting", state: replied(began(joining(now - 1_000), now - 1_000, timing), now, timing, true) };
+  assert.deepEqual(nextTurn([queued, justReplied], now, timing, []), { kind: "exchange", peer: justReplied });
+});
+
+test("a fourth Asset can join when measured turns fit and gets a deferral otherwise", () => {
+  const established = [ready("one", now - 6_000), ready("two", now - 3_600), ready("three", now - 1_800)];
+  const peers = [...established, newcomer];
+  assert.deepEqual(nextTurn(peers, now, timing, []), { kind: "exchange", peer: established[0], deferred: newcomer });
+  assert.deepEqual(nextTurn(peers, now, timing, observedTurn([], 1_200)), { kind: "exchange", peer: newcomer });
+  const fourth = ready("four", now);
+  assert.deepEqual(nextTurn([...peers, fourth], now, timing, observedTurn([], 1_200)), { kind: "exchange", peer: newcomer });
+});
+
+test("one unanswered work poll can retry promptly before returning to ordinary retries", () => {
+  const fresh = ready("Task recipient", now - 1_000);
+  const state = noReply(began(fresh.state, now - 3_500, timing));
+  assert.deepEqual(nextTurn([{ state }], now, timing, []), { kind: "exchange", peer: { state } });
+  const retry = noReply(began(state, now, timing));
+  assert.equal(nextTurn([{ state: retry }], now + 3_500, timing, []).kind, "wait");
+});
+
+test("offlining and retrying a silent Asset leave healthy check-ins eligible", () => {
+  const asset = ready("silent", now - timing.offlineMs);
+  const silent = { ...asset, state: noReply(began(asset.state, now - 6_000, timing)) };
+  const healthy = ready("healthy", now - timing.pollMs);
+  assert.deepEqual(nextTurn([silent, healthy], now - 2_000, timing, [], true), { kind: "wait", until: now });
+  assert.deepEqual(nextTurn([silent, healthy], now, timing, [], true), { kind: "offline", peer: silent });
+  const offline = { ...silent, state: wentOffline(silent.state) };
+  assert.deepEqual(nextTurn([offline, healthy], now, timing, []), { kind: "exchange", peer: healthy });
+});
+
+// fieldlink/meshtastic/README.md#first-implementation
+for (const fixture of [
+  { name: "reviewer fixture", heardAt: [16_941, 19_388, 14_602], missingPoll: 22_297, readyAt: 26_297 },
+  { name: "cut under Task load", heardAt: [14_000, 16_000, 12_500], missingPoll: 18_000, readyAt: 21_300 },
+]) {
+  test(`${fixture.name} keeps both healthy Assets online`, () => {
+    const peers: { state: PeerTiming; pollAt: number }[] = fixture.heardAt.map(heard => ({
+      state: replied(began(joining(heard - 1_000), heard - 1_000, timing), heard, timing),
+      pollAt: heard - 1_000,
+    }));
+    const victim = peers[2];
+    victim.state = noReply(began(victim.state, fixture.missingPoll, timing));
+    let time = fixture.readyAt, taskAt = time, gaps = 0, misses = 1, expired = 0;
+    const samples = observedTurn([], 1_900);
+
+    function expire(peer: typeof victim) {
+      assert.equal(peer, victim, `${fixture.name}: healthy Core contact expired at ${time} ms`);
+      expired++;
+      peer.state = wentOffline(peer.state);
+    }
+
+    while (time < fixture.readyAt + 30_000) {
+      if (time >= taskAt) {
+        const peer = peers[(taskAt - fixture.readyAt) / 5_000 % 2];
+        if (peer.state.kind === "ready") peer.state = hasWork(peer.state);
+        taskAt += 5_000;
+      }
+      const turn = nextTurn(peers, time, timing, samples);
+      if (turn.kind === "wait") {
+        const next = Math.min(taskAt, turn.until);
+        assert.ok(next > time);
+        time = next;
+        continue;
+      }
+      if (turn.kind === "offline") {
+        expire(turn.peer);
+        continue;
+      }
+      assert.equal(turn.kind, "exchange");
+      const { peer } = turn;
+      const hasTask = peer.state.kind === "ready" && peer.state.work === "queued";
+      const end = time + (peer === victim ? unanswered : 1_900);
+      peer.state = began(peer.state, time, timing);
+      for (;;) {
+        const inFlight = nextTurn(peers, end, timing, samples, true);
+        if (inFlight.kind !== "offline") break;
+        expire(inFlight.peer);
+      }
+      if (peer === victim) {
+        peer.state = noReply(peer.state);
+        misses++;
+      } else {
+        gaps = Math.max(gaps, time - peer.pollAt);
+        peer.pollAt = time;
+        peer.state = replied(peer.state, end, timing, hasTask);
+      }
+      time = end + relayGapMs;
+    }
+    assert.equal(expired, 1);
+    assert.ok(misses >= 2);
+    assert.ok(gaps <= 14_000, `${fixture.name}: healthy poll gap was ${gaps} ms`);
+  });
+}
+
+// fieldlink/meshtastic/README.md#first-implementation
+test("isolated losses preserve Core contact when idle and under Task load", () => {
+  for (const tasks of [false, true]) {
+    for (let seed = 1; seed <= 200; seed++) {
+      let random = seed;
+      const rand = () => (random = (Math.imul(random, 1664525) + 1013904223) >>> 0) / 2 ** 32;
+      const peers: { state: ReturnType<typeof noReply> }[] = [1_000, 2_800, 4_600].map(heard =>
+        ({ state: ready("established", heard).state }));
+      let time = 6_000;
+      let nextTask = tasks ? time : Infinity;
+      let lastLoss = -Infinity;
+      let samples: number[] = [];
+      while (time < 606_000) {
+        while (nextTask <= time) {
+          const peer = peers[Math.floor(rand() * peers.length)];
+          if (peer.state.kind === "ready") peer.state = hasWork(peer.state);
+          nextTask += 4_000 + 5_000 * rand();
+        }
+        const turn = nextTurn(peers, time, timing, samples);
+        if (turn.kind === "wait") {
+          time = Math.min(turn.until, nextTask);
+          continue;
+        }
+        assert.equal(turn.kind, "exchange", `Core expired contact (seed ${seed}, Tasks ${tasks})`);
+        const { peer } = turn;
+        const work = peer.state.kind === "ready" && peer.state.work === "queued";
+        peer.state = began(peer.state, time, timing);
+        const misses = rand() < 0.05 && time - lastLoss >= 15_000;
+        const duration = misses ? unanswered : 1_400 + 500 * rand();
+        assert.equal(nextTurn(peers, time + duration, timing, samples, true).kind, "wait",
+          `Core expired contact during an exchange (seed ${seed}, Tasks ${tasks})`);
+        if (misses) {
+          lastLoss = time;
+          peer.state = noReply(peer.state);
+        } else {
+          samples = observedTurn(samples, duration);
+          peer.state = replied(peer.state, time + duration, timing, work);
+        }
+        time += duration + 550;
+      }
+      assert.ok(Number.isFinite(lastLoss));
+    }
+  }
+});
+
+// fieldlink/meshtastic/README.md#first-implementation
+test("three Assets check in during work and a join, with room to recover one lost poll", () => {
+  for (const loseOne of [false, true]) {
+    for (let seed = 1; seed <= 100; seed++) {
+      let random = seed;
+      const rand = () => (random = (Math.imul(random, 1664525) + 1013904223) >>> 0) / 2 ** 32;
+      const peers: { state: ReturnType<typeof joining> | ReturnType<typeof replied>; heard?: number }[] = [
+        ...[0, 1].map(i => ({ state: ready("established", 1000 + i * 2200).state, heard: 1000 + i * 2200 })),
+        { state: joining(5_500) },
+      ];
+      let time = 4_400;
+      let nextTask = 5_500;
+      let polls = 0;
+      let samples: number[] = [];
+      while (time < 70_000) {
+        while (nextTask <= time) {
+          const peer = peers[Math.floor(rand() * peers.length)];
+          if (peer.state.kind === "ready") peer.state = hasWork(peer.state);
+          nextTask += 4_000 + 5_000 * rand();
+        }
+        const turn = nextTurn(peers, time, timing, samples);
+        if (turn.kind === "wait") {
+          time = Math.min(turn.until, nextTask);
+          continue;
+        }
+        assert.equal(turn.kind, "exchange", `healthy peer went offline or failed to join (seed ${seed})`);
+        const { peer } = turn;
+        const work = peer.state.kind === "ready" && peer.state.work === "queued";
+        peer.state = began(peer.state, time, timing);
+        if (peer.state.kind === "ready" && ++polls === 5 + seed % 15 && loseOne) {
+          time += unanswered;
+          peer.state = noReply(peer.state);
+        } else {
+          if (peer.heard !== undefined && !loseOne)
+            assert.ok(time - peer.heard <= 10_000, `poll gap ${time - peer.heard} ms (seed ${seed})`);
+          peer.heard = time;
+          const duration = 1_400 + 500 * rand();
+          time += duration;
+          samples = observedTurn(samples, duration);
+          peer.state = replied(peer.state, time, timing, work);
+        }
+        time += 550;
+      }
+    }
+  }
+});

@@ -1,0 +1,221 @@
+import { setTimeout as delay } from "node:timers/promises";
+import { loadPackagedProtocol } from "@atlas/protocol";
+import type { Report } from "@atlas/sdk";
+import { AssetRemoved, ReportRefused, type GatewayHost, type Registration } from "./gateway-host.ts";
+import { nonce, receiveEnvelopes, sendEnvelope, type Radio } from "./radio.ts";
+import {
+  began, canDeliver, eventReplyHoldMs, hasWork, joining, maxReplyTimeoutMs, meshtasticTiming,
+  nextTurn, noReply, observedTurn, relayGapMs,
+  replied, seen, wentOffline, type PeerTiming, type Timing,
+} from "./turns.ts";
+import { frameBytes, isDescription, isReport, wireSize, type Envelope } from "./wire.ts";
+
+type Poll = Extract<Envelope, { kind: "poll" }>;
+type Peer = {
+  key: string; boot: string; state: PeerTiming;
+  binding?: { registration: Registration; cursor: number; receipt?: Poll["receipt"]; oversize?: number };
+  refusal?: "definitions" | "removed";
+  deferred?: true;
+};
+
+export async function serveGateway({ radio, host, timing = meshtasticTiming, signal: lifetime, onError }: {
+  radio: Radio; host: GatewayHost; timing?: Timing; signal: AbortSignal; onError?: (error: unknown) => void;
+}) {
+  if (![timing.pollMs, timing.timeoutMs, timing.offlineMs].every(n => Number.isSafeInteger(n) && n > 0) ||
+      timing.timeoutMs > maxReplyTimeoutMs(timing)) throw new Error("Invalid radio timing");
+  // Carried Assets' offline deadlines count from entry, before the Core roster read.
+  const started = Date.now();
+  const protocol = await loadPackagedProtocol();
+  const signal = AbortSignal.any([lifetime, radio.failure]);
+  const roster = await host.carried().catch(error => lifetime.aborted ? [] : Promise.reject(error));
+  const unheard = new Map(roster.flatMap(({ assetId, lastHeard }) => lastHeard === undefined ? [] : [[assetId, lastHeard]]));
+  if (lifetime.aborted) return;
+  const peers = new Map<string, Peer>();
+  const session = nonce();
+  const since = Date.now();
+  // Renewing contact suppresses the remaining beacons for this session.
+  const beacons = [0, 2_000, 4_000].map((offset, index) => ({
+    at: since + offset, id: `${session.slice(0, -2)}0${index}`,
+  }));
+  const keyFor = ({ key, boot }: { key: string; boot: string }) => `${key}:${boot}`;
+  let seq = 0;
+  let times: number[] = [];
+  let wake: AbortController | undefined;
+  let running: Promise<void> | undefined;
+  let waiting: { peer: string; resolve: (packet: Envelope) => void } | undefined;
+  const writes = new Set<Promise<void>>();
+  const reportError = (error: unknown) => { if (!signal.aborted) onError?.(error); };
+  const stopReceive = receiveEnvelopes(radio, key => waiting?.peer === key, (key, packet) => {
+    if (packet.session === session && packet.seq === seq && waiting?.peer === key) waiting.resolve(packet);
+  });
+  const stopDiscover = radio.discover((key, boot, kind) => {
+    if (kind !== "discovery") return;
+    const id = keyFor({ key, boot });
+    const prior = peers.get(id);
+    const now = Date.now();
+    if (prior) {
+      if (prior.state.kind === "joining") prior.state = seen(prior.state, now);
+      else if (!canDeliver(prior.state)) {
+        prior.state = { ...prior.state, dueAt: now };
+        wake?.abort();
+      }
+      return;
+    }
+    if ([...peers.values()].filter(peer => peer.state.kind === "joining").length >= 8) return;
+    peers.set(id, { key, boot, state: joining(now) });
+    wake?.abort();
+  });
+  const stopEvents = host.onEvent(assetId => {
+    for (const peer of peers.values()) {
+      if (peer.state.kind === "ready" && peer.binding?.registration.assetId === assetId) {
+        peer.state = hasWork(peer.state);
+        wake?.abort();
+      }
+    }
+  });
+
+  function contact(assetId: string, open: boolean, lastHeard: number) {
+    if (open) unheard.delete(assetId);
+    const operation = host.contact(assetId, open, lastHeard)
+      .catch(error => { if (!(error instanceof AssetRemoved)) reportError(error); })
+      .finally(() => writes.delete(operation));
+    writes.add(operation);
+  }
+
+  async function exchange(peer: Peer, packet: Envelope) {
+    const timeout = timing.timeoutMs + (packet.kind === "poll" && packet.event ? eventReplyHoldMs : 0);
+    const reply = Promise.withResolvers<Envelope | undefined>();
+    waiting = { peer: peer.key, resolve: reply.resolve };
+    try {
+      await sendEnvelope(radio, peer.key, packet, signal);
+      const limit = AbortSignal.any([signal, AbortSignal.timeout(timeout)]);
+      const abort = () => reply.resolve(undefined);
+      limit.addEventListener("abort", abort, { once: true });
+      if (limit.aborted) abort();
+      try {
+        const received = await reply.promise;
+        if (received?.boot === peer.boot && peers.get(keyFor(peer)) === peer) return received;
+      } finally {
+        limit.removeEventListener("abort", abort);
+      }
+    } finally {
+      waiting = undefined;
+    }
+  }
+
+  async function perform(peer: Peer, started: number) {
+    const address = { session, seq: ++seq, boot: peer.boot };
+    peer.state = began(peer.state, started, timing);
+    const binding = peer.binding;
+    if (peer.refusal) {
+      peers.delete(keyFor(peer));
+      await sendEnvelope(radio, peer.key, { kind: "refused", ...address, reason: peer.refusal }, signal);
+      return;
+    }
+    const assetId = binding?.registration.assetId;
+    const event = peer.state.kind === "ready" && canDeliver(peer.state) && binding && assetId
+      ? await host.next(assetId, binding.cursor) : undefined;
+    const poll: Poll = { kind: "poll", ...address, receipt: binding?.receipt, event, roomBytes: frameBytes };
+    if (event && wireSize(poll) === Infinity && binding) {
+      delete poll.event;
+      if (binding.oversize !== event.event_id) {
+        binding.oversize = event.event_id;
+        reportError(new RangeError(`Event ${event.event_id} exceeds the transfer limit for Asset ${assetId}`));
+      }
+    }
+    const packet: Envelope = !binding ? { kind: "register", ...address } : peer.state.kind === "joining"
+      ? { kind: "registered", ...address, registration: binding.registration } : poll;
+    const reply = await exchange(peer, packet);
+    const now = Date.now();
+    if (reply) times = observedTurn(times, now - started);
+    if (packet.kind === "register" && reply?.kind === "profile") {
+      if (reply.hash !== protocol.hash) {
+        await host.refuseDefinitions(peer.key, { hash: reply.hash, session: peer.boot });
+        peer.refusal = "definitions";
+      } else if (isDescription(protocol, reply.description)) {
+        const { hash, description, resume } = reply;
+        const registration = await host.bind(peer.key, { session: peer.boot, hash, description, resume });
+        for (const [id, prior] of peers) if (prior !== peer && prior.key === peer.key && prior.state.kind === "ready") peers.delete(id);
+        peer.binding = { registration, cursor: registration.after };
+        if (resume?.run === registration.run && resume.assetId === registration.assetId) {
+          peer.state = replied(peer.state, now, timing);
+          return contact(registration.assetId, true, now);
+        }
+      } else return;
+      peer.state = joining(Date.now());
+      return;
+    }
+    if (!binding || !assetId || reply?.kind !== "reply") {
+      peer.state = noReply(peer.state);
+      return;
+    }
+    const state = replied(peer.state, now, timing, Boolean(poll.event || reply.waiting));
+    peer.state = packet.kind === "registered" ? hasWork(state) : state;
+    contact(assetId, true, now);
+    wake?.abort();
+    if (event && reply.cursor === event.event_id) binding.cursor = reply.cursor;
+    const submission = reply.submission;
+    if (submission && submission.id > (binding.receipt?.id ?? 0)) {
+      try {
+        if (!submission.reports.every((report): report is Report => isReport(protocol, report) && report.asset_id === assetId))
+          throw new ReportRefused("Invalid report submission");
+        await host.store(assetId, submission.id, submission.reports);
+        binding.receipt = { kind: "stored", id: submission.id };
+      } catch (error) {
+        if (!(error instanceof ReportRefused)) throw error;
+        binding.receipt = { kind: "refused", id: submission.id };
+      }
+    }
+  }
+
+  try {
+    while (!signal.aborted) {
+      const now = Date.now();
+      const beacon = beacons[0];
+      const beaconAt = beacon?.at ?? Infinity;
+      const scheduled = nextTurn(peers.values(), now, timing, times, running !== undefined, unheard.size ? { since: started } : undefined);
+      const turn = !running && beacon && beaconAt <= now && (scheduled.kind === "wait" || scheduled.kind === "exchange")
+        ? { kind: "beacon" as const, id: beacon.id } : scheduled;
+      if (turn.kind === "wait") {
+        wake = new AbortController();
+        const interrupt = AbortSignal.any([signal, wake.signal]);
+        const until = running ? turn.until : Math.min(turn.until, beaconAt);
+        if (Number.isFinite(until)) await delay(Math.max(1, until - now), undefined, { signal: interrupt }).catch(() => {});
+        else await new Promise<void>(resolve => interrupt.addEventListener("abort", () => resolve(), { once: true }));
+        wake = undefined;
+      } else if (turn.kind === "unheard") {
+        for (const [assetId, lastHeard] of unheard) contact(assetId, false, lastHeard);
+        unheard.clear();
+      } else if (turn.kind === "expire") peers.delete(keyFor(turn.peer));
+      else if (turn.kind === "offline") {
+        const { binding, state } = turn.peer;
+        turn.peer.state = wentOffline(state);
+        if (binding && state.kind === "ready") contact(binding.registration.assetId, false, state.heardAt);
+      } else {
+        const deferred = turn.kind === "exchange" ? turn.deferred : undefined;
+        if (deferred && !deferred.deferred) {
+          deferred.deferred = true;
+          reportError(new Error(`Radio join deferred for capacity: ${deferred.key}`));
+        }
+        if (turn.kind === "beacon") beacons.shift();
+        const peer = turn.kind === "exchange" ? turn.peer : undefined;
+        running = (turn.kind === "beacon" ? radio.announce(turn.id) : perform(turn.peer, now)).catch(error => {
+          if (peer && error instanceof AssetRemoved) {
+            peer.refusal = "removed";
+            peer.state = joining(Date.now());
+          } else reportError(error);
+        }).then(() => delay(relayGapMs, undefined, { signal }).catch(() => {})).finally(() => {
+          running = undefined;
+          wake?.abort();
+        });
+      }
+    }
+  } finally {
+    stopReceive();
+    stopDiscover();
+    stopEvents();
+    await running;
+    await Promise.allSettled(writes);
+  }
+  if (!lifetime.aborted) radio.failure.throwIfAborted();
+}

@@ -1,0 +1,23 @@
+name: fieldlink
+on:
+  push:
+    branches: [main]
+    paths: ['package.json', 'scripts/workspace.mjs', 'fieldlink/**', 'gateway/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/fieldlink.yml']
+  pull_request:
+    paths: ['package.json', 'scripts/workspace.mjs', 'fieldlink/**', 'gateway/**', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/fieldlink.yml']
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm run setup -- gateway
+      - run: npm run check -- fieldlink/meshtastic
+      - run: python3 -m py_compile fieldlink/meshtastic/src/radio_bridge.py
+      - run: npm run check -- gateway
