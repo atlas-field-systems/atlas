@@ -90,8 +90,9 @@ works with.
 The gateway app logs both sides of the interface.
 It confirms the previous app's report outcomes before it signs up a replacement.
 If Core may have stored a report, the gateway resends it with the same key.
-If a Core event stream ends due to an invalid event or a handler error, the
-gateway reports failures and retries from the Asset's acknowledged event.
+The gateway logs each failed attempt in its contact and report retry loops.
+It also logs each Core event stream failure as it happens. On reconnect,
+the stream resumes from the Asset's acknowledged event.
 The [TypeScript interface](../fieldlink/meshtastic/src/gateway-host.ts) lives in
 Meshtastic and moves to Gateway when a second Fieldlink is added.
 
@@ -115,11 +116,13 @@ behind it are in the [Core API](../core/docs/api.md#radio-assets).
 ## Gateway contact
 
 On reconnect to Core, the gateway sends contact for every Asset it carries,
-even when its Fieldlink's view has not changed. The host's `contact` call queues
-each transition for delivery in order until Core confirms it or the Asset is
-removed. It combines consecutive readings of the same state using the latest
-time. When offline is queued, the host discards prefetched work and waits for
-Core to confirm offline before opening a stream from the radio's cursor.
+with a new write before reopening the Asset's stream. The host's `contact`
+call queues each transition for delivery in order until Core confirms it or the
+Asset is removed. It combines consecutive unsent readings of the same state
+using the latest time. Once a write begins, its reading stays fixed and its
+callers return when Core confirms it. When offline is queued, the host discards
+prefetched work and waits for Core to confirm offline before opening a stream
+from the radio's cursor.
 
 Core shows each gateway online or offline by the same `offline_after_s` rule it
 uses for Assets. When the gateway goes offline, every radio Asset it carries

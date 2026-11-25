@@ -51,7 +51,7 @@ async function main(signal: AbortSignal) {
           if (status.phase !== "connected") run.abort();
         });
         const lifetime = AbortSignal.any([signal, run.signal]);
-        const host = createGatewayHost(core, run_id, AbortSignal.any([lifetime, radio.failure]));
+        const host = createGatewayHost(core, run_id, AbortSignal.any([lifetime, radio.failure]), logFailure);
         const heartbeat = client.holdContact();
         process.stdout.write(`${JSON.stringify({ fieldlink: config.fieldlink, run_id })}\n`);
         try {

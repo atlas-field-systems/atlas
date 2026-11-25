@@ -693,6 +693,155 @@ scenario({
   },
 });
 
+scenario({
+  name: "Meshtastic confirms a contact write while a newer reading is still in flight",
+  checks: ["gateway/README.md#gateway-contact"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const first = Promise.withResolvers<void>();
+    const second = Promise.withResolvers<void>();
+    const releaseFirst = Promise.withResolvers<void>();
+    const releaseSecond = Promise.withResolvers<void>();
+    let writes = 0;
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
+      if (String(input).endsWith("/contact") && typeof init?.body === "string" &&
+          init.body.includes('"contact":"online"')) {
+        if (++writes === 1) {
+          first.resolve();
+          await releaseFirst.promise;
+        } else {
+          second.resolve();
+          await releaseSecond.promise;
+        }
+      }
+      return fetch(input, init);
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const host = createGatewayHost(core, run_id);
+    try {
+      const { assetId } = await host.bind("radio", { session: "boot", hash: core.hash, description: {
+        commands: [], reports: ["settings"], settings: ["lights"],
+      } });
+      const time = w.clock.now();
+      let confirmed = false;
+      const online = host.contact(assetId, true, time).then(() => { confirmed = true; });
+      await first.promise;
+      const newer = host.contact(assetId, true, time + 1);
+      releaseFirst.resolve();
+      await second.promise;
+      // Let the first caller observe confirmation while Core holds the newer reply.
+      await w.settle();
+      assert.ok(confirmed);
+      releaseSecond.resolve();
+      await Promise.all([online, newer]);
+    } finally {
+      releaseFirst.resolve();
+      releaseSecond.resolve();
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic stream recovery restores online contact after a lost confirmation",
+  checks: ["core/docs/api.md#radio-assets", "gateway/README.md#gateway-contact"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const opened = Promise.withResolvers<void>();
+    const reopened = Promise.withResolvers<void>();
+    const reconnecting = Promise.withResolvers<void>();
+    const stored = Promise.withResolvers<void>();
+    const loseConfirmation = Promise.withResolvers<void>();
+    const cut = new AbortController();
+    const errors: unknown[] = [];
+    let streams = 0;
+    let onlineWrites = 0;
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
+      const path = new URL(String(input)).pathname;
+      if (path === "/events") {
+        if (++streams === 1) {
+          const response = await fetch(input, { ...init, signal: AbortSignal.any([init?.signal ?? cut.signal, cut.signal]) });
+          opened.resolve();
+          return response;
+        }
+        const response = await fetch(input, init);
+        reopened.resolve();
+        return response;
+      }
+      const response = await fetch(input, init);
+      if (path === "/about" && cut.signal.aborted) reconnecting.resolve();
+      if (path.endsWith("/contact") && typeof init?.body === "string" &&
+          init.body.includes('"contact":"online"') && ++onlineWrites === 1) {
+        assert.ok(response.ok);
+        await response.body?.cancel();
+        stored.resolve();
+        await loseConfirmation.promise;
+        throw new TypeError("Lost contact response");
+      }
+      return response;
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const host = createGatewayHost(core, run_id, undefined, error => errors.push(error));
+    try {
+      const { assetId } = await host.bind("radio", { session: "boot", hash: core.hash, description: {
+        commands: [], reports: ["settings"], settings: ["lights"],
+      } });
+      await opened.promise;
+      const online = host.contact(assetId, true, w.clock.now());
+      await stored.promise;
+      await w.advance(31_000);
+      const contact = async () => value(await w.complete(w.admin.call("asset", { params: { asset_id: assetId } }))).item.contact.contact;
+      assert.equal(await contact(), "offline");
+      cut.abort();
+      await reconnecting.promise;
+      await w.settle();
+      loseConfirmation.resolve();
+      await online;
+      await reopened.promise;
+      assert.equal(await contact(), "online");
+      assert.equal(errors.filter(error => /event stream/.test(String(error))).length, 1);
+      assert.equal(errors.filter(error => /contact write/.test(String(error))).length, 1);
+    } finally {
+      loseConfirmation.resolve();
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic re-registers a radio removed before its initial tasks snapshot",
+  checks: ["core/docs/api.md#radio-assets"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    let removed: string | undefined;
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
+      const tasks = /^\/tasks\/([^/]+)$/.exec(new URL(String(input)).pathname);
+      if (!removed && tasks) {
+        removed = tasks[1];
+        value(await w.complete(w.admin.call("removeAsset", { params: { asset_id: removed } })));
+      }
+      return fetch(input, init);
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const host = createGatewayHost(core, run_id);
+    try {
+      const { assetId } = await host.bind("radio", { session: "boot", hash: core.hash, description: {
+        commands: [], reports: ["settings"], settings: ["lights"],
+      } });
+      assert.ok(removed);
+      assert.notEqual(assetId, removed);
+    } finally {
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
 for (const [bound, failure] of [[false, ""], [true, ""], [true, "offline"], [true, "online"]] as const) scenario({
   name: failure ? `Meshtastic retries a failed ${failure} transition before the next state`
     : `Meshtastic preserves queued contact transitions for a ${bound ? "bound" : "carried"} Asset`,
@@ -786,6 +935,7 @@ for (const timeout of [false, true]) scenario({
     const release = Promise.withResolvers<void>();
     const described = Promise.withResolvers<void>();
     const late = Promise.withResolvers<void>();
+    const errors: unknown[] = [];
     const reportKeys: (string | null)[] = [];
     let replacing = false;
     const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
@@ -800,13 +950,15 @@ for (const timeout of [false, true]) scenario({
           late.resolve();
           return response;
         }
+        if (timeout && reportKeys.length === 2)
+          return Response.json({ error: "storage_full", explanation: "temporary failure" }, { status: 507 });
       }
       const response = await fetch(input, init);
       if (replacing && path.endsWith("/description")) described.resolve();
       return response;
     } });
     const { run_id } = requireValue(await core.client.connect());
-    const host = createGatewayHost(core, run_id);
+    const host = createGatewayHost(core, run_id, undefined, error => errors.push(error));
     const profile = { hash: core.hash, description: {
       commands: [], reports: ["status"], settings: ["lights"],
     } } satisfies Omit<Parameters<GatewayHost["bind"]>[1], "session">;
@@ -838,9 +990,11 @@ for (const timeout of [false, true]) scenario({
       assert.equal(tasks.items.find(item => item.task.task_id === taskId)?.state, "dropped");
       assert.deepEqual(tasks.held, []);
       if (timeout) {
-        assert.equal(reportKeys.length, 2);
+        assert.equal(reportKeys.length, 3);
         assert.ok(reportKeys[0]);
-        assert.equal(reportKeys[0], reportKeys[1]);
+        assert.ok(reportKeys.every(key => key === reportKeys[0]));
+        assert.equal(errors.length, 1);
+        assert.match(String(errors[0]), /report write.*storage_full/);
       }
     } finally {
       release.resolve();
@@ -960,7 +1114,7 @@ scenario({
 
 scenario({
   name: "Meshtastic reports a terminal stream error once and resumes delivery",
-  checks: ["core/docs/api.md#radio-assets"],
+  checks: ["gateway/README.md#the-gateway-interface"],
   async run(w) {
     const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
     assert.ok("key" in provisioned);
@@ -973,7 +1127,12 @@ scenario({
       return fetch(input, init);
     } });
     const { run_id } = requireValue(await core.client.connect());
-    const host = createGatewayHost(core, run_id);
+    const reported = Promise.withResolvers<unknown>();
+    const errors: unknown[] = [];
+    const host = createGatewayHost(core, run_id, undefined, error => {
+      errors.push(error);
+      reported.resolve(error);
+    });
     try {
       const { assetId, after } = await host.bind("radio", { session: "boot", hash: core.hash, description: {
         commands: [], reports: ["settings"], settings: ["lights"],
@@ -982,14 +1141,8 @@ scenario({
       value(await w.complete(w.admin.call("changeSettings", {
         params: { asset_id: assetId }, body: { settings: { lights: "off" } },
       })));
-      await w.until(() => {
-        try { host.next(assetId, after); }
-        catch (error) {
-          assert.match(String(error), /invalid_event/);
-          return true;
-        }
-        return false;
-      });
+      const error = await Promise.race([reported.promise, delay(1_000)]);
+      assert.match(String(error), /invalid_event/);
       assert.doesNotThrow(() => host.next(assetId, after));
       const recovered = Promise.withResolvers<void>();
       const unsubscribe = host.onEvent(() => recovered.resolve());
@@ -998,6 +1151,7 @@ scenario({
         const event = host.next(assetId, after);
         assert.equal(event?.kind, "settings.requested");
         assert.equal(event.record.settings.lights, "off");
+        assert.equal(errors.length, 1);
       } finally {
         unsubscribe();
       }

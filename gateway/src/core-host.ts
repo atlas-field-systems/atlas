@@ -12,12 +12,17 @@ export async function createGatewayCore({
   // A radio retry can outlive an SDK call. Keep the same Core idempotency
   // key for the same submission across separate calls.
   const operation = new AsyncLocalStorage<string>();
+  const streamRetries = new Set<() => void>();
   const protocol = await loadPackagedProtocol();
   const client = createClient({
     baseUrl: url,
     credential: { kind: "gateway", key },
     protocol,
     clock: systemClock,
+    observer(event) {
+      if (event.name === "stream.reconnect")
+        for (const listener of streamRetries) listener();
+    },
     fetch(input, init) {
       const stable = operation.getStore();
       const headers = new Headers(init?.headers);
@@ -30,6 +35,10 @@ export async function createGatewayCore({
     hash: protocol.hash,
     withKey<T>(key: string, method: () => T): T {
       return operation.run(key, method);
+    },
+    onStreamRetry(listener: () => void) {
+      streamRetries.add(listener);
+      return () => { streamRetries.delete(listener); };
     },
   };
 }
@@ -50,7 +59,6 @@ type Asset = {
   queue: AssetEvent[];
   reports: Map<number, () => Promise<void>>;
   stream?: Follow;
-  streamError?: Error;
   streamRetry?: NodeJS.Timeout;
   streamBackoff: number;
   contact?: Contact;
@@ -68,7 +76,9 @@ type Signup = {
 };
 type Core = Awaited<ReturnType<typeof createGatewayCore>>;
 
-export function createGatewayHost(core: Core, run: number, lifetime?: AbortSignal): GatewayHost & { close(): void } {
+export function createGatewayHost(
+  core: Core, run: number, lifetime?: AbortSignal, onError?: (error: unknown) => void,
+): GatewayHost & { close(): void } {
   const closing = new AbortController();
   const signal = lifetime ? AbortSignal.any([lifetime, closing.signal]) : closing.signal;
   const { client, hash: coreHash, withKey } = core;
@@ -78,6 +88,9 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
   const signups = new Map<string, Signup>();
   const events = new Set<(assetId: string) => void>();
   const contactWrites = new Map<string, ContactWrite[]>();
+  const unsubscribe = core.onStreamRetry(() => {
+    if (!signal.aborted) onError?.(new Error("Core event stream failed and will reconnect"));
+  });
 
   function assetFor(assetId: string): Asset {
     const asset = assets.get(assetId);
@@ -104,7 +117,7 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
     }
   }
 
-  async function retry<T>(send: () => Promise<T>): Promise<T> {
+  async function retry<T>(assetId: string, write: "contact" | "report", send: () => Promise<T>): Promise<T> {
     let backoff = 250;
     while (true) {
       signal.throwIfAborted();
@@ -112,6 +125,9 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
         return await send();
       } catch (error) {
         if (error instanceof AssetRemoved || error instanceof ReportRefused) throw error;
+        signal.throwIfAborted();
+        const reason = error instanceof Error ? error.message : "unknown error";
+        onError?.(new Error(`Core ${write} write failed for Asset ${assetId} (${reason})`));
       }
       await delay(backoff, undefined, { signal });
       backoff = Math.min(backoff * 2, 5_000);
@@ -125,7 +141,7 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
         const contact = write.contact;
         // Core must dedupe a delayed attempt even if it arrives after the next state.
         const key = randomUUID();
-        await retry(async () => {
+        await retry(assetId, "contact", async () => {
           const result = await withKey(key, () => client.call("putContact", {
             retry: false,
             params: { asset_id: assetId },
@@ -134,8 +150,6 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
           checkRemoval(assetId, result);
           requireValue(result);
         });
-        // A newer reading may have joined this transition while it was in flight.
-        if (contact !== write.contact) continue;
         pending.shift();
         write.result.resolve();
         const asset = assets.get(assetId);
@@ -153,17 +167,18 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
     if (asset?.removed) throw new AssetRemoved(`Core removed radio Asset ${assetId}`);
     const pending = contactWrites.get(assetId) ?? [];
     const latest = pending.at(-1);
-    if (latest?.contact.open === contact.open) {
+    // An in-flight write covers equal or older readings of that state. Reconnects need a new write.
+    if (!replay && latest?.contact.open === contact.open &&
+        (pending.length > 1 || latest.contact.lastHeard >= contact.lastHeard)) {
       if (latest.contact.lastHeard < contact.lastHeard) latest.contact = contact;
       if (asset) asset.contact = latest.contact;
       return latest.result.promise;
     }
     if (asset) {
       asset.contact = contact;
-      if (!contact.open && !replay) {
+      if (!contact.open && !replay && latest?.contact.open !== false) {
         stop(asset);
         asset.queue.length = 0;
-        asset.streamError = undefined;
       }
     }
     const result = Promise.withResolvers<void>();
@@ -189,9 +204,6 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
         if (refresh && contact) await writeContact(assetId, contact, true);
         return asset.after;
       },
-      onContact({ open }) {
-        if (open) asset.streamError = undefined;
-      },
     }, event => {
       if (!isAssetEvent(event)) return;
       const recipient = event.kind === "tasks.requested" || event.kind === "tasks.updated"
@@ -203,7 +215,7 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
     asset.stream = stream;
     void stream.done.then(end => {
       if (asset.stream !== stream || end.reason === "stopped") return;
-      asset.streamError ??= new Error(`Core event stream for Asset ${assetId} ended (${end.reason})`);
+      onError?.(new Error(`Core event stream for Asset ${assetId} ended (${end.reason})`));
       if (end.reason !== "invalid_event" && end.reason !== "handler_failed") return;
       asset.streamRetry = setTimeout(() => {
         asset.streamRetry = undefined;
@@ -247,7 +259,7 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
         stop(prior);
         assets.delete(prior.binding.assetId);
         // An earlier SDK timeout can leave the old report's outcome unknown.
-        await Promise.allSettled([...prior.reports.values()].map(send => retry(send)));
+        await Promise.allSettled([...prior.reports.values()].map(send => retry(prior.binding.assetId, "report", send)));
         signal.throwIfAborted();
       }
       const { operation, time } = signup;
@@ -268,7 +280,9 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
         if (description.ok) {
           try {
             await writeContact(assetId, { open: false, lastHeard: time });
-            const tasks = requireValue(await client.call("tasks", { params: { asset_id: assetId } }));
+            const snapshot = await client.call("tasks", { params: { asset_id: assetId } });
+            checkRemoval(assetId, snapshot);
+            const tasks = requireValue(snapshot);
             binding = { run, assetId, after: tasks.as_of, lastTaskId: tasks.items.at(-1)?.task.task_id ?? 0 };
             break;
           } catch (error) {
@@ -299,11 +313,6 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
       if (after > asset.after) {
         asset.after = after;
         asset.streamBackoff = 250;
-      }
-      if (asset.streamError) {
-        const error = asset.streamError;
-        asset.streamError = undefined;
-        throw error;
       }
       if (asset.stream?.stale !== false) return;
       while (asset.queue[0] && asset.queue[0].event_id <= asset.after) asset.queue.shift();
@@ -336,6 +345,7 @@ export function createGatewayHost(core: Core, run: number, lifetime?: AbortSigna
     },
     close() {
       closing.abort();
+      unsubscribe();
       for (const asset of assets.values()) stop(asset);
       assets.clear();
     },
