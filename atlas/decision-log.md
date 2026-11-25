@@ -17,6 +17,7 @@ Dates are when the owner decided (America/New_York).
 
 | Date | Decision | Scope | Home |
 | --- | --- | --- | --- |
+| 2026-11-25 | After a gateway restart, a silent Meshtastic Asset shows offline 14.9 seconds after it was last heard, not after the restart. Healthy Assets may briefly show offline while they rejoin. | Gateway restarts within one Core run on the first Meshtastic runtime. | [First implementation](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#first-implementation) |
 | 2026-11-25 | Keep the Meshtastic offline cutoff at 14.9 seconds after a radio's last reply. | The first Meshtastic runtime, with Core near the gateway. Revisit once where Core runs is known. | [First implementation](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#first-implementation) |
 | 2026-11-25 | Accept about one brief false offline per hour on a Meshtastic link that loses 5% of messages at random. | One relay carrying three Assets on the first Meshtastic runtime. | [First implementation](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#first-implementation) |
 | 2026-11-23 | Start building the Meshtastic Fieldlink. | First runtime. This supersedes the pause below. The optional concepts remain proposals. | [First implementation](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md#first-implementation) |
