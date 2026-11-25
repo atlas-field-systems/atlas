@@ -352,6 +352,14 @@ export const ROUTES: readonly Route[] = [
         ),
       ),
   }),
+  read({
+    method: "GET",
+    path: "/entities/assets/radios",
+    doc: "radio-assets",
+    who: ["gateway"],
+    serve: (tx, r) => ({ assets: entities.carriedBy(tx, r.who.by)
+      .map(asset_id => ({ asset_id, last_heard: entities.lastHeard(tx, asset_id) })) }),
+  }),
   change({
     method: "POST",
     path: "/entities/assets/radios",

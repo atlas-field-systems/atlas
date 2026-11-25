@@ -398,7 +398,9 @@ order, because the Asset orders them by `task_id`.
 ### Radio Assets
 
 When a gateway reconnects to Core, it sends contact for every Asset it carries,
-even if its Fieldlink's view did not change.
+even if its Fieldlink's view did not change. It reads its current-run
+`{assets: [{asset_id, last_heard?}]}` from `GET /entities/assets/radios` using its gateway key.
+The gateway uses Core's last-heard time when a carried Asset fails to return after a restart.
 
 [Runs and identity](../../atlas/runs-and-identity.md#radio-assets) owns the
 results; these are the calls behind them. The gateway matches each radio to its

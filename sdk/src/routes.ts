@@ -71,6 +71,7 @@ export const ROUTES = {
     who: ["asset"],
     body: "requests.asset",
   },
+  carriedRadios: { method: "GET", path: "/entities/assets/radios", who: ["gateway"] },
   registerRadio: {
     method: "POST",
     path: "/entities/assets/radios",
@@ -258,6 +259,7 @@ type Responses = {
   };
   deleteGeofeature: EventAck;
   register: { asset_id: string; as_of: number; last_task_id: number };
+  carriedRadios: { assets: { asset_id: string; last_heard?: number }[] };
   registerRadio: { asset_id: string; as_of: number };
   describeAsset: EventAck;
   sendReports: { stored: number };

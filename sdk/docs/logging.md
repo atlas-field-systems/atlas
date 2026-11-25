@@ -21,6 +21,9 @@ The SDK reports every step, not only errors:
 
 Each event has a `name`, a local millisecond `at`, a local counter, and its detail.
 Each client shares one counter across its requests, link, outbox, and queue.
+A host that supplies its own Asset link can call `diagnostics(clock, observer)`
+and pass the returned emitter to `runAsset`. The host and Asset helpers then
+share one counter. Keep credentials out of custom event detail.
 Each batch resend produces one `batch.resent` event.
 These are local diagnostics, not Protocol records.
 

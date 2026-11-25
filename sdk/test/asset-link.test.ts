@@ -80,6 +80,7 @@ test("the link asks with its room; live reports, then current state, then histor
   void outbox.add([report(1)], "retained");
   const first = outbox.take(room);
   assert.deepEqual(times(first), [3, 4]);
+  assert.ok(outbox.mustArriveWaiting, "must-arrive reports wait behind the in-flight batch");
   assert.equal(outbox.take(room), undefined, "one batch in flight");
   first!.settle({ ok: false, error: "lost", explanation: "no ack" });
   const again = outbox.take(room)!;
@@ -90,6 +91,7 @@ test("the link asks with its room; live reports, then current state, then histor
   next.settle({ ok: true });
   const rest = outbox.take({ bytes: 0, size: room.size })!;
   assert.deepEqual(times(rest), [1], "history goes when nothing live waits");
+  assert.equal(outbox.mustArriveWaiting, false, "the in-flight batch does not count as waiting");
   rest.settle({ ok: true });
   assert.equal(outbox.take({ bytes: 0, size: room.size }), undefined);
 });

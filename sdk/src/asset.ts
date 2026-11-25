@@ -40,8 +40,9 @@ export interface Batch {
   settle(result: LinkResult): void;
 }
 export interface ReportSource {
+  readonly mustArriveWaiting: boolean;
   take(room: Room): Batch | undefined;
-  onWaiting(cb: () => void): () => void;
+  onWaiting(cb: (added?: readonly Report[]) => void): () => void;
 }
 export interface AssetLink {
   events(after: number): AsyncIterable<AssetEvent>;
@@ -83,13 +84,13 @@ export function createOutbox(
   let protectedReports = new Set<Report>();
   const listeners = new Set<(result: LinkFailure) => void>();
   const failures = new Set<(error: unknown) => void>();
-  const waiting = new Set<() => void>();
+  const waiting = new Set<Parameters<ReportSource["onWaiting"]>[0]>();
   const acknowledged = new Map<Report, () => void>();
   const beats: (() => void)[] = [];
   const idle: (() => void)[] = [];
-  function notify() {
+  function notify(added?: readonly Report[]) {
     if (stopped || blocked) return;
-    for (const cb of waiting) cb();
+    for (const cb of waiting) cb(added);
   }
   function settleIdle() {
     if (!stopped && !blocked && (inFlight || live.length || retained.length))
@@ -195,8 +196,12 @@ export function createOutbox(
     };
   }
   return {
+    get mustArriveWaiting() {
+      return !stopped && !blocked && [live, retained].some(lane =>
+        lane.some(report => !protectedReports.has(report) && mustArrive(report)));
+    },
     take,
-    onWaiting(cb: () => void) {
+    onWaiting(cb: (added?: readonly Report[]) => void) {
       waiting.add(cb);
       return () => {
         waiting.delete(cb);
@@ -221,7 +226,7 @@ export function createOutbox(
       }
       if (dropped.size) emit("reports.gap", { dropped: dropped.size });
       if (blocked) return Promise.resolve();
-      notify();
+      notify(reports);
       return sent;
     },
     changed() {

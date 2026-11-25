@@ -11,6 +11,7 @@ export type {
   Json,
   Page,
 } from "./client.ts";
+export { diagnostics } from "./diagnostics.ts";
 export type { Diagnostic, Observer } from "./diagnostics.ts";
 export { follow } from "./stream.ts";
 export type { AtlasEvent, EventKind, Follow, FollowEnd } from "./stream.ts";

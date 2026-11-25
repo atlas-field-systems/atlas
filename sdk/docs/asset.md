@@ -20,8 +20,9 @@ interface AssetLink {
   storeFile(file: AssetFile): Promise<Result<{ object_id: string }>>;
 }
 interface ReportSource {
+  readonly mustArriveWaiting: boolean; // must-arrive reports outside the current batch
   take(room: Room): Batch | undefined; // undefined: nothing waits, or a batch is out
-  onWaiting(cb: () => void): () => void; // reports now wait
+  onWaiting(cb: (added?: readonly Report[]) => void): () => void; // reports now wait
 }
 interface Room {
   bytes: number; // what the link can send now
@@ -40,6 +41,8 @@ Whenever the link has room, it calls `take` with that room and sends the batch
 it gets, then calls `settle` once with the result. How much room it offers is
 the link's own judgment from its medium and current quality. The IP link offers
 unlimited room and asks whenever `onWaiting` fires.
+When the app adds reports, `onWaiting` receives those reports. Other wakeups
+such as changes to current samples or a heartbeat carry no report list.
 
 `storeFile` [uploads a file the Asset captured](../../core/docs/api.md#objects).
 `AssetFile` holds its `name`, `contentType`, bytes, and an optional `place`, a
