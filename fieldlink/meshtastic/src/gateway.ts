@@ -11,7 +11,7 @@ import {
 import { frameBytes, isDescription, isReport, maxReplyFrames, wireSize, type Envelope } from "./wire.ts";
 
 type Poll = Extract<Envelope, { kind: "poll" }> & { event?: AssetEvent };
-type PreparedPoll = { poll: Poll; frames: number; error?: unknown; oversize?: number };
+type PreparedPoll = { poll: Poll; frames: number; error?: unknown };
 type Binding = { registration: Registration; cursor: number; receipt?: Poll["receipt"]; oversize?: number; storing?: { followup: boolean } };
 type Peer = {
   key: string; boot: string; state: PeerTiming;
@@ -140,12 +140,15 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
     const frames = Math.ceil(wireSize(poll) / frameBytes);
     if (frames <= eventFrameLimit) return { poll, frames };
     delete poll.event;
-    if (binding.oversize === event.event_id) return { poll, frames: 1 };
-    return { poll, frames: 1, oversize: event.event_id, error: new RangeError(`Event ${event.event_id} exceeds the transfer limit for Asset ${assetId}`) };
+    if (binding.oversize !== event.event_id) {
+      binding.oversize = event.event_id;
+      reportError(new RangeError(`Event ${event.event_id} exceeds the transfer limit for Asset ${assetId}`));
+    }
+    return { poll, frames: 1 };
   }
 
   async function perform(peer: Peer, started: number, prepared: PreparedPoll, checkInOnly?: true) {
-    const { poll, frames, error, oversize } = prepared;
+    const { poll, frames, error } = prepared;
     const { session, seq: nextSeq, boot } = poll;
     seq = nextSeq;
     const address = { session, seq, boot };
@@ -157,7 +160,6 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
       await sendEnvelope(radio, peer.key, { kind: "refused", ...address, reason: peer.refusal }, signal);
       return;
     }
-    if (binding && oversize !== undefined) binding.oversize = oversize;
     if (error instanceof AssetRemoved) throw error;
     if (error !== undefined) reportError(error);
     const event = poll.event;
