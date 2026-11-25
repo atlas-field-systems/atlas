@@ -45,7 +45,7 @@ type Asset = {
   binding: Binding;
   session: string;
   after: number;
-  droppedThrough?: number;
+  refreshing: number;
   removed?: true;
   queue: AssetEvent[];
   stream?: Follow;
@@ -113,15 +113,12 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
     const { assetId } = asset.binding;
     const stream = follow(client, {
       after: asset.after,
-      asset_id: assetId,
-      everything: true,
       beforeOpen: () => writeContact(assetId, asset.contact, asset),
     }, event => {
-      if (event.kind === "request.dropped")
-        asset.queue = asset.queue.filter(work => work.event_id !== event.record.request_id);
       if (!isAssetEvent(event)) return;
-      if (event.event_id <= (asset.droppedThrough ?? 0) &&
-          (event.kind === "tasks.requested" || event.kind === "settings.requested" || event.kind === "cancel.requested")) return;
+      const recipient = event.kind === "tasks.requested" || event.kind === "tasks.updated"
+        ? event.record[0]?.asset_id : event.record.asset_id;
+      if (recipient !== assetId) return;
       asset.queue.push(event);
       for (const listener of events) listener(assetId);
     });
@@ -199,6 +196,7 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         binding,
         session: profile.session,
         after: binding.after,
+        refreshing: 0,
         queue: [],
       };
       peers.set(peer, asset);
@@ -207,10 +205,11 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
       start(asset);
       return binding;
     },
-    async next(assetId, after) {
+    next(assetId, after) {
       const asset = assetFor(assetId);
       asset.after = Math.max(asset.after, after);
       if (asset.streamError) throw asset.streamError;
+      if (asset.refreshing) return;
       while (asset.queue[0] && asset.queue[0].event_id <= asset.after) asset.queue.shift();
       return asset.queue[0];
     },
@@ -229,23 +228,23 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
       const asset = assets.get(assetId);
       if (!asset) return writeContact(assetId, contact);
       asset.contact = contact;
-      await writeContact(assetId, contact, asset);
-      const stillOffline = () => assets.get(assetId) === asset && !asset.removed && !asset.contact?.open;
-      if (!open && stillOffline()) {
-        // The per-Asset audit stream includes dropped requests. Skip old requests
-        // on replay while retaining Task updates and drop notices for the SDK.
-        const snapshot = await client.call("tasks", { params: { asset_id: assetId } });
-        checkRemoval(asset, snapshot);
-        if (stillOffline()) {
-          asset.droppedThrough = requireValue(snapshot).as_of;
-          stop(asset);
-          asset.queue.length = 0;
-          start(asset);
-        }
+      if (open || asset.removed) return writeContact(assetId, contact, asset);
+      // Core drops requests in the offline transaction. Discard prefetched work
+      // while that write is pending, then replay from the radio's cursor.
+      if (asset.refreshing++ === 0) {
+        stop(asset);
+        asset.queue.length = 0;
+        asset.streamError = undefined;
+      }
+      try {
+        await writeContact(assetId, contact, asset);
+      } finally {
+        if (--asset.refreshing === 0 && assets.get(assetId) === asset && !asset.removed) start(asset);
       }
     },
     close() {
       for (const asset of assets.values()) stop(asset);
+      assets.clear();
     },
   };
 }

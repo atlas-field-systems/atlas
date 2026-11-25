@@ -14,7 +14,7 @@ export interface GatewayHost {
   onEvent(listener: (assetId: string) => void): () => void;
   bind(peer: string, profile: { hash: string; description: Description; session: string; resume?: Registration }): Promise<Registration>;
   refuseDefinitions(peer: string, profile: { hash: string; session: string }): Promise<void>;
-  next(assetId: string, after: number): Promise<AssetEvent | undefined>;
+  next(assetId: string, after: number): AssetEvent | undefined;
   store(assetId: string, submission: number, reports: Report[]): Promise<void>;
   contact(assetId: string, open: boolean, lastHeard: number): Promise<void>;
 }

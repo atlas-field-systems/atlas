@@ -23,13 +23,13 @@ export async function sendEnvelope(radio: Radio, peer: string, message: Envelope
 }
 
 export function receiveEnvelopes(radio: Radio, allowed: (peer: string) => boolean,
-  accept: (peer: string, data: Envelope) => void) {
+  accept: (peer: string, data: Envelope) => void, allowFragments?: (count: number) => boolean) {
   type Transfer = { total: number; parts: Map<number, Buffer> };
   const pending = new Map<string, Transfer>();
   return radio.receive((peer, raw) => {
     if (!allowed(peer)) return;
     const frame = readFrame(raw);
-    if (!frame) return;
+    if (!frame || allowFragments?.(frame.total) === false) return;
     const { id, total, index, body } = frame;
     const key = `${peer}:${id}`;
     let transfer = pending.get(key);

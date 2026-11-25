@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -9,7 +10,7 @@ import { openAsset, serveGateway, type Radio } from "@atlas/meshtastic-fieldlink
 import { loadPackagedProtocol } from "@atlas/protocol";
 import type { GatewayHost } from "@atlas/meshtastic-fieldlink/gateway-host";
 import { receiveEnvelopes } from "@atlas/meshtastic-fieldlink/radio";
-import type { AssetEvent } from "@atlas/sdk";
+import type { AssetEvent, Batch } from "@atlas/sdk";
 import { ardupilotPeer } from "../src/ardupilot-peer.ts";
 import { scenario } from "../src/scenario.ts";
 import { type World, value } from "../src/world.ts";
@@ -106,7 +107,7 @@ async function withMesh(w: World, run: (mesh: {
     const host = createGatewayHost(core, run_id);
     const stop = new AbortController();
     const done = serveGateway({ radio: mesh.radio(gateway), host,
-      signal: AbortSignal.any([signal, stop.signal]), onError: error => errors.push(error) }).finally(() => host.close());
+      signal: AbortSignal.any([signal, stop.signal]), now: () => w.clock.now(), onError: error => errors.push(error) }).finally(() => host.close());
     void done.catch(() => {});
     return { done, stop: () => stop.abort() };
   }
@@ -353,7 +354,7 @@ for (const outageMs of [0, 30_000]) {
     async run(w) {
       let restarted = false;
       const resumed = new Set<string>();
-      await withMesh(w, async ({ keys, start, waitForOnline, online, contacts, restart, until, ready }) => {
+      await withMesh(w, async ({ keys, start, waitForOnline, online, restart, until, ready }) => {
         for (const [i, key] of keys.entries()) {
           start(key, { initial_settings: { link_loss_after_s: 30 } });
           await waitForOnline(i + 1);
@@ -367,8 +368,10 @@ for (const outageMs of [0, 30_000]) {
           restarted = true;
         });
         await until(() => ids.every(id => resumed.has(id)), performance.now() + 14_900, "all three Assets renewed contact");
-        for (const id of ids)
-          assert.ok(contacts(id, "offline").every(e => e.event_id < contacts(id, "online")[0].event_id), id);
+        for (const id of ids) {
+          const asset = value(await w.complete(w.admin.call("asset", { params: { asset_id: id } })));
+          assert.equal(asset.item.contact.contact, "online", id);
+        }
       }, async (input, init) => {
         const response = await fetch(input, init);
         if (restarted && response.ok && String(input).endsWith("/contact") &&
@@ -438,16 +441,20 @@ scenario({
       let lastHeard: number | undefined;
       await restart(async () => {
         lastHeard = (await carried()).find(asset => asset.asset_id === assetId)?.last_heard;
+        assert.ok(lastHeard !== undefined);
+        const heard = lastHeard;
+        await until(() => w.clock.now() >= heard + 7_000, performance.now() + 8_000,
+          "the gateway returned seven seconds after the last radio reply");
       });
       const servingAt = performance.now();
       await until(() => contacts(assetId, "offline").some(event => event.event_id > onlineAt),
-        servingAt + 16_000, "the operator stream delivered the offline event");
+        servingAt + 9_000, "the operator stream delivered offline without resetting the deadline");
       const offline = contacts(assetId, "offline").find(event => event.event_id > onlineAt);
       assert.ok(lastHeard !== undefined);
       assert.ok(offline?.kind === "asset.contact");
       assert.equal(offline.record.time, lastHeard);
-      assert.ok(offlineAt !== undefined && offlineAt - servingAt <= 15_000,
-        `Core committed offline within 15 seconds (observed ${offlineAt === undefined ? "no write" : offlineAt - servingAt} ms)`);
+      assert.ok(offlineAt !== undefined && Math.abs(offlineAt - servingAt - 7_900) < 500,
+        `Core committed offline about 14.9 seconds after the last reply (observed ${offlineAt === undefined ? "no write" : offlineAt - servingAt} ms after restart)`);
     }, async (input, init) => {
       const response = await fetch(input, init);
       if (response.ok && String(input).endsWith("/contact") && typeof init?.body === "string" &&
@@ -465,6 +472,8 @@ test("Meshtastic gives a multi-frame Task its full reply window", { timeout: 25_
   const controller = new AbortController();
   const { signal } = controller;
   const delivered = Promise.withResolvers<void>();
+  const receipted = Promise.withResolvers<void>();
+  const explanation = Array.from({ length: 4 }, (_, i) => createHash("sha256").update(String(i)).digest("hex")).join("");
   const event: AssetEvent = {
     kind: "tasks.requested", event_id: 2, record: Array.from({ length: 32 }, (_, i) => ({
       kind: "settings", settings: { lights: "on" }, asset_id: "B", time: 1,
@@ -476,12 +485,19 @@ test("Meshtastic gives a multi-frame Task its full reply window", { timeout: 25_
     onEvent: () => () => {},
     async bind() { return { run: 1, assetId: "B", after: 1, lastTaskId: 0 }; },
     async refuseDefinitions() { throw new Error("unexpected refusal"); },
-    async next(_, after) {
+    next(_, after) {
       if (after === event.event_id) delivered.resolve();
       else return event;
     },
-    async store() {},
+    async store(_, __, reports) {
+      assert.deepEqual(reports, batch.reports);
+    },
     async contact() {},
+  };
+  const batch: Batch = {
+    priority: "must_arrive",
+    reports: [{ type: "report.status", kind: "task", asset_id: "B", time: 1, task_id: 1, task_state: "failed", explanation }],
+    settle(result) { if (result.ok) receipted.resolve(); else receipted.reject(new Error(result.explanation)); },
   };
   const gatewayServing = serveGateway({ radio: mesh.radio(gateway), host, signal });
   try {
@@ -491,16 +507,219 @@ test("Meshtastic gives a multi-frame Task its full reply window", { timeout: 25_
       } },
       onRegister(registration, link) {
         const events = link.events(registration.after)[Symbol.asyncIterator]();
+        let waiting = true;
+        const stop = link.serve({
+          get mustArriveWaiting() { return waiting; },
+          take() {
+            if (!waiting) return;
+            waiting = false;
+            return batch;
+          },
+          onWaiting: () => () => {},
+        });
         void events.next().catch(delivered.reject);
-        return () => { void events.return?.().catch(delivered.reject); };
+        return () => {
+          stop();
+          void events.return?.().catch(delivered.reject);
+        };
       },
     });
-    await Promise.race([delivered.promise, delay(8_000, undefined, { signal }).then(() => {
+    await Promise.race([Promise.all([delivered.promise, receipted.promise]), delay(8_000, undefined, { signal }).then(() => {
       throw new Error("Gateway missed the reply after the final downlink frame");
     })]);
-    assert.ok(mesh.multiFrame.has(asset));
+    assert.ok(mesh.multiFrame.has(asset), "Task used multiple frames");
+    assert.ok(mesh.multiFrame.has(gateway), "report used both reply frames");
   } finally {
     controller.abort();
     await gatewayServing;
   }
+});
+
+scenario({
+  name: "Meshtastic replay excludes a request dropped while its radio was offline",
+  checks: ["core/docs/api.md#operator-requests", "core/docs/api.md#radio-assets"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key });
+    const { run_id } = requireValue(await core.client.connect());
+    let host = createGatewayHost(core, run_id);
+    try {
+      const peer = "b".repeat(64);
+      const profile = { session: "boot", hash: core.hash, description: {
+        commands: [], reports: ["settings"], settings: ["lights"],
+      } } satisfies Parameters<GatewayHost["bind"]>[1];
+      const binding = await host.bind(peer, profile);
+      const asset = { asset_id: binding.assetId };
+      await host.contact(binding.assetId, true, w.clock.now());
+      value(await w.complete(w.admin.call("changeSettings", {
+        params: asset, body: { settings: { lights: "off" } },
+      })));
+      await host.contact(binding.assetId, false, w.clock.now());
+      host.close();
+
+      // No radio cursor advanced before restart. A later valid request gives
+      // the stream a positive completion marker, regardless of timing.
+      host = createGatewayHost(core, run_id);
+      await host.carried();
+      const available = Promise.withResolvers<AssetEvent | undefined>();
+      host.onEvent(() => available.resolve(host.next(binding.assetId, binding.after)));
+      await host.bind(peer, { ...profile, resume: binding });
+      await host.contact(binding.assetId, true, w.clock.now());
+      value(await w.complete(w.admin.call("changeSettings", {
+        params: asset, body: { settings: { lights: "on" } },
+      })));
+      const work = await w.complete(available.promise);
+      assert.equal(work?.kind, "settings.requested");
+      assert.equal(work.record.settings.lights, "on");
+    } finally {
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic retries an unheard Asset's failed offline write",
+  checks: ["core/docs/api.md#contact", "fieldlink/meshtastic/README.md#first-implementation"],
+  timeout: 38_000,
+  async run(w) {
+    let afterRestart = false;
+    let attempts = 0;
+    await withMesh(w, async ({ mesh, keys, start, waitForOnline, online, contacts, restart, until }) => {
+      start(keys[0]);
+      await waitForOnline(1);
+      const [assetId] = online();
+      const onlineAt = contacts(assetId, "online")[0].event_id;
+      mesh.silence(keys[0]);
+      await restart(async () => { afterRestart = true; });
+      await until(() => contacts(assetId, "offline").some(e => e.event_id > onlineAt),
+        performance.now() + 17_000, "Core recovered from its failed offline write");
+      assert.equal(attempts, 2);
+    }, (input, init) => {
+      if (afterRestart && String(input).endsWith("/contact") && typeof init?.body === "string" &&
+          init.body.includes('"contact":"offline"') && ++attempts === 1)
+        return Promise.resolve(new Response(JSON.stringify({ error: "storage_full", explanation: "temporary failure" }),
+          { status: 507, headers: { "content-type": "application/json" } }));
+      return fetch(input, init);
+    });
+  },
+});
+
+scenario({
+  name: "Meshtastic polls another Asset while Core is storing reports",
+  checks: ["fieldlink/meshtastic/README.md#first-implementation"],
+  timeout: 50_000,
+  async run(w) {
+    const finish = Promise.withResolvers<void>();
+    let stalledAsset: string | undefined;
+    let writes = 0;
+    await withMesh(w, async ({ keys, start, waitForOnline, ready, online, until, gateway, mesh }) => {
+      const polls = keys.slice(0, 2).map(() => 0);
+      function observePolls(index: number) {
+        start(keys[index], undefined, async () => {
+          const radio = mesh.radio(keys[index]);
+          receiveEnvelopes(radio, peer => peer === gateway, (_, packet) => {
+            if (packet.kind === "poll") polls[index] = performance.now();
+          });
+          return radio;
+        });
+      }
+      try {
+        observePolls(0);
+        await waitForOnline(1);
+        observePolls(1);
+        await waitForOnline(2);
+        await until(() => ready() === 2, performance.now() + 15_000, "both startup batches were acknowledged");
+        stalledAsset = online()[0];
+        value(await w.complete(w.admin.call("sendTasks", {
+          params: { asset_id: stalledAsset }, body: { tasks: [{ kind: "settings", settings: { lights: "on" } }] },
+        })));
+        await until(() => writes > 0, performance.now() + 10_000, "Core received the first Asset's report");
+        const since = performance.now();
+        await until(() => polls[1] >= since, since + 7_500, "other Asset polled before Core replied");
+        await until(() => polls[0] >= since, since + 7_500, "the submitting Asset was polled again");
+        await until(() => performance.now() >= polls[0] + 1_250, since + 9_000, "the retransmission reached the gateway");
+        assert.equal(writes, 1, "a pending submission has one Core write");
+      } finally {
+        finish.resolve();
+      }
+    }, async (input, init) => {
+      if (stalledAsset && String(input).endsWith(`/entities/assets/${stalledAsset}/reports`) &&
+          !init?.signal?.aborted) {
+        writes++;
+        await finish.promise;
+      }
+      return fetch(input, init);
+    });
+  },
+});
+
+scenario({
+  name: "Meshtastic startup abort waits for the radio bridge to close",
+  checks: ["asset/docs/README.md#start-and-connect"],
+  async run(w) {
+    const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
+    const controller = new AbortController();
+    const announced = Promise.withResolvers<void>();
+    const closing = Promise.withResolvers<void>();
+    const finishClose = Promise.withResolvers<void>();
+    const closingRadio: Radio = {
+      failure: new AbortController().signal,
+      async send() { assert.fail("no gateway"); },
+      async announce() { announced.resolve(); },
+      receive: () => () => {},
+      discover: () => () => {},
+      async close() { closing.resolve(); await finishClose.promise; },
+    };
+    const config = parseConfig({
+      ...raw, asset_key: undefined, initial_settings: { link_loss_after_s: 15 },
+      description: { commands: [], reports: ["status"] },
+      equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
+      link: { kind: "meshtastic", port: "simulated", gateway: "a".repeat(64) },
+      log_directory: join(w.root, "asset", "logs"), archive_directory: join(w.root, "asset", "archives"),
+    });
+    let ended = false;
+    const app = startApp(config, { clock: w.clock, signal: controller.signal, openRadio: async () => closingRadio });
+    const stopped = assert.rejects(app, /startup stopped/).then(() => { ended = true; });
+    try {
+      await announced.promise;
+      controller.abort();
+      await closing.promise;
+      await delay(100);
+      assert.equal(ended, false, "startup cleanup returned with the radio still open");
+    } finally {
+      finishClose.resolve();
+      await stopped;
+    }
+  },
+});
+
+scenario({
+  name: "Meshtastic polls a resumed Asset promptly",
+  checks: ["fieldlink/meshtastic/README.md#first-implementation"],
+  timeout: 35_000,
+  async run(w) {
+    let restarted = false;
+    let resumedAt: number | undefined;
+    let pollAt: number | undefined;
+    await withMesh(w, async ({ start, keys, mesh, gateway, until, ready, restart }) => {
+      start(keys[0], undefined, async () => {
+        const radio = mesh.radio(keys[0]);
+        receiveEnvelopes(radio, peer => peer === gateway, (_, packet) => {
+          if (packet.kind === "poll" && restarted) pollAt ??= performance.now();
+        });
+        return radio;
+      });
+      await until(() => ready() === 1, performance.now() + 15_000, "Asset startup completed");
+      await restart(async () => { restarted = true; });
+      await until(() => resumedAt !== undefined, performance.now() + 10_000, "gateway received the resume profile");
+      assert.ok(resumedAt !== undefined);
+      await until(() => pollAt !== undefined, resumedAt + 4_500, "gateway polled promptly after resume");
+    }, async (input, init) => {
+      if (restarted && String(input).endsWith("/contact") && typeof init?.body === "string" &&
+          init.body.includes('"contact":"online"')) resumedAt ??= performance.now();
+      return fetch(input, init);
+    });
+  },
 });

@@ -207,3 +207,13 @@ test("three Assets check in during work and a join, with room to recover one los
     }
   }
 });
+
+// fieldlink/meshtastic/README.md#first-implementation
+test("a silent radio's unattended probes back off", () => {
+  const probe = (state: PeerTiming, time: number) => noReply(began(state, time, timing));
+  const offline = wentOffline(ready("silent").state);
+  const first = probe(offline, now);
+  const second = probe(first, now + 12_000);
+  assert.ok(first.dueAt - now < second.dueAt - (now + 12_000));
+  assert.equal(nextTurn([{ state: second }], now + 18_000, timing, []).kind, "wait");
+});

@@ -87,8 +87,9 @@ works with.
   link, and the Fieldlink hands the radio connection to the app's equipment
   driver.
 
-The gateway app logs both sides of the interface. The exact TypeScript
-interface is written with the first Fieldlink.
+The gateway app logs both sides of the interface.
+The [TypeScript interface](../fieldlink/meshtastic/src/gateway-host.ts) lives in
+Meshtastic and moves to Gateway when a second Fieldlink is added.
 
 ## One gateway per radio network
 

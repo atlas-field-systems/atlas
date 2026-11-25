@@ -19,12 +19,19 @@ healthy Assets receive authenticated polls no more than 10 seconds apart.
 An Asset can go about 14 seconds without hearing the gateway after one lost
 message, so set `link_loss_after_s` to at least 15 seconds. A join waits if
 measured turns leave too little room for established Assets to check in.
-Core shows a radio offline 14,900 ms after its last reply. On a link that
+The gateway reports a radio offline 14,900 ms after its last reply. It retries
+failed contact writes with backoff until they succeed or newer contact replaces
+them. On a link that
 loses 5% of messages at random, a healthy Asset briefly shows offline about
-once an hour; its next check-in restores it. The Asset counts
-authenticated polls as contact with its gateway.
-Running Assets promptly announce when they hear their gateway restart.
-The channel key alone protects a beacon, and a beacon can only prompt an announce.
+once an hour; its next check-in restores it. The gateway backs off unanswered
+offline probes up to 30 seconds between attempts. A discovery announcement
+makes the radio eligible for an immediate probe. The Asset counts authenticated
+polls as contact with its gateway.
+Running Assets promptly announce when they hear their gateway restart, and the
+gateway prioritizes a poll on resume. After restart, it counts each carried
+Asset's 14,900 ms deadline from the last-heard time in Core's roster. If Core has
+no last-heard time, it counts from gateway startup. A healthy Asset may briefly
+show offline until it rejoins. The channel key alone protects a beacon, and a beacon can only prompt an announce.
 After prolonged silence a radio announces again. The same running Asset app
 rejoins after a gateway restart or a radio bridge failure. Its Tasks
 and pending reports carry over within the same Core run. If the Asset radio
@@ -33,9 +40,12 @@ bridge fails, the running app sees contact lost.
 The link uses dictionary-compressed JSON in frames up to 180 bytes. A poll
 offers one frame of reply room and carries the receipt for the previous
 submission after Core stores it. Retries keep the same submission ID. The
-Asset chooses the reports through its SDK report source. An individual report
-can span frames. The reply window begins after the gateway submits the final
-poll frame. The 2,300 ms default comes from simulator measurements. A poll
+Asset chooses the reports through its SDK report source. A reply can span up to
+two frames. If a batch exceeds that limit, the Asset refuses it once and the
+outbox records the refusal. Core storage runs between radio turns. A later poll
+carries the receipt, and duplicates of a pending submission share its write.
+The reply window begins after the gateway submits the final poll frame. The
+2,300 ms default fits two reply frames in the relayed ShortTurbo simulator. A poll
 carrying an event allows another 150 ms for the Asset to queue its report,
 covering the example configs' 100 ms control tick plus 50 ms of margin. The
 reply can carry the Task's active report in the delivery exchange. Re-measure the window

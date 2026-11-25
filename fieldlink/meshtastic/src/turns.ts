@@ -9,10 +9,12 @@ export const relayGapMs = 550;
 export const eventReplyHoldMs = 150;
 // One-frame submission observed in the relayed ShortTurbo simulator.
 const pollSendMs = 450;
+// Upper end of successful one-frame exchanges in the relayed ShortTurbo simulator.
+const successfulExchangeMs = 1_900;
 const unansweredExchange = (timing: Timing) => pollSendMs + timing.timeoutMs + eventReplyHoldMs;
 // Reserve three successful turns, two unanswered turns, and 100 ms for scheduling overhead.
 export const maxReplyTimeoutMs = ({ offlineMs }: Timing) =>
-  Math.floor((offlineMs - 100 - 3 * (1_900 + eventReplyHoldMs + relayGapMs)) / 2) -
+  Math.floor((offlineMs - 100 - 3 * (successfulExchangeMs + eventReplyHoldMs + relayGapMs)) / 2) -
   pollSendMs - eventReplyHoldMs - relayGapMs;
 const joinLifetimeMs = 20_000;
 const pollInterval = (timing: Timing) => Math.min(timing.pollMs, (timing.offlineMs - unansweredExchange(timing) - relayGapMs) / 2);
@@ -20,7 +22,7 @@ const pollInterval = (timing: Timing) => Math.min(timing.pollMs, (timing.offline
 type Joining = { kind: "joining"; dueAt: number; expires: number };
 type Ready = {
   kind: "ready"; dueAt: number; heardAt: number; checkInBy: number;
-  deadline?: number; retry?: "pending" | "exhausted"; work?: "queued" | "followup";
+  deadline?: number; probeInterval?: number; retry?: "pending" | "exhausted"; work?: "queued" | "followup";
 };
 export type PeerTiming = Joining | Ready;
 type Peer = { state: PeerTiming };
@@ -36,8 +38,11 @@ export function noReply(state: PeerTiming): PeerTiming {
 }
 
 export function began<T extends PeerTiming>(state: T, now: number, timing: Timing): T {
-  const dueAt = now + pollInterval(timing);
-  return state.kind === "ready" ? { ...state, dueAt, work: undefined } : { ...state, dueAt };
+  const interval = pollInterval(timing);
+  if (state.kind === "joining") return { ...state, dueAt: now + interval };
+  if (state.deadline !== undefined) return { ...state, dueAt: now + interval, work: undefined };
+  const probeInterval = Math.min(30_000, 2 * (state.probeInterval ?? interval));
+  return { ...state, dueAt: now + probeInterval, work: undefined, probeInterval };
 }
 
 export function replied(state: PeerTiming, now: number, timing: Timing, followup = false): Ready {
@@ -52,17 +57,16 @@ export function replied(state: PeerTiming, now: number, timing: Timing, followup
 export const canDeliver = (state: Ready) => state.deadline !== undefined;
 export const observedTurn = (samples: readonly number[], duration: number) => [...samples.slice(-4), duration + relayGapMs];
 
-export function nextTurn<T extends Peer>(roster: Iterable<T>, now: number, timing: Timing, samples: readonly number[], busy = false, awaitingContact?: { since: number }):
+export function nextTurn<T extends Peer>(roster: Iterable<T>, now: number, timing: Timing, samples: readonly number[], busy = false, startupDeadline = Infinity):
   | { kind: "expire" | "offline" | "exchange"; peer: T; deferred?: T }
-  | { kind: "unheard"; since: number }
+  | { kind: "unheard" }
   | { kind: "wait"; until: number } {
   const peers = [...roster];
   const deadline = (peer: T) => peer.state.kind === "ready" ? peer.state.deadline ?? Infinity : Infinity;
   const established = peers.filter(peer => peer.state.kind === "ready").sort((a, b) => deadline(a) - deadline(b));
   const offline = established.find(peer => deadline(peer) <= now);
   if (offline) return { kind: "offline", peer: offline };
-  const startupDeadline = awaitingContact ? awaitingContact.since + timing.offlineMs : Infinity;
-  if (awaitingContact && startupDeadline <= now) return { kind: "unheard", since: awaitingContact.since };
+  if (startupDeadline <= now) return { kind: "unheard" };
   const nextDeadline = Math.min(established[0] ? deadline(established[0]) : Infinity, startupDeadline);
   if (busy) return { kind: "wait", until: nextDeadline };
 
