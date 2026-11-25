@@ -483,6 +483,44 @@ scenario({
   },
 });
 
+scenario({
+  name: "Meshtastic attributes simultaneous stream reconnects to each Asset",
+  checks: ["gateway/README.md#gateway-contact"],
+  async run(w) {
+    const provisioned = value(await w.complete(w.admin.call("provisionGateway")));
+    assert.ok("key" in provisioned);
+    const streams: ReadableStreamDefaultController<Uint8Array>[] = [];
+    const opened = Promise.withResolvers<void>();
+    const reopened = Promise.withResolvers<void>();
+    const errors: unknown[] = [];
+    const core = await createGatewayCore({ url: w.core.url, key: provisioned.key, async fetch(input, init) {
+      if (new URL(String(input)).pathname !== "/events") return fetch(input, init);
+      return new Response(new ReadableStream<Uint8Array>({ start(controller) {
+        streams.push(controller);
+        if (streams.length === 2) opened.resolve();
+        if (streams.length === 4) reopened.resolve();
+      } }));
+    } });
+    const { run_id } = requireValue(await core.client.connect());
+    const host = createGatewayHost(core, run_id, undefined, error => errors.push(error));
+    try {
+      const profile: Parameters<GatewayHost["bind"]>[1] = {
+        session: "boot", hash: core.hash, description: { commands: [], reports: ["settings"] },
+      };
+      const { assetId: first } = await host.bind("first", profile);
+      const { assetId: second } = await host.bind("second", profile);
+      await opened.promise;
+      for (const stream of streams) stream.error(new Error("Lost Core connection"));
+      await reopened.promise;
+      assert.deepEqual(errors.map(String).sort(), [first, second].sort().map(assetId =>
+        `Error: Core event stream for Asset ${assetId} failed and will reconnect`));
+    } finally {
+      host.close();
+      core.client.close();
+    }
+  },
+});
+
 test("Meshtastic gives a multi-frame Task its full reply window", { timeout: 25_000 }, async () => {
   const { hash } = await loadPackagedProtocol();
   const gateway = "a".repeat(64), asset = "b".repeat(64);

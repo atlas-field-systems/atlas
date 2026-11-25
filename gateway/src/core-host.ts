@@ -12,16 +12,12 @@ export async function createGatewayCore({
   // A radio retry can outlive an SDK call. Keep the same Core idempotency
   // key for the same submission across separate calls.
   const operation = new AsyncLocalStorage<string>();
-  const streamRetry = new AsyncLocalStorage<() => void>();
   const protocol = await loadPackagedProtocol();
   const client = createClient({
     baseUrl: url,
     credential: { kind: "gateway", key },
     protocol,
     clock: systemClock,
-    observer(event) {
-      if (event.name === "stream.reconnect") streamRetry.getStore()?.();
-    },
     fetch(input, init) {
       const stable = operation.getStore();
       const headers = new Headers(init?.headers);
@@ -34,9 +30,6 @@ export async function createGatewayCore({
     hash: protocol.hash,
     withKey<T>(key: string, method: () => T): T {
       return operation.run(key, method);
-    },
-    followAsset(options: Parameters<typeof follow>[1], handler: Parameters<typeof follow>[2], onRetry: () => void) {
-      return streamRetry.run(onRetry, () => follow(client, options, handler));
     },
   };
 }
@@ -188,13 +181,16 @@ export function createGatewayHost(
   function start(asset: Asset, replayContact = false) {
     const { assetId } = asset.binding;
     if (signal.aborted || asset.removed || contactWrites.get(assetId)?.some(write => !write.contact.open)) return;
-    const stream = core.followAsset({
+    let opened = false;
+    const stream = follow(client, {
       after: asset.after,
       async beforeOpen() {
         asset.queue.length = 0;
         const contact = asset.contact;
-        const refresh = replayContact;
-        replayContact = true;
+        const refresh = replayContact || opened;
+        if (opened && !signal.aborted)
+          onError?.(new Error(`Core event stream for Asset ${assetId} failed and will reconnect`));
+        opened = true;
         // This stream is already waiting to open and has no prefetched work.
         if (refresh && contact) await writeContact(assetId, contact, true);
         return asset.after;
@@ -206,8 +202,6 @@ export function createGatewayHost(
       if (recipient !== assetId) return;
       asset.queue.push(event);
       for (const listener of events) listener(assetId);
-    }, () => {
-      if (!signal.aborted) onError?.(new Error(`Core event stream for Asset ${assetId} failed and will reconnect`));
     });
     asset.stream = stream;
     void stream.done.then(end => {
