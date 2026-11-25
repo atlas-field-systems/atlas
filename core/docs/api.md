@@ -400,7 +400,10 @@ order, because the Asset orders them by `task_id`.
 When a gateway reconnects to Core, it sends contact for every Asset it carries,
 even if its Fieldlink's view did not change. It reads its current-run
 `{assets: [{asset_id, last_heard?}]}` from `GET /entities/assets/radios` using its gateway key.
-The Fieldlink uses the roster to set each carried Asset's offline deadline after a gateway restart.
+The roster keeps the greatest last-heard time the gateway reported for the
+radio in a contact write. Storing reports does not advance that time. The
+Fieldlink uses the roster to set each carried Asset's offline deadline after
+a gateway restart.
 See [Meshtastic timing](../../fieldlink/meshtastic/README.md#first-implementation).
 
 [Runs and identity](../../atlas/runs-and-identity.md#radio-assets) owns the

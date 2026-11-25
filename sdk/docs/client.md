@@ -52,7 +52,8 @@ before the operator submits.
 Each state-changing call gets a fresh random `Idempotency-Key`. The client retries a network failure or a `5xx`
 with the same key, copied body bytes, and snapshotted URL, with backoff, until the request timeout.
 Backoff, run verification, and every attempt share that deadline. No new send
-starts after it expires.
+starts after it expires. Set `retry: false` in the call options to disable
+automatic retries when a newer write may supersede the current one.
 Core returns the retained non-secret response for a repeated key, so a retry
 never repeats an effect. Credential and login retries follow the
 [Core API's acknowledgment and recovery rules](../../core/docs/api.md#callers-and-credentials).
@@ -67,8 +68,8 @@ it returns `session_not_confirmed`. A wrong password returns Core's
 The direct client never retries a `4xx` or a definitive
 [storage refusal](../../core/docs/storage.md#memory-and-full-disks).
 
-If no response arrives before the timeout, the result is `unknown`. Core may or
-may not have accepted the request. `unknown` is not failure. It carries `retry()`,
+If the client exhausts its attempts without a definitive response, the result is
+`unknown`. Core may or may not have accepted the request. `unknown` is not failure. It carries `retry()`,
 which sends again with the same key and body. Reads retry the same way without a
 key.
 

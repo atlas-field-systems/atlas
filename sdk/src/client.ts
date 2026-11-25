@@ -352,6 +352,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     query?: Query,
     file = false,
     contentType?: string,
+    retry = true,
   ): Promise<Result<T>> {
     if (status.phase === "new" || status.phase === "closed")
       throw new Error("Client must be connected");
@@ -464,7 +465,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
             const stopped = fence();
             if (stopped) return stopped;
             const remaining = deadline - clock.now();
-            if (remaining <= 0) return unknown();
+            if (!retry || remaining <= 0) return unknown();
             const delay = Math.min(remaining, backoffDelay(attempt++, backoff));
             emit("request.retry", { key: key ?? "", delay });
             await new Promise<void>((resolve) => clock.after(delay, resolve));
@@ -477,7 +478,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   }
   function call<N extends Allowed<C["kind"]>>(
     name: N,
-    args: { params?: Params; query?: Query; body?: RouteBody<N> } = {},
+    args: { params?: Params; query?: Query; body?: RouteBody<N>; retry?: false } = {},
   ): Promise<Result<ResponseOf<N>>> {
     const route: {
       method: string;
@@ -502,7 +503,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       return encodeURIComponent(String(value));
     });
     if (name === "logout") session++;
-    return request<ResponseOf<N>>(route.method, path, args.body, args.query);
+    return request<ResponseOf<N>>(route.method, path, args.body, args.query, false, undefined, args.retry);
   }
   function isClosed() {
     return status.phase === "closed";

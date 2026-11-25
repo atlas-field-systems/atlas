@@ -238,8 +238,8 @@ export function storeReports(
   asset_id: string,
   reports: unknown[],
 ): { stored: number } {
-  requireAsset(tx, asset_id);
-  noteHeard(tx, asset_id);
+  const asset = requireAsset(tx, asset_id);
+  if (asset.gateway_id === null) noteHeard(tx, asset_id);
   for (const [i, value] of reports.entries()) {
     if (
       !value ||
@@ -280,11 +280,13 @@ export function applyContact(
   tx: Tx,
   asset_id: string,
   record: Contact,
+  fromGateway = false,
 ): { changed: boolean } {
   const row = requireAsset(tx, asset_id);
   if (record.asset_id !== asset_id)
     refuse("invalid", "Contact Asset differs from path");
-  if (record.contact === "online") noteHeard(tx, asset_id);
+  if (fromGateway) noteHeard(tx, asset_id, record.time);
+  else if (record.contact === "online") noteHeard(tx, asset_id);
   if (JSON.parse(row.contact).contact === record.contact)
     return { changed: false };
   tx.run(
@@ -836,12 +838,13 @@ export function checkCommand(
     refuse("not_supported", "Camera is not declared");
 }
 
-export function noteHeard(tx: Tx, asset_id: string): void {
+function noteHeard(tx: Tx, asset_id: string, time?: number): void {
   tx.run(
-    "INSERT INTO asset_heard VALUES (?,?,?) ON CONFLICT(run_id,asset_id) DO UPDATE SET last_heard=excluded.last_heard",
+    `INSERT INTO asset_heard VALUES (?,?,?) ON CONFLICT(run_id,asset_id)
+     DO UPDATE SET last_heard=${time === undefined ? "excluded.last_heard" : "MAX(last_heard,excluded.last_heard)"}`,
     tx.runId,
     asset_id,
-    tx.now,
+    time ?? tx.now,
   );
 }
 export function lastHeard(tx: ReadTx, asset_id: string): number | undefined {

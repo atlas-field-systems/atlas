@@ -52,7 +52,8 @@ export function follow(
     after: number;
     asset_id?: string;
     everything?: boolean;
-    beforeOpen?(): Promise<void>;
+    // A consumer that buffers events can restart from its acknowledged cursor.
+    beforeOpen?(): Promise<number | void>;
     onContact?(contact: { open: boolean; last_heard: number | null }): void;
   },
   handler: (event: AtlasEvent) => void | Promise<void>,
@@ -98,8 +99,9 @@ export function follow(
           controller = new AbortController();
           const { signal } = controller;
           try {
-            await options.beforeOpen?.();
+            const resumeAfter = await options.beforeOpen?.();
             if (terminal()) break;
+            if (resumeAfter !== undefined) cursor = resumeAfter;
             opening = clock.after(
               internal(client).options.requestTimeoutMs ?? 10000,
               () => {

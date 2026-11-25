@@ -404,7 +404,7 @@ export const ROUTES: readonly Route[] = [
     who: ["gateway"],
     actsFor: "path:asset_id",
     body: P("contact"),
-    commit: (tx, r) => ok(entities.applyContact(tx, a(r), r.body)),
+    commit: (tx, r) => ok(entities.applyContact(tx, a(r), r.body, true)),
   }),
   change({
     method: "POST",

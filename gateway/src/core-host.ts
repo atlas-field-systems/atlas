@@ -52,6 +52,12 @@ type Asset = {
   streamError?: Error;
   contact?: Contact;
 };
+type ContactWrite = {
+  contact: Contact;
+  asset?: Asset;
+  result: ReturnType<typeof Promise.withResolvers<void>>;
+};
+type ContactWriter = { pending?: ContactWrite; done: Promise<void> };
 type Signup = {
   session: string;
   operation: string;
@@ -68,7 +74,7 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
   const carried = new Set<string>();
   const signups = new Map<string, Signup>();
   const events = new Set<(assetId: string) => void>();
-  const contactWrites = new Map<string, Promise<void>>();
+  const contactWrites = new Map<string, ContactWriter>();
 
   function assetFor(assetId: string): Asset {
     const asset = assets.get(assetId);
@@ -90,30 +96,57 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
     }
   }
 
-  function writeContact(assetId: string, contact: Contact | undefined, asset = assets.get(assetId)) {
-    if (!contact) return Promise.resolve();
-    const write = (contactWrites.get(assetId) ?? Promise.resolve()).then(async () => {
-      if (asset && (asset.removed || assets.get(assetId) !== asset)) return;
-      const result = await client.call("putContact", {
-        params: { asset_id: assetId },
-        body: { asset_id: assetId, contact: contact.open ? "online" : "offline", time: contact.lastHeard },
-      });
-      if (asset) checkRemoval(asset, result);
-      else if (!result.ok && (result.status === 403 || result.status === 404)) return;
-      requireValue(result);
-    });
-    const settled = write.catch(() => {}).finally(() => {
-      if (contactWrites.get(assetId) === settled) contactWrites.delete(assetId);
-    });
-    contactWrites.set(assetId, settled);
-    return write;
+  function writeContact(assetId: string, contact: Contact, asset = assets.get(assetId)) {
+    const result = Promise.withResolvers<void>();
+    const pending = { contact, asset, result };
+    const active = contactWrites.get(assetId);
+    if (active) {
+      active.pending?.result.resolve();
+      active.pending = pending;
+      return result.promise;
+    }
+    const writer: ContactWriter = {
+      pending,
+      done: Promise.resolve().then(async () => {
+        while (writer.pending) {
+          const { contact, asset, result } = writer.pending;
+          writer.pending = undefined;
+          try {
+            if (asset && (asset.removed || assets.get(assetId) !== asset)) {
+              result.resolve();
+              continue;
+            }
+            const response = await client.call("putContact", {
+              retry: false,
+              params: { asset_id: assetId },
+              body: { asset_id: assetId, contact: contact.open ? "online" : "offline", time: contact.lastHeard },
+            });
+            if (asset) checkRemoval(asset, response);
+            if (asset || response.ok || (response.status !== 403 && response.status !== 404)) requireValue(response);
+            result.resolve();
+          } catch (error) {
+            result.reject(error);
+          }
+        }
+        contactWrites.delete(assetId);
+      }),
+    };
+    contactWrites.set(assetId, writer);
+    return result.promise;
   }
 
-  function start(asset: Asset) {
+  function start(asset: Asset, replayContact = false) {
     const { assetId } = asset.binding;
     const stream = follow(client, {
       after: asset.after,
-      beforeOpen: () => writeContact(assetId, asset.contact, asset),
+      async beforeOpen() {
+        asset.queue.length = 0;
+        const contact = asset.contact;
+        const refresh = replayContact;
+        replayContact = true;
+        if (refresh && contact) await writeContact(assetId, contact, asset);
+        return asset.after;
+      },
     }, event => {
       if (!isAssetEvent(event)) return;
       const recipient = event.kind === "tasks.requested" || event.kind === "tasks.updated"
@@ -163,7 +196,7 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         stop(prior);
         peers.delete(peer);
         assets.delete(prior.binding.assetId);
-        await contactWrites.get(prior.binding.assetId);
+        await contactWrites.get(prior.binding.assetId)?.done;
       }
       const { operation, time } = signup;
       let binding: Binding;
@@ -209,7 +242,7 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
       const asset = assetFor(assetId);
       asset.after = Math.max(asset.after, after);
       if (asset.streamError) throw asset.streamError;
-      if (asset.refreshing) return;
+      if (asset.refreshing || asset.stream?.stale !== false) return;
       while (asset.queue[0] && asset.queue[0].event_id <= asset.after) asset.queue.shift();
       return asset.queue[0];
     },
@@ -227,8 +260,9 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
       const contact = { open, lastHeard };
       const asset = assets.get(assetId);
       if (!asset) return writeContact(assetId, contact);
+      if (asset.removed) throw new AssetRemoved(`Core removed radio Asset ${assetId}`);
       asset.contact = contact;
-      if (open || asset.removed) return writeContact(assetId, contact, asset);
+      if (open) return writeContact(assetId, contact, asset);
       // Core drops requests in the offline transaction. Discard prefetched work
       // while that write is pending, then replay from the radio's cursor.
       if (asset.refreshing++ === 0) {
@@ -236,10 +270,13 @@ export function createGatewayHost(core: Core, run: number): GatewayHost & { clos
         asset.queue.length = 0;
         asset.streamError = undefined;
       }
+      let failed = true;
       try {
         await writeContact(assetId, contact, asset);
+        failed = false;
       } finally {
-        if (--asset.refreshing === 0 && assets.get(assetId) === asset && !asset.removed) start(asset);
+        if (--asset.refreshing === 0 && assets.get(assetId) === asset && !asset.removed)
+          start(asset, failed && asset.contact === contact);
       }
     },
     close() {

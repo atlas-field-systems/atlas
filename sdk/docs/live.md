@@ -20,12 +20,12 @@ subscription.stop();
 - **Ask for everything.** An Asset, gateway, or Plugin follows only the events it
   must act on. With `everything: true` it follows every event, as an account
   does ([Callers and credentials](../../core/docs/api.md#callers-and-credentials)).
-- **One event at a time, in order.** The handler gets each event once, in
-  `event_id` order. The cursor advances only when the handler returns or its
+- **One event at a time, in order.** The handler gets events in `event_id`
+  order. The cursor advances only when the handler returns or its
   promise resolves. If the handler throws, the follow stops at the last handled
   event and reports the error; the program decides whether to resume.
 - **The cursor is the duplicate check.** The client resumes after the last event
-  it handled, so nothing is missed or repeated. There is no dedupe window.
+  it handled by default. There is no dedupe window.
 - **The cursor lives in memory.** The client exposes it and takes `after`, so a
   host that must resume across a restart can store it.
 
@@ -39,6 +39,8 @@ browser and Node.
 - When the stream closes or errors, the client reopens it with backoff
   ([configuration](../config.md)). The client uses the same backoff to reopen a
   stream that Core closed because the reader fell behind.
+- A host that buffers events for delivery can return the last acknowledged
+  event ID from `beforeOpen` to replay after that ID.
 - With neither data nor a `: alive` comment for the idle timeout, the client
   treats the stream as dead and reopens it. Byte arrival resets this timer. The timer
   pauses while a handler is pending and restarts when it returns. The follow
