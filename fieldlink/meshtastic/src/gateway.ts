@@ -57,7 +57,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
     if (packet.session === session && packet.seq === seq && waiting?.peer === key) waiting.resolve(packet);
   }, count => waiting?.register === true || count <= maxReplyFrames);
   const stopDiscover = radio.discover((key, boot, kind) => {
-    if (kind !== "discovery") return;
+    if (kind !== "discovery" || bindingPeers.has(key)) return;
     const id = keyFor({ key, boot });
     const prior = peers.get(id);
     const now = Date.now();
@@ -97,7 +97,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
     operations.add(operation);
   }
 
-  function contact(assetId: string, open: boolean, lastHeard: number) {
+  function contact(assetId: string, open: boolean, lastHeard: number, peer?: Peer) {
     if (open) unheard.delete(assetId);
     contacts.get(assetId)?.abort();
     const attempt = new AbortController();
@@ -111,7 +111,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
             await host.contact(assetId, open, lastHeard);
             return;
           } catch (error) {
-            if (error instanceof AssetRemoved) return;
+            if (error instanceof AssetRemoved) throw error;
             reportError(error);
           }
           await delay(backoff, undefined, { signal: retrySignal }).catch(() => {});
@@ -120,7 +120,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
       } finally {
         if (contacts.get(assetId) === attempt) contacts.delete(assetId);
       }
-    })());
+    })(), peer);
   }
 
   async function exchange(peer: Peer, packet: Envelope) {
@@ -154,8 +154,15 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
       return;
     }
     const assetId = binding?.registration.assetId;
-    const event = peer.state.kind === "ready" && canDeliver(peer.state) && binding && assetId
-      ? host.next(assetId, binding.cursor) : undefined;
+    let event: Poll["event"];
+    if (peer.state.kind === "ready" && canDeliver(peer.state) && binding && assetId) {
+      try {
+        event = host.next(assetId, binding.cursor);
+      } catch (error) {
+        if (error instanceof AssetRemoved) throw error;
+        reportError(error);
+      }
+    }
     const poll: Poll = { kind: "poll", ...address, receipt: binding?.receipt, event, roomBytes: frameBytes };
     if (event && wireSize(poll) === Infinity && binding) {
       delete poll.event;
@@ -179,13 +186,13 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
             peer.refusal = "definitions";
           } else if (isDescription(protocol, reply.description)) {
             const { hash, description, resume } = reply;
+            for (const [id, prior] of peers) if (prior !== peer && prior.key === peer.key) peers.delete(id);
             const registration = await host.bind(peer.key, { session: peer.boot, hash, description, resume });
             if (signal.aborted) return;
-            for (const [id, prior] of peers) if (prior !== peer && prior.key === peer.key) peers.delete(id);
             peer.binding = { registration, cursor: registration.after };
             if (resume?.run === registration.run && resume.assetId === registration.assetId) {
               peer.state = hasWork(replied(peer.state, received, timing));
-              contact(registration.assetId, true, heardAt);
+              contact(registration.assetId, true, heardAt, peer);
               return;
             }
           } else return;
@@ -200,23 +207,25 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
       peer.state = noReply(peer.state);
       return;
     }
-    const state = replied(peer.state, received, timing, Boolean(poll.event || (reply.waiting && !binding.storing)));
+    const submission = reply.submission;
+    const toStore = submission && !binding.storing && submission.id > (binding.receipt?.id ?? 0)
+      ? submission : undefined;
+    const state = replied(peer.state, received, timing, Boolean(poll.event || (reply.waiting && !binding.storing && !toStore)));
     peer.state = packet.kind === "registered" ? hasWork(state) : state;
-    contact(assetId, true, heardAt);
+    contact(assetId, true, heardAt, peer);
     wake?.abort();
     if (poll.event && event && reply.cursor >= event.event_id) binding.cursor = reply.cursor;
-    const submission = reply.submission;
-    if (submission && !binding.storing && submission.id > (binding.receipt?.id ?? 0)) {
+    if (toStore) {
       binding.storing = true;
       background((async () => {
         try {
-          if (!submission.reports.every((report): report is Report => isReport(protocol, report) && report.asset_id === assetId))
+          if (!toStore.reports.every((report): report is Report => isReport(protocol, report) && report.asset_id === assetId))
             throw new ReportRefused("Invalid report submission");
-          await host.store(assetId, submission.id, submission.reports);
-          binding.receipt = { kind: "stored", id: submission.id };
+          await host.store(assetId, toStore.id, toStore.reports);
+          binding.receipt = { kind: "stored", id: toStore.id };
         } catch (error) {
           if (!(error instanceof ReportRefused)) throw error;
-          binding.receipt = { kind: "refused", id: submission.id };
+          binding.receipt = { kind: "refused", id: toStore.id };
         } finally {
           delete binding.storing;
         }
@@ -254,7 +263,7 @@ export async function serveGateway({ radio, host, timing = meshtasticTiming, sig
         const { binding, state } = turn.peer;
         turn.peer.state = wentOffline(state);
         if (binding && state.kind === "ready")
-          contact(binding.registration.assetId, false, toContactTime(state.heardAt));
+          contact(binding.registration.assetId, false, toContactTime(state.heardAt), turn.peer);
       } else {
         const deferred = turn.kind === "exchange" ? turn.deferred : undefined;
         if (deferred && !deferred.deferred) {
