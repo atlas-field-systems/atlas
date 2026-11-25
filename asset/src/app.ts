@@ -1,6 +1,4 @@
 import {
-  createClient,
-  startAsset,
   systemClock,
   type Clock,
   type Report,
@@ -8,35 +6,31 @@ import {
   type AssetFile,
 } from "@atlas/sdk";
 import { readFile } from "node:fs/promises";
-import { loadPackagedProtocol } from "@atlas/protocol";
 import { initial, reduce, refusal, canPullTask, type Event, type Effect } from "./control.ts";
 import { fresh, type Vehicle, type Measurements } from "./vehicle.ts";
 import { peripheral } from "./peripheral.ts";
 import { ardupilot } from "./ardupilot.ts";
 import { createLog } from "./logging.ts";
 import { parseConfig, type Config } from "./config.ts";
+import { createAssetConnection } from "./connection.ts";
+import type { openMeshtasticRadio } from "@atlas/meshtastic-fieldlink/radio";
 export async function startApp(
   config: Config,
-  options: { clock?: Clock; fetch?: typeof fetch; signal?: AbortSignal } = {},
+  options: { clock?: Clock; fetch?: typeof fetch; signal?: AbortSignal; openRadio?: typeof openMeshtasticRadio } = {},
 ) {
   const clock = options.clock ?? systemClock;
   let state = initial(config, clock.now());
   const log = await createLog(config, clock.now(), clock);
   const cleanup: Array<() => unknown | Promise<unknown>> = [];
   try {
-    const client = createClient({
-      baseUrl: config.link.core_url,
-      credential: { kind: "asset", key: config.asset_key },
-      protocol: await loadPackagedProtocol(),
+    const connection = await createAssetConnection(config, {
       clock,
       fetch: options.fetch ?? globalThis.fetch,
+      openRadio: options.openRadio,
       observer: (e) => log.record(e),
     });
-    cleanup.push(() => client.close());
-    type Session = Extract<
-      Awaited<ReturnType<typeof startAsset>>,
-      { ok: true }
-    >["value"];
+    cleanup.push(() => connection.close());
+    type Session = Awaited<ReturnType<typeof connection.register>>;
     let running: Session | undefined;
     let stopped = false;
     let stopping: Promise<string> | undefined;
@@ -203,9 +197,8 @@ export async function startApp(
       dispatch({ kind: "measurements", measurements });
       running?.outbox.changed();
     });
-    const registration = startAsset(client, {
+    const registration = connection.register({
       clock,
-      description: config.description,
       heartbeatMs: config.reporting.heartbeat_s * 1000,
       settings: () => state.settings,
       current,
@@ -241,17 +234,17 @@ export async function startApp(
           now: clock.now(),
         });
       },
-    }).then(result => {
-      if (stopped && result.ok) result.value.stop();
-      return result;
+    }, assetId => {
+      const task = state.execution?.task;
+      if (task) dispatch({ kind: "cancel", id: task.task_id, now: clock.now() });
+      log.identify(assetId);
+    }).then(session => {
+      if (stopped) session.stop();
+      return session;
     });
     tick();
     if (options.signal?.aborted) abort();
-    const result = await Promise.race([registration, startupStopped.promise]);
-    if (!result.ok) {
-      throw new Error(result.explanation);
-    }
-    running = result.value;
+    running = await Promise.race([registration, startupStopped.promise]);
     log.identify(running.asset_id);
     if (stopped) {
       running.stop();
@@ -276,7 +269,7 @@ export async function startApp(
         process.stderr.write(`Asset session failed: ${explanation}\n`);
       },
     );
-    running.link.onContact((contact) => dispatch({ kind: "contact", contact }));
+    const unsubscribe = running.link.onContact((contact) => dispatch({ kind: "contact", contact }));
     function tick() {
       if (stopped) return;
       try {
@@ -304,6 +297,7 @@ export async function startApp(
       if (stopping) return stopping;
       stopped = true;
       options.signal?.removeEventListener("abort", abort);
+      unsubscribe();
       timer?.cancel();
       const equipmentStopped = vehicle.stop();
       stopping = (async () => {
@@ -319,7 +313,8 @@ export async function startApp(
           deadline?.cancel();
         }
         running?.stop();
-        client.close();
+        try { await connection.close(); }
+        catch (failure) { log.record({ kind: "cleanup_failed", explanation: String(failure) }); }
         await sessionFinished;
         await equipmentStopped;
         await uploads;
@@ -327,11 +322,12 @@ export async function startApp(
       })();
       return stopping;
     }
-    return {
-      asset_id: running.asset_id,
-      stop,
-      done: running.done,
-    };
+    if (config.asset_key === undefined) {
+      void sessionFinished.then(() => {
+        if (!stopped) void stop("Fieldlink ended").catch(error => process.stderr.write(`${error}\n`));
+      });
+    }
+    return { get asset_id() { return running?.asset_id ?? "unregistered"; }, stop, done: running.done };
   } catch (error) {
     for (const close of cleanup.reverse()) {
       try { await close(); }

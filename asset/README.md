@@ -32,9 +32,10 @@ Use Node 24. From the repository root, run `npm run setup -- asset`
 ([workspace commands](../README.md#start-here)).
 From `asset/`, inspect a configuration with
 `node src/main.ts inspect examples/copter.json`, then start it with
-`node src/main.ts run <config.json>`. Provision its key in Core first.
-The copter equipment connection is MAVLink 2 over TCP. A radio connection
-requires an external serial-to-TCP transport and has not been checked.
+`node src/main.ts run <config.json>`. For IP, provision its key in Core first.
+For Meshtastic, use the [Asset configuration](config.md#options) and set up the
+[Meshtastic Fieldlink](../fieldlink/meshtastic/README.md). The copter equipment
+connection remains MAVLink 2 over TCP.
 
 The initial runtime executes Takeoff, Move To, Guided Hold, pause/resume, and
 Land at a resolved position, and Return to the Atlas home. Equipment commands supersede earlier operations and report
@@ -58,13 +59,12 @@ not changes to the behavior specified in the linked pages:
 
 - The Linux service unit passes systemd validation. Installation, boot behavior,
   and service startup and shutdown on a Raspberry Pi have not been verified.
-- The Asset's Fieldlink link is not built. The app connects to Core only over IP.
 - [On-demand local diagnostics](docs/status.md#inspect-local-diagnostics-on-demand) are not built.
 - Peripheral hardware adapters have not been checked on hardware. The [peripheral interface](docs/runtime.md#reporting-only-equipment)
   accepts equipment output over local TCP. GPS acquisition uses gpsd.
 
 - Capture Task execution and per-link file-selection policy are not built.
-  Peripheral captures currently attempt upload over IP.
+  The app retains peripheral captures locally and supports uploading them over IP.
 - Gimbal control and reports, Point At execution, and lights are not built.
 - Report history is retained locally, but historical telemetry catch-up is not
   implemented as a separate delivery lane.

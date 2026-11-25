@@ -111,14 +111,16 @@ test("docs/logging.md: detail and message filters remove diagnostic content and 
   config.archive_directory = join(root, "archives");
   config.log_level = "warn";
   config.log_message_content = false;
+  const key = config.asset_key;
+  assert.ok(key);
   const log = await createLog(config, 1000);
   log.record({ kind: "quiet", level: "info", body: { text: "quiet-message" } });
-  log.record({ kind: "visible", level: "error", body: { text: "hidden-message" }, password: "sensitive", explanation: `refused ${config.asset_key}` });
+  log.record({ kind: "visible", level: "error", body: { text: "hidden-message" }, password: "sensitive", explanation: `refused ${key}` });
   const zip = unzipSync(await readFile(await log.close("A", "stopped")));
   const diagnostics = Object.entries(zip).filter(([name]) => name.startsWith("diagnostics/")).map(([, bytes]) => strFromU8(bytes)).join("");
   assert.match(diagnostics, /visible/);
   assert.doesNotMatch(diagnostics, /quiet-message|hidden-message|sensitive/);
-  for (const bytes of Object.values(zip)) assert.ok(!strFromU8(bytes).includes(config.asset_key));
+  for (const bytes of Object.values(zip)) assert.ok(!strFromU8(bytes).includes(key));
 });
 
 test("docs/logging.md: SDK gaps and shutdown diagnostic gaps are listed with intervals", async t => {

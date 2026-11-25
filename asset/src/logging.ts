@@ -114,7 +114,9 @@ export async function createLog(config: Config, start: number, clock: Clock = sy
   await writeFile(join(directory, "versions.json"), JSON.stringify({
     app: await packageVersion(new URL("../package.json", import.meta.url)),
     sdk: await packageVersion(new URL("../../sdk/package.json", import.meta.url)),
-    fieldlink: null,
+    fieldlink: config.asset_key === undefined
+      ? await packageVersion(new URL("../../fieldlink/meshtastic/package.json", import.meta.url))
+      : null,
     protocol: await packageVersion(new URL("../../protocol/package.json", import.meta.url)),
     definitions_hash: (await loadPackagedProtocol()).hash,
   }));

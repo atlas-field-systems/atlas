@@ -38,7 +38,7 @@ The command reads one JSON file, validates it, prints the effective configuratio
 with `asset_key` and URL credentials removed, and exits without opening equipment or Core. Invalid
 configuration exits with status 1 and names the affected options.
 
-The [copter example](examples/copter.json) is the implemented format. It requires
+The [copter example](examples/copter.json) uses IP. It requires
 explicit behavior values. Its values are provisional until verified in SITL.
 `description` is the Protocol registration body and lists supported capabilities.
 `equipment.kind` selects `ardupilot` with a TCP host, port, heartbeat interval in
@@ -68,8 +68,13 @@ The configured safe action is unused when no commands are listed.
 
 | Option | Purpose | Notes |
 | --- | --- | --- |
-| `asset_key` | Core credential | An admin [provisions the key](../core/docs/api.md#accounts-and-provisioning); Core assigns the Asset ID |
-| `link.core_url` | Core URL | The implemented link is IP through the SDK |
+| `asset_key` | Core credential for IP | An admin [provisions the key](../core/docs/api.md#accounts-and-provisioning) |
+| `link.core_url` | Core URL | For IP through the SDK |
+| `link.kind` | Fieldlink selection | Use `meshtastic` and omit `asset_key` and `link.core_url` |
+| `link.port` | Local Meshtastic radio serial port | Required for Meshtastic |
+| `link.python` | Python with the Meshtastic client installed | Defaults to `python3` |
+| `link.gateway` | Gateway radio's public key | Required for Meshtastic as 64 lowercase hexadecimal characters |
+| `link.discovery_channel` | Radio slot for the shared private channel | Integer from 0 through 7, default 0 |
 | `description` | Protocol registration body | Lists reports, commands, settings, cameras, and subsystems supported by this configuration |
 | `equipment` | Equipment kind and connection | Options for each kind are listed above |
 | `initial_settings` | Starting live settings | Explicit home precedes automatic home; includes the configured failsafe policy |
@@ -87,6 +92,9 @@ The configured safe action is unused when no commands are listed.
 | `log_queue_limit` | Diagnostic, evidence-write, and ordinary pre-registration report capacity | Required positive integer |
 | `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Required positive integers; starting points 64 MiB per file and 2 GiB per operation, about 17 hours at full detail (estimated from SITL runs at about 115 MB an hour); overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
 | `archive_directory` | [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) destination | Copied off by hand; the app never deletes archives |
+
+See [Meshtastic Fieldlink](../fieldlink/meshtastic/README.md) for gateway and
+radio setup. Use the same `inspect` and `run` commands for a Meshtastic Asset.
 
 ArduPilot equipment also accepts `stream_rate_hz`, an integer from 1 through
 65535 for the requested telemetry stream rate, default 5 Hz, and

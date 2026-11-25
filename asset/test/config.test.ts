@@ -78,8 +78,22 @@ test("config.md: inspection removes URL credentials", async () => {
   const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
   input.link.core_url = "https://operator:example-secret@example.com";
   const inspected = inspectConfig(parseConfig(input));
+  assert.ok("core_url" in inspected.link);
   assert.equal(new URL(inspected.link.core_url).username, "");
   assert.equal(new URL(inspected.link.core_url).password, "");
+});
+
+test("config.md: Meshtastic uses a gateway radio identity instead of a Core credential", async () => {
+  const raw = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
+  delete raw.asset_key;
+  const link = { kind: "meshtastic", port: "/dev/ttyUSB0", gateway: "ab".repeat(32) };
+  assert.deepEqual(inspectConfig(parseConfig({ ...raw, link })).link, { ...link, python: "python3", discovery_channel: 0 });
+  assert.deepEqual(inspectConfig(parseConfig({ ...raw, link: { ...link, discovery_channel: 7 } })).link, {
+    ...link, python: "python3", discovery_channel: 7,
+  });
+  assert.throws(() => parseConfig({ ...raw, asset_key: "unexpected", link }), /asset_key/);
+  assert.throws(() => parseConfig({ ...raw, link: { ...link, gateway: "!12345678" } }), /gateway/);
+  assert.throws(() => parseConfig({ ...raw, link: { ...link, discovery_channel: 8 } }), /discovery_channel/);
 });
 
 test("config.md: ArduPilot observation rates have defaults and enforce wire limits", async () => {

@@ -11,6 +11,7 @@
     "inspect": "node src/main.ts inspect"
   },
   "dependencies": {
+    "@atlas/meshtastic-fieldlink": "file:../fieldlink/meshtastic",
     "@atlas/sdk": "file:../sdk",
     "@atlas/protocol": "file:../protocol",
     "zod": "^4.0.0",

@@ -22,12 +22,8 @@ function shared<T>(
 const positive = z.number().finite().positive();
 const nonnegative = z.number().finite().nonnegative();
 const command = z.enum(Object.keys(commands).filter(isCommand));
-const schema = z
+const common = z
   .strictObject({
-    asset_key: z.string().min(1),
-    link: z.strictObject({
-      core_url: z.url(),
-    }),
     description: shared<P["requests.asset"]>("requests.asset"),
     equipment: z.discriminatedUnion("kind", [
       z.strictObject({
@@ -98,7 +94,23 @@ const schema = z
     log_file_limit_bytes: z.int().positive(),
     log_total_limit_bytes: z.int().positive(),
     archive_directory: z.string().min(1),
-  })
+  });
+const schema = z.union([
+  common.extend({
+    asset_key: z.string().min(1),
+    link: z.strictObject({ core_url: z.url() }),
+  }),
+  common.extend({
+    asset_key: z.never().optional(),
+    link: z.strictObject({
+      kind: z.literal("meshtastic"),
+      port: z.string().min(1),
+      python: z.string().min(1).default("python3"),
+      gateway: z.string().regex(/^[0-9a-f]{64}$/),
+      discovery_channel: z.int().min(0).max(7).default(0),
+    }),
+  }),
+])
   .transform((c, ctx) => {
     if (c.initial_settings === undefined &&
       (c.description.commands.length || c.description.settings?.length)) {
@@ -186,6 +198,7 @@ export async function readConfig(path: string): Promise<Config> {
   return parseConfig(JSON.parse(await readFile(path, "utf8")));
 }
 export function inspectConfig(config: Config) {
+  if (config.asset_key === undefined) return config;
   const core = new URL(config.link.core_url);
   core.username = "";
   core.password = "";
