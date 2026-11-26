@@ -11,7 +11,7 @@ This page orders the parts that follow.
 
 Atlas is designed as the complete product before the real build. That covers
 Assets, Tasks, settings, reports, history, accounts, geo features, Objects,
-Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first.
+Observations, and Plugins. Throwaway prototypes test the design first.
 
 The build then goes one part at a time, in order, and each part is built whole
 ([ADR-0003](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0003-build-each-part-whole-one-part-at-a-time.md)).
@@ -78,7 +78,7 @@ found.
 4. **Simulation tools and the full simulation.** The existing harness runs
    Core, SDK, and Asset IP scenarios. Radio simulation and tools for writing
    the full operation remain planned. That operation has Assets take off and
-   make Observations, other Assets tasked onto them, Fusion making Tracks,
+   make Observations, other Assets tasked onto them,
    a radio link failing, and hardware faults.
 5. **The Command Interface.** Planned; no application code yet.
 6. **First flight in the field** ([First flight](first-flight.md)). Planned.

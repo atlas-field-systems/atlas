@@ -25,7 +25,7 @@ A ground-control station such as QGroundControl is made for one drone. A radio
 plugs into a laptop, the laptop shows the drone, and the operator tells the
 drone to fly here and then there. The station does not give the drone richer
 work, and it does not bring back the data the owner wants: Observations,
-Tracks, places, and a picture fused from several Assets.
+places, and one shared picture from several Assets.
 
 ## What Atlas does
 
@@ -86,7 +86,6 @@ That full simulation covers a whole operation and its failures:
 
 - Assets take off and make Observations.
 - Other Assets are tasked onto those Observations.
-- Fusion makes Tracks, and other Assets are tasked onto those Tracks.
 - A radio link fails, and an Asset flies out of range.
 - Hardware faults.
 

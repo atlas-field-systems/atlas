@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by Core ADR-0004
 date: 2026-11-11
 ---
 

@@ -9,6 +9,6 @@ Core holds every Atlas file as an Object, including photos and clips. An Asset s
 
 Operators get files only through Core and cannot ask an Asset directly for an earlier file. To show a file at a place on the map, the Asset creates and links a geo feature explicitly.
 
-Why: not recorded.
+Why: there is one place to look and one kind of file, and the Asset chooses when a file fits on the link, because a pull from the operator would compete with commands and fails once the Asset is offline.
 
 Rules: [Objects](../../core/docs/api.md#objects), [Capture files](../../asset/docs/README.md#capture-files)

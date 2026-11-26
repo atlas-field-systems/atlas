@@ -16,9 +16,9 @@ response is the safe action its maker chose, used when an operator
 **Every flying Asset needs a critical battery rule.** A flying Asset is one
 that lists `takeoff` among its commands. Its policy must hold at least one rule
 with a [critical battery condition](#an-override-with-hold-or-pause-re-arms-protection),
-usually from its configuration. Core refuses Tasks to a flying Asset whose
+usually from its configuration. Core refuses ordinary Tasks to a flying Asset whose
 reported policy has none, and refuses a settings change that would replace its
-policy with one that has none
+policy with one that has none, while still admitting the Fail-safe command
 ([operator requests](../../core/docs/api.md#operator-requests)).
 
 The rules form the Asset's failsafe policy: one setting, `failsafe_policy`, with
@@ -321,8 +321,10 @@ as a failsafe Task. An Asset already in failsafe state refuses it like any
 other Task.
 
 An Asset that has failsafes lists `failsafe` among its commands. Like every
-command, it reaches only an Asset that is online: Core refuses it for an offline
-Asset ([operator requests](../../core/docs/api.md#operator-requests)). A vehicle
+command, it reaches only an Asset that is online and able to take commands: Core
+refuses it for an offline Asset ([operator requests](../../core/docs/api.md#operator-requests)),
+and admits it for an online Asset that declares it even with no critical battery
+rule ([Asset ADR-0004](adr/0004-operators-fire-the-failsafe-instead-of-offline-exemptions.md)). A vehicle
 out of contact relies on its own contact-loss rules and on the
 [flight controller's protections](#independent-flight-controller-protections).
 

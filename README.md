@@ -76,7 +76,7 @@ current requirements.
   step.
 - Storage uses SQLite.
 - Today every part runs as Node from this repository. Docker is planned near
-  the end: Core and Fusion in one container running one process, and each
+  the end: Core in one container running one process, and each
   Plugin in its own container if it needs one. Gateways run on their own
   computers.
 

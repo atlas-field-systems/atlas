@@ -129,7 +129,7 @@ Fix the real hole. Adding a new concept, field, or mechanism to paper over a bug
 a design problem. Prefer deleting the wrong thing over layering a new one.
 
 Name important domain distinctions early so first flight does not conflate them
-(for example Observation versus Track). Keep untested shapes provisional until a
+(for example own telemetry versus an Observation, or Pause versus Hold). Keep untested shapes provisional until a
 concrete story, consumer, or prototype establishes what the contract needs. Commit
 an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first

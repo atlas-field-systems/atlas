@@ -45,17 +45,16 @@ panel. Selecting an item in the list or on the map shows it in the panel and
 keeps its map context visible.
 
 The map draws the [shared picture](../../core/docs/api.md#entities): Assets,
-Tracks, and places (geo features).
+Observations, and places (geo features).
 
-- **Tracks are the main picture.** Selecting a Track shows the sightings
-  (Observations) behind it. The operator can also switch on every sighting.
+- **Observations show what Assets see.** Each Observation is an Asset's latest
+  report of a target. Operators cannot move, rename, or delete an Observation;
+  an operator who wants to hide one hides it in their own view.
 - **A target known only by direction** shows as a line from the sensor that saw
-  it, drawn from its sightings.
-- **Every Track and sighting shows its age.** Core never marks them stale, and
-  they stay in the picture until the next Reset. The operator can hide old ones as
-  a view filter.
-- **Operators cannot move, rename, or delete a Track.** Only Fusion changes
-  Tracks. An operator who disagrees with one hides it in their own view.
+  it.
+- **Every Observation shows its age.** Core never marks Observations stale, and
+  they stay in the picture until the next Reset. The operator can hide old ones
+  as a view filter.
 - **Any operator or admin can create, change, or delete any place**, including
   places a Plugin made. A place is a point, line, area, or imagery, with an
   optional name; imagery can only be renamed
@@ -63,7 +62,7 @@ Tracks, and places (geo features).
 
 ### Hide items in your own view
 
-Hiding a Track and hiding old Tracks and sightings are view filters. A view
+Hiding an Observation and hiding old Observations are view filters. A view
 filter belongs to one browser and ends at [Reset](#links-and-choices-end-at-reset):
 it survives a refresh and carries into new tabs, but it does not follow the
 operator to another computer, and other operators never see it. The map and list always show how many items are hidden, with a
@@ -71,7 +70,7 @@ operator to another computer, and other operators never see it. The map and list
 
 ### Every item has its own page
 
-Every Asset, Track, sighting, place, Object, and [Plugin call](plugins-and-objects.md#run-a-plugin)
+Every Asset, Observation, place, Object, and [Plugin call](plugins-and-objects.md#run-a-plugin)
 has its own address. Operators can share or bookmark it, refresh it, or open it
 in another tab. The address opens `/map` with that item selected, its details in
 the panel, and the map around it.
@@ -79,8 +78,7 @@ the panel, and the map around it.
 | Page | Shows |
 | --- | --- |
 | Asset | Its Tasks, conditions, and history, as [below](#read-tasks-conditions-and-history). |
-| Track | What Fusion concluded, its position or direction, its age, the sightings it rests on with the Asset and age of each, and its past path. A **Hide** button adds it to the view filter. Nothing on the page changes the Track. |
-| Sighting | The Asset that reported it, what it reports, its age, the Track that uses it, and its earlier reports from history. |
+| Observation | The Asset that reported it, what it reports, its position or direction, its age, and its earlier reports from history. A **Hide** button adds it to the view filter. Nothing on the page changes the Observation. |
 | Place | Its shape and name, who made it, and the Plugin call that made it if a Plugin did. The unfinished Tasks that name it, its attached Objects, edit and delete, and the Plugin actions that take a place. |
 | Imagery | Its name, the GeoTIFF it shows with a link to that Object's page, who added it, rename, and delete. |
 | Object | See [Objects](plugins-and-objects.md#objects). |
@@ -88,8 +86,8 @@ the panel, and the map around it.
 
 A page for something that is gone since the last Reset says what happened. It shows
 when the item went and who removed it, shows the item as it last stood, and
-offers to open it in history. A Track Fusion removed and a deleted place come
-from [Track and geo feature history](../../core/docs/api.md#reads). A page never
+offers to open it in history. A deleted place comes from
+[geo feature history](../../core/docs/api.md#reads). A page never
 just says "not found".
 
 ### Links and choices end at Reset
@@ -204,11 +202,13 @@ cancels every Task sent before it, so the confirmation lists the Tasks it will c
 
 If a request's response is lost, the interface retries it with the same
 idempotency key, so it [never takes effect twice](../../core/docs/api.md#basics).
-Commands to an offline Asset are refused, and the interface shows Core's
-explanation. A request that Core
+Commands to an offline Asset, or to an Asset on IP that cannot take commands,
+are refused, and the interface shows Core's explanation. A request that Core
 [dropped when the Asset went offline](../../core/docs/api.md#operator-requests)
-shows as not done, and the operator sends again whatever still matters. The
-Asset never runs a dropped Task; its later reports show anything else it did
+shows as outcome unknown, because it may have run before contact ended, and the
+operator sends again whatever still matters
+([ADR-0024](../../docs/adr/0024-dropped-work-shows-outcome-unknown-never-resumed-or-reconciled.md)). The
+Asset never runs a dropped Task after it returns; its later reports show anything else it did
 before contact ended.
 
 ### Area and place inputs
@@ -230,8 +230,11 @@ Any operator may edit or delete a place that unfinished Tasks name. The change
 always goes through. When the operator saves an edit, the interface lists those
 Tasks and asks whether to update them to the new shape. Only if the operator
 says yes does Core send the updated Tasks; otherwise they keep the place as it
-was when sent. The interface then shows which Tasks Core updated and which it
-could not, such as those of an offline Asset. Deleting a place asks nothing and
+was when sent. Each updated Task keeps showing the old point until the Asset
+accepts the update, and says so if the update fails or is dropped
+([Core ADR-0004](../../core/docs/adr/0004-a-task-copies-its-place-and-keeps-showing-it-until-accepted.md)).
+The interface also shows which Tasks Core could not send updates to, such as
+those of an offline Asset. Deleting a place asks nothing and
 changes no Task already sent. A changed or deleted place cancels nothing by
 itself.
 
@@ -277,7 +280,9 @@ state.
 
 Show the Core connection, the Asset's contact as Core sees it, and its latest
 telemetry, battery, settings, and failsafe reports separately, each with its
-age. Receipt time proves neither fresh measurements nor two-way contact, and
+age. When an Asset on IP still sends reports but its command stream is down,
+show that it cannot take commands, and refuse new work like for an offline Asset
+([Contact](../../core/docs/api.md#contact)). Receipt time proves neither fresh measurements nor two-way contact, and
 connection does not mean equipment is ready; do not invent an overall verdict.
 When Core [refused an Asset, gateway, or radio](../../core/docs/api.md#basics) for
 different Protocol definitions, show that refusal, so a missing Asset has a
@@ -292,8 +297,8 @@ and why, its response and its outcome, and whether a critical rule fell back to 
 say so rather than naming an Atlas rule, and offer no commands until a person
 [hands control back](../../asset/docs/failsafes.md#while-the-flight-controller-is-in-control). Show the Asset's failsafe rules where
 an operator can read and replace them outside a failsafe. A flying Asset with
-no critical battery rule says so, because Core refuses its Tasks until it has
-one.
+no critical battery rule says so, because Core refuses its ordinary Tasks until
+it has one (the Fail-safe command is still allowed).
 
 Show each declared [subsystem](../../asset/docs/status.md) with its last reported
 condition, explanation, and age. A subsystem that has not reported is shown as
@@ -301,8 +306,7 @@ unreported, not healthy. Do not combine them into an overall condition.
 
 History is [paged](../../core/docs/api.md#reads) and fetched on demand. Movement
 history supports selectable time windows, playback, and scrubbing, starting with
-one selected Asset's or Track's trail and a few controls. A Track's past path
-replays the same way as an Asset's trail. Its latest position stays
+one selected Asset's trail and a few controls. Its latest position stays
 distinct from historical positions. Playback uses recorded sample times and
 shows gaps rather than inventing samples. Places show as they stood at the
 playback time, so a place deleted later still shows before its deletion, and a

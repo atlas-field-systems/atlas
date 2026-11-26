@@ -17,8 +17,7 @@ import { value } from "../src/world.ts";
 scenario({
   name: "admission uses latest reported queue and admits now at capacity",
   checks: [
-    "core/docs/requests.md#scenario-paused-work-at-capacity",
-    "core/docs/requests.md#scenario-now-at-capacity",
+    "core/docs/requests.md#request-admission",
   ],
   async run(w) {
     const asset = await pausedAsset(w);
@@ -84,7 +83,7 @@ scenario({
 
 scenario({
   name: "in-flight requests can overfill but the Asset holds at most 64",
-  checks: ["core/docs/requests.md#scenario-paused-work-at-capacity"],
+  checks: ["core/docs/requests.md#request-admission"],
   async run(w) {
     const asset = await pausedAsset(w);
     const asset_id = asset.asset_id;

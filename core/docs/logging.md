@@ -25,11 +25,11 @@ shared domain records.
 - Business decisions with their reasons: accept or refuse a request, assign a
   `task_id`, build a queue, store a report, or keep an older report as history.
 - The distinction between request acceptance and an observed Asset result.
-- Storage operations, Fusion and Plugin activity when present, errors, and
+- Storage operations, Plugin activity when present, errors, and
   diagnostic records that could not be written.
 
 Contact diagnostics include initial registration and every gateway and Plugin transition.
-Track changes and drop decisions identify their event and subject; completed file downloads identify the Object and route.
+Drop decisions identify their event and subject; completed file downloads identify the Object and route.
 
 Preserve Core's local arrival and send order independently of record times.
 Correlate records with `event_id`, `task_id`, and `asset_id`; do not add

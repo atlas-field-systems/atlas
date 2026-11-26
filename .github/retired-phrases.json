@@ -98,8 +98,8 @@
   {
     "phrase": "\\bcore (marks|flags) (\\w+ ){0,3}stale\\b",
     "unless": "\\b(never|not|no)\\b",
-    "why": "Old Observations and Tracks stay for the whole run; Core adds no stale flag.",
-    "example": "Core marks old Tracks stale."
+    "why": "Old Observations stay until the next Reset; Core adds no stale flag.",
+    "example": "Core marks old Observations stale."
   },
   {
     "phrase": "\\b(editing|deleting|deletes?|edits?|changes?) (a |the )?place\\b[^.]*\\bcancels? (the |its |every )?tasks?\\b|\\bcore (refuses|blocks) (an? |the )?(edit|change|delet)\\w* (of )?(a |the )?place",
@@ -294,12 +294,12 @@
   {
     "phrase": "\\b(reserves?|reserving) (capacity|places?)\\b|\\bstill crossing the link\\b[^.]*\\b(counts?|outstanding)\\b|\\bplaces? free when\\b",
     "unless": "\\b(not|never|no)\\b",
-    "why": "Core decides the 64-Task cap from the Asset's latest queue report; it keeps no capacity bookkeeping.",
+    "why": "Core has no Task queue cap and keeps no capacity bookkeeping (ADR-0023).",
     "example": "Core reserves capacity for the whole request; the places free when the final reports are stored."
   },
   {
     "phrase": "\\bcancels each dropped task\\b|\\breports neither holding\\b",
-    "why": "Dropped requests just show as not done; Core does not reconcile them when the Asset returns.",
+    "why": "Dropped requests show outcome unknown; Core does not reconcile them when the Asset returns (ADR-0024).",
     "example": "When the Asset returns, Core cancels each dropped Task it reports neither holding, nor running, nor ended."
   },
   {
@@ -535,5 +535,29 @@
     "phrase": "\\bsettings task\\b[^.]*\\bkeeps doing what it was doing\\b|\\bthe asset keeps doing what it was doing\\b",
     "why": "A failed settings Task clears the queue like any failed Task (Asset ADR-0005).",
     "example": "When a settings Task fails, the Task fails with the reason and the Asset keeps doing what it was doing."
+  },
+  {
+    "phrase": "\\bCore (and Fusion|runs Fusion)\\b|\\bturning Observations into Tracks\\b|\\bFusion (makes Tracks|produces Tracks|combines Observations)\\b",
+    "unless": "\\b(no|not|never|wait|drawer)\\b",
+    "why": "Fusion and Tracks wait in the drawer; Core serves Observations only (ADR-0022).",
+    "example": "Core runs Fusion, turning Observations into Tracks."
+  },
+  {
+    "phrase": "\\bTrack history\\b|\\bGET /history/tracks\\b|\\b/entities/tracks\\b",
+    "unless": "\\b(no|not|never|wait|drawer)\\b",
+    "why": "Fusion, Tracks, and Track history wait in the drawer (ADR-0022).",
+    "example": "GET /history/tracks returns Track history."
+  },
+  {
+    "phrase": "\\bqueue_full\\b|\\bat most 64 (ordinary )?tasks\\b|\\bholds 64 unstarted tasks\\b|\\bthe 64[- ]task cap\\b|\\b64[- ]task queue cap\\b",
+    "unless": "\\b(no|not|never)\\b",
+    "why": "There is no Task queue cap and no queue_full refusal (ADR-0023).",
+    "example": "Core enforces the 64-Task cap and refuses with 409 queue_full."
+  },
+  {
+    "phrase": "\\b(dropped|unanswered) (requests?|tasks?)\\b[^.]*\\bnot done\\b|\\bshows? (them |the task |it )?as not done\\b|\\bmarked not done\\b",
+    "unless": "\\b(misleading|avoid|not \"not done\")\\b",
+    "why": "A dropped Task shows outcome unknown, not \"not done\" (ADR-0024).",
+    "example": "Dropped Tasks show as not done."
   }
 ]

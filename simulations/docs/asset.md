@@ -34,8 +34,7 @@ Each checks behavior its [Asset page](../../asset/docs/README.md) owns.
   measurement time kept through reporting.
 - Tasks arriving out of order, more than once, or without the rest of their
   request, Tasks that arrive after a clear and run normally, Tasks run with
-  `now`, including `now` at the 64-Task cap, a 65th held Task reported
-  `cancelled`, dropped Tasks that never run, cancel by `task_id`,
+  `now`, dropped Tasks that never run, cancel by `task_id`,
   repeated events, and a `task_id` never running twice.
 - Task completion, failure, and the cancellation of the remaining Tasks.
 - Configured failsafes, the operator overrides allowed in failsafe state, and
@@ -53,7 +52,8 @@ Each checks behavior its [Asset page](../../asset/docs/README.md) owns.
 - The Fail-safe command: the Asset enters failsafe state and runs its rule for
   the command, or its built-in safe action with no rule that applies, and
   refuses a second Fail-safe.
-- A flying Asset with no critical battery rule: Core refuses its Tasks.
+- A flying Asset with no critical battery rule: Core refuses its ordinary Tasks,
+  while still admitting the Fail-safe command.
 - A critical battery rule: override its response, or an earlier one, with Hold
   now or pause while the battery is below the critical level, and expect the
   rule to fire again at once.

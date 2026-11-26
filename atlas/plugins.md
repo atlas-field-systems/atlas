@@ -24,8 +24,6 @@ uses its tools, often open-source services, to gather and return information.
   has the calls.
 - Operators call Plugins first. Assets will be able to call them later.
 - Plugins do not direct Assets or issue Tasks.
-- Fusion is not a Plugin. It runs inside the inner wall on every Observation.
-  Nobody calls it.
 - A feed that sends data all the time, such as an internet aircraft feed, is an
   Asset, not a Plugin.
 
@@ -54,8 +52,7 @@ An answer is made of the same three things for every action, in any mix:
 - **Short facts.** A label and a value, such as "Wind: 12 m/s from the west".
 - **References.** The Plugin creates geo features or Objects in Core, and the
   answer names them. They stay in Core, where the operator can find them later.
-  Plugins create nothing else: Observations come only from Assets, and only
-  Fusion creates Tracks.
+  Plugins create nothing else: Observations come only from Assets.
 
 An empty answer means the Plugin found nothing. A list never holds more than
 1000 items. A Plugin that would need more fails with a clear message, such as
@@ -124,11 +121,10 @@ collects GeoTIFF imagery through its tools, stores each file as an Object, and
 adds an imagery geo feature for each, so the images show on the map where they
 belong. The output refers to what it stored.
 
-### Ground elevation for an Asset (later)
+### Terrain and ground elevation
 
-An Asset sends its position and asks for the ground elevation there. The Asset
-can use that elevation to calculate its height above the ground, whether it uses
-a barometer or the altitude of its launch point.
+A terrain Plugin for Core and Assets is in the
+[drawer](https://github.com/atlas-field-systems/atlas/blob/main/docs/drawer/ground-elevation.md).
 
 ### More Plugins that fit
 
@@ -145,8 +141,7 @@ a barometer or the altitude of its launch point.
 ## Not Plugins
 
 - **A live aircraft or ship feed.** It runs all the time, so it is an Asset.
-- **Fusion.** Core runs it on every Observation.
-- **A geofence alarm.** Nobody calls it; it reacts when a Track enters an area.
+- **A geofence alarm.** Nobody calls it; it reacts when an Asset or Observation enters an area.
 - **An auto-patrol that sends Tasks to drones.** It directs Assets.
 - **A suggested flight path.** A Plugin does not return a route or positions
   meant to be turned into Tasks.

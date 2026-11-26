@@ -15,11 +15,9 @@ flowchart LR
     subgraph City[Atlas deployment]
         subgraph Inner[Inner wall]
             C[Core: API, event log, Tasks, storage]
-            F[Fusion]
         end
         P[Plugins]
     end
-    F <-->|Shared state| C
     P <-->|Plugin interface| C
     UI[Command Interface] <-->|Core API| C
     D[Direct-IP Asset] <-->|Core API| C
@@ -28,12 +26,11 @@ flowchart LR
 ```
 
 The city is laid out in rings
-([ADR-0020](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0020-atlas-is-a-walled-city.md), proposed):
+([ADR-0020](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0020-atlas-is-a-walled-city.md)):
 
-- **Inside the inner wall.** Core and Fusion run in one process. Core is built
-  from [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md)
-  over shared storage and the event log. Fusion works on Core's state
-  directly, never through the public API.
+- **Inside the inner wall.** Core runs in one process, built from
+  [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md)
+  over shared storage and the event log.
 - **The second ring.** Each Plugin is its own program. It connects out to Core
   with its own key and reaches Core only through the Plugin interface, never
   its storage. Core never calls a Plugin and never runs one in its own process.
@@ -64,7 +61,6 @@ though it is not aboard it.
 | [Protocol](https://github.com/atlas-field-systems/atlas/blob/main/protocol/README.md) | The shared records and their one validator |
 | [SDK](https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md) | The client for the Core API |
 | Core | The shared picture, the event log, its [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md), and the Core API |
-| Fusion | Combining evidence into the shared picture, inside Core |
 | [Plugins](plugins.md) | Actions that gather and publish information |
 | [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md) | Uplinking to the Core API and running Fieldlinks |
 | Fieldlink | Carrying Atlas across one kind of field link |
@@ -108,9 +104,8 @@ not send the old position as a new fix.
 ### Observe an aircraft
 
 An ADS-B receiver is an Asset. It reports Observations about a passing aircraft.
-Atlas uses those Observations as evidence to maintain a shared Track of the
-aircraft for the operator to follow. The operator does not need to control that
-aircraft to observe it through Atlas.
+Core keeps those Observations in the shared picture for the operator to watch.
+The operator does not need to control that aircraft to observe it through Atlas.
 
 ### Research a place
 
