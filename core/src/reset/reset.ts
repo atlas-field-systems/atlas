@@ -360,10 +360,10 @@ export function writeSummary(
       ),
     ) : undefined;
     const outcome = late
-      ? `dropped; later reported ${JSON.parse(late.record).task_state}`
+      ? `outcome unknown; later reported ${JSON.parse(late.record).task_state}`
       : ["completed", "failed", "cancelled"].includes(task.state)
         ? task.state
-        : `${task.state}; no reported outcome`;
+        : task.state === "dropped" ? "outcome unknown" : `${task.state}; no reported outcome`;
     lines.push(`Asset ${task.asset_id} Task ${task.task_id}: ${outcome} (${task.state_time}).`);
   }
   const calls = store.read((tx) =>

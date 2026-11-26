@@ -22,7 +22,7 @@ import { startCore } from "../src/core.ts";
 import { readZip } from "../src/reset/zip.ts";
 import { checkZip } from "../src/reset/reset.ts";
 import { clock, stopCore } from "./harness.ts";
-import { startHarness, password, protocol } from "./harness.ts";
+import { openCommandStream, startHarness, password, protocol } from "./harness.ts";
 
 test("1. issuance retry acknowledges; replacement rejects old keys [api.md#credential-retry-scenarios]", async () => {
   const h = await startHarness();
@@ -291,6 +291,7 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
       commands: ["hold"],
     };
     const asset = await request("/entities/assets", description, assetKey.key);
+    await openCommandStream(running.url, assetKey.key);
     const sent = await request(`/tasks/${asset.asset_id}`, {
       tasks: [{ kind: "hold" }],
     });
@@ -363,6 +364,7 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
       })
     ).json();
     assert.equal(retained.items[0].state, "sent");
+    await openCommandStream(running.url, assetKey.key);
     const nextTask = await request(`/tasks/${asset.asset_id}`, {
       tasks: [{ kind: "hold" }],
     });
@@ -730,16 +732,17 @@ test("Reset shows a late reported outcome beside a dropped Task [reset.md#cores-
     const key = await h.call("POST", "/administration/asset-keys", { cookie: h.admin });
     const registered = await h.call("POST", "/entities/assets", { key: key.body.key, body: { reports: ["status"], commands: ["hold"] } });
     const id = registered.body.asset_id;
+    await openCommandStream(h.core.url, key.body.key);
     assert.equal((await h.call("POST", `/tasks/${id}`, { cookie: h.admin, body: { tasks: [{ kind: "hold" }] } })).status, 202);
     clock.advance(30000);
     assert.equal((await h.call("POST", `/entities/assets/${id}/reports`, { key: key.body.key, body: { reports: [{ type: "report.status", kind: "task", time: clock.now(), asset_id: id, task_id: 1, task_state: "completed" }] } })).status, 200);
-    assert.equal((await h.call("GET", `/tasks/${id}`, { cookie: h.admin })).body.items[0].state, "dropped");
+    assert.equal((await h.call("GET", `/tasks/${id}`, { cookie: h.admin })).body.items[0].state, "outcome_unknown");
     const stopped = await h.stop();
     assert.ok(stopped.archived);
     const summary = (await readZip(stopped.zip)).find((e) => e.name === "summary.md")!;
     const chunks: Buffer[] = [];
     for await (const chunk of summary.open()) chunks.push(chunk);
-    assert.match(Buffer.concat(chunks).toString(), /Task 1: dropped; later reported completed/);
+    assert.match(Buffer.concat(chunks).toString(), /Task 1: outcome unknown; later reported completed/);
   } finally {
     await h.close();
   }

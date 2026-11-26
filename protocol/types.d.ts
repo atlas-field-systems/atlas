@@ -9,10 +9,12 @@ export type RecordsContact = {} & {
   asset_id?: VariablesAssetId;
   gateway_id?: VariablesGatewayId;
   plugin_id?: VariablesPluginId;
+  command_stream_open?: VariablesCommandStreamOpen;
   contact: VariablesContact;
 };
 export type VariablesGatewayId = string;
 export type VariablesPluginId = string;
+export type VariablesCommandStreamOpen = boolean;
 export type VariablesContact = "online" | "offline";
 export type VariablesObjectId = string;
 export type VariablesEntityType =
@@ -273,7 +275,7 @@ export type RequestsTask1 =
 export type RequestsTasks = {
   /**
    * @minItems 1
-   * @maxItems 64
+   * @maxItems 9999
    */
   tasks: RequestsTask[];
   now?: VariablesNow;
@@ -694,7 +696,7 @@ export interface RecordsReportStatusSubsystem {
 export interface RecordsReportStatusQueue {
   kind: "queue";
   /**
-   * @maxItems 64
+   * @maxItems 9999
    */
   task_ids: VariablesTaskId[];
   request_id?: VariablesRequestId;

@@ -25,7 +25,7 @@ scenario({
     const tasks = value(
       await w.complete(w.admin.call("tasks", { params: { asset_id } })),
     );
-    assert.equal(tasks.items[0].state, "dropped");
+    assert.equal(tasks.items[0].state, "outcome_unknown");
     const sent = value(
       await w.complete(
         w.admin.call("sendTasks", {

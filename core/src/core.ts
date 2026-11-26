@@ -40,6 +40,7 @@ export type StopResult =
   | { archived: false; explanation: string }; // reset.md#when-the-zip-fails: nothing cleared
 
 export interface Env {
+  readonly commandStreams: Map<string, number>;
   readonly protocol: Protocol; // loadPackagedProtocol(), loaded once
   readonly config: CoreConfig;
   readonly paths: Paths;
@@ -102,6 +103,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     totalLimit: config.log_total_limit_bytes,
   });
   const env: Env = {
+    commandStreams: new Map(),
     protocol,
     config,
     paths,

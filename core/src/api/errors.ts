@@ -7,7 +7,6 @@ export const REFUSALS = {
   definitions_mismatch: 409, // api.md
   invalid_link_loss: 409,
   no_critical_battery_rule: 409, // api.md
-  queue_full: 409, // api.md
   asset_offline: 409,
   plugin_offline: 409,
   not_supported: 409, // command, setting, camera, or Plugin action not in the description

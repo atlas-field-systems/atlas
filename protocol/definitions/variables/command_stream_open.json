@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/command_stream_open.json",
+  "title": "command_stream_open",
+  "description": "Whether Core has an open command event stream to this IP Asset.",
+  "type": "boolean",
+  "examples": [
+    true
+  ]
+}

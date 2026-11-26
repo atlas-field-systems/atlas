@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/tasks.json",
   "title": "Tasks request",
-  "description": "The body of POST /tasks/{asset_id}: one or more Tasks in the order they run, up to Core's 64-Task cap. With now, it holds exactly one Task, which runs at once. A failsafe Task is always sent this way. Core stamps the record fields and accepts or refuses the request whole.",
+  "description": "The body of POST /tasks/{asset_id}: one or more Tasks in the order they run. With now, it holds exactly one Task, which runs at once. A failsafe Task is always sent this way. Core stamps the record fields and accepts or refuses the request whole.",
   "type": "object",
   "required": [
     "tasks"
@@ -70,7 +70,7 @@
         "$ref": "task.json"
       },
       "minItems": 1,
-      "maxItems": 64
+      "maxItems": 9999
     },
     "now": {
       "$ref": "../variables/now.json"

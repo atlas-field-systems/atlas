@@ -48,6 +48,7 @@ export function createLivePicture(
     tracks = new Map<string, P["track"]>(),
     geofeatures = new Map<string, P["geofeature"]>();
   const tasks = new Map<string, Map<number, TaskView>>(),
+    held = new Map<string, number[]>(),
     marks = new Map<string, number>(),
     latest = new Map<string, [number, number]>();
   const listeners = new Set<() => void>();
@@ -68,6 +69,7 @@ export function createLivePicture(
     tracks.clear();
     geofeatures.clear();
     tasks.clear();
+    held.clear();
     marks.clear();
     latest.clear();
     notify();
@@ -112,6 +114,9 @@ export function createLivePicture(
         retry(current, t);
         return;
       }
+      held.set(a.asset_id, t.value.held);
+      if (t.value.held_time != null)
+        latest.set(`queue:${a.asset_id}`, [t.value.held_time, t.value.as_of]);
       marks.set(a.asset_id, t.value.as_of);
       after.push(t.value.as_of);
       tasks.set(
@@ -174,6 +179,7 @@ export function createLivePicture(
         case "asset.removed":
           assets.delete(e.record.asset_id);
           tasks.delete(e.record.asset_id);
+          held.delete(e.record.asset_id);
           break;
         case "asset.described":
           void load();
@@ -274,6 +280,7 @@ export function createLivePicture(
         }
         const old = part.get(task.task_id);
         part.set(task.task_id, {
+          ...old,
           task,
           state: old?.state ?? "sent",
           state_time: old?.state_time ?? task.time,
@@ -284,6 +291,8 @@ export function createLivePicture(
       e.record.kind === "queue" &&
       e.event_id > (marks.get(e.record.asset_id) ?? 0)
     ) {
+      if (belongs && !e.clock_ahead && newer(`queue:${e.record.asset_id}`, e.record.time, e.event_id))
+        held.set(e.record.asset_id, e.record.task_ids);
       for (const id of e.record.task_ids) {
         const task = tasks.get(e.record.asset_id)?.get(id);
         if (task?.state === "sent")
@@ -302,7 +311,7 @@ export function createLivePicture(
         completed: 3,
         failed: 3,
         cancelled: 3,
-        dropped: 3,
+        outcome_unknown: 3,
       };
       if (
         task &&
@@ -312,6 +321,7 @@ export function createLivePicture(
         Object.assign(task, {
           state: e.record.task_state,
           state_time: e.record.time,
+          explanation: e.record.explanation,
           object_ids:
             e.record.task_state === "completed"
               ? e.record.object_ids
@@ -324,7 +334,7 @@ export function createLivePicture(
     ) {
       const task = tasks.get(e.record.asset_id!)?.get(e.record.task_id);
       if (task)
-        Object.assign(task, { state: "dropped", state_time: e.record.time });
+        Object.assign(task, { state: "outcome_unknown", state_time: e.record.time });
     }
     notify();
   }
@@ -350,7 +360,7 @@ export function createLivePicture(
     observations: () => view([...observations.values()]),
     tracks: () => view([...tracks.values()]),
     geofeatures: () => view([...geofeatures.values()]),
-    tasks: (id: string) => view([...(tasks.get(id)?.values() ?? [])]),
+    tasks: (id: string) => ({ ...view([...(tasks.get(id)?.values() ?? [])]), held: [...(held.get(id) ?? [])] }),
     onChange(cb: () => void) {
       listeners.add(cb);
       return () => {

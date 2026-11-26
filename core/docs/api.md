@@ -303,8 +303,9 @@ contains `asset_id`, `gateway_id` (or null), `description` (or null), `contact`,
 `settings` (latest report per setting), `subsystems` (latest condition per declared
 subsystem), and `gimbals` (latest report per declared gimbal `camera_id`).
 `GET /entities/assets/{asset_id}` returns `{as_of, item}` with the same entry.
-`GET /tasks/{asset_id}` returns `{as_of, items, held}`. Each Task entry has `task`,
-`state`, `state_time`, and optional `object_ids`. `held` is the latest reported
+`GET /tasks/{asset_id}` returns `{as_of, items, held, held_time}`. Each Task entry has `task`,
+`state`, `state_time`, and optional `explanation` and `object_ids`. A dropped Task has state
+`outcome_unknown`. `held_time` is the queue report time, or null before the first report. `held` is the latest reported
 list of Task IDs since the Asset app last signed up; signing up again clears
 the earlier queue.
 
@@ -346,8 +347,7 @@ starts in this order, and on reconnect repeats it from step 3:
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
    one, the report of its active Task, and any final Task reports Core has not
    yet acknowledged.
-4. Open `/events?after=<as_of from registration>` on start, so work accepted
-   during startup is delivered. On reconnect, use the last handled `event_id`.
+4. Open `/events?after=<as_of from registration>` on start. On reconnect, use the last handled `event_id`.
 
 - `POST /entities/assets/{asset_id}/reports` takes `requests.reports` in batches of up to 1000 reports. An empty batch is accepted for contact. A `200`
   stores and acknowledges the whole batch. The Asset resends a batch with the same
@@ -447,7 +447,7 @@ keep the last-heard time.
 - **Command stream down on IP.** An Asset on IP whose reports still arrive
   within `offline_after_s` but whose command event stream is down is shown as
   unable to take commands, and Core refuses new work for it as it does for an
-  offline Asset.
+  offline Asset. Its contact record includes `command_stream_open`.
 - **A gateway's contact.** A gateway is online while Core has heard from it
   within `offline_after_s`. Every request it makes with its key counts, but an
   open event stream does not; with nothing else to send, it calls `GET /about`
@@ -806,9 +806,6 @@ marked not finished, and an operator who still wants it calls again.
 These recent decisions are not yet implemented in the built Core, Protocol, and SDK code:
 
 - The built code still contains placeholder Fusion, Track records, Track endpoints, and Track events until #130.
-- Dropped Tasks still use the old state instead of outcome unknown until #119.
-- Core and the SDK queue still enforce the old queue limit until #120.
-- An Asset on IP whose command stream is down while reports arrive still shows online and accepts work until #121.
 - A place edit with `update_tasks=true` still changes Core's shown Task point before the Asset accepts it until #131.
 - The SDK outbox does not yet separate deadline priority tiers or mark Task-started reports and contact-proof heartbeats `must_arrive` until #155.
 - Core, Protocol, and the SDK still link Task files through `object_ids` on the completed Task report instead of `task_id` on `POST /objects` until #160.

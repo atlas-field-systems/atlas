@@ -132,6 +132,7 @@ export function startContact(
       schedule();
     },
     resume() {
+      store.write(entities.forgetCommandStreams);
       const subjects = store.read((tx) => {
         const ids = admin.onlineGatewaysAndPlugins(tx);
         return [

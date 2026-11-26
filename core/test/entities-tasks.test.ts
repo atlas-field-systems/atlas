@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { startHarness, protocol, simulatedClock } from "./harness.ts";
+import { openCommandStream, startHarness, protocol, simulatedClock } from "./harness.ts";
 type Harness = Awaited<ReturnType<typeof startHarness>>;
 const description = {
   reports: ["status", "settings", "telemetry", "observation"],
@@ -16,6 +16,7 @@ async function asset(h: Harness, body: unknown = description) {
     body,
   });
   assert.equal(registered.status, 201, JSON.stringify(registered.body));
+  await openCommandStream(h.core.url, issued.body.key);
   return {
     id: registered.body.asset_id as string,
     key: issued.body.key as string,
@@ -47,42 +48,12 @@ const queue = (a: string, time: number, n: number, request_id?: number) => ({
   ...(request_id ? { request_id } : {}),
 });
 
-test("4. paused work counts reported holdings, refusals consume no IDs [requests.md#scenario-paused-work-at-capacity]", async () => {
-  const c = simulatedClock(),
-    h = await startHarness(c);
-  try {
-    const a = await asset(h);
-    await report(h, a, [
-      {
-        type: "report.settings",
-        time: c.now(),
-        asset_id: a.id,
-        settings: { run_state: "paused" },
-      },
-      queue(a.id, c.now(), 63),
-    ]);
-    assert.deepEqual((await task(h, a.id)).body.task_ids, [1]);
-    await report(h, a, [queue(a.id, c.now(), 64)]);
-    assert.equal((await task(h, a.id)).body.error, "queue_full");
-    assert.equal(
-      (await h.call("POST", `/tasks/${a.id}/1/cancel`, { cookie: h.admin }))
-        .status,
-      202,
-    );
-    await report(h, a, [queue(a.id, c.now(), 63)]);
-    assert.deepEqual((await task(h, a.id)).body.task_ids, [2]);
-    assert.deepEqual((await task(h, a.id)).body.task_ids, [3]);
-  } finally {
-    await h.close();
-  }
-});
-test("5. now bypasses capacity; failsafe must be alone and now [requests.md#scenario-now-at-capacity, api.md#operator-requests]", async () => {
+test("5. failsafe must be alone and now [api.md#operator-requests]", async () => {
   const c = simulatedClock(),
     h = await startHarness(c);
   try {
     const a = await asset(h);
     await report(h, a, [queue(a.id, c.now(), 64)]);
-    assert.equal((await task(h, a.id)).body.error, "queue_full");
     assert.equal(
       (await task(h, a.id, { tasks: [{ kind: "land" }], now: true })).status,
       202,
@@ -227,7 +198,7 @@ test("7. numbering, send_last, forward states and app restart drops [api.md#oper
     assert.equal(restart.body.asset_id, a.id);
     assert.equal(restart.body.last_task_id, 2);
     read = await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin });
-    assert.equal(read.body.items[1].state, "dropped");
+    assert.equal(read.body.items[1].state, "outcome_unknown");
     assert.deepEqual((await task(h, a.id)).body.task_ids, [3]);
     assert.equal(
       (await h.call("POST", `/tasks/${a.id}/1/cancel`, { cookie: h.admin }))
@@ -257,7 +228,7 @@ test("8. offline drops are durable evidence and keyed stream skips dropped reque
     assert.equal(
       (await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin })).body.items[0]
         .state,
-      "dropped",
+      "outcome_unknown",
     );
     const controller = new AbortController();
     const response = await fetch(
@@ -562,7 +533,6 @@ test("restart forgets held Tasks before admitting new work [api.md#reads, reset-
     });
     assert.equal(accepted.status, 202);
     await report(h, a, [queue(a.id, c.now(), 64, accepted.body.event_id)]);
-    assert.equal((await task(h, a.id)).body.error, "queue_full");
     assert.equal(
       (
         await h.call("POST", "/entities/assets", {
@@ -574,7 +544,7 @@ test("restart forgets held Tasks before admitting new work [api.md#reads, reset-
     );
     const read = await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin });
     assert.equal(
-      read.body.items.filter((t: { state: string }) => t.state === "dropped")
+      read.body.items.filter((t: { state: string }) => t.state === "outcome_unknown")
         .length,
       64,
     );

@@ -430,6 +430,17 @@ scenario({
     );
     assert.deepEqual(a.session.queue!.held(), [2, 3]);
     assert.deepEqual(read.held, [2, 3]);
+    const picture = createLivePicture(w.admin);
+    w.onClose(() => picture.stop());
+    await w.until(() => picture.tasks(asset_id).ready);
+    assert.deepEqual(picture.tasks(asset_id).held, [2, 3]);
+    assert.equal(a.next()?.task_id, 2);
+    a.session.queue!.finish(2, "failed", { explanation: "Equipment unavailable" });
+    await w.until(() => picture.tasks(asset_id).items[1]?.state === "failed");
+    assert.deepEqual(picture.tasks(asset_id).held, [3]);
+    assert.equal(picture.tasks(asset_id).items[1].explanation, "Equipment unavailable");
+    const snapshot = value(await w.complete(w.admin.call("tasks", { params: { asset_id } })));
+    assert.equal(snapshot.items[1].explanation, "Equipment unavailable");
   },
 });
 scenario({
@@ -457,11 +468,11 @@ scenario({
     await w.until(() => w.network.traffic.some(t => t.path === path && t.fault?.kind === "delay"));
     w.network.cut("asset");
     await w.advance(31000);
-    assert.equal(picture.tasks(asset_id).items[0].state, "dropped");
+    assert.equal(picture.tasks(asset_id).items[0].state, "outcome_unknown");
     w.network.heal("asset");
     await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.kind === "task" && e.record.task_state === "completed"));
     await w.settle();
-    assert.equal(picture.tasks(asset_id).items[0].state, "dropped");
+    assert.equal(picture.tasks(asset_id).items[0].state, "outcome_unknown");
   },
 });
 scenario({

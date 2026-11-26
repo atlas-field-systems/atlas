@@ -138,10 +138,10 @@ export function registerAsset(
       tx.runId,
       asset_id,
       key_id,
-      JSON.stringify({ time: tx.now, asset_id, contact: "online" }),
+      JSON.stringify({ time: tx.now, asset_id, contact: "online", command_stream_open: false }),
     );
     tx.append("asset.registered", { time: tx.now, asset_id });
-    tx.append("asset.contact", { time: tx.now, asset_id, contact: "online" });
+    tx.append("asset.contact", { time: tx.now, asset_id, contact: "online", command_stream_open: false });
   }
   const description = { ...body, time: tx.now, asset_id };
   tx.run(
@@ -284,21 +284,40 @@ export function applyContact(
   const row = requireAsset(tx, asset_id);
   if (record.asset_id !== asset_id)
     refuse("invalid", "Contact Asset differs from path");
+  if (row.gateway_id !== null && record.command_stream_open !== undefined)
+    refuse("invalid", "command_stream_open belongs to direct IP Assets");
   if (record.contact === "online") noteHeard(tx, asset_id);
-  if (JSON.parse(row.contact).contact === record.contact)
+  return storeContact(tx, row, record);
+}
+
+function storeContact(tx: Tx, row: AssetRow, record: Contact) {
+  const asset_id = row.asset_id;
+  const prior: Contact = JSON.parse(row.contact);
+  if (row.gateway_id === null)
+    record = { ...record, command_stream_open: row.key_id !== null && tx.env.commandStreams.has(row.key_id) };
+  if (prior.contact === record.contact && prior.command_stream_open === record.command_stream_open)
     return { changed: false };
   tx.run(
     "UPDATE assets SET contact=? WHERE run_id=? AND asset_id=?",
-    JSON.stringify(record),
-    tx.runId,
-    asset_id,
+    JSON.stringify(record), tx.runId, asset_id,
   );
   tx.append("asset.contact", record);
-  if (record.contact === "offline") {
+  if (record.contact === "offline" && prior.contact !== "offline") {
     dropUnsettled(tx, { asset_id });
     tasks.dropUnconfirmed(tx, asset_id);
   }
   return { changed: true };
+}
+export function refreshCommandStream(tx: Tx, asset_id: string) {
+  const row = requireAsset(tx, asset_id);
+  storeContact(tx, row, JSON.parse(row.contact));
+}
+export function forgetCommandStreams(tx: Tx) {
+  const rows = tx.all<{ asset_id: string }>(
+    "SELECT asset_id FROM assets WHERE run_id=? AND removed=0 AND gateway_id IS NULL AND json_extract(contact,'$.command_stream_open') IS NOT 0",
+    tx.runId,
+  );
+  for (const { asset_id } of rows) refreshCommandStream(tx, asset_id);
 }
 export function onlineAssetsOnIp(tx: ReadTx): string[] {
   return tx
@@ -322,8 +341,7 @@ export function admissionView(tx: ReadTx, asset_id: string): AdmissionView {
   const row = requireAsset(tx, asset_id);
   const online =
     JSON.parse(row.contact).contact === "online" &&
-    (!row.gateway_id ||
-      admin.gatewayContact(tx, row.gateway_id).contact === "online");
+    (row.gateway_id ? admin.gatewayContact(tx, row.gateway_id).contact === "online" : row.key_id !== null && tx.env.commandStreams.has(row.key_id));
   if (!row.description) refuse("not_supported", "Asset has no description");
   const description: Description = JSON.parse(row.description);
   const latest = latestReport(tx, {
@@ -362,7 +380,7 @@ export function requestSettings(
   by: string,
 ): { event_id: number } {
   const v = admissionView(tx, asset_id);
-  if (!v.online) refuse("asset_offline", "Asset is offline");
+  if (!v.online) refuse("asset_offline", "Asset is unable to take commands");
   checkSettings(v, body.settings);
   return {
     event_id: tx.append("settings.requested", {
@@ -720,6 +738,7 @@ export function assetIdInUse(tx: ReadTx, id: string): boolean {
 }
 
 type AssetRow = {
+  key_id: string | null;
   asset_id: string;
   gateway_id: string | null;
   description: string | null;

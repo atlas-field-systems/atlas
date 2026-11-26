@@ -185,9 +185,7 @@ function reduce(
             task_id: id,
             task_state: "active",
           });
-        } else if (held(s).length >= 64)
-          final(id, "cancelled", [], { explanation: "queue full" });
-        else slots.set(id, { at: "held", task });
+        } else slots.set(id, { at: "held", task });
       }
       queue(input.event_id);
       break;
