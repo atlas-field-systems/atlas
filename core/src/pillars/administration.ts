@@ -223,11 +223,11 @@ export function addAccount(
   if (
     tx.get("SELECT 1 FROM accounts WHERE operator_id=?", body.operator_id) ||
     tx.get(
-      "SELECT 1 FROM gateways WHERE gateway_id=? AND removed=0",
+      "SELECT 1 FROM gateways WHERE gateway_id=?",
       body.operator_id,
     ) ||
     tx.get(
-      "SELECT 1 FROM plugins WHERE plugin_id=? AND removed=0",
+      "SELECT 1 FROM plugins WHERE plugin_id=?",
       body.operator_id,
     ) ||
     tx.get("SELECT 1 FROM asset_keys WHERE key_id=?", body.operator_id) ||
@@ -243,7 +243,9 @@ export function addAccount(
   return { operator_id: body.operator_id };
 }
 export function removeAccount(tx: Tx, operator_id: string): void {
-  requireRow(tx, "accounts", "operator_id", operator_id);
+  if (me(tx, operator_id).admin && !tx.get(
+    "SELECT 1 FROM accounts WHERE admin=1 AND operator_id<>?", operator_id,
+  )) refuse("last_admin", "The last admin account must be kept");
   tx.run("DELETE FROM accounts WHERE operator_id=?", operator_id);
 }
 export function ensureFirstAdmin(

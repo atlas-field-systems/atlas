@@ -18,6 +18,7 @@ export const REFUSALS = {
   not_geotiff: 409,
   imagery_fixed: 409, // a PUT on imagery other than its name, or into imagery
   object_shown: 409, // deleting an Object an imagery geo feature shows
+  last_admin: 409,
   id_taken: 409, // an operator_id that names an Asset, gateway, Plugin, or account
   idempotency_conflict: 409, // same Idempotency-Key, different body
   deleted: 410, // api.md; body adds the deletion record
