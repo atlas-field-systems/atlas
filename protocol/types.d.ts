@@ -299,7 +299,6 @@ export type RecordsTask1 =
   | RecordsTaskFailsafe
   | RecordsTaskSettings
   | RecordsTaskCapture;
-export type VariablesTrackId = string;
 
 export interface ProtocolTypes {
   cancel: RecordsCancel;
@@ -336,7 +335,6 @@ export interface ProtocolTypes {
   "requests.tasks": RequestsTasks;
   settings_change: RecordsSettingsChange;
   task: RecordsTask;
-  track: RecordsTrack;
 }
 export interface RecordsCancel {
   time: VariablesTime;
@@ -778,21 +776,4 @@ export interface RecordsSettingsChange {
   asset_id: VariablesAssetId;
   requested_by: VariablesRequestedBy;
   settings: ComponentsSettings;
-}
-export interface RecordsTrack {
-  time: VariablesTime;
-  track_id: VariablesTrackId;
-  entity_type?: VariablesEntityType;
-  position?: ComponentsPosition;
-  uncertainty?: ComponentsUncertainty;
-  details?: ComponentsDetails;
-  /**
-   * @minItems 1
-   * @maxItems 32
-   */
-  sources: ComponentsSource[];
-}
-export interface ComponentsSource {
-  asset_id: VariablesAssetId;
-  observation_id: VariablesObservationId;
 }

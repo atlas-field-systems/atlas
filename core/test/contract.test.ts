@@ -311,12 +311,12 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
       },
       assetKey.key,
     );
-    const tracksBefore = await (
-      await fetch(running.url + "/entities/tracks", {
+    const observationsBefore = await (
+      await fetch(running.url + "/entities/observations", {
         headers: { ...headers, cookie },
       })
     ).json();
-    assert.equal(tracksBefore.items.length, 1);
+    assert.equal(observationsBefore.items.length, 1);
     await running.kill("SIGKILL");
     running = undefined;
     const blocker = createServer();
@@ -374,13 +374,13 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
     );
     assert.equal(restarted.asset_id, asset.asset_id);
     assert.equal(restarted.last_task_id, 2);
-    const tracksAfter = await (
-      await fetch(running.url + "/entities/tracks", {
+    const observationsAfter = await (
+      await fetch(running.url + "/entities/observations", {
         headers: { ...headers, cookie },
       })
     ).json();
-    assert.equal(tracksAfter.items.length, 1);
-    assert.equal(tracksAfter.items[0].track_id, tracksBefore.items[0].track_id);
+    assert.equal(observationsAfter.items.length, 1);
+    assert.deepEqual(observationsAfter.items, observationsBefore.items);
 
     const otherKey = await request("/administration/asset-keys");
     const otherAsset = await request(

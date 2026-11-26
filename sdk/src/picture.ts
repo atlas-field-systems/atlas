@@ -45,7 +45,6 @@ export function createLivePicture(
   }
   const assets = new Map<string, AssetView>(),
     observations = new Map<string, P["report.observation"]>(),
-    tracks = new Map<string, P["track"]>(),
     geofeatures = new Map<string, P["geofeature"]>();
   const tasks = new Map<string, Map<number, TaskView>>(),
     marks = new Map<string, number>(),
@@ -65,7 +64,6 @@ export function createLivePicture(
     ready = false;
     assets.clear();
     observations.clear();
-    tracks.clear();
     geofeatures.clear();
     tasks.clear();
     marks.clear();
@@ -126,7 +124,6 @@ export function createLivePicture(
         snapshot.as_of,
       ]);
     }
-    for (const t of snapshot.tracks) tracks.set(t.track_id, t);
     for (const g of snapshot.geofeatures) geofeatures.set(g.geofeature_id, g);
     ready = true;
     attempts = 0;
@@ -190,12 +187,6 @@ export function createLivePicture(
             observations.set(key, r);
           break;
         }
-        case "track.updated":
-          tracks.set(e.record.track_id, e.record);
-          break;
-        case "track.removed":
-          tracks.delete(e.record.track_id);
-          break;
         case "geofeature.created":
         case "geofeature.replaced":
           geofeatures.set(e.record.geofeature_id, e.record);
@@ -348,7 +339,6 @@ export function createLivePicture(
   return {
     assets: () => view([...assets.values()]),
     observations: () => view([...observations.values()]),
-    tracks: () => view([...tracks.values()]),
     geofeatures: () => view([...geofeatures.values()]),
     tasks: (id: string) => view([...(tasks.get(id)?.values() ?? [])]),
     onChange(cb: () => void) {

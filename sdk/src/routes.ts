@@ -40,8 +40,6 @@ export const ROUTES = {
     who: accounts,
   },
   observations: { method: "GET", path: "/entities/observations", who: readers },
-  tracks: { method: "GET", path: "/entities/tracks", who: readers },
-  track: { method: "GET", path: "/entities/tracks/:track_id", who: readers },
   geofeatures: { method: "GET", path: "/entities/geofeatures", who: readers },
   geofeature: {
     method: "GET",
@@ -237,7 +235,6 @@ type Responses = {
     as_of: number;
     assets: AssetView[];
     observations: P["report.observation"][];
-    tracks: P["track"][];
     geofeatures: P["geofeature"][];
   };
   assets: Cut<AssetView> & { gateways: P["contact"][] };
@@ -247,8 +244,6 @@ type Responses = {
   changeSettings: EventAck;
   cancel: EventAck;
   observations: Cut<P["report.observation"]>;
-  tracks: Cut<P["track"]>;
-  track: { as_of: number; item: P["track"] };
   geofeatures: Cut<P["geofeature"]>;
   geofeature: { as_of: number; item: P["geofeature"] };
   createGeofeature: PlaceAck;

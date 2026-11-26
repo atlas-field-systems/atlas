@@ -39,8 +39,7 @@ export type Owner =
   | "entities"
   | "tasks"
   | "objects"
-  | "administration"
-  | "fusion";
+  | "administration";
 export interface TableDef {
   owner: Owner;
   name: string;

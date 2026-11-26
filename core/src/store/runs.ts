@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS runs (
   outcome    TEXT CHECK (outcome IN ('archived', 'archive_failed')),
   zip_name   TEXT,
   resumes    TEXT NOT NULL DEFAULT '[]',    -- JSON [{last_sign_of_life, resumed_at}], one per unexpected stop
-  last_track_seq      INTEGER NOT NULL DEFAULT 0,   -- per-run ID counters (ids.ts): survive deletes,
   last_geofeature_seq INTEGER NOT NULL DEFAULT 0,   -- start again next run
   last_object_seq     INTEGER NOT NULL DEFAULT 0
 );
@@ -88,10 +87,9 @@ export function beginOrResume(env: Env, store: Store): RunStart {
 
 export function nextRunSeq(
   tx: Tx,
-  which: "track" | "geofeature" | "object",
+  which: "geofeature" | "object",
 ): number {
   const column = {
-    track: "last_track_seq",
     geofeature: "last_geofeature_seq",
     object: "last_object_seq",
   }[which];

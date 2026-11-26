@@ -33,4 +33,4 @@ export function decodeShortId(id: string): number | undefined {
   );
 }
 
-export type IdScope = "global" | "track" | "geofeature" | "object";
+export type IdScope = "global" | "geofeature" | "object";

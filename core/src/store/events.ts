@@ -79,8 +79,6 @@ export const EVENT_KINDS = {
   "report.gimbal": { ...KINDS["report.gimbal"], ...REPORT },
   "report.settings": { ...KINDS["report.settings"], ...REPORT },
   "report.observation": { ...KINDS["report.observation"], ...REPORT },
-  "track.updated": { ...KINDS["track.updated"], audience: "accounts" },
-  "track.removed": { ...KINDS["track.removed"], audience: "accounts" },
   "geofeature.created": {
     ...KINDS["geofeature.created"],
     audience: "accounts",
@@ -152,10 +150,9 @@ CREATE TABLE IF NOT EXISTS events (
   observation_id TEXT    GENERATED ALWAYS AS (json_extract(record, '$.observation_id')) VIRTUAL,
   subsystem_id   TEXT    GENERATED ALWAYS AS (json_extract(record, '$.subsystem_id')) VIRTUAL,
   task_id        INTEGER GENERATED ALWAYS AS (json_extract(record, '$.task_id')) VIRTUAL,
-  track_id       TEXT    GENERATED ALWAYS AS (json_extract(record, '$.track_id')) VIRTUAL,
   geofeature_id  TEXT    GENERATED ALWAYS AS (json_extract(record, '$.geofeature_id')) VIRTUAL,
   order_time     INTEGER GENERATED ALWAYS AS (
-    CASE WHEN kind LIKE 'report.%' OR kind = 'track.updated' THEN json_extract(record, '$.time') ELSE time END) VIRTUAL
+    CASE WHEN kind LIKE 'report.%' THEN json_extract(record, '$.time') ELSE time END) VIRTUAL
 );
 -- answers and drops of a request
 CREATE INDEX IF NOT EXISTS events_request ON events(request_id) WHERE request_id IS NOT NULL;
@@ -164,15 +161,11 @@ CREATE INDEX IF NOT EXISTS events_asset ON events(run_id, asset_id, kind, order_
 -- latest subsystem condition, latest Task report
 CREATE INDEX IF NOT EXISTS events_status ON events(run_id, asset_id, sub_kind, subsystem_id, task_id, order_time)
   WHERE kind = 'report.status';
-CREATE INDEX IF NOT EXISTS events_fusion ON events(run_id, event_id)
-  WHERE kind = 'report.observation' AND clock_ahead = 0;
 -- Observations: latest per (asset_id, observation_id)
 CREATE INDEX IF NOT EXISTS events_observation ON events(run_id, asset_id, observation_id, order_time, event_id)
   WHERE kind = 'report.observation' AND clock_ahead = 0;
 -- Plugin calls and their answers
 CREATE INDEX IF NOT EXISTS events_plugin ON events(run_id, plugin_id, kind, event_id) WHERE plugin_id IS NOT NULL;
--- Track and geo feature history
-CREATE INDEX IF NOT EXISTS events_track ON events(run_id, track_id, order_time, event_id) WHERE kind LIKE 'track.%';
 CREATE INDEX IF NOT EXISTS events_geofeature ON events(run_id, geofeature_id, event_id) WHERE kind LIKE 'geofeature.%';
 `,
   },
@@ -216,7 +209,6 @@ export function appendEvent<K extends EventKind>(
   )!.id;
   if (
     kind.endsWith(".contact") ||
-    kind.startsWith("track.") ||
     kind.endsWith(".dropped")
   ) {
     const subject =
@@ -230,7 +222,6 @@ export function appendEvent<K extends EventKind>(
       "asset_id",
       "gateway_id",
       "plugin_id",
-      "track_id",
       "task_id",
       "request_id",
       "contact",
@@ -242,11 +233,7 @@ export function appendEvent<K extends EventKind>(
         ? { last_heard: Reflect.get(record, "time") }
         : {}),
       level: "info",
-      area: kind.startsWith("track.")
-        ? "fusion"
-        : kind.endsWith(".contact")
-          ? "contact"
-          : "requests",
+      area: kind.endsWith(".contact") ? "contact" : "requests",
       msg: kind.endsWith(".contact") ? `${subject} contact changed` : kind,
       kind,
       event_id,
@@ -426,7 +413,6 @@ export type HistoryQuery =
       since?: number;
       until?: number;
     }
-  | { of: "tracks"; track_id?: string; since?: number; until?: number }
   | {
       of: "geofeatures";
       geofeature_id?: string;
@@ -442,12 +428,8 @@ export function historyPage(
 ): HistoryPage<AtlasEvent> {
   const args: (string | number)[] = [tx.runId];
   let filter =
-    q.of === "reports"
-      ? "kind LIKE 'report.%'"
-      : q.of === "tracks"
-        ? "kind LIKE 'track.%'"
-        : "kind LIKE 'geofeature.%'";
-  for (const key of ["asset_id", "track_id", "geofeature_id"] as const)
+    q.of === "reports" ? "kind LIKE 'report.%'" : "kind LIKE 'geofeature.%'";
+  for (const key of ["asset_id", "geofeature_id"] as const)
     if (key in q) {
       const value = Reflect.get(q, key);
       if (typeof value === "string") {

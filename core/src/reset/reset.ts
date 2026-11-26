@@ -24,7 +24,6 @@ export interface StopParts {
   closeServer(): Promise<void>;
   stopContact(): void;
   lastHeard(asset_id: string): number | undefined;
-  drainFusion(): Promise<void>;
 }
 
 function runRow(store: Store, id?: number): Run {
@@ -118,7 +117,6 @@ export async function stopRun(
   try {
     await parts.closeServer();
     parts.stopContact();
-    await parts.drainFusion();
     env.log.record({
       level: "info",
       area: "reset",
