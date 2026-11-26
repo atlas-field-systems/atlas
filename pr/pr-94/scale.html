@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Scale</title>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html" class="on">Scale</a></nav><main><h1 id="scale">Scale</h1>
+<p>These numbers guide Atlas design. They are not hard limits.
+Design so Atlas works well at these sizes and does not break just past them.</p>
+<h2 id="fleet">Fleet</h2>
+<ul>
+<li>Atlas has no set fleet size. An early figure of about 20 Assets was a rough guess, not a requirement or a test. How many Assets a field link carries is whatever its measured airtime allows.</li>
+<li>IDs that people read or that cross a field link are 1 to 4 letters or digits, such as <code>A1</code> (<a href="CHARTER.html#keep-shared-data-simple">the ID rule</a>). That gives over a million IDs and keeps field-link frames short.</li>
+</ul>
+<h2 id="setup">Setup</h2>
+<ul>
+<li>A Core may run several gateways at once, as long as their radio links cannot clash: gateways in different areas, such as two gateways 20 miles apart, or gateways in one area on different bands, such as an FLRC gateway beside a Meshtastic gateway. Each radio network has exactly one gateway, and the network is a mesh of Assets. An Asset always uses exactly one gateway. Different gateways may use different designs (<a href="environment.html">Environment</a>).</li>
+<li>In practice, one operator runs Atlas at a time.</li>
+</ul>
+<h2 id="radio">Radio</h2>
+<ul>
+<li>Links start with pure LoRa, then move to a multi-layer mesh with FLRC between Assets wherever FLRC is viable (<a href="environment.html#connectivity-evolves">Environment</a>).</li>
+<li>Each Fieldlink sets its own size limit and splits records into chunks if it needs to. Protocol records have no size cap and no chunking.</li>
+<li>Expect a few Tasks or settings changes per minute per Asset.</li>
+</ul>
+<h3 id="use-slow-links-fully-and-efficiently">Use slow links fully and efficiently</h3>
+<p>On a slow link such as LoRa, airtime is the scarce thing, and Atlas spends all of it well.</p>
+<ul>
+<li><strong>Send as much as the link carries.</strong> Airtime left unused while an Asset has useful data is wasted. There is no fixed telemetry rate: an Asset reports as often as free airtime allows, more often on a quiet link and less often on a busy one.</li>
+<li><strong>Spend every byte well.</strong> The most important data goes first, and airtime never carries data that is already out of date or that the other end already has.</li>
+</ul>
+<p><a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state">Asset communications</a>
+owns what an Asset chooses to send, and each Fieldlink owns how compactly it
+carries it (<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides">Fieldlink</a>).</p>
+<h2 id="runs-and-storage">Runs and storage</h2>
+<ul>
+<li>Each run lasts up to about 2 hours, limited by battery. Core should run all day across many runs.</li>
+<li>Each Reset ZIP can be up to about 1 GB. Size is not a concern. The owner deletes old ZIPs by hand.</li>
+</ul>
+</main>
+<script src="branch.js"></script><script type="module">import m from './mermaid.esm.min.mjs'; m.initialize({ startOnLoad: true });</script></body></html>
