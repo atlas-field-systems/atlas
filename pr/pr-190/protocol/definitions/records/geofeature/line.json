@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/geofeature/line.json",
+  "title": "line",
+  "description": "A geo feature that is a path, such as a road or a planned route.",
+  "type": "object",
+  "required": [
+    "kind",
+    "line"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "line"
+    },
+    "line": {
+      "$ref": "../../components/line.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "line",
+      "line": [
+        {
+          "latitude": 42.2746,
+          "longitude": -71.8063
+        },
+        {
+          "latitude": 42.2751,
+          "longitude": -71.8049
+        },
+        {
+          "latitude": 42.276,
+          "longitude": -71.8044
+        }
+      ]
+    }
+  ]
+}

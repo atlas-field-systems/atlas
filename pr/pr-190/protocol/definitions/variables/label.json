@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/label.json",
+  "title": "label",
+  "description": "A short readable name, such as a subsystem's name for operators.",
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 64,
+  "examples": [
+    "GPS receiver"
+  ]
+}
