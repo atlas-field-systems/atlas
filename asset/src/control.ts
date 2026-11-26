@@ -37,7 +37,7 @@ type Work = {
   // The vehicle command for the current stage, and whether the flight
   // controller confirmed it. A Land counts as descending only once confirmed.
   issued: number;
-  confirmed: boolean;
+  acceptedAt: number | null;
 };
 export interface State {
   phase: "ordinary" | "failsafe" | "flight_controller" | "stopping";
@@ -50,7 +50,7 @@ export interface State {
   >;
   measurements: Measurements;
   settings: ComponentsSettings;
-  safeStop: { issuedAt: number | null; acceptedAt: number | null } | null;
+  safeStop: { reason: "pause" | "stop"; issuedAt: number | null; acceptedAt: number | null } | null;
   commandId: number;
   lastHeard: number;
 }
@@ -98,7 +98,7 @@ export type Effect =
 export function refusal(state: State, request: QueueRequest): string | undefined {
   if (state.phase === "flight_controller") return "flight controller is in control";
   // An override or the operator's Fail-safe replaces a pending stop.
-  if (state.safeStop && request.kind === "task" &&
+  if (state.safeStop?.reason === "stop" && request.kind === "task" &&
     !(request.task.now && (isOverride(request.task.kind) || request.task.kind === "failsafe"))) return "equipment stop is pending";
   if (state.phase === "ordinary") return;
   if (request.kind === "task" && request.task.now && isOverride(request.task.kind)) return;
@@ -176,7 +176,7 @@ export function reduce(
         fallback,
         override: state.override === "pause" ? null : state.override,
         issued: state.commandId + 1,
-        confirmed: false,
+        acceptedAt: null,
       };
       if (task) effects.push({ kind: "task", task, status: "active" });
       else effects.push({ kind: "response", rule, action, status: "active" });
@@ -194,8 +194,8 @@ export function reduce(
       failed(action, task, rule, now, fallback, error);
     }
   }
-  function stop(now: number) {
-    state.safeStop = { issuedAt: now, acceptedAt: null };
+  function stop(now: number, reason: "pause" | "stop" = "stop") {
+    state.safeStop = { reason, issuedAt: now, acceptedAt: null };
     effects.push({ kind: "vehicle", execution_id: ++state.commandId, command: holdCommand() });
   }
   function failed(
@@ -211,7 +211,7 @@ export function reduce(
     else effects.push({ kind: "response", rule, action, status: "failed", explanation });
     effects.push({ kind: "clear" });
     const failedStandingOverride = state.override === "stand" || state.execution?.override === "stand";
-    const inDescent = state.execution?.confirmed === true && descending(state.execution.execution);
+    const inDescent = state.execution?.acceptedAt != null && descending(state.execution.execution);
     state.execution = null;
     if (failedStandingOverride) {
       state.override = "rearm";
@@ -320,7 +320,7 @@ export function reduce(
   function issue(w: Work, now: number) {
     try {
       const command = vehicleStep({ execution: w.execution, measurements: state.measurements, config, now });
-      state.execution = { ...w, issued: state.commandId + 1, confirmed: false };
+      state.execution = { ...w, issued: state.commandId + 1, acceptedAt: null };
       effects.push({ kind: "vehicle", execution_id: ++state.commandId, command });
     } catch (error) {
       failed(w.execution.action, w.task, w.rule, now, w.fallback, error);
@@ -363,7 +363,7 @@ export function reduce(
         break;
       try {
         const execution = updateExecution(w.execution, event.task, state.settings, state.measurements, event.now, config);
-        const updated = { ...w, task: event.task, execution, confirmed: false };
+        const updated = { ...w, task: event.task, execution, acceptedAt: null };
         if (updated.pausedAt === null) {
           const command = vehicleStep({ execution, measurements: state.measurements, config, now: event.now });
           updated.issued = state.commandId + 1;
@@ -471,17 +471,14 @@ export function reduce(
       const paused = state.settings.run_state === "paused";
       const w = state.execution;
       if (paused && !wasPaused) {
-        if (w) state.execution = { ...w, pausedAt: event.now, confirmed: false };
-        effects.push({
-          kind: "vehicle",
-          execution_id: ++state.commandId,
-          command: holdCommand(),
-        });
+        if (w) state.execution = { ...w, pausedAt: event.now, acceptedAt: null };
+        stop(event.now, state.safeStop?.reason ?? "pause");
         if (state.phase === "failsafe") {
           state.override = "pause";
           rearm(event.now);
         }
       } else if (!paused && wasPaused) {
+        if (state.safeStop?.reason === "pause" && w?.pausedAt != null) state.safeStop = null;
         if (state.override === "pause") state.override = w?.override ?? null;
         if (w && w.pausedAt !== null)
           issue(
@@ -498,8 +495,8 @@ export function reduce(
     case "command_accepted":
       if (event.execution_id === state.commandId && state.safeStop)
         state.safeStop = { ...state.safeStop, acceptedAt: event.now };
-      if (state.execution?.issued === event.execution_id)
-        state.execution = { ...state.execution, confirmed: true };
+      if (event.execution_id === state.commandId && state.execution?.issued === event.execution_id)
+        state.execution = { ...state.execution, acceptedAt: event.now };
       break;
     case "command_failed": {
       if (
@@ -508,10 +505,11 @@ export function reduce(
       )
         break;
       const w = state.execution;
-      if (!w) {
-        if (state.safeStop) state.safeStop = { issuedAt: null, acceptedAt: null };
+      if (state.safeStop) {
+        state.safeStop = { ...state.safeStop, issuedAt: null, acceptedAt: null };
         break;
       }
+      if (!w) break;
       failed(w.execution.action, w.task, w.rule, event.now, w.fallback, new Error(event.explanation));
       break;
     }
@@ -546,11 +544,11 @@ export function reduce(
       if (state.safeStop) {
         const stopIntent = state.safeStop;
         if (stopIntent.issuedAt === null) {
-          if (get(state.measurements.connected) === true && get(state.measurements.position) && get(state.measurements.armed) !== undefined) stop(now);
+          if (get(state.measurements.connected) === true && get(state.measurements.position) && get(state.measurements.armed) !== undefined) stop(now, stopIntent.reason);
         } else if (stopIntent.acceptedAt !== null && state.measurements.speed?.time != null && state.measurements.speed.time > stopIntent.acceptedAt && get(state.measurements.connected) === true && (get(state.measurements.speed) ?? Infinity) <= config.completion_tolerances.hold!.stopped_mps) {
           state.safeStop = null;
         } else if (now - stopIntent.issuedAt > config.command_timeouts.hold! * 1000) {
-          state.safeStop = { issuedAt: null, acceptedAt: null };
+          state.safeStop = { ...state.safeStop, issuedAt: null, acceptedAt: null };
         }
       }
       const w = state.execution;
@@ -563,7 +561,8 @@ export function reduce(
           config,
           now,
         };
-        const result = progress(ctx);
+        const waitingForHold = w.execution.kind === "hold" && (w.acceptedAt === null || (state.measurements.speed?.time ?? -Infinity) <= w.acceptedAt);
+        const result = waitingForHold ? "running" : progress(ctx);
         if (result === "next") {
           issue(
             { ...w, execution: nextStage(w.execution) },

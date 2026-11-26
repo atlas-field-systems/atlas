@@ -27,7 +27,7 @@ scenario({
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
     const protocol = new MavLinkProtocolV2(1, 1);
     let mode = 4, armed = true, pilotArmed = false, landing = false;
-    let lateGuided = false;
+
     let rcReleased = false;
     const writes: string[] = [];
     let takeoverReceived = false;
@@ -73,14 +73,10 @@ scenario({
           writes.push(`SET_MODE ${m.customMode} pilotArmed=${pilotArmed}`);
           if (m.customMode === 9) landing = true;
           if (landing && m.customMode === 4 && !pilotArmed) {
-            pilotArmed = true; mode = 4; hb(); mode = 5;
-            lateGuided = true;
+            pilotArmed = true; rcReleased = true; rc(); mode = 4; hb();
             return;
           }
           mode = m.customMode; hb();
-          if (lateGuided && m.customMode === 5) {
-            lateGuided = false; mode = 4; hb(); rc();
-          }
           return;
         }
         if (id === common.CommandLong.MSG_ID) {
@@ -91,7 +87,6 @@ scenario({
         }
         if (id === common.SetPositionTargetGlobalInt.MSG_ID) {
           writes.push(`SET_POSITION_TARGET pilotArmed=${pilotArmed}`);
-          if (pilotArmed && !rcReleased) { rcReleased = true; rc(); }
         }
       });
       telemetry();
@@ -110,8 +105,8 @@ scenario({
       assert.equal(w.events.some(e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control), false, "Atlas's late Guided is not a person's handback");
       assert.equal(mode, 5, "Atlas restores the pilot mode after its late Guided request");
       assert.ok(takeoverReceived, "the app received the changed RC position");
-      assert.ok(writes.includes("SET_POSITION_TARGET pilotArmed=true"), "the delayed RC report permits a target before receipt");
-      assert.deepEqual(afterReceipt, ["SET_MODE 5", "SET_MODE 5"], "only corrective selections are sent after receiving takeover evidence");
+      assert.ok(!writes.includes("SET_POSITION_TARGET pilotArmed=true"), "takeover interrupts the outstanding Guided request before its target");
+      assert.deepEqual(afterReceipt, ["SET_MODE 5"], "only corrective selections are sent after receiving takeover evidence");
       mode = 2; hb();
       await new Promise(r => setTimeout(r, 60)); await w.advance(1000);
       mode = 4; hb();

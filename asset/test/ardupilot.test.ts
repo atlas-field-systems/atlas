@@ -54,7 +54,8 @@ for (const staleResult of [0, 2]) test(`docs/runtime.md: stale ACK result ${stal
     if (value instanceof common.CommandAck && value.command === 178) ackSeen();
   });
   t.after(() => vehicle.stop());
-  vehicle.start(() => {});
+  const ready = Promise.withResolvers<void>();
+  vehicle.start(m => { if (m.in_control) ready.resolve(); });
   [peer] = await connected;
   assert.ok(peer);
   const protocol = new MavLinkProtocolV2(1, 1);
@@ -70,6 +71,8 @@ for (const staleResult of [0, 2]) test(`docs/runtime.md: stale ACK result ${stal
     }
   });
   const move = { kind: "move_to", mode: 4, speed: 2, position: { latitude: 1, longitude: 1, altitudes: [{ altitude_m: 5, altitude_reference: "launch" }] } } satisfies VehicleCommand;
+  await send(peer, heartbeat, protocol);
+  await ready.promise;
   const previous = vehicle.command(move).catch(error => error);
   await firstSpeed.promise;
   const written = Promise.withResolvers<void>();
@@ -113,12 +116,15 @@ test("docs/README.md: equipment TCP loss rejects a pending command and reconnect
   const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 0.01, measurement_stale_after_s: 5 }, systemClock);
   t.after(() => { vehicle.stop(); for (const peer of peers) peer.destroy(); server.close(); });
   const connection = once(server, "connection");
-  vehicle.start(() => {});
+  const ready = Promise.withResolvers<void>();
+  vehicle.start(m => { if (m.in_control) ready.resolve(); });
   const [peer] = await connection;
   const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
   const written = new Promise<void>(resolve => reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
     if (packet.header.msgid === common.SetMode.MSG_ID) resolve();
   }));
+  await send(peer, Object.assign(new minimal.Heartbeat(), { autopilot: 3, customMode: 4 }), new MavLinkProtocolV2(1, 1));
+  await ready.promise;
   const pending = vehicle.command({ kind: "land", mode: 9, destination: undefined, transit_altitude: undefined });
   const rejected = assert.rejects(pending, /equipment connection lost/);
   await written;
@@ -207,6 +213,7 @@ test("docs/failsafes.md: observed Land survives delayed critical battery evidenc
     if (packet.header.msgid === common.SetMode.MSG_ID)
       correction.resolve(packet.protocol.data(packet.payload, common.SetMode).customMode);
   });
+  await send(peer, Object.assign(new minimal.Heartbeat(), { type: 2, autopilot: 3, baseMode: 129, customMode: 4, systemStatus: 4, mavlinkVersion: 3 }), protocol);
   for (const [paramId, paramValue] of [["BATT_FS_LOW_ACT", 2], ["BATT_FS_CRT_ACT", 1]] as const) {
     const m = new common.ParamValue();
     Object.assign(m, { paramId, paramValue, paramType: 9, paramCount: 2, paramIndex: 0 });
@@ -255,11 +262,12 @@ test("config.md: ArduPilot sends the configured observation rates to equipment",
       if (message.command === 511 && message._param1 === 245) interval.resolve(message._param2);
     }
   });
+  await send(peer, Object.assign(new minimal.Heartbeat(), { type: 2, autopilot: 3, baseMode: 129, customMode: 4, systemStatus: 4, mavlinkVersion: 3 }), new MavLinkProtocolV2(1, 1));
   assert.equal(await rates.promise, 7);
   assert.equal(await interval.promise, 400000);
 });
 
-for (const failure of ["stale Hold", "restoration write"] as const) test(`docs/runtime.md: ${failure} recovers without an obsolete target`, { timeout: 5000 }, async t => {
+for (const failure of ["stale position", "stale GPS", "stale estimator", "restoration write"] as const) test(`docs/runtime.md: ${failure} recovers without an obsolete target`, { timeout: 5000 }, async t => {
   const { Socket } = await import("node:net");
   const { ardupilotmega } = await import("node-mavlink");
   const server = createServer();
@@ -275,7 +283,11 @@ for (const failure of ["stale Hold", "restoration write"] as const) test(`docs/r
   const failed = Promise.withResolvers<void>();
   const vehicle = ardupilot(config, clock, error => { if (error instanceof Error) failed.resolve(); });
   let observation = Promise.withResolvers<void>();
-  vehicle.start(m => { if (m.in_control || m.position) observation.resolve(); });
+  let positions = 0;
+  vehicle.start(m => {
+    if (m.position) positions++;
+    if (m.in_control || m.position) observation.resolve();
+  });
   t.after(() => { vehicle.stop(); for (const peer of peers) peer.destroy(); server.close(); });
   let [peer] = await once(server, "connection");
   const protocol = new MavLinkProtocolV2(1, 1);
@@ -287,13 +299,18 @@ for (const failure of ["stale Hold", "restoration write"] as const) test(`docs/r
     await observation.promise;
   };
   await hb(4);
-  if (failure === "stale Hold") {
+  if (failure !== "restoration write") {
     const gps = new common.GpsRawInt(); Object.assign(gps, { fixType: 3 }); await send(peer, gps, protocol);
     const ekf = new ardupilotmega.EkfStatusReport(); Object.assign(ekf, { flags: 16 }); await send(peer, ekf, protocol);
     const p = new common.GlobalPositionInt(); Object.assign(p, { lat: 10000000, lon: 10000000, relativeAlt: 5000 });
     observation = Promise.withResolvers<void>();
     await send(peer, p, protocol); await observation.promise;
     now = 2001;
+    if (failure !== "stale GPS") await send(peer, gps, protocol);
+    if (failure !== "stale estimator") await send(peer, ekf, protocol);
+    if (failure !== "stale position") await send(peer, p, protocol);
+    await hb(4);
+    assert.equal(positions, 1);
     const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
     const targets: number[] = [];
     reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
@@ -329,5 +346,70 @@ for (const failure of ["stale Hold", "restoration write"] as const) test(`docs/r
     });
     await hb(4);
     assert.equal(await corrected.promise, 6);
+  }
+});
+
+for (const scenario of ["second system", "pilot handback"] as const) test(`docs/failsafes.md: ${scenario} preserves vehicle control ownership`, { timeout: 5000 }, async t => {
+  const server = createServer();
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const connection = once(server, "connection");
+  const diagnostics: unknown[] = [];
+  let ackSeen = () => {};
+  const vehicle = ardupilot({ kind: "ardupilot", host: "127.0.0.1", port: address.port, system_id: 255, stream_rate_hz: 5, extended_state_interval_us: 200000, heartbeat_s: 1, measurement_stale_after_s: 5 }, systemClock, value => { diagnostics.push(value); if (value instanceof common.CommandAck) ackSeen(); });
+  let observation = Promise.withResolvers<boolean>();
+  vehicle.start(m => { if (m.in_control) observation.resolve(m.in_control.value); });
+  const [peer] = await connection;
+  peer.on("error", () => {});
+  t.after(() => { vehicle.stop(); peer.destroy(); server.close(); });
+  const protocol = new MavLinkProtocolV2(7, 1);
+  const heartbeat = async (mode: number) => {
+    observation = Promise.withResolvers<boolean>();
+    const m = new minimal.Heartbeat();
+    Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode: mode, systemStatus: 4 });
+    await send(peer, m, protocol);
+    return observation.promise;
+  };
+  await heartbeat(4);
+  if (scenario === "second system") {
+    const m = new minimal.Heartbeat();
+    Object.assign(m, { type: 2, autopilot: 3, baseMode: 129, customMode: 6, systemStatus: 4 });
+    await send(peer, m, new MavLinkProtocolV2(8, 1));
+    // The bound vehicle's next ACK marks delivery of the preceding foreign packet.
+    const received = Promise.withResolvers<void>();
+    const reader = peer.pipe(new MavLinkPacketSplitter()).pipe(new MavLinkPacketParser());
+    reader.on("data", (packet: import("node-mavlink").MavLinkPacket) => {
+      if (packet.header.msgid === common.SetMode.MSG_ID) {
+        const mode = packet.protocol.data(packet.payload, common.SetMode);
+        assert.equal(mode.targetSystem, 7);
+        received.resolve();
+      }
+    });
+    const ack = new common.CommandAck();
+    const seen = Promise.withResolvers<void>();
+    ackSeen = seen.resolve;
+    await send(peer, ack, protocol);
+    await seen.promise;
+    const command = vehicle.command({ kind: "land", mode: 9, destination: undefined, transit_altitude: undefined });
+    await received.promise;
+    await heartbeat(9);
+    await command;
+    assert.ok(diagnostics.some(value => JSON.stringify(value).includes("equipment_mismatch")));
+  } else {
+    const parameters = { FLTMODE_CH: 1, FLTMODE1: 4, FLTMODE2: 6, FLTMODE3: 0, FLTMODE4: 0, FLTMODE5: 0, FLTMODE6: 0 };
+    for (const [paramId, paramValue] of Object.entries(parameters)) {
+      const m = new common.ParamValue();
+      Object.assign(m, { paramId, paramValue, paramType: 9 });
+      await send(peer, m, protocol);
+    }
+    for (const chan1Raw of [1100, 1300]) {
+      const m = new common.RcChannels();
+      Object.assign(m, { chancount: 1, chan1Raw });
+      await send(peer, m, protocol);
+    }
+    assert.equal(await heartbeat(6), false);
+    assert.equal(await heartbeat(4), true);
   }
 });

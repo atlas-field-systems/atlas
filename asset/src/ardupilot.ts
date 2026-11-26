@@ -22,12 +22,14 @@ export function ardupilot(
   let stopped = false;
   let lastAttempt = -Infinity;
   let observe: (m: Measurements) => void = () => {};
-  let targetSystem = 1,
-    targetComponent = 1;
+  let targetSystem: number | undefined;
+  const targetComponent = 1;
+  let streamsRequested = false;
+  const otherSystems = new Set<number>();
   let location: { latitude: number; longitude: number; time: number } | undefined;
   let altitude = 0;
-  let gpsFixed = false;
-  let positionEstimated = false;
+  let gpsFixedAt = -Infinity;
+  let positionEstimatedAt = -Infinity;
   let operation: AbortController | undefined;
   let expectedMode: number | null = null;
   let observedMode: number | null = null;
@@ -35,7 +37,7 @@ export function ardupilot(
   let observedArmed = false;
   let inControl = true;
   let pendingGuided = false;
-  let handback: { mode: number | null; phase: "late_guided" | "restoring" | "await_other_mode" } | undefined;
+  let handback: { mode: number | null; phase: "await_selection" | "late_guided" | "restoring" | "await_other_mode" } | undefined;
   let lastHeartbeat = -Infinity;
   const parameters = new Map<string, number>();
   const modeParameters = ["FLTMODE_CH", "FLTMODE1", "FLTMODE2", "FLTMODE3", "FLTMODE4", "FLTMODE5", "FLTMODE6", "FS_THR_ENABLE", "FS_OPTIONS", "BATT_FS_LOW_ACT", "BATT_FS_CRT_ACT"];
@@ -103,7 +105,7 @@ export function ardupilot(
     return write(m);
   }
   function restoreMode() {
-    if (observedMode !== 4 || !handback || handback.mode === null || handback.phase === "restoring") return;
+    if (observedMode !== 4 || !handback || handback.mode === null || (handback.phase === "restoring" || handback.phase === "await_selection")) return;
     const restoreTo = handback.mode;
     handback.phase = "restoring";
     const restoring = handback;
@@ -118,11 +120,23 @@ export function ardupilot(
   }
   function packet(packet: MavLinkPacket) {
     if (packet.header.compid !== 1) return;
-    targetSystem = packet.header.sysid;
-    targetComponent = packet.header.compid;
-    const stamp = <T>(value: T) => ({
+    if (targetSystem === undefined) {
+      if (packet.header.msgid !== minimal.Heartbeat.MSG_ID) return;
+      const heartbeat = packet.protocol.data(packet.payload, minimal.Heartbeat);
+      if (heartbeat.autopilot !== 3) return;
+      targetSystem = packet.header.sysid;
+    }
+    if (packet.header.sysid !== targetSystem) {
+      if (!otherSystems.has(packet.header.sysid)) {
+        otherSystems.add(packet.header.sysid);
+        diagnostic({ kind: "equipment_mismatch", targetSystem, receivedSystem: packet.header.sysid });
+      }
+      return;
+    }
+    if (!streamsRequested) requestStreams();
+    const stamp = <T>(value: T, time = clock.now()) => ({
       value,
-      time: clock.now(),
+      time,
       source: "ardupilot",
     });
     const id = packet.header.msgid;
@@ -151,7 +165,8 @@ export function ardupilot(
       }
       if (!inControl) {
         if (handback) {
-          if (m.customMode === 4 && handback.phase !== "restoring") {
+          if (handback.phase === "await_selection" && m.customMode === handback.mode) handback = undefined;
+          else if (m.customMode === 4 && handback.phase !== "restoring") {
             restoreMode();
           } else if (m.customMode === handback.mode && handback.phase === "restoring") {
             handback.phase = "await_other_mode";
@@ -182,24 +197,29 @@ export function ardupilot(
       const selected = parameters.get(`FLTMODE${position}`);
       if (switchPosition !== undefined && position !== switchPosition && observedArmed && selected !== undefined && selected !== 4) {
         inControl = false;
-        handback = { mode: selected, phase: "late_guided" };
+        handback = { mode: selected, phase: pendingGuided ? "late_guided" : "await_selection" };
+        pendingGuided = false;
         operation?.abort(new Error("flight controller is in control"));
         restoreMode();
         observe({ in_control: stamp(false) });
       }
+      if (position !== switchPosition && selected === 4 && handback?.phase === "await_selection")
+        handback = undefined;
       switchPosition = position;
     } else if (id === ardupilotmega.EkfStatusReport.MSG_ID) {
       const m = packet.protocol.data(
         packet.payload,
         ardupilotmega.EkfStatusReport,
       );
-      positionEstimated = Boolean(m.flags & 16);
+      positionEstimatedAt = m.flags & 16 ? clock.now() : -Infinity;
     } else if (id === common.GpsRawInt.MSG_ID) {
       const m = packet.protocol.data(packet.payload, common.GpsRawInt);
-      gpsFixed = m.fixType >= 3;
+      const gpsFixed = m.fixType >= 3;
+      gpsFixedAt = gpsFixed ? clock.now() : -Infinity;
       subsystem("gps", gpsFixed ? { condition: "healthy" } : { condition: "faulted", explanation: "GPS has no 3D fix" });
     } else if (id === common.GlobalPositionInt.MSG_ID) {
-      if (!gpsFixed || !positionEstimated) return;
+      const validAt = Math.min(gpsFixedAt, positionEstimatedAt);
+      if (clock.now() - validAt > config.measurement_stale_after_s * 1000) return;
       const m = packet.protocol.data(packet.payload, common.GlobalPositionInt);
       altitude = m.relativeAlt / 1000;
       location = { latitude: m.lat / 1e7, longitude: m.lon / 1e7, time: clock.now() };
@@ -211,7 +231,7 @@ export function ardupilot(
             { altitude_m: altitude, altitude_reference: "launch" },
             { altitude_m: m.alt / 1000, altitude_reference: "msl" },
           ],
-        }),
+        }, validAt),
         speed: stamp(Math.hypot(m.vx, m.vy, m.vz) / 100),
       });
     } else if (id === common.BatteryStatus.MSG_ID) {
@@ -256,8 +276,8 @@ export function ardupilot(
     socket.once("close", () => {
       socket = undefined;
       location = undefined;
-      gpsFixed = false;
-      positionEstimated = false;
+      gpsFixedAt = -Infinity;
+      positionEstimatedAt = -Infinity;
       operation?.abort(new Error("equipment connection lost"));
       observe({ connected: { value: false, time: clock.now(), source: "ardupilot" } });
       subsystem("gps", { condition: "unknown", explanation: "equipment connection lost" });
@@ -267,23 +287,25 @@ export function ardupilot(
       .pipe(new MavLinkPacketSplitter())
       .pipe(new MavLinkPacketParser());
     reader.on("data", packet);
-    socket.once("connect", () => {
-      parameters.clear();
-      switchPosition = undefined;
-      const rates = new common.RequestDataStream();
-      Object.assign(rates, {
-        targetSystem,
-        targetComponent,
-        reqStreamId: 0,
-        reqMessageRate: config.stream_rate_hz,
-        startStop: 1,
-      });
-      void write(rates)
-        .then(() => command(511, [245, config.extended_state_interval_us]))
-        .catch((e) => {
-          operation?.abort(e);
-        });
+    parameters.clear();
+    switchPosition = undefined;
+    streamsRequested = false;
+  }
+  function requestStreams() {
+    streamsRequested = true;
+    const rates = new common.RequestDataStream();
+    Object.assign(rates, {
+      targetSystem,
+      targetComponent,
+      reqStreamId: 0,
+      reqMessageRate: config.stream_rate_hz,
+      startStop: 1,
     });
+    void write(rates)
+      .then(() => command(511, [245, config.extended_state_interval_us]))
+      .catch((e) => {
+        operation?.abort(e);
+      });
   }
   return {
     start(cb) {
@@ -296,7 +318,7 @@ export function ardupilot(
       if (!socket?.writable || now - lastHeartbeat < config.heartbeat_s * 1000) return;
       lastHeartbeat = now;
       for (const name of modeParameters) {
-        if (parameters.has(name)) continue;
+        if (targetSystem === undefined || parameters.has(name)) continue;
         const request = new common.ParamRequestRead();
         Object.assign(request, { targetSystem, targetComponent, paramId: name, paramIndex: -1 });
         void write(request).catch(diagnostic);
@@ -316,7 +338,7 @@ export function ardupilot(
     },
     async command(c: VehicleCommand) {
       if (!inControl) throw new Error("flight controller is in control");
-      if (!socket?.writable) throw new Error("flight controller unavailable");
+      if (!socket?.writable || !streamsRequested) throw new Error("flight controller unavailable");
       transitionFrom = inControl ? observedMode : null;
       expectedMode = c.mode;
       operation?.abort(new Error("superseded"));
@@ -409,10 +431,10 @@ export function ardupilot(
           return;
         }
         case "hold": {
-          if (!location || clock.now() - location.time > config.measurement_stale_after_s * 1000)
+          if (!location || clock.now() - Math.min(location.time, gpsFixedAt, positionEstimatedAt) > config.measurement_stale_after_s * 1000)
             throw new Error("current position unavailable for Hold");
           await selectMode(c.mode);
-          if (!location || clock.now() - location.time > config.measurement_stale_after_s * 1000)
+          if (!location || clock.now() - Math.min(location.time, gpsFixedAt, positionEstimatedAt) > config.measurement_stale_after_s * 1000)
             throw new Error("current position unavailable for Hold");
           const m = new common.SetPositionTargetGlobalInt();
           Object.assign(m, {

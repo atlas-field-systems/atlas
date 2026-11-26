@@ -26,7 +26,7 @@ const stories = {
   requests: requests,
   crash: crash,
   "failsafe-signal": failsafeSignal,
-  "rc-late-guided": failsafeSignal,
+  "rc-handback": failsafeSignal,
   takeover: takeover,
   "takeover-response": takeover,
   "land-position": landPosition,
