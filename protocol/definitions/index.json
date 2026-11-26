@@ -150,6 +150,7 @@
         "variables/in_control.json",
         "variables/setting.json",
         "variables/gateway_id.json",
+        "variables/command_stream_open.json",
         "variables/contact.json",
         "variables/observation_id.json",
         "variables/track_id.json",

@@ -16,7 +16,6 @@ export type TaskState =
   | "failed"
   | "cancelled"
   | "dropped";
-export const CAP = 64; // Core ADR-0001
 export const MAX_TASK_ID = 9999; // Protocol law 10
 
 export const TABLES: TableDef[] = [
@@ -64,7 +63,7 @@ export function requestTasks(
   by: string,
 ): { task_ids: number[]; event_id: number } {
   const v = entities.admissionView(tx, asset_id);
-  if (!v.online) refuse("asset_offline", "Asset is offline");
+  if (!v.online) refuse("asset_offline", "Asset is unable to take commands");
   if (
     (body.now && body.tasks.length !== 1) ||
     body.tasks.some(
@@ -83,8 +82,6 @@ export function requestTasks(
     if (t.kind === "settings") entities.checkSettings(v, t.settings);
     else entities.checkCommand(v.description, t);
   }
-  if (!body.now && latestQueue(tx, asset_id).length + body.tasks.length > CAP)
-    refuse("queue_full", "Reported queue is full");
   const first = lastTaskId(tx, asset_id) + 1;
   const last = first + body.tasks.length - 1;
   if (last > MAX_TASK_ID) refuse("task_ids_exhausted", "Task IDs exhausted");
@@ -128,7 +125,7 @@ export function cancelTask(
   by: string,
 ): { event_id: number } {
   if (!entities.admissionView(tx, asset_id).online)
-    refuse("asset_offline", "Asset is offline");
+    refuse("asset_offline", "Asset is unable to take commands");
   const row = tx.get<{ state: TaskState }>(
     "SELECT state FROM tasks WHERE run_id=? AND asset_id=? AND task_id=?",
     tx.runId,
@@ -273,46 +270,48 @@ export function updatePlace(
 
 export type TaskEntry = {
   task: TaskRecord;
-  state: TaskState;
+  state: Exclude<TaskState, "dropped"> | "outcome_unknown";
+  explanation?: string;
   state_time: number;
   object_ids?: string[];
 };
 export function readTasks(
   tx: ReadTx,
   asset_id: string,
-): { as_of: number; items: TaskEntry[]; held: number[] } {
+): { as_of: number; items: TaskEntry[]; held: number[]; held_time: number | null } {
   entities.requireAsset(tx, asset_id);
+  const queue = tx.get<{ task_ids: string; report_time: number }>(
+    "SELECT task_ids,report_time FROM queues WHERE run_id=? AND asset_id=?", tx.runId, asset_id,
+  );
   return {
     as_of: tx.asOf(),
-    held: latestQueue(tx, asset_id),
+    held: queue ? JSON.parse(queue.task_ids) : [],
+    held_time: queue?.report_time ?? null,
     items: tx
       .all<{
         body: string;
         state: TaskState;
         state_time: number;
+        explanation: string | null;
         object_ids: string | null;
       }>(
-        "SELECT * FROM tasks WHERE run_id=? AND asset_id=? ORDER BY task_id",
+        `SELECT t.*, (SELECT json_extract(e.record,'$.explanation') FROM events e
+          WHERE e.run_id=t.run_id AND e.asset_id=t.asset_id AND e.task_id=t.task_id
+            AND e.kind='report.status' AND e.sub_kind='task' AND e.subsystem_id IS NULL AND e.order_time=t.state_time
+            AND json_extract(e.record,'$.task_state')=t.state ORDER BY e.event_id LIMIT 1) AS explanation
+          FROM tasks t WHERE t.run_id=? AND t.asset_id=? ORDER BY t.task_id`,
         tx.runId,
         asset_id,
       )
       .map((r) => ({
         task: JSON.parse(r.body),
-        state: r.state,
+        state: r.state === "dropped" ? "outcome_unknown" : r.state,
+        ...(r.explanation == null ? {} : { explanation: r.explanation }),
         state_time: r.state_time,
         ...(r.object_ids ? { object_ids: JSON.parse(r.object_ids) } : {}),
       })),
   };
 }
-export function latestQueue(tx: ReadTx, asset_id: string): number[] {
-  const row = tx.get<{ task_ids: string }>(
-    "SELECT task_ids FROM queues WHERE run_id=? AND asset_id=?",
-    tx.runId,
-    asset_id,
-  );
-  return row ? JSON.parse(row.task_ids) : [];
-}
-
 const rank: Record<TaskState, number> = {
   sent: 0,
   queued: 1,

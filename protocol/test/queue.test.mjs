@@ -12,22 +12,14 @@ const report = (count) => ({
   task_ids: Array.from({ length: count }, (_, i) => i + 1),
 });
 
-test('a complete queue at the admitted capacity of 64 Tasks is representable', () => {
-  const result = protocol.check('report.status', report(64));
-  assert.equal(result.ok, true, JSON.stringify(result));
-});
-
-test('a queue of 65 Tasks exceeds the complete report capacity', () => {
-  const result = protocol.check('report.status', report(65));
-  assert.equal(result.ok, false);
-  assert.ok(result.problems.some((problem) => problem.message.includes('64 items')));
+test('a complete queue of 100 Tasks is representable', () => {
+  assert.equal(protocol.check('report.status', report(100)).ok, true);
 });
 
 const tasks = (count, now) => ({ tasks: Array.from({ length: count }, () => ({ kind: 'return_to_home' })), ...(now === undefined ? {} : { now }) });
 
-test('a Tasks request holds 1 to 64 Tasks', () => {
-  assert.equal(protocol.check('requests.tasks', tasks(64)).ok, true);
-  assert.equal(protocol.check('requests.tasks', tasks(65)).ok, false);
+test('a Tasks request accepts nonempty batches', () => {
+  assert.equal(protocol.check('requests.tasks', tasks(100)).ok, true);
   assert.equal(protocol.check('requests.tasks', tasks(0)).ok, false);
 });
 

@@ -125,7 +125,7 @@ export const rules = [
             .at(-1);
           const state =
             last?.kind === "task.dropped"
-              ? "dropped"
+              ? "outcome_unknown"
               : last?.kind === "report.status" && last.record.kind === "task"
                 ? last.record.task_state
                 : undefined;

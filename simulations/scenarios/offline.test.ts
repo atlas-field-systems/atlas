@@ -6,10 +6,10 @@ scenario({
   name: "offline Asset skips unanswered Tasks settings and cancels",
   checks: ["core/docs/api.md#operator-requests", "core/docs/api.md#contact"],
   async run(w) {
+    w.network.once("asset", "/events", { kind: "blackholeStream" });
     const asset = await assetApp(w, { config: { description: { commands: [], reports: ["status", "settings"], settings: ["run_state"] }, initial_settings: { run_state: "running" } } });
     const asset_id = asset.asset_id;
-    await w.until(() => w.network.traffic.some(t => t.caller === "asset" && t.path === "/events"));
-    w.network.cut("asset");
+    await w.until(() => w.events.some(e => e.kind === "asset.contact" && e.record.asset_id === asset_id && e.record.command_stream_open));
     const task = value(
       await w.complete(
         w.admin.call("sendTasks", {
@@ -31,6 +31,7 @@ scenario({
         w.admin.call("cancel", { params: { asset_id, task_id: 1 } }),
       ),
     );
+    w.network.cut("asset");
     await w.advance(31000);
     await w.until(
       () => w.events.filter((e) => e.kind === "request.dropped").length >= 3,
@@ -46,7 +47,7 @@ scenario({
       w.events.some(
         (e) =>
           e.kind === "asset.contact" &&
-          e.record.contact === "online" &&
+          e.record.contact === "online" && e.record.command_stream_open &&
           e.event_id > cancel.event_id,
       ),
     );

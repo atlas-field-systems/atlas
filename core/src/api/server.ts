@@ -212,6 +212,27 @@ export async function startServer(
           raw === null || raw === undefined ? "latest" : Number(raw);
         if (after !== "latest" && (!Number.isSafeInteger(after) || after < 0))
           refuse("invalid", "after must be a nonnegative event ID");
+        if (caller.kind === "asset" && url.searchParams.get("everything") !== "true") {
+          const keyId = caller.key_id;
+          const refresh = () => store.write(tx => {
+            const id = entities.assetForKey(tx, keyId);
+            if (id) entities.refreshCommandStream(tx, id);
+          });
+          env.commandStreams.set(keyId, (env.commandStreams.get(keyId) ?? 0) + 1);
+          res.once("close", () => {
+            const remaining = (env.commandStreams.get(keyId) ?? 1) - 1;
+            if (remaining) env.commandStreams.set(keyId, remaining);
+            else env.commandStreams.delete(keyId);
+            if (!stopping && !remaining) {
+              try {
+                refresh();
+              } catch (error) {
+                env.log.record({ level: "error", area: "contact", msg: "Could not record command stream closure", error: String(error) });
+              }
+            }
+          });
+          refresh();
+        }
         streams.open(res, audienceFor(principal, url.searchParams), after, () =>
           store.read((tx) => !!callerFor(tx, credential)),
         );

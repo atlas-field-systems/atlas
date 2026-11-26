@@ -66,7 +66,7 @@ const picture = createLivePicture(atlas, { asset_id }); // asset_id optional
 picture.assets(); // { ready, stale, items }
 picture.observations(); // { ready, stale, items }
 picture.geofeatures(); // { ready, stale, items }
-picture.tasks(asset_id); // { ready, stale, items }
+picture.tasks(asset_id); // { ready, stale, items, held }
 picture.onChange(cb);
 ```
 

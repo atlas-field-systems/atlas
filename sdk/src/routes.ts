@@ -214,7 +214,8 @@ export type TaskView = {
     | "completed"
     | "failed"
     | "cancelled"
-    | "dropped";
+    | "outcome_unknown";
+  explanation?: string;
   state_time: number;
   object_ids?: string[];
 };
@@ -242,7 +243,7 @@ type Responses = {
   };
   assets: Cut<AssetView> & { gateways: P["contact"][] };
   asset: { as_of: number; item: AssetView };
-  tasks: Cut<TaskView> & { held: number[] };
+  tasks: Cut<TaskView> & { held: number[]; held_time?: number | null };
   sendTasks: EventAck & { task_ids: number[] };
   changeSettings: EventAck;
   cancel: EventAck;

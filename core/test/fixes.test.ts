@@ -1,7 +1,7 @@
 import { once } from "node:events";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { startHarness, protocol, stopCore, simulatedClock } from "./harness.ts";
+import { openCommandStream, startHarness, protocol, stopCore, simulatedClock } from "./harness.ts";
 type Harness = Awaited<ReturnType<typeof startHarness>>;
 const description = {
   reports: ["status", "settings", "telemetry", "observation"],
@@ -17,6 +17,7 @@ async function asset(h: Harness, body: unknown = description) {
     body,
   });
   assert.equal(registered.status, 201, JSON.stringify(registered.body));
+  await openCommandStream(h.core.url, issued.body.key);
   return {
     id: registered.body.asset_id as string,
     key: issued.body.key as string,
@@ -351,6 +352,7 @@ test("F9 registration announces initial contact [api.md#contact, api.md#reads]",
       .filter((e) => e.kind === "asset.contact")
       .map((e) => [e.record.asset_id, e.record.contact]);
     assert.deepEqual(contact, [
+      [a.id, "online"],
       [a.id, "online"],
       [radio, "offline"],
     ]);
@@ -1469,7 +1471,7 @@ test("imagery requires GeoKeyDirectory in the first image directory [api.md#obje
   }
 });
 
-test("PR53-3 startup cursor includes work accepted before subscribing [api.md#asset-and-gateway-calls]", async () => {
+test("PR53-3 startup cursor receives work once subscribed [api.md#asset-and-gateway-calls]", async () => {
   const h = await startHarness();
   const abort = new AbortController();
   try {
@@ -1486,8 +1488,7 @@ test("PR53-3 startup cursor includes work accepted before subscribing [api.md#as
       Number.isSafeInteger(registered.as_of),
       "registration returns a stream cursor",
     );
-    const sent = await task(h, registered.asset_id);
-    assert.equal(sent.status, 202, JSON.stringify(sent.body));
+    assert.equal((await task(h, registered.asset_id)).body.error, "asset_offline");
     const r = await fetch(h.core.url + "/events?after=" + registered.as_of, {
       headers: {
         authorization: `Bearer ${issued.key}`,
@@ -1496,6 +1497,8 @@ test("PR53-3 startup cursor includes work accepted before subscribing [api.md#as
       signal: abort.signal,
     });
     assert.equal(r.status, 200);
+    const sent = await task(h, registered.asset_id);
+    assert.equal(sent.status, 202, JSON.stringify(sent.body));
     const reader = r.body!.getReader();
     let text = "";
     while (!text.includes(`id: ${sent.body.event_id}\n`)) {

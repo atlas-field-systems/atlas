@@ -1,7 +1,7 @@
 import { setImmediate } from "node:timers/promises";
 import type { SimClock } from "./clock.ts";
 export type Fault =
-  | { kind: "loseRequest" | "loseResponse" | "repeat" | "cutStream" }
+  | { kind: "loseRequest" | "loseResponse" | "repeat" | "cutStream" | "blackholeStream" }
   | { kind: "delay"; ms: number }
   | { kind: "refuse"; status: number };
 type Rule = { caller: string; path: string; fault: Fault; remaining: number };
@@ -196,6 +196,7 @@ export class Network {
                 if (chunk.done) break;
                 if (network.chunkTurnDelay) await setImmediate();
                 network.activity++;
+                if (fault?.kind === "blackholeStream") continue;
                 target.enqueue(chunk.value);
                 if (fault?.kind === "cutStream") {
                   traffic.streamCuts = (traffic.streamCuts ?? 0) + 1;

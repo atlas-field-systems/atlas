@@ -87,19 +87,10 @@ test("floor and drops unblock later work [sdk/docs/asset.md#the-queue-helper: Ho
   });
   assert.equal(f.q.next()?.task_id, 5);
 });
-test("64 held Tasks refuse more; now cancels lower work [sdk/docs/asset.md#the-queue-helper: Refuses, The app pulls]", () => {
+test("queue keeps all 65 Tasks; now cancels lower work [sdk/docs/asset.md#the-queue-helper: Refuses, The app pulls]", () => {
   const f = fixture();
   f.deliver(Array.from({ length: 65 }, (_, i) => i + 1));
-  assert.equal(f.q.held().length, 64);
-  assert.ok(
-    f.reports.some(
-      (r) =>
-        r.type === "report.status" &&
-        r.kind === "task" &&
-        r.task_id === 65 &&
-        r.task_state === "cancelled",
-    ),
-  );
+  assert.equal(f.q.held().length, 65);
   assert.equal(f.q.next()?.task_id, 1);
   f.deliver([67], { now: true });
   assert.deepEqual(f.stops, [1]);

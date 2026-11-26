@@ -47,6 +47,13 @@ export async function stopCore(
   return stopping;
 }
 export const protocol = await loadPackagedProtocol();
+export async function openCommandStream(url: string, key: string) {
+  const response = await fetch(url + "/events", {
+    headers: { authorization: `Bearer ${key}`, "Atlas-Definitions": protocol.hash },
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response;
+}
 export const password = "contract-password-unique";
 export async function startHarness(
   testClock: Clock = clock,
