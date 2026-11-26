@@ -5,7 +5,7 @@ import * as objects from "../pillars/objects.ts";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { access, open, readdir, rename, rm } from "node:fs/promises";
-import { join, basename } from "node:path";
+import { join } from "node:path";
 import { createZip, readZip } from "./zip.ts";
 import { redactConfig } from "../config.ts";
 import { redact } from "../log.ts";
@@ -17,7 +17,6 @@ type Run = {
   run_id: number;
   started_at: number;
   resumes: string;
-  ended_at: number | null;
 };
 type Digest = { size: number; sha256: string };
 export interface StopParts {
@@ -33,27 +32,23 @@ function runRow(store: Store, id?: number): Run {
   )!;
 }
 
-export function clearRun(
+async function clearRun(
+  env: Env,
   store: Store,
   tables: readonly TableDef[],
   runId: number,
-  zipName: string,
-): void {
+) {
   store.write((tx) => {
     for (const table of [...tables].reverse())
       if (table.runScoped)
         tx.run(`DELETE FROM "${table.name}" WHERE run_id=?`, runId);
     administration.clearRemoved(tx, runId);
-    tx.run(
-      "UPDATE runs SET ended_at=?,outcome='archived',zip_name=? WHERE run_id=?",
-      tx.now,
-      zipName,
-      runId,
-    );
+    tx.run("UPDATE runs SET ended_at=?, outcome='archived' WHERE run_id=?", tx.now, runId);
   });
+  await finishClear(env, store, runId);
 }
 
-async function clearFiles(env: Env, runId: number) {
+async function finishClear(env: Env, store: Store, runId: number) {
   await rm(env.paths.objectsDir(runId), { recursive: true, force: true });
   await rm(env.paths.logDir(runId), { recursive: true, force: true });
   await rm(
@@ -68,6 +63,7 @@ async function clearFiles(env: Env, runId: number) {
     ),
     { force: true },
   );
+  store.write(tx => tx.run("DELETE FROM runs WHERE run_id=?", runId));
 }
 
 export async function recoverReset(
@@ -81,7 +77,7 @@ export async function recoverReset(
       "SELECT run_id FROM runs WHERE outcome='archived'",
     ),
   );
-  for (const run of archived) await clearFiles(env, run.run_id);
+  for (const run of archived) await finishClear(env, store, run.run_id);
   const run = store.read((tx) =>
     tx.get<Run>("SELECT * FROM runs WHERE ended_at IS NULL"),
   );
@@ -96,8 +92,7 @@ export async function recoverReset(
   }
   const checked = await checkZip(final, run.run_id);
   if (checked.ok) {
-    clearRun(store, tables, run.run_id, basename(final));
-    await clearFiles(env, run.run_id);
+    await clearRun(env, store, tables, run.run_id);
   } else
     process.stderr.write(
       `Reset ZIP check failed; resuming run ${run.run_id}: ${checked.why}\n`,
@@ -248,8 +243,7 @@ export async function stopRun(
     } finally {
       await directory.close();
     }
-    clearRun(store, tables, run.run_id, basename(final));
-    await clearFiles(env, run.run_id);
+    await clearRun(env, store, tables, run.run_id);
     return { archived: true, zip: final };
   } catch (error) {
     const explanation = error instanceof Error ? error.message : String(error);

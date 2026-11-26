@@ -26,7 +26,7 @@ manages no sessions of its own and keeps nothing by session.
   before the ZIP is checked keeps the picture, as any crash does
   ([Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly)).
 - **No retention.** The checked ZIP is the only copy of what Core held, and
-  nothing deletes a ZIP automatically.
+  nothing deletes a ZIP automatically. Core keeps no Reset count or history of completed operations.
 - **A failed ZIP deletes nothing.** If the ZIP fails, Core deletes nothing and
   tells the admin. The data is left for the admin to handle by hand. Atlas has
   no export or retry feature for it.

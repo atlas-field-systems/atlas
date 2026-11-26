@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { readdirSync, unlinkSync } from "node:fs";
 import { encodeShortId, SHORT_ID_CAPACITY } from "../ids.ts";
 import type { Store, TableDef, Tx } from "./db.ts";
@@ -10,11 +11,10 @@ export const TABLES: TableDef[] = [
     runScoped: false,
     ddl: `
 CREATE TABLE IF NOT EXISTS runs (
-  run_id     INTEGER PRIMARY KEY,           -- MAX+1; rows are never deleted, so a run_id is never reused
+  run_id     INTEGER PRIMARY KEY,           -- opaque picture identifier
   started_at INTEGER NOT NULL,
   ended_at   INTEGER,                       -- NULL: running, or stopped unexpectedly
   outcome    TEXT CHECK (outcome IN ('archived', 'archive_failed')),
-  zip_name   TEXT,
   resumes    TEXT NOT NULL DEFAULT '[]',    -- JSON [{last_sign_of_life, resumed_at}], one per unexpected stop
   last_track_seq      INTEGER NOT NULL DEFAULT 0,   -- per-run ID counters (ids.ts): survive deletes,
   last_geofeature_seq INTEGER NOT NULL DEFAULT 0,   -- start again next run
@@ -76,9 +76,11 @@ export function beginOrResume(env: Env, store: Store): RunStart {
         lastSignOfLife: last,
       } as const;
     }
-    const id = tx.get<{ id: number }>(
-      "SELECT COALESCE(MAX(run_id),0)+1 id FROM runs",
-    )!.id;
+    // Keep the numeric API while using all 53 exact integer bits.
+    let id: number;
+    do {
+      id = Number(randomBytes(8).readBigUInt64BE() >> 11n);
+    } while (!id || tx.get("SELECT 1 FROM runs WHERE run_id=?", id));
     tx.run("INSERT INTO runs(run_id,started_at) VALUES (?,?)", id, tx.now);
     return { kind: "new", runId: id, startedAt: tx.now } as const;
   });

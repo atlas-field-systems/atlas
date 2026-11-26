@@ -1,4 +1,5 @@
 import { checkAnchors, recordFailure } from "../src/scenario.ts";
+import { DatabaseSync } from "node:sqlite";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { test } from "node:test";
@@ -67,6 +68,19 @@ test("crash resumes and deliberate stop archives then starts an empty run [core/
     const stopped = await core.stop();
     assert.equal(stopped.code, 0);
     assert.equal(stopped.zips.length, 1);
+    const db = new DatabaseSync(join(root, "data", "core.sqlite"), { readOnly: true });
+    try {
+      assert.deepEqual(db.prepare("SELECT * FROM runs").all(), []);
+    } finally {
+      db.close();
+    }
+    const manifest = JSON.parse((await promisify(execFile)(
+      "unzip", ["-p", join(root, "archive", stopped.zips[0]), "manifest.json"],
+    )).stdout);
+    assert.equal(manifest.run_id, initial.run_id);
+    assert.equal(manifest.resumes.length, 1);
+    assert.ok(manifest.started_at <= manifest.resumes[0].resumed_at);
+    assert.ok(manifest.resumes[0].resumed_at <= manifest.ended_at);
     const archive = (
       await promisify(execFile)(
         "unzip",
@@ -102,7 +116,7 @@ test("crash resumes and deliberate stop archives then starts an empty run [core/
     await core.start();
     admin.close();
     admin = account();
-    assert.equal(value(await admin.connect()).run_id, initial.run_id + 1);
+    assert.notEqual(value(await admin.connect()).run_id, initial.run_id);
     value(await admin.login("ADM", "simulation-password"));
     assert.deepEqual(value(await admin.call("entities")).geofeatures, []);
     assert.deepEqual(value(await admin.call("objects")).items, []);

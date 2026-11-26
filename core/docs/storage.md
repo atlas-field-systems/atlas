@@ -17,7 +17,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 
 | Table | Owner | Holds |
 | --- | --- | --- |
-| `runs` | Shared | Each `run_id`, when Core started and stopped with it, and each unexpected stop Core resumed from. Rows stay after a Reset clears the picture, so `run_id` is never reused |
+| `runs` | Shared | Current picture identity, start time and crash recovery evidence. A failed export retains its row for manual recovery |
 | `asset_ids` | Shared | The last `asset_id` Core assigned. It stays after a Reset, so no Asset ID is ever reused ([Reset and identity](../../atlas/reset-and-identity.md#ids)) |
 | `events` | Shared | The [event log](api.md#the-event-log-and-live-stream): `event_id`, `time`, `kind`, `asset_id`, and the record |
 | `idempotency_keys` | Shared | Each caller's keys since the last Reset, with a hash of the body and the non-secret response or credential acknowledgment ([retry rules](api.md#callers-and-credentials)) |
@@ -49,9 +49,9 @@ kept twice, except the queue copy described above.
 
 ## Reset and `run_id`
 
-`run_id` is the built name of the counter that changes at each
-[Reset](reset.md). A start after a stop adds a row to `runs` with the next
-`run_id`, a rising integer never reused. A start after a crash finds a `run_id`
+Core draws a random positive 53-bit integer for each new picture and checks it
+against retained rows. A successful [Reset](reset.md) removes the lifecycle row.
+A start after a crash finds a `run_id`
 with no end and [keeps the picture](reset.md#when-core-stops-unexpectedly)
 instead. Every row in `assets`, `tasks`, `queues`, `geofeatures`,
 `objects`, `sessions`, `idempotency_keys`, and `events` carries its `run_id`,
