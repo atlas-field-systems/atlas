@@ -4,7 +4,7 @@ Project-wide choices that every Atlas part follows.
 
 Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in [Keep judgment sharp](CHARTER.md#keep-judgment-sharp).
 
-The owner's dated product decisions are the accepted [ADRs](../docs/adr/README.md),
+The owner's dated product decisions are the accepted [ADRs](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md),
 which win over this page.
 
 ## Two layers of documentation
@@ -226,7 +226,7 @@ Command Interface ([Build order](build-order.md)).
   ([decision log](archive/decision-log.md#build-and-test)).
 - Any change to Protocol files, wording included, is a new version. Wording
   fixes wait for the next real release, and every part updates together
-  ([Protocol ADR-0001](../protocol/docs/adr/0001-any-change-to-protocol-is-a-new-version.md)).
+  ([Protocol ADR-0001](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/adr/0001-any-change-to-protocol-is-a-new-version.md)).
 - Once published, programs select Protocol through their package dependency.
 - All Atlas work lands in this repository through `main`. Only approved commits
   on `main` are released through `prod`.
