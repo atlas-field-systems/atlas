@@ -74,21 +74,21 @@ though it is not aboard it.
 ## An operation runs without planned restarts
 
 Core starts before any other part of an operation and stops after all of them.
-Each start of Core begins a new, empty run, and stopping Core on purpose ends it
-([Runs and identity](runs-and-identity.md)). Nobody restarts Core during an
-operation. If it crashes, it resumes the same run when it starts again, and
-everyone reconnects. Gateways and Assets stay running too.
+Each start of Core after a stop begins an empty picture, and stopping Core is
+the Reset ([Reset and identity](reset-and-identity.md)). Nobody restarts Core
+during an operation. If it crashes, it keeps the same picture when it starts
+again, and everyone reconnects. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core's event log.
 
 An Asset whose app stops shows offline in Core, and the other Assets keep
 working. Nothing restarts the app on its own. If it fails in flight, the flight
 controller returns the vehicle home without Atlas, and the vehicle is inspected
-before its next flight. An app started again on the ground in the same run
+before its next flight. An app started again on the ground before the next Reset
 rejoins as the same Asset with the same ID, because its key proves which Asset
 it is, but its work does not resume
-([Runs and identity](runs-and-identity.md#keys-and-registration)). An Asset keeps nothing from an
-earlier run. A dropped link is not a stop: the app keeps its state and
+([Reset and identity](reset-and-identity.md#keys-and-registration)). An Asset keeps nothing from
+before a Reset. A dropped link is not a stop: the app keeps its state and
 reconnects as the same Asset.
 
 An Asset's [settings](settings.md) are its current configuration, kept in its entry.

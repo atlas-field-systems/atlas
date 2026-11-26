@@ -145,7 +145,7 @@ socket, flushes a final simulated position, destroys the proxy connections, and
 resumes the socket. It requires telemetry after proxy destruction to prove the
 buffered-delivery race is exercised, then rejects telemetry dated after the last
 socket data event completes. The socket observer changes no production path.
-Each run saves both cut times and telemetry times in `equipment-cut.json`. After
+Each scenario saves both cut times and telemetry times in `equipment-cut.json`. After
 restoration, telemetry must resume with new acquisition times. The flight
 controller retains its GCS failsafe throughout.
 
@@ -189,7 +189,7 @@ GCS timeout, then disarming within 3 metres of the arming home. This observer
 sends no GCS heartbeat. Only after landing does the scenario start the CLI
 again with its original key. Core must keep the same identity, mark unfinished
 Tasks dropped without a final outcome, and receive fresh telemetry without
-resuming earlier work. Each run retains `crash.json` with the kill time,
+resuming earlier work. Each scenario retains `crash.json` with the kill time,
 restart time, heartbeat modes, armed state, and landing position.
 
 The flight and crash scenarios open the Asset ZIP and check its README, summary,

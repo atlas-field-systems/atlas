@@ -35,7 +35,7 @@ behavior stay Asset code, set in the Asset app's
 ## How it behaves
 
 - **Registration.** The Asset app registers the vehicle as a new Asset when it
-  starts, as every [Asset on IP](../../atlas/runs-and-identity.md#keys-and-registration) does.
+  starts, as every [Asset on IP](../../atlas/reset-and-identity.md#keys-and-registration) does.
 - **Contact.** The Asset is online while its app runs and reaches Core over IP.
   Losing the SiK link is not lost contact with Core: the vehicle link is
   reported as a [subsystem](../../asset/docs/status.md) that turns faulted, and

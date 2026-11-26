@@ -4,7 +4,7 @@
  *
  * It is the only place that picks the real clock and reads a config file.
  * SIGTERM or SIGINT (docker stop, Ctrl-C) is the admin's deliberate stop, which
- * is Reset (runs-and-identity.md#a-run-and-reset). SIGKILL or a power loss is a
+ * is Reset (reset-and-identity.md#the-picture-and-reset). SIGKILL or a power loss is a
  * crash, and the next start resumes the run.
  */
 import { systemClock } from "./clock.ts";

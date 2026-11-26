@@ -1,7 +1,7 @@
 # Core architecture
 
 `startCore({clock, config})` is the module interface. It returns the bound URL,
-run ID, debug URL, and `stop`. Outside programs use HTTP.
+`run_id`, debug URL, and `stop`. Outside programs use HTTP.
 
 ## Modules
 
@@ -31,17 +31,17 @@ Append validates records with Protocol. Each request kind names its recipient an
 requires both to match as well as `request_id`. There is no second requests table.
 Streams read pages from disk and keep only a cursor, never a backlog.
 
-Global short IDs use a persistent sequence that skips account IDs. Per-run
-counters survive deletion. Fusion is a pure function plus an event follower,
+Global short IDs use a persistent sequence that skips account IDs. Counters that start again at each Reset
+survive deletion. Fusion is a pure function plus an event follower,
 with its cursor committed alongside Track changes. Contact deadlines use the
 injected clock; persistent consequences belong to the offline transaction.
 
 ## Schema ownership
 
 Each pillar exports its table definitions and owns its SQL. Shared storage
-owns runs, counters, events, and retry keys. [Storage](storage.md) lists the
+owns the `runs` table, counters, events, and retry keys. [Storage](storage.md) lists the
 tables and [pillars](pillars.md#rules) defines access across owners.
 
 All pillars and the Plugin interface are implemented.
-[Reset](reset.md) writes and checks the archive before clearing the run.
+[Reset](reset.md) writes and checks the archive before clearing the picture.
 Contact stops and Fusion drains before Reset exports state.

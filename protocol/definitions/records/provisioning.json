@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/provisioning.json",
   "title": "Provisioning",
-  "description": "An admin provisioned or removed a gateway or Plugin. It names exactly one of gateway_id or plugin_id, and requested_by is the admin. The event kind says which, so the record does not. Assets are not provisioned; they join a run by registration.",
+  "description": "An admin provisioned or removed a gateway or Plugin. It names exactly one of gateway_id or plugin_id, and requested_by is the admin. The event kind says which, so the record does not. Assets are not provisioned; they join by registration.",
   "type": "object",
   "required": [
     "time",

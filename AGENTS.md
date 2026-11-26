@@ -20,7 +20,7 @@ Propose changes to the owner rather than making them quietly. See
 
 | Folder | What lives there | Status |
 |---|---|---|
-| [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide principles, and [runs and identity](atlas/runs-and-identity.md) | Active |
+| [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide principles, and [reset and identity](atlas/reset-and-identity.md) | Active |
 | [protocol/](protocol/) | The spec: shared domain records as definitions, laws, examples and docs, plus the one validator. Component configuration and diagnostic logs live with their owners. When published, its package version is its only version; definitions and records carry no protocol version | Draft, unpublished |
 | [sdk/](sdk/) | The SDK: the client for the Core API, used by operator applications, Assets on IP, gateways and Plugins. Loads Protocol's definitions; defines no record itself. Runtime code is built | Built |
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is built | Built |
@@ -43,8 +43,8 @@ Propose changes to the owner rather than making them quietly. See
 - Want a ready setup for one kind of equipment, such as SiK? Go to `tools/`.
 - Want what the owner decided and why? Read the ADRs: [docs/adr/](docs/adr/) for
   decisions that span parts, and `<part>/docs/adr/` for decisions one part owns.
-- Want what a run is and how Assets get their IDs? Go to
-  [runs and identity](atlas/runs-and-identity.md).
+- Want what Reset does and how Assets get their IDs? Go to
+  [reset and identity](atlas/reset-and-identity.md).
 - Want an idea Atlas may want later? Look in the [drawer](docs/drawer/README.md).
 
 ### Where each topic lives
@@ -55,7 +55,7 @@ Each topic has one home. Other pages link to it.
 | --- | --- |
 | The owner's decisions, dated and scoped, with why | [docs/adr/](docs/adr/) and `<part>/docs/adr/` ([layout](docs/agents/domain.md)) |
 | Ideas no part owns yet | [docs/drawer/](docs/drawer/README.md) |
-| Runs, Reset, what carries over, registration, IDs, keys, gateway changes | [atlas/runs-and-identity.md](atlas/runs-and-identity.md) |
+| Reset, what carries over, registration, IDs, keys, gateway changes | [atlas/reset-and-identity.md](atlas/reset-and-identity.md) |
 | Who Atlas is for, what it is not, and how to tell it works | [atlas/goal.md](atlas/goal.md) |
 | Project-wide principles | [atlas/CHARTER.md](atlas/CHARTER.md) |
 | The walled city: how the parts fit together | [atlas/using-atlas.md](atlas/using-atlas.md#the-walled-city) |
@@ -113,8 +113,8 @@ replace the Charter.
   wording to [the retired phrases](.github/retired-phrases.json).
 - **One home per topic.** State each rule once, in the page that owns it. Other
   pages link to it with at most a one-line pointer, never a restatement.
-- **State the scope.** Where it matters, say whether a rule holds within a run
-  or across runs, for a named place or a drawn shape, and for Hold or pause.
+- **State the scope.** Where it matters, say whether a rule holds until the next Reset
+  or across a Reset, for a named place or a drawn shape, and for Hold or pause.
 - **Write product rules as outcomes.** Say what the operator, admin or Asset
   sees. Mechanism (endpoints, records, fields) goes in the Core API, Protocol,
   and Fieldlink docs.

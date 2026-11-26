@@ -87,7 +87,7 @@ Observation. It needs no equipment-control commands. Core's Fusion decides Track
 
 An Asset reports each target it sees as a whole `report.observation`, under an
 `observation_id` it chooses and keeps while it sees the same target. It never
-reuses an `observation_id` for another target in the same run, even after it
+reuses an `observation_id` for another target before the next Reset, even after it
 restarts ([Protocol](../../protocol/README.md#records)). Pointing commands are not
 designed yet.
 
@@ -149,7 +149,7 @@ never restarts the app on its own: an app that fails in flight
 ([an operation runs without planned restarts](../../atlas/using-atlas.md#an-operation-runs-without-planned-restarts)).
 Link reconnects keep the same running app. An admin may remove an Asset; it can
 then register again as a new Asset
-([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
+([Reset and identity](../../atlas/reset-and-identity.md#keys-and-registration)).
 
 Installation is repeatable on ordinary Linux, with example configurations for
 the tracker and quadcopter. No custom Raspberry Pi image is planned.

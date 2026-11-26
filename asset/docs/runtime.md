@@ -5,7 +5,7 @@ This page describes their implementation.
 
 The runtime stores the phase separately from the active execution and operator
 override. Each execution tracks suspended time, which does not consume its
-command timeout. Repeating the current run state does not reissue movement. A
+command timeout. Repeating the current `run_state` does not reissue movement. A
 critical fallback keeps the failed response's rule and priority and is marked
 as a fallback, so a later failure cannot start another return. Command failure
 and timeout share one failure path. Land and Return to home failures

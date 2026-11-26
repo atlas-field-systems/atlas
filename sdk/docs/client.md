@@ -173,13 +173,13 @@ refuses it without accepting an answer. An `unknown` result reserves that reply
 for the same attempt: use its `retry()` handle until the outcome is known.
 An accepted answer prevents another answer through that reply.
 
-## Run changes and idle contact
+## Reset and idle contact
 
-A connection binds one run. After a transport failure, the client checks
-`/about` before resending. A new run fences every old retry and returns
-`run_ended` without sending. Call `connect()` to bind the new run after
-discarding the old state. An invalid response returns `invalid_response`.
+A connection binds one `run_id`, the counter Core changes at each Reset.
+After a transport failure, the client checks `/about` before resending. A new
+`run_id` fences every old retry and returns `run_ended` without sending. Call
+`connect()` to bind the new `run_id` after discarding the old state. An invalid response returns `invalid_response`.
 
 Gateway and Plugin clients use `holdContact()` while idle. It checks `/about`
 after `heartbeatMs` without a request. Stop its handle when the host ends.
-It stops on lost authentication, a mismatch, a new run, or client close.
+It stops on lost authentication, a mismatch, a Reset, or client close.

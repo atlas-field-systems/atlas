@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0021
 date: 2026-11-14
 ---
 
@@ -9,4 +9,4 @@ On slow links such as LoRa, airtime is scarce. Atlas uses all available airtime 
 
 Atlas has no fleet-size target. For every field link, measured capacity decides how many Assets it carries. The early rough guess of about 20 Assets is neither a fleet target nor a pass bar.
 
-Rules: [Fleet](../../atlas/scale.md#fleet), [Use slow links fully and efficiently](../../atlas/scale.md#use-slow-links-fully-and-efficiently)
+Rules: [Fleet](../../atlas/scale.md#fleet), [Operator deadlines come first](../../atlas/scale.md#operator-deadlines-come-first)

@@ -552,7 +552,7 @@ test("place copies, optional updates, imagery kind rules and Fusion freshness [a
   }
 });
 
-test("restart forgets held Tasks before admitting new work [api.md#reads, runs-and-identity.md#keys-and-registration]", async () => {
+test("restart forgets held Tasks before admitting new work [api.md#reads, reset-and-identity.md#keys-and-registration]", async () => {
   const c = simulatedClock(),
     h = await startHarness(c);
   try {

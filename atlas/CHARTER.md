@@ -84,7 +84,7 @@ The owner decides Atlas's data formats and data structures. Protocol follows the
 - Counters are ordinary numbers, not long numbers written as text.
 - IDs that people read or that cross a field link are 1 to 4 letters or digits.
   Event IDs are integers. Assets choose `observation_id`; Core assigns the
-  others, `asset_id` included ([Runs and identity](runs-and-identity.md#ids)).
+  others, `asset_id` included ([Reset and identity](reset-and-identity.md#ids)).
 - Records never carry credentials.
 - Protocol's package version is its only version
   ([law 14](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/laws.md)).
@@ -141,7 +141,7 @@ quietly diverge in code.
 
 Core, gateways, Assets, and the libraries they use provide detailed diagnostic
 logging from the start. Each program collects its own events and its libraries'
-events for its run archive. Logging never blocks equipment control or request
+events for its Reset ZIP. Logging never blocks equipment control or request
 handling, and every gap is listed in the archive. Their owning docs define
 logging and configurable options; Protocol defines shared data, not a runtime
 logging service.
@@ -172,7 +172,7 @@ records the owner's decision.
 - **Simulations prove Atlas works.** Behavior that crosses parts is tested by
   running the real parts together, through their public interfaces, in
   [Simulations](https://github.com/atlas-field-systems/atlas/tree/main/simulations).
-  Every run can be repeated and leaves a record someone can check again.
+  Every simulation can be repeated and leaves a record someone can check again.
 - **Focused tests for deep modules.** Dense logic inside one part, such as
   failsafe rules, the Task queue, Protocol's validator, or storage and
   recovery, may have focused tests at that module's own interface, never its
@@ -200,7 +200,7 @@ records the owner's decision.
   phrases. A written rule is the fallback.
 - **No flaky tests.** A test that sometimes fails with no change is a bug in the
   test or the part, fixed at once and never retried until it passes. Simulated
-  time and recorded seeds make every run repeatable.
+  time and recorded seeds make every simulation repeatable.
 - **Say what was verified.** A result names what passed, what failed, and what
   was not checked. A simulated pass is labelled simulated and proves nothing
   about real flight or radios.

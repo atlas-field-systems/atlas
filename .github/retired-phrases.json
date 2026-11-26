@@ -234,10 +234,10 @@
     "example": "An Asset starts with no Atlas failsafe rules, battery rules included."
   },
   {
-    "phrase": "\\b(stopping core|every stop( of core)?|any stop( of core)?) is reset\\b",
-    "unless": "\\b(on purpose|deliberate(ly)?)\\b",
-    "why": "Only a deliberate stop of Core is Reset; a crash or power loss resumes the run.",
-    "example": "A run lasts from one start of Core to the next stop, and stopping Core is Reset."
+    "phrase": "\\b(a |any |every )?(crash|power loss)(es)? (is|counts as|triggers|causes) (a |the )?reset\\b",
+    "unless": "\\b(not|never|no)\\b",
+    "why": "Only stopping Core is Reset; a crash or power loss keeps the picture.",
+    "example": "A crash counts as a Reset."
   },
   {
     "phrase": "\\basset( |_)ids?\\b[^.]*\\b(start (again|over)|(is|are|gets?|get) reused|recycled)\\b",
@@ -510,5 +510,30 @@
     "phrase": "\\bno open-source software does this\\b",
     "why": "The problem is stated as the gap: one person sees Observations from several Assets and sends work to another from that picture.",
     "example": "No open-source software does this."
+  },
+  {
+    "phrase": "\\bruns and identity\\b|\\bruns-and-identity\\b",
+    "why": "Atlas has no run concept; the page is Reset and identity.",
+    "example": "See Runs and identity for how Assets get their IDs."
+  },
+  {
+    "phrase": "\\b(the|this) (current|next|new|earlier|previous|ended|same|whole|open) run\\b|\\b(a|each|every) (new |next |earlier |previous |ended |same )?run\\b|\\bthe run\\b|\\bmid-run\\b|\\b(within|across|between) (a |the )?runs?\\b|\\b(the|a|its|this|that) run's\\b|\\b(in|for|during) (this|a) run\\b",
+    "why": "Atlas has no run concept. Core keeps one picture from start until it is stopped, and stopping it is the Reset. Use \"until the next Reset\" or \"after a Reset\".",
+    "example": "Each run starts with an empty picture, and a new run discards the current run."
+  },
+  {
+    "phrase": "\\b(uses?|fills?|spends?) all (the |its )?available airtime\\b|\\bsend as much as the link carries\\b|\\bairtime left unused\\b[^.]*\\bwasted\\b",
+    "why": "Operator deadlines come first; telemetry fills only the airtime left over (ADR-0021).",
+    "example": "Atlas uses all available airtime whenever useful data is waiting."
+  },
+  {
+    "phrase": "\\b(lasts|last) up to about 2 hours\\b|\\bup to about 1 GB\\b",
+    "why": "Run length and ZIP size were guesses, not targets.",
+    "example": "Each Reset ZIP can be up to about 1 GB."
+  },
+  {
+    "phrase": "\\bsettings task\\b[^.]*\\bkeeps doing what it was doing\\b|\\bthe asset keeps doing what it was doing\\b",
+    "why": "A failed settings Task clears the queue like any failed Task (Asset ADR-0005).",
+    "example": "When a settings Task fails, the Task fails with the reason and the Asset keeps doing what it was doing."
   }
 ]

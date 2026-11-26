@@ -126,26 +126,26 @@ and any battery response during an intentional wait.
 The Asset owns
 [the trigger conditions, cancellation rule, overrides, and remaining decisions](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md).
 
-## Keep the whole run for debugging
+## Keep everything for debugging
 
 When the operator spins down the system, Core and each Asset write their own
 Reset ZIP, and so does each gateway when one is used. The operator shuts the Assets
 down first, and then the admin stops Core on its own computer. Stopping Core
-ends the run ([Runs and identity](runs-and-identity.md#a-run-and-reset)).
+is the Reset ([Reset and identity](reset-and-identity.md#the-picture-and-reset)).
 Core's ZIP holds:
 
-- Its run's data, including the event log: every accepted domain request and every
+- Its data since the last Reset, including the event log: every accepted domain request and every
   stored report, in order.
 - Its diagnostics, such as errors, link drops, and contact changes.
 - Its configuration, without secrets.
 - A plain readable summary: start and end, Assets, Tasks, and outcomes.
 
-Core checks its ZIP and then clears the run, so the next start of Core begins
+Core checks its ZIP and then clears the picture, so the next start of Core begins
 with an empty map. Each ZIP lands in a folder on its own computer, and a person
 copies the ZIPs off by hand.
 
 After using the system, give the Reset ZIPs to an AI agent for full context on
-the run and any errors. Each system's documentation defines its own ZIP contents
+what happened and any errors. Each system's documentation defines its own ZIP contents
 and Reset procedure: [Core](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md),
 [Asset](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip),
 and [gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip).

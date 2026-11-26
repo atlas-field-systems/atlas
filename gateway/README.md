@@ -33,13 +33,12 @@ Everything about the radio belongs to the Fieldlink.
   admin picks a package file, such as one on a USB stick, from the same screen.
   The gateway app refuses a Fieldlink that does not work with its
   [gateway interface](#the-gateway-interface) version, and says which version it
-  needs. An install or update takes effect when the gateway next starts,
-  between runs.
+  needs. An install or update takes effect when the gateway next starts.
 - **One Fieldlink at a time.** The admin picks one installed Fieldlink in the
   gateway's configuration. At start the gateway app checks that the Fieldlink
   is installed and fits its version, and that its radio hardware is present; if
   not, it does not start and prints why. Changing Fieldlinks means changing the
-  configuration and restarting the gateway between runs.
+  configuration and restarting the gateway.
 
 ## The gateway interface
 
@@ -73,7 +72,7 @@ and many Assets ride on it. Two gateways in one network are out of scope.
 
 How radio Assets register, keep their IDs, and what happens when the gateway
 changes is in
-[Runs and identity](../atlas/runs-and-identity.md#radio-assets). The calls
+[Reset and identity](../atlas/reset-and-identity.md#radio-assets). The calls
 behind it are in the [Core API](../core/docs/api.md#radio-assets).
 
 ## Gateway contact
@@ -90,14 +89,14 @@ rule.
 
 ## The gateway's Reset ZIP
 
-The gateway app stays running across Core's runs, and keeps its own record for
-each one. Like every part, it records detailed diagnostics for its app and its
+The gateway app stays running across Core's Resets, and keeps its own record for
+the time between each one. Like every part, it records detailed diagnostics for its app and its
 Fieldlinks, never records a credential, and never sends logs over a field link.
 
-- **When Core's run ends**, the gateway writes a ZIP for that run. It knows the
-  run ended when it reaches Core again and `GET /about` shows a new `run_id`
-  ([Core API basics](../core/docs/api.md#basics)). Its time cut off from Core
-  belongs to the run that ended.
+- **When Core is Reset**, the gateway writes a ZIP for the time before it. It
+  knows Core was Reset when it reaches Core again and `GET /about` shows a new
+  `run_id` ([Core API basics](../core/docs/api.md#basics)). Its time cut off
+  from Core belongs to the time before the Reset.
 - **When the gateway shuts down**, it writes a ZIP for everything since its last
   one. After a crash or power loss, its next start writes that ZIP first,
   marked "the gateway stopped unexpectedly; this record may be incomplete".
@@ -130,8 +129,8 @@ Behavior tests come from these, once the gateway exists.
 
 - Switch on a radio on the private link. It appears as a new Asset with a
   Core-picked ID, registered by the gateway, and the radio learns its ID.
-- Lose and regain the radio's link during the run. It keeps its ID.
-- Start a new run and switch the radio on again. It comes back as a new Asset
+- Lose and regain the radio's link. It keeps its ID.
+- Stop and start Core, then switch the radio on again. It comes back as a new Asset
   with a new ID.
 - Send a frame for an Asset from a different radio identity, then replay one of
   its earlier frames. The gateway rejects both, and Core stores neither.
@@ -145,13 +144,13 @@ Behavior tests come from these, once the gateway exists.
 - Open the gateway's screen with internet, and press install on Meshtastic.
   It is installed with no other step.
 - Install a newer version of the gateway's Fieldlink from a file, with no
-  internet, and restart the gateway between runs. It runs the new version with
+  internet, and restart the gateway. It runs the new version with
   the same gateway app.
 - Install a Fieldlink that does not work with this gateway app's version. The
   gateway app refuses it and says which versions it needs.
 - Stop the gateway. The gateway and every radio it carries show offline after
   `offline_after_s`.
-- Remove the gateway and add a new one during the run. Each radio the new
+- Remove the gateway and add a new one. Each radio the new
   gateway hears registers as a new Asset with a new ID; the old Assets stay
   offline.
 - Remove the gateway and add none. Its radios stay in the picture, offline,
@@ -159,12 +158,12 @@ Behavior tests come from these, once the gateway exists.
 - Kill Core and start it again while the gateway runs. `GET /about` shows the
   same `run_id`, the gateway writes no ZIP, and every radio keeps its ID.
 - Stop Core and start it again while the gateway runs. The gateway writes one
-  ZIP for the run that ended, and each radio it hears in the new run registers
+  ZIP for the time before the Reset, and each radio it hears after it registers
   as a new Asset.
 
 ## Related pages
 
-- [Runs and identity](../atlas/runs-and-identity.md): how radio Assets
+- [Reset and identity](../atlas/reset-and-identity.md): how radio Assets
   register, keep their IDs, and what happens when the gateway changes.
 - [Asset and gateway calls](../core/docs/api.md#asset-and-gateway-calls) and
   [radio Assets](../core/docs/api.md#radio-assets): what a gateway does at the

@@ -1,12 +1,13 @@
 // Fails when a retired phrase is back in the docs or the Protocol definitions. A retired
 // phrase teaches a rule the owner reversed; retired-phrases.json lists each one with why it
-// was retired and an example it must catch. The archive keeps history
-// and is skipped. Run from the repository root: node .github/scripts/check-retired.mjs
+// was retired and an example it must catch. The archive and superseded ADRs keep history
+// and are skipped. Run from the repository root: node .github/scripts/check-retired.mjs
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 const list = JSON.parse(readFileSync('.github/retired-phrases.json', 'utf8'));
-const skip = (file) => file.startsWith('atlas/archive/');
+const superseded = (file) => /\/adr\/[^/]+\.md$/.test(file) && /^---\nstatus: superseded\b/.test(readFileSync(file, 'utf8'));
+const skip = (file) => file.startsWith('atlas/archive/') || superseded(file);
 const files = execFileSync('git', ['ls-files', '*.md', 'protocol/definitions/*.json'], { encoding: 'utf8' })
   .trim().split('\n').filter((file) => !skip(file));
 

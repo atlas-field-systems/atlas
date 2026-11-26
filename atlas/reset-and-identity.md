@@ -1,0 +1,142 @@
+# Reset and identity
+
+What Reset does, what carries over, and how Assets get and keep their IDs. This
+page owns those rules. The [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#asset-and-gateway-calls)
+has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md) the ZIP, and
+[Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md) what every Fieldlink provides. The
+[ADRs](../docs/adr/) from 0004 to 0008 record the decisions and why.
+
+## The picture and Reset
+
+Starting, stopping, resetting and updating Atlas are the user's job. Atlas
+manages no sessions of its own and keeps nothing by session.
+
+- **Core keeps one shared picture** from when it starts until the user stops it.
+- **A crash does not clear the picture.** If Core crashes, loses power, or its
+  computer reboots without being stopped, its next start continues the same
+  picture: the same Asset IDs and the same Task numbering. Nothing is reset.
+  Assets, gateways, Plugins, and operators reconnect as after a dropped link.
+- **Stopping Core is Reset.** The user stops Core on its own computer, and a
+  host shutdown or a container stop counts too. There is no Reset request, API
+  call, or button. Core writes its Reset ZIP, checks it, and only then clears
+  the picture. The operator is trusted to shut the Assets down first; Core does
+  not check. An Asset left running across a Reset is not supported.
+- **A checked ZIP completes the Reset.** Once the ZIP is written and checked,
+  the Reset is done, even if Core crashes before it finishes clearing. A crash
+  before the ZIP is checked keeps the picture, as any crash does
+  ([Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md#when-core-stops-unexpectedly)).
+- **No retention.** The checked ZIP is the only copy of what Core held, and
+  nothing deletes a ZIP automatically.
+- **A failed ZIP deletes nothing.** If the ZIP fails, Core deletes nothing and
+  tells the admin. The data is left for the admin to handle by hand. Atlas has
+  no export or retry feature for it.
+- **Updating means a full Reset.** Stop Core, update, and start again. Atlas
+  does not pin or check versions across a restart.
+- **Everyone signs in again** after Reset. Every session ends at Reset; a crash
+  ends none.
+- **Operator state starts fresh.** Shared links, hidden Tracks and other view
+  filters, drafts, and result overlays end at Reset. A link made before a
+  Reset never opens an item made after it.
+- **Each part writes its own ZIP:** [Core](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md),
+  [each Asset](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip), and
+  [each gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip). Merging them is
+  a separate process.
+
+Scope: only stopping Core is Reset. Between Resets nothing in the picture
+expires, and neither a dropped link nor a crash of Core ends anything.
+
+## What carries over
+
+| Carried across a Reset | Not carried |
+| --- | --- |
+| Accounts | Asset IDs, and every other ID Core assigns: Task, Track, geo feature, and Object |
+| Connection keys: for Assets on IP, gateways, and Plugins | The picture: Assets, Observations, Tracks, places, and Objects, and their history |
+| Installed Plugin setup | Operator state: sessions, links, and view filters |
+
+`event_id` keeps rising across Resets, so an old cursor never matches a new
+event. Core also keeps the last `asset_id` it assigned, so it never reuses an
+[Asset ID](#ids).
+
+## IDs
+
+- **Core assigns every `asset_id`** when the Asset registers, after every
+  Reset, and the acknowledgement tells the registrant: the Asset on IP, or the
+  gateway for a radio Asset. Nothing picks its own `asset_id`, and no
+  configuration holds one.
+- **An Asset ID is never reused**, not even after a Reset. Unlike the other
+  IDs Core assigns, it does not start again. For example, if `A7` was a drone
+  before a Reset, no Asset after it is `A7`; the drone gets a new ID, such as
+  `B2`.
+- **Core refuses registration when Asset IDs run out.** IDs are 1 to 4 letters
+  or digits, over a million of them. If Core ever has none left, it refuses
+  each new registration with `409 asset_ids_exhausted`, prints why on its
+  console and in its diagnostic log so the admin sees it, and adds no Asset. It
+  never reuses an old ID to make room.
+- **Assets choose `observation_id`**, unique for that Asset until the next
+  Reset.
+- **Core assigns the other IDs:** `task_id`, `track_id`, `geofeature_id`, and
+  `object_id`. Unlike `asset_id`, they start again after each Reset, so the
+  same ID can name a different item after it.
+
+Scope: an ID holds until the next Reset. Until then an Asset keeps its
+`asset_id` through reconnects, app restarts on the ground, and Core crashes;
+after the Reset it gets a new one.
+
+## Keys and registration
+
+- **Admins hand out keys, not IDs.** An admin creates a key for each Asset on
+  IP, gateway, and Plugin and copies it into that program's configuration.
+  An Asset key names no Asset. There is no enrollment key.
+- **An Asset on IP registers itself** with its key when it starts. Each key
+  registers at most one Asset at a time. Registering again with the same key
+  before a Reset returns the same `asset_id`, unless an admin removed that
+  Asset; then it registers as a new Asset with a new ID.
+- **A restarted app rejoins as itself.** Nothing restarts the app on its own.
+  If an Asset's app is started again on the ground, it registers with its key
+  and comes back as the same Asset, with the same `asset_id`. This holds even
+  if it forgot its ID: the key proves which Asset it is. It still never picks
+  or configures its own ID.
+- **Work does not resume after a restart.** A restarted app drops its queued
+  Tasks: operators see them marked not done and send again whatever still
+  matters. Nothing resumes on its own. When the app signs up again, Core drops
+  each of its Tasks with no final report, claiming no outcome
+  ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests)).
+  Results the app had not reported before the restart are lost.
+  An app that fails in flight stays down,
+  shown offline, while the flight controller returns the vehicle home
+  ([Failsafes](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md#if-the-app-fails-in-flight)).
+- **A removed Asset's ID ends.** If it registers again, it is a new Asset.
+
+## Radio Assets
+
+- **The gateway is an IP bridge.** A radio Asset holds no Core key and never
+  calls the Core API. It authenticates to its gateway through its Fieldlink.
+  Radio identity stays on the gateway side; Core knows radio Assets only by
+  `asset_id`.
+- **No advance setup.** The gateway registers a radio the first time it hears
+  it after a Reset. Core assigns its `asset_id`, and the gateway tells the
+  radio. There is no approval step.
+- **A restarted radio rejoins as itself.** If a radio Asset's app stops and
+  starts again, it identifies itself to its gateway through its Fieldlink and
+  keeps its `asset_id`, and the gateway signs it up again. Its work does not
+  resume, as for any restarted app.
+- **A removed radio can come back.** If it is heard again, the gateway
+  registers it as a new Asset with a new ID.
+- **One gateway for each network.** Each radio network has one gateway, and a
+  Core may run several networks ([Scale](scale.md#setup)). On a mesh
+  Fieldlink, Assets talk to each other and to their network's gateway, and
+  every radio Asset on the network rides on it.
+  No Asset uses two gateways. Two gateways in one network, and moving a
+  radio Asset to another gateway while it keeps its ID, are out of scope.
+
+## When the gateway changes
+
+- **Removed.** Its radio Assets stay in the picture, offline. No other gateway
+  takes them over.
+- **Replaced by another gateway.** The new gateway registers each radio it
+  hears as a new Asset with a new ID. The old Assets stay in the picture,
+  offline, and their unfinished Tasks are not carried over.
+- **Key replaced.** The gateway and its radios are unaffected.
+
+Scope: these hold until the next Reset. After it every radio registers again
+as a new Asset.

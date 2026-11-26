@@ -4,7 +4,7 @@ These numbers guide Atlas design. They are not hard limits.
 Design so Atlas works well at these sizes and does not break just past them.
 
 ## Fleet
-- Atlas has no set fleet size. An early figure of about 20 Assets was a rough guess, not a requirement or a test. How many Assets a field link carries is whatever its measured airtime allows.
+- Atlas has no set fleet size. An early figure of about 20 Assets was a rough guess, not a requirement or a test. A field link carries as many Assets as still meet the [operator deadlines](#operator-deadlines-come-first).
 - IDs that people read or that cross a field link are 1 to 4 letters or digits, such as `A1` ([the ID rule](CHARTER.md#keep-shared-data-simple)). That gives over a million IDs and keeps field-link frames short.
 
 ## Setup
@@ -16,17 +16,27 @@ Design so Atlas works well at these sizes and does not break just past them.
 - Each Fieldlink sets its own size limit and splits records into chunks if it needs to. Protocol records have no size cap and no chunking.
 - Expect a few Tasks or settings changes per minute per Asset.
 
-### Use slow links fully and efficiently
+### Operator deadlines come first
 
-On a slow link such as LoRa, airtime is the scarce thing, and Atlas spends all of it well.
+An operator sees a command start, and sees an Asset go offline, within about
+10 s and never more than 15 s ([ADR-0021](../docs/adr/0021-operator-deadlines-come-first-then-fill-the-link.md)).
+On a slow link such as LoRa, airtime is scarce, and these deadlines decide how
+it is spent.
 
-- **Send as much as the link carries.** Airtime left unused while an Asset has useful data is wasted. There is no fixed telemetry rate: an Asset reports as often as free airtime allows, more often on a quiet link and less often on a busy one.
-- **Spend every byte well.** The most important data goes first, and airtime never carries data that is already out of date or that the other end already has.
+- **Deadlines first.** Commands, the Task-started report, and contact proof go
+  first. Telemetry never makes them wait.
+- **Telemetry fills what is left.** There is no fixed telemetry rate: an Asset
+  reports as often as the leftover airtime allows, more often on a quiet link
+  and less often on a busy one.
+- **Spend every byte well.** Airtime never carries data that is already out of
+  date or that the other end already has.
+- **No fleet-size target.** A link carries as many Assets as still meet the
+  deadlines.
 
 [Asset communications](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#report-from-local-state)
 owns what an Asset chooses to send, and each Fieldlink owns how compactly it
 carries it ([Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides)).
 
-## Runs and storage
-- Each run lasts up to about 2 hours, limited by battery. Core should run all day across many runs.
-- Each Reset ZIP can be up to about 1 GB. Size is not a concern. The owner deletes old ZIPs by hand.
+## Storage
+- Core should run all day without a Reset.
+- Size is not a concern. The owner deletes old Reset ZIPs by hand.

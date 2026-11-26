@@ -12,10 +12,10 @@ failsafe reports. [Protocol](../../protocol/README.md) defines their fields.
 ## Start and connect
 
 An Asset on IP gets its key from an admin, in its
-[configuration](../config.md). Each run it joins as a new Asset and learns its
+[configuration](../config.md). After each Reset it joins as a new Asset and learns its
 `asset_id` from Core: an Asset on IP registers itself with its key, and a
 gateway registers a radio Asset for it.
-[Runs and identity](../../atlas/runs-and-identity.md) owns registration and
+[Reset and identity](../../atlas/reset-and-identity.md) owns registration and
 IDs. Once its identity,
 clock, and communications are ready, the Asset connects in the order the
 [Core API](../../core/docs/api.md#asset-and-gateway-calls) sets: check the
@@ -51,12 +51,12 @@ The app and its link stay running for the operation, as Core does. An Asset
 whose app stops shows offline, and the other Assets keep working. Nothing
 restarts the app on its own; an app that fails in flight
 [stays down](failsafes.md#if-the-app-fails-in-flight) while the flight
-controller returns the vehicle home. An app started again on the ground in the
-same run registers with its key and
-[rejoins as the same Asset](../../atlas/runs-and-identity.md#keys-and-registration),
+controller returns the vehicle home. An app started again on the ground before
+the next Reset registers with its key and
+[rejoins as the same Asset](../../atlas/reset-and-identity.md#keys-and-registration),
 but its work does not resume: it drops its queued Tasks, and operators send
 again what still matters.
-An Asset keeps nothing from an earlier run. A dropped link does not restart the
+An Asset keeps nothing from before a Reset. A dropped link does not restart the
 app or clear its state.
 
 ## Carry out work and report its result
@@ -162,7 +162,11 @@ takeoff.
 Pause is a setting, not a Task. It suspends current movement with a
 platform-specific hold: copters stop and hover in place, and ground vehicles
 brake and stop. A paused Asset does not advance its
-queue, though a Task sent with `now` still runs.
+queue.
+
+**Sending a Task now clears the pause.** If a Task is sent with `now` while the
+Asset is paused, the Asset runs it and reports `run_state` running. A later
+pause works as usual.
 
 Pause keeps the active Task; it does not end it. The Task stays `active` and
 continues when the Asset is set running again. The settings report showing
@@ -175,16 +179,22 @@ the queue report. The Asset reports its
 complete held, unstarted queue, without truncation or windows.
 
 Pause is not Hold. Hold is a command, like Land: it stops the Asset, completes,
-and keeps no earlier Task to resume. Pause keeps the active Task and resumes it.
+and keeps no earlier Task to resume. Pause keeps the active Task and resumes it
+([ADR-0016](../../docs/adr/0016-pause-is-a-setting-hold-is-a-command.md)).
 
 ### Settings
 
 A settings change names end states, so repeating one changes nothing. The Asset
 applies immediate changes in event order, alongside its own local changes, and a
 settings change Task when that Task runs. It reports the resulting values in a
-settings report rather than comparing operator and Asset clocks. When a settings
-Task's values can't be accepted, the Task fails with the reason and the Asset
-keeps doing what it was doing.
+settings report rather than comparing operator and Asset clocks.
+
+When a settings Task's values can't be accepted, the Task fails with the reason.
+Like any failed Task, it
+[clears the queue](failsafes.md#a-failed-command-cancels-the-remaining-tasks)
+([Asset ADR-0005](adr/0005-a-failed-command-clears-the-queue-and-the-asset-hovers.md)).
+A settings Task is never sent with `now`: an immediate settings change already
+does that.
 
 ## Handle failures and link loss
 
@@ -246,8 +256,8 @@ The app records equipment, module, and link evidence locally for the whole
 operation, including while disconnected. [Logging](logging.md) owns that record
 and the Asset's own Reset ZIP, written when the app shuts down. There is no
 remote shutdown command. The operator shuts the Assets down before the admin
-stops Core, which ends Core's run ([Reset](../../core/docs/reset.md)). An Asset
-left running into Core's next run is not supported.
+stops Core, which is the [Reset](../../core/docs/reset.md). An Asset
+left running across a Reset is not supported.
 
 ## Open
 

@@ -457,7 +457,7 @@ test("14. retries add no event, conflict returns 409; SSE resumes by header [api
   }
 });
 
-test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and global IDs [reset.md#scenarios, runs-and-identity.md#ids]", async () => {
+test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and global IDs [reset.md#scenarios, reset-and-identity.md#ids]", async () => {
   const h = await startHarness();
   let next: Awaited<ReturnType<typeof startCore>> | undefined;
   try {

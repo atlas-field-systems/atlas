@@ -42,7 +42,7 @@ from when they were heard. A repeated or relayed report must not look newer, and
 a delayed older update must not overwrite newer evidence. Incomplete or
 unverifiable records are skipped. Hearing a peer does not count as contact with
 Core, and any local picture must respect the Asset's
-[run and restart boundaries](../../asset/docs/README.md#start-and-connect).
+[Reset and restart boundaries](../../asset/docs/README.md#start-and-connect).
 
 Open questions if selected include which records are useful, local read
 interfaces, ordering, deletion handling, freshness, memory limits, and how
@@ -61,7 +61,7 @@ contracts.
   the gateway gets it, plus replay rejection. Authentication and encryption must
   preserve identity while still letting authorized peers read shared traffic.
   Definitions compatibility still applies before passing a record to the Asset.
-  Radio-to-Asset attribution and run boundaries must hold across gateway
+  Radio-to-Asset attribution and Reset boundaries must hold across gateway
   restarts and Core Reset.
 - **Subscription lifecycle.** Subscription lifetime, renewal, removal, and
   recovery after disconnection stay open if subscriptions are adopted.

@@ -82,8 +82,8 @@ An Object is a file Core holds, such as a photo.
 - **Upload** by dropping a file on a place's page, which attaches it there, or
   on the Objects list. The interface says when a file is over Core's size limit.
 - **Move** by picking another place, or **Detach**. **Delete** asks for
-  confirmation. A deleted Object disappears from every list and page for the
-  rest of the run; the run's Reset ZIP keeps it, marked deleted
+  confirmation. A deleted Object disappears from every list and page until the
+  next Reset; the Reset ZIP keeps it, marked deleted
   ([Objects](../../core/docs/api.md#objects)).
 - **A file shown as imagery cannot be deleted.** Its Delete button says "This
   file is shown on the map as imagery *North field photo*. Delete that imagery

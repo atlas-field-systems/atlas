@@ -42,7 +42,7 @@ Each checks rules the [Core API](../../core/docs/api.md) or the
   returns, and later work is not blocked
   ([operator requests](../../core/docs/api.md#operator-requests),
   [contact](../../core/docs/api.md#contact)).
-- **Restarts.** Restart a simulated Asset's app mid-run. It keeps its
+- **Restarts.** Restart a simulated Asset's app. It keeps its
   `asset_id`, its unfinished Tasks are dropped, and new work runs.
 - **Wrong clocks.** An Asset whose clock runs ahead has its reports stored and
   marked, and never used as a latest value
@@ -59,12 +59,12 @@ Each checks rules the [Core API](../../core/docs/api.md) or the
   are refused as the [Objects](../../core/docs/api.md#objects) rules say.
 - **Plugins.** A Plugin goes offline with calls unanswered, and Core drops them;
   a second answer is refused ([Plugins](../../core/docs/api.md#plugins)).
-- **A full disk.** Fill Core's disk mid-run. Core refuses changes with
+- **A full disk.** Fill Core's disk while it serves. Core refuses changes with
   `507 storage_full` and stores nothing half-done
   ([storage](../../core/docs/storage.md#memory-and-full-disks)).
-- **Crash and stop.** Kill Core mid-run and start it: the run resumes, with the
-  same `run_id`. Stop it on purpose and start it: a new run, every caller drops
-  what it held from the old one, and the Reset ZIP holds the old run
+- **Crash and stop.** Kill Core and start it: the picture is kept, with the
+  same `run_id`. Stop it and start it: an empty picture, every caller drops
+  what it held from before, and the Reset ZIP holds what came before the Reset
   ([Reset](../../core/docs/reset.md)).
 
 ## Rules every fault run checks

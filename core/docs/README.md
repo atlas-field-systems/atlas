@@ -7,11 +7,11 @@
 - [Architecture](architecture.md): modules and transaction boundaries.
 - [Pillars](pillars.md): Entities, Tasks, Objects, Fusion, and Administration, and
   how they share Core's process.
-- [Storage](storage.md): the SQLite tables, the event log, and runs.
+- [Storage](storage.md): the SQLite tables, the event log, and `run_id`.
 - [Request admission](requests.md): what Core checks before work reaches an Asset.
 - [Fusion](fusion.md): the module inside Core that turns Observations into Tracks.
 - [Logging](logging.md): the diagnostic evidence Core keeps and puts in its Reset archive.
-- [Reset](reset.md): how Core ends a run, its Reset ZIP, and what it clears. The rules are in [Runs and identity](../../atlas/runs-and-identity.md).
+- [Reset](reset.md): what stopping Core does, its Reset ZIP, and what it clears. The rules are in [Reset and identity](../../atlas/reset-and-identity.md).
 - [Configuration](../config.md): options and defaults.
 
 ## Inside Core
