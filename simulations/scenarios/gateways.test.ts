@@ -5,7 +5,7 @@ import { assetApp } from "../src/asset-app.ts";
 import { value } from "../src/world.ts";
 scenario({
   name: "gateway may act only for its radios and silence makes radios offline",
-  checks: ["core/docs/api.md#radio-assets", "core/docs/api.md#contact"],
+  checks: ["core/docs/api.md#radio-assets", "core/docs/api.md#contact", "atlas/scale.md#operator-deadlines-come-first"],
   async run(w) {
     // Scripted radio: the gateway app and Fieldlink are not built.
     const radio = await radioAsset(w);
@@ -39,7 +39,7 @@ scenario({
     assert.ok(gateway_id);
     radio.close();
     radio.client.close();
-    await w.advance(31000);
+    await w.advance(15000);
     const picture = value(
       await w.complete(
         w.admin.call("asset", { params: { asset_id: radio.asset_id } }),
@@ -83,7 +83,7 @@ scenario({
       );
     }
     w.network.cut("gateway-first");
-    await w.advance(31000);
+    await w.advance(15000);
     for (const [radio, expected] of [
       [first, "offline"],
       [second, "online"],

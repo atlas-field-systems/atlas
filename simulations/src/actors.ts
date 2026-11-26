@@ -1,6 +1,6 @@
 import {
   startAsset,
-  runAsset,
+  startLinkedAsset,
   startPlugin,
   type AssetLink,
   type LinkResult,
@@ -67,7 +67,7 @@ export async function sdkAssetCaller(
     },
   };
 }
-export async function radioAsset(w: World, name = "gateway") {
+async function registerRadio(w: World, name: string) {
   const issued = value(await w.complete(w.admin.call("provisionGateway")));
   const client = w.client(name, {
     kind: "gateway",
@@ -86,23 +86,16 @@ export async function radioAsset(w: World, name = "gateway") {
       }),
     ),
   );
-  const asset_id = radio.asset_id;
-  value(
-    await w.complete(
-      client.call("describeAsset", {
-        params: { asset_id },
-        body: { ...description, time: w.clock.now(), asset_id },
-      }),
-    ),
-  );
-  value(
-    await w.complete(
-      client.call("putContact", {
-        params: { asset_id },
-        body: { time: w.clock.now(), asset_id, contact: "online" },
-      }),
-    ),
-  );
+  return { client, asset_id: radio.asset_id, last_task_id: radio.last_task_id };
+}
+export async function radioAsset(w: World, name = "gateway", existing?: Awaited<ReturnType<typeof registerRadio>>) {
+  const registration = existing ?? await registerRadio(w, name);
+  const { client, asset_id } = registration;
+  let lastHeard: number | null = null;
+  const contacts = new Set<(contact: { open: boolean; last_heard: number | null }) => void>();
+  function publishContact() {
+    for (const cb of contacts) cb({ open: !closed, last_heard: lastHeard });
+  }
   const pending: AssetEvent[] = [],
     reports: Report[] = [],
     starts: number[] = [];
@@ -128,6 +121,22 @@ export async function radioAsset(w: World, name = "gateway") {
       : { ok: false, error: "refused", explanation: result.explanation };
   }
   const link: AssetLink = {
+    async startup() {
+      const signup = await client.call("describeAsset", {
+        params: { asset_id },
+        body: { ...description, time: w.clock.now(), asset_id },
+      });
+      if (!signup.ok)
+        return { ok: false, error: signup.error, explanation: signup.explanation };
+      const contact = await client.call("putContact", {
+        params: { asset_id },
+        body: { time: w.clock.now(), asset_id, contact: "online" },
+      });
+      if (!contact.ok)
+        return { ok: false, error: contact.error, explanation: contact.explanation };
+      lastHeard = w.clock.now();
+      return { ok: true, value: { asset_id, ...signup.value } };
+    },
     async *events() {
       while (!closed) {
         if (pending.length) yield pending.shift()!;
@@ -167,42 +176,43 @@ export async function radioAsset(w: World, name = "gateway") {
         wake?.();
       };
     },
-    onContact: () => () => {},
+    onContact(cb) {
+      contacts.add(cb);
+      cb({ open: !closed, last_heard: lastHeard });
+      return () => { contacts.delete(cb); };
+    },
     storeFile: async () => ({
       ok: false,
       error: "unsupported",
       explanation: "This simulated radio cannot carry files",
     }),
   };
-  const session = runAsset(
-    link,
-    { asset_id, after: radio.as_of, last_task_id: 0 },
-    {
+  const session = value(await w.complete(startLinkedAsset(link, {
       clock: w.clock,
       settings: () => ({}),
       queue: { runNow: (t) => starts.push(t.task_id), stop() {}, update() {} },
-    },
-  );
-  w.onClose(() => {
+  })));
+  function close() {
+    if (closed) return;
     closed = true;
+    publishContact();
     wake?.();
     session.stop();
-  });
+  }
+  w.onClose(close);
   return {
-    client,
-    asset_id,
+    ...registration,
     session,
     reports,
     starts,
     deliver(event: AssetEvent) {
+      if (closed) return;
+      lastHeard = w.clock.now();
+      publishContact();
       pending.push(structuredClone(event));
       wake?.();
     },
-    close() {
-      closed = true;
-      wake?.();
-      session.stop();
-    },
+    close,
   };
 }
 export async function plugin(

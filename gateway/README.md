@@ -46,6 +46,8 @@ gateway app.
 - **A radio was heard.** The Fieldlink reports a new radio with its definitions
   hash; the gateway app passes the hash to Core to register it and answers with
   its `asset_id` (or refuses it if Core reports a definitions mismatch).
+- **On Asset startup**, the gateway forwards its description and returns the
+  [sign-up response](../core/docs/api.md#radio-assets) through the Fieldlink.
 - **Per Asset**, the gateway app supplies its requests in event order, sends its
   reports, takes its contact, and stores its files: the
   [Asset link](../sdk/docs/asset.md#the-asset-link), on the gateway's own Core

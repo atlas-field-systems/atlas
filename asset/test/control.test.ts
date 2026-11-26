@@ -30,7 +30,7 @@ test("docs/failsafes.md: a closed stream cannot reset the local contact-loss dea
   ).state;
   state = reduce(
     state,
-    { kind: "contact", contact: { open: false, last_heard: null } },
+    { kind: "contact", contact: { open: false, last_heard: 12000 } },
     config,
   ).state;
   assert.equal(

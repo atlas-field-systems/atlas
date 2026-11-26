@@ -69,8 +69,9 @@ Their credentials stop working immediately; the checked clear removes those rows
 
 - The `run_id`, when Core started and stopped, and each time Core stopped
   unexpectedly and kept the picture, with how long it was down.
-- Each Asset that took part: its ID, its gateway if any, and when Core first
-  and last heard it.
+- Each Asset's ID, its gateway if any, and the first and last times Core
+  received evidence of that Asset. A gateway can replay contact on reconnect,
+  so Core's receipt time can be later than the radio contact.
 - Each Asset's Tasks in order, with their final reported outcome, or no
   reported outcome. A dropped Task also names any later reported final outcome,
   while remaining dropped in Core.

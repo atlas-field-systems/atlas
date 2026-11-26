@@ -1,3 +1,4 @@
+import { validReply, type ReplyKind } from "./responses.ts";
 import type { AtlasEvent, EventKind } from "./stream.ts";
 import { internals } from "./internal.ts";
 import type { Protocol } from "@atlas/protocol/browser";
@@ -181,12 +182,12 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   async function parse<T>(
     response: Response,
     path: string,
-    file = false,
+    reply?: ReplyKind | "file",
   ): Promise<Result<T>> {
     let body: unknown;
     try {
       body =
-        file && response.ok ? await response.blob() : await response.json();
+        reply === "file" && response.ok ? await response.blob() : await response.json();
     } catch {
       return {
         ok: false,
@@ -196,6 +197,8 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     }
     emit("request.response", { status: response.status });
     if (response.status === 401) emit("authentication.401");
+    if (response.ok && reply && reply !== "file" && !validReply(protocol, reply, body))
+      return { ok: false, status: response.status, error: "invalid_response", explanation: `Invalid Core response for ${reply}` };
     if (response.ok) return { ok: true, value: body as T };
     if (
       !body ||
@@ -248,7 +251,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     try {
       const result = await parse<About>(
         await raw("/about", {}, undefined, budget),
-        "/about",
+        "/about", "about",
       );
       if (boundEpoch !== epoch)
         return {
@@ -348,9 +351,9 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
   function request<T>(
     method: string,
     path: string,
+    reply: ReplyKind | "file",
     body?: unknown,
     query?: Query,
-    file = false,
     contentType?: string,
   ): Promise<Result<T>> {
     if (status.phase === "new" || status.phase === "closed")
@@ -448,7 +451,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
               const afterSend = fence();
               if (afterSend) return afterSend;
               if (response.status < 500 || response.status === 507) {
-                const result = await parse<T>(response, path, file);
+                const result = await parse<T>(response, path, reply);
                 const afterParse = fence();
                 if (afterParse) return afterParse;
                 return !result.ok && response.status === 507
@@ -502,7 +505,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       return encodeURIComponent(String(value));
     });
     if (name === "logout") session++;
-    return request<ResponseOf<N>>(route.method, path, args.body, args.query);
+    return request<ResponseOf<N>>(route.method, path, name, args.body, args.query);
   }
   function isClosed() {
     return status.phase === "closed";
@@ -540,11 +543,11 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     assertValid("requests.login", body);
     session++;
     let recovery = 0;
-    let result = await request<Json>("POST", "/administration/login", body);
+    let result = await request<Json>("POST", "/administration/login", "login", body);
     const deadline = clock.now() + timeout;
     let unconfirmed = false;
     while (result.ok || result.error === "unknown") {
-      const me = await request<Json>("GET", "/administration/me");
+      const me = await request<Json>("GET", "/administration/me", "me");
       result = me;
       const confirmed =
         me.ok &&
@@ -561,7 +564,7 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
         ),
       );
       if (clock.now() >= deadline) break;
-      result = await request<Json>("POST", "/administration/login", body);
+      result = await request<Json>("POST", "/administration/login", "login", body);
       unconfirmed = false;
     }
     if (result.ok && status.phase === "unauthenticated")
@@ -576,12 +579,13 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     return result;
   }
   async function* pages<T>(
+    reply: ReplyKind,
     path: string,
     query: Query = {},
   ): AsyncIterable<Result<Page<T>>> {
     let cursor: string | undefined;
     do {
-      const result = await request<Page<T>>("GET", path, undefined, {
+      const result = await request<Page<T>>("GET", path, reply, undefined, {
         ...query,
         cursor,
       });
@@ -631,10 +635,10 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
       };
     },
     history: (q?: Query) =>
-      pages<AtlasEvent<Extract<EventKind, `report.${string}`>>>("/history", q),
+      pages<AtlasEvent<Extract<EventKind, `report.${string}`>>>("historyPage", "/history", q),
     trackHistory: (q?: Query) =>
       pages<AtlasEvent<"track.updated" | "track.removed">>(
-        "/history/tracks",
+        "trackPage", "/history/tracks",
         q,
       ),
     geofeatureHistory: (q?: Query) =>
@@ -642,25 +646,23 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
         AtlasEvent<
           "geofeature.created" | "geofeature.replaced" | "geofeature.deleted"
         >
-      >("/history/geofeatures", q),
+      >("placePage", "/history/geofeatures", q),
     pluginCalls: (plugin_id: string, q?: Query) =>
-      pages<CallEntry>(`/plugins/${encodeURIComponent(plugin_id)}/calls`, q),
+      pages<CallEntry>("callPage", `/plugins/${encodeURIComponent(plugin_id)}/calls`, q),
     uploadObject: (bytes: Uint8Array, contentType: string, query: Query) =>
       request<{ object_id: string; event_id: number }>(
         "POST",
         "/objects",
+        "upload",
         bytes,
         query,
-        false,
         contentType,
       ),
     objectFile: (object_id: string) => {
       return request<Blob>(
         "GET",
         `/objects/${encodeURIComponent(object_id)}/file`,
-        undefined,
-        undefined,
-        true,
+        "file",
       );
     },
     close() {

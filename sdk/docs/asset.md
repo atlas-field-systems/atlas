@@ -14,7 +14,8 @@ Asset link, and the link asks the outbox for reports
 
 ```ts
 interface AssetLink {
-  events(after: number): AsyncIterable<Event>; // this Asset's requests, in event_id order
+  startup(): Promise<Result<{asset_id: string; as_of: number; last_task_id: number}>>;
+  events(after: number, rejoin: () => Promise<void>): AsyncIterable<Event>; // this Asset's requests, in event_id order
   serve(source: ReportSource): () => void; // ask source for reports until stopped
   onContact(cb: (contact: Contact) => void): () => void;
   storeFile(file: AssetFile): Promise<Result<{ object_id: string }>>;
@@ -36,6 +37,8 @@ interface Batch {
 
 The link carries messages and reports facts about itself; the Asset decides
 everything else ([the boundary](../../fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides)).
+A contact subscriber immediately receives the current open state and last-heard time, then receives each update. Before reopening the event feed, the link awaits `rejoin()` so the Asset can report its current state.
+
 Whenever the link has room, it calls `take` with that room and sends the batch
 it gets, then calls `settle` once with the result. How much room it offers is
 the link's own judgment from its medium and current quality. The IP link offers
@@ -185,7 +188,7 @@ through the gateway so Core checks it. Fieldlinks are not part of the SDK.
 
 ## Running over any link
 
-`runAsset(link, {asset_id, after, last_task_id}, options)` runs the outbox,
+`startLinkedAsset(link, options)` calls the link’s startup hook and passes its registration to `runAsset(link, {asset_id, after, last_task_id}, options)`. The returned session exposes `ready` for initial report acknowledgement. It runs the outbox,
 optional queue, and settings dispatch over an Asset link. Its options hold the
 clock, heartbeat interval, current settings function, optional current-state
 function, optional queue host, and settings-request handler. It returns the queue, outbox, `rejoin()`, `done`,

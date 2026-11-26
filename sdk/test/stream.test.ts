@@ -27,6 +27,7 @@ for (const shape of ["line", "frame"] as const) {
             return Response.json({
               run_id: 1,
               definitions_hash: protocol.hash,
+              stream_keepalive_s: 2,
               core_version: "test",
               protocol_version: "test",
             });
@@ -54,7 +55,7 @@ for (const scenario of ["deliberate stop", "open timeout", "network drop"] as co
     const server = createServer((request, response) => {
       if (request.url === "/about") {
         response.writeHead(200, { "content-type": "application/json" });
-        response.end(JSON.stringify({ run_id: 1, definitions_hash: protocol.hash, core_version: "test", protocol_version: "test" }));
+        response.end(JSON.stringify({ run_id: 1, definitions_hash: protocol.hash, stream_keepalive_s: 2, core_version: "test", protocol_version: "test" }));
         return;
       }
       if (scenario === "open timeout") return;
@@ -117,7 +118,7 @@ function fakeClient(protocol: Awaited<ReturnType<typeof loadPackagedProtocol>>, 
     observer,
     async fetch(input) {
       if (new URL(String(input)).pathname === "/about")
-        return Response.json({ run_id: 1, definitions_hash: protocol.hash, core_version: "test", protocol_version: "test" });
+        return Response.json({ run_id: 1, definitions_hash: protocol.hash, stream_keepalive_s: 2, core_version: "test", protocol_version: "test" });
       return new Response(body(), { headers: { "content-type": "text/event-stream" } });
     },
   });

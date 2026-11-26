@@ -30,7 +30,7 @@ export const CONFIG_DEFAULTS: Omit<
   tls_key: null,
   data_directory: "/var/lib/atlas-core",
   first_admin: null,
-  offline_after_s: 30,
+  offline_after_s: 12,
   stream_keepalive_s: 10,
   max_object_bytes: 100_000_000,
   clock_ahead_s: 10,
@@ -80,6 +80,8 @@ export function resolveConfig(
   ] as const)
     if (!Number.isFinite(config[key]) || config[key] <= 0)
       fail(key, "must be positive");
+  if (config.offline_after_s > 15)
+    fail("offline_after_s", "must not exceed 15 seconds");
   if (config.stream_keepalive_s * 1000 > 2147483647)
     fail("stream_keepalive_s", "must not exceed 2147483.647 seconds");
   for (const key of [

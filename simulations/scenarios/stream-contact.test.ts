@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { follow } from "@atlas/sdk";
 import { reportingPeripheral } from "../src/peripheral.ts";
+import { sdkAssetCaller } from "../src/actors.ts";
 import { assetApp } from "../src/asset-app.ts";
 import { scenario } from "../src/scenario.ts";
 import { createWorld, value } from "../src/world.ts";
@@ -32,6 +33,19 @@ test("sdk/docs/live.md: data and keepalives advance contact; closing retains the
   await w.complete(stream.done);
   assert.equal(contact.open, false);
   assert.equal(contact.last_heard, heard, "close must preserve contact evidence");
+});
+
+test("sdk/docs/asset.md: late contact subscribers see the current IP stream immediately", async t => {
+  const w = await createWorld();
+  t.after(() => w.close());
+  const { session } = await sdkAssetCaller(w);
+  await w.settle();
+  const contacts: { open: boolean; last_heard: number | null }[] = [];
+  const unsubscribe = session.link.onContact(contact => contacts.push(contact));
+  assert.equal(contacts.length, 1);
+  assert.equal(contacts[0].open, true);
+  assert.equal(typeof contacts[0].last_heard, "number");
+  unsubscribe();
 });
 
 scenario({

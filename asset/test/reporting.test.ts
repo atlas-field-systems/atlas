@@ -11,6 +11,7 @@ test("sdk/docs/asset.md: a lost current-state batch is offered again with origin
   const clock = { ...systemClock, now: () => now };
   let source: ReportSource | undefined;
   const link: AssetLink = {
+    async startup() { return { ok: true, value: { asset_id: "A", as_of: 0, last_task_id: 0 } }; },
     async *events() {},
     serve(s) { source = s; return () => {}; },
     onContact() { return () => {}; },

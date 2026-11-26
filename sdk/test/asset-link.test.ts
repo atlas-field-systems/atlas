@@ -14,6 +14,7 @@ test("stop interrupts an idle AssetLink read and closes its iterator [sdk/docs/a
     read = resolve;
   });
   const link: AssetLink = {
+    async startup() { return { ok: true, value: { asset_id: "A", as_of: 0, last_task_id: 0 } }; },
     events: () => ({
       [Symbol.asyncIterator]: () => ({
         next() {
@@ -257,6 +258,7 @@ test("current state goes once per change, so waiting history still drains [sdk/d
 test("a throw from current rejects done and stops the outbox [sdk/docs/asset.md#running-over-any-link]", async () => {
   const failure = new Error("sensor read failed");
   const link: AssetLink = {
+    async startup() { return { ok: true, value: { asset_id: "A", as_of: 0, last_task_id: 0 } }; },
     events: () => ({
       [Symbol.asyncIterator]: () => ({
         next: () => new Promise<IteratorResult<never>>(() => {}),

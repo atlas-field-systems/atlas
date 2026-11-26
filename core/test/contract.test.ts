@@ -776,7 +776,7 @@ test("invalid config names the option and exits 2 [config.md]", async () => {
   const dir = await mkdtemp(join(tmpdir(), "atlas-config-"));
   const path = join(dir, "config.json");
   try {
-    for (const [key, value] of [["data_directory", 42], ["first_admin", { operator_id: ["ADM"], password_file: "pw" }], ["first_admin", { operator_id: { toString: null }, password_file: "pw" }], ["toString", "bad"], ["__proto__", {}]]) {
+    for (const [key, value] of [["offline_after_s", 16], ["data_directory", 42], ["first_admin", { operator_id: ["ADM"], password_file: "pw" }], ["first_admin", { operator_id: { toString: null }, password_file: "pw" }], ["toString", "bad"], ["__proto__", {}]]) {
       await writeFile(path, JSON.stringify({ [String(key)]: value }));
       const run = spawnSync(process.execPath, ["src/main.ts", path], { cwd: new URL("..", import.meta.url), encoding: "utf8", env: Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ATLAS_CORE_"))) });
       assert.equal(run.status, 2, run.stderr);

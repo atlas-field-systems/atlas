@@ -348,7 +348,7 @@ export function reduce(
       }
       return { state, effects };
     case "contact":
-      if (event.contact.last_heard !== null)
+      if (event.contact.open && event.contact.last_heard !== null)
         state.lastHeard = Math.max(state.lastHeard, event.contact.last_heard);
       return { state, effects };
     case "update": {

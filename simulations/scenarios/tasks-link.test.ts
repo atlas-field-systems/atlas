@@ -12,6 +12,7 @@ scenario({
   ],
   async run(w) {
     const radio = await radioAsset(w);
+    assert.equal(radio.last_task_id, 0);
     const requests: AtlasEvent<"tasks.requested">[] = [];
     const stream = follow(radio.client, { after: 0 }, (e) => {
       if (e.kind === "tasks.requested") requests.push(e);
@@ -76,7 +77,17 @@ scenario({
       ),
       "queue answers the carried request",
     );
-    stream.stop();
     radio.close();
+    const restarted = await radioAsset(w, "gateway", radio);
+    value(await w.complete(w.admin.call("sendTasks", {
+      params: { asset_id: radio.asset_id },
+      body: { tasks: [{ kind: "hold" }] },
+    })));
+    await w.until(() => requests.length === 2);
+    restarted.deliver(requests[1]);
+    await w.settle();
+    assert.equal(restarted.session.queue!.next()?.task_id, 4);
+    stream.stop();
+    restarted.close();
   },
 });

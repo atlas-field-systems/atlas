@@ -198,7 +198,7 @@ export function signUpRadio(
   tx: Tx,
   asset_id: string,
   description: Description,
-): { event_id: number } {
+): { event_id: number; last_task_id: number; as_of: number } {
   const row = requireAsset(tx, asset_id);
   if (description.asset_id !== asset_id)
     refuse("invalid", "Description Asset differs from path");
@@ -209,7 +209,8 @@ export function signUpRadio(
     tx.runId,
     asset_id,
   );
-  return { event_id: tx.append("asset.described", description) };
+  const event_id = tx.append("asset.described", description);
+  return { event_id, last_task_id: tasks.lastTaskId(tx, asset_id), as_of: tx.asOf() };
 }
 
 export function removeAsset(

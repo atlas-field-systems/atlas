@@ -668,7 +668,18 @@ test("F18 Reset summary uses contact with no domain event [reset.md#cores-reset-
     h = await startHarness(c);
   try {
     const a = await asset(h);
+    const gateway = (await h.call("POST", "/administration/gateways", { cookie: h.admin })).body;
+    const radio = (await h.call("POST", "/entities/assets/radios", {
+      key: gateway.key, body: { definitions_hash: protocol.hash },
+    })).body;
+    const first = c.now();
+    const radioContact = { time: first, asset_id: radio.asset_id, contact: "online" };
+    const replay = () => h.call("PUT", `/entities/assets/${radio.asset_id}/contact`, {
+      key: gateway.key, body: radioContact,
+    });
+    assert.equal((await replay()).status, 200);
     c.advance(10000);
+    assert.equal((await replay()).status, 200);
     await report(h, a, []);
     const heard = c.now();
     c.advance(31000);
@@ -680,13 +691,12 @@ test("F18 Reset summary uses contact with no domain event [reset.md#cores-reset-
     )!;
     const chunks: Buffer[] = [];
     for await (const chunk of entry.open()) chunks.push(Buffer.from(chunk));
-    assert.ok(
-      Buffer.concat(chunks)
-        .toString()
-        .includes(
-          `Asset ${a.id}, gateway none, first heard 1794560400000, last heard ${heard}.`,
-        ),
-    );
+    const summary = Buffer.concat(chunks).toString();
+    for (const [id, gatewayId] of [[a.id, "none"], [radio.asset_id, gateway.gateway_id]]) {
+      assert.ok(summary.includes(
+        `Asset ${id}, gateway ${gatewayId}, first received by Core ${first}, last received by Core ${heard}.`,
+      ));
+    }
   } finally {
     await h.close();
   }
@@ -759,9 +769,9 @@ test("F20 event streams never renew Asset or Plugin contact [api.md#contact, api
       cookie: h.admin,
       body: { inputs: [] },
     });
-    c.advance(20000);
+    c.advance(8000);
     await open(p.key);
-    c.advance(15000);
+    c.advance(6000);
     assert.equal(
       (
         await h.call(
@@ -1069,7 +1079,7 @@ test("R2-2 Reset preserves actual last heard across SIGKILL [reset.md#cores-rese
     const line = zip("summary.md")
       .split("\n")
       .find((line) => line.startsWith(`Asset ${registered.asset_id},`))!;
-    const last = Number(line.match(/last heard (\d+)/)![1]);
+    const last = Number(line.match(/last received by Core (\d+)/)![1]);
     assert.ok(
       last >= before && last <= after,
       `${last} must be between ${before} and ${after}`,

@@ -258,8 +258,8 @@ type Responses = {
   };
   deleteGeofeature: EventAck;
   register: { asset_id: string; as_of: number; last_task_id: number };
-  registerRadio: { asset_id: string; as_of: number };
-  describeAsset: EventAck;
+  registerRadio: Responses["register"];
+  describeAsset: EventAck & { last_task_id: number; as_of: number };
   sendReports: { stored: number };
   putContact: { changed: boolean };
   objects: Cut<P["object"]>;

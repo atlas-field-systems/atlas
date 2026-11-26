@@ -43,7 +43,7 @@ original times.
 ## Contact
 
 On IP, contact follows the [Core API's contact rule](../../core/docs/api.md#contact).
-On radio, the Fieldlink supplies it. Contact loss is an input to
+On radio, the Fieldlink supplies it. On either link, only a hearing on an open link advances the local contact-loss deadline. Closing leaves the deadline in place. Contact loss is an input to
 [failsafe conditions](failsafes.md#configure-conditions-as-well-as-responses).
 Contact is not freshness. Hearing from Core proves nothing about measurements.
 
