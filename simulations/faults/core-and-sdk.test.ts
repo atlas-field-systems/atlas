@@ -30,9 +30,6 @@ faultRun({
     const radio = await radioAsset(w);
     const p = await plugin(w, async (call, reply, id) => {
       await reply.answer({
-        type: "plugin.result",
-        time: w.clock.now(),
-        plugin_id: call.plugin_id,
       });
     });
     const operators = [w.admin, w.client("operator-two", { kind: "account" })];

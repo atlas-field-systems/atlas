@@ -7,10 +7,8 @@
     "run_state",
     "lights",
     "landing_gear",
-    "link_loss_after_s",
     "failsafe_policy",
-    "home_position",
-    "telemetry_every_s"
+    "home_position"
   ],
   "examples": [
     "run_state"

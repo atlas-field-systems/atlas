@@ -161,7 +161,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     stopContact = () => contact.stop();
     contact.resume();
     const follower = fusion.startFusion(store, fusion.onePerObservation);
-    const streams = startStreams(store, options.clock, config.stream_keepalive_s * 1000, log);
+    const streams = startStreams(store, options.clock, config.stream_keepalive_s * 1000, log, contact);
     const server = await startServer(env, store, contact, streams);
     process.stdout.write(
       JSON.stringify({

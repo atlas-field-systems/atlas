@@ -48,6 +48,7 @@ export function protocolNames(files) {
 const pointer = (key) => String(key).replaceAll('~', '~0').replaceAll('/', '~1');
 
 const messages = {
+  uniqueBy: ({ schema }) => `must have distinct ${schema} values`,
   required: () => 'is required',
   additionalProperties: () => 'is not allowed',
   unevaluatedProperties: () => 'is not allowed',
@@ -69,40 +70,51 @@ export async function loadDefinitions(files) {
     .map(([path, bytes]) => [path, JSON.parse(decoder.decode(bytes))]));
   const newAjv = (options) => {
     const ajv = new Ajv({ strict: true, strictRequired: false, allowUnionTypes: true, allErrors: true, ...options });
+    ajv.addKeyword({
+      keyword: 'uniqueBy', schemaType: 'string', type: 'array',
+      validate(field, entries) {
+        const keys = entries.map((entry) => entry?.[field]).filter((key) => key !== undefined);
+        return new Set(keys).size === keys.length;
+      },
+    });
     addFormats(ajv);
     return ajv;
   };
-  // The verdict comes from plain JSON Schema. Its problems for a record with kinds list
+  // The verdict uses every constraint in the definitions. Its problems for a record with kinds list
   // every kind's failures, so a second validator explains a failure using only the kind the
-  // value names. Law 5 makes every oneOf a choice of kinds by "kind".
+  // value names. Mixed batches choose records by "type".
   const verdict = newAjv();
   const explainer = newAjv({ discriminator: true, verbose: true });
   // Ajv's discriminator does not pass on which fields the chosen kind evaluated, so the
   // explainer would call them unevaluated. Keep, per schema, the fields each kind may carry.
-  const kindFields = new Map();
+  const variantFields = new Map();
   for (const [file, schema] of Object.entries(schemas)) {
     verdict.addSchema(schema, file);
-    // A oneOf that breaks law 5 gets the plain explanation; the definition check reports it.
-    const kinds = schema.oneOf?.map(({ $ref }) => $ref && schemas[resolveRef(file, $ref)]);
-    if (!kinds?.every((kind) => kind?.properties?.kind?.const)) { explainer.addSchema(schema, file); continue; }
-    const withKinds = { ...schema, discriminator: { propertyName: 'kind' } };
-    kindFields.set(withKinds, new Map(kinds.map((kind) =>
-      [kind.properties.kind.const, new Set([...Object.keys(schema.properties ?? {}), ...Object.keys(kind.properties)])])));
-    explainer.addSchema(withKinds, file);
+    const branches = schema.oneOf?.map(({ $ref }) => $ref && schemas[resolveRef(file, $ref)]);
+    const tag = ['kind', 'type'].find((key) =>
+      branches?.length && branches.every((branch) => typeof branch?.properties?.[key]?.const === 'string'));
+    if (!tag) { explainer.addSchema(schema, file); continue; }
+    const tagged = { ...schema, type: 'object', required: [...new Set([...(schema.required ?? []), tag])],
+      discriminator: { propertyName: tag } };
+    variantFields.set(tagged, new Map(branches.map((branch) =>
+      [branch.properties[tag].const, new Set([...Object.keys(schema.properties ?? {}), ...Object.keys(branch.properties)])])));
+    explainer.addSchema(tagged, file);
   }
   const problemOf = (error) => {
-    const kinds = kindFields.get(error.parentSchema);
+    const kinds = variantFields.get(error.parentSchema);
     if (error.keyword === 'if') return [];
     if (error.keyword === 'discriminator') {
-      return error.data.kind === undefined ? [] : [{
-        path: `${error.instancePath}/kind`,
+      const tag = error.params.tag;
+      return error.data[tag] === undefined ? [] : [{
+        path: `${error.instancePath}/${tag}`,
         message: `must be one of ${[...kinds.keys()].map((kind) => JSON.stringify(kind)).join(', ')}`,
         unknownKind: true,
       }];
     }
     if (error.keyword === 'unevaluatedProperties' && kinds) {
       // With an unknown kind, a field any kind allows is not the problem; the kind is.
-      const allowed = kinds.has(error.data.kind) ? [kinds.get(error.data.kind)] : [...kinds.values()];
+      const tag = error.data[error.parentSchema.discriminator.propertyName];
+      const allowed = kinds.has(tag) ? [kinds.get(tag)] : [...kinds.values()];
       if (allowed.some((fields) => fields.has(error.params.unevaluatedProperty))) return [];
     }
     const property = error.params.missingProperty ?? error.params.additionalProperty ?? error.params.unevaluatedProperty;

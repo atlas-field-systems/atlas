@@ -201,14 +201,19 @@ test("20. Plugin answers once, validates call ownership, and drops offline calls
       ).body.error,
       "plugin_offline",
     );
+    const action = { action: "find", label: "Find", inputs: [] };
+    const input = { input: "area", label: "Area", input_kind: "area" };
+    for (const actions of [[action, action], [{ ...action, inputs: [input, input] }]]) {
+      const refused = await h.call("PUT", base + "/description", {
+        key, body: { name: "Lookup", actions },
+      });
+      assert.equal(refused.body.error, "invalid");
+    }
     assert.equal(
       (
         await h.call("PUT", base + "/description", {
           key,
           body: {
-            type: "plugin.description",
-            time: now,
-            plugin_id,
             name: "Lookup",
             actions: [{ action: "find", label: "Find", inputs: [] }],
           },
@@ -221,6 +226,8 @@ test("20. Plugin answers once, validates call ownership, and drops offline calls
         cookie: h.admin,
         body: { inputs: [] },
       });
+    assert.equal((await invoke()).body.error, "plugin_offline");
+    const stream = await h.openEvents(key);
     const first = await invoke(),
       second = await invoke();
     const object = await upload(
@@ -231,9 +238,6 @@ test("20. Plugin answers once, validates call ownership, and drops offline calls
     );
     assert.equal(object.status, 201, JSON.stringify(object));
     const result = {
-      type: "plugin.result",
-      time: now,
-      plugin_id,
       request_id: second.body.event_id,
       object_ids: [object.body.object_id],
     };
@@ -251,8 +255,22 @@ test("20. Plugin answers once, validates call ownership, and drops offline calls
         .error,
       "call_settled",
     );
-    now += 31000;
-    timer?.();
+    const completed = await h.call("GET", base + "/calls/" + first.body.event_id, { cookie: h.admin });
+    const stamped = completed.body.answer.record;
+    assert.equal(stamped.plugin_id, plugin_id);
+    assert.equal(stamped.time, c.now());
+    assert.equal(stamped.type, "plugin.result");
+    const replacement = await h.openEvents(key, second.body.event_id);
+    const replay = await replacement.body.getReader().read();
+    const text = new TextDecoder().decode(replay.value);
+    assert.match(text, new RegExp(`id: ${second.body.event_id}\n`));
+    assert.doesNotMatch(text, new RegExp(`id: ${first.body.event_id}\n`));
+    stream.stop();
+    replacement.stop();
+    for (let i = 0; i < 30; i++) {
+      const entries = await h.call("GET", "/plugins", { cookie: h.admin });
+      if (entries.body.items[0].contact.contact === "offline") break;
+    }
     const dropped = await h.call(
       "GET",
       base + `/calls/${second.body.event_id}`,
@@ -268,10 +286,16 @@ test("20. Plugin answers once, validates call ownership, and drops offline calls
       ).body.error,
       "call_settled",
     );
+    await h.openEvents(key);
     const third = await invoke();
     await h.call("DELETE", `/administration/plugins/${plugin_id}`, {
       cookie: h.admin,
     });
+    const listed = await h.call("GET", "/plugins", { cookie: h.admin });
+    assert.equal(listed.body.items.length, 1);
+    assert.equal(listed.body.items[0].removed, true);
+    assert.equal(listed.body.items[0].description.name, "Lookup");
+    assert.equal(listed.body.items[0].contact.contact, "offline");
     assert.equal(
       (
         await h.call("GET", base + `/calls/${third.body.event_id}`, {

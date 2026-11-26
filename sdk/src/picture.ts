@@ -135,6 +135,9 @@ export function createLivePicture(
       {
         after: Math.min(...after),
         everything: true,
+        onContactStorage(token) {
+          if (!stopped && current === generation && token !== snapshot.contact_storage_token) void load();
+        },
         onContact(contact) {
           if (open === contact.open) return;
           open = contact.open;

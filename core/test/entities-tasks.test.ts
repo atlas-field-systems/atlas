@@ -748,10 +748,9 @@ for (const transport of ["ip", "radio"] as const)
       const clock = simulatedClock();
       const h = await startHarness(clock, { stream_keepalive_s: 10 });
       try {
-        const supported = { ...description, settings: [...description.settings, "link_loss_after_s"] };
         let id: string;
         if (transport === "ip") {
-          id = (await asset(h, supported)).id;
+          id = (await asset(h, description)).id;
         } else {
           const gateway = await h.call("POST", "/administration/gateways", { cookie: h.admin });
           assert.equal(gateway.status, 201);
@@ -763,7 +762,7 @@ for (const transport of ["ip", "radio"] as const)
           id = radio.body.asset_id;
           const described = await h.call("PUT", `/entities/assets/${id}/description`, {
             key: gateway.body.key,
-            body: { ...supported, time: clock.now(), asset_id: id },
+            body: { ...description, time: clock.now(), asset_id: id },
           });
           assert.equal(described.status, 200);
           const contact = await h.call("PUT", `/entities/assets/${id}/contact`, {
@@ -773,7 +772,7 @@ for (const transport of ["ip", "radio"] as const)
           assert.equal(contact.status, 200);
         }
         for (const seconds of [5, 10, 11]) {
-          const settings = { link_loss_after_s: seconds };
+          const settings = { failsafe_policy: [{ rule_id: "LINK", priority: 1, conditions: [{ kind: "contact_lost", for_s: seconds }], response: { kind: "hold" } }] };
           const result = request === "settings"
             ? await h.call("PATCH", `/entities/assets/${id}/settings`, { cookie: h.admin, body: { settings } })
             : await task(h, id, { tasks: [{ kind: "settings", settings }] });

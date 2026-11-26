@@ -77,14 +77,12 @@ async function plugin(h: Harness) {
   await h.call("PUT", `/plugins/${p.plugin_id}/description`, {
     key: p.key,
     body: {
-      type: "plugin.description",
-      time: 1794560400000,
-      plugin_id: p.plugin_id,
       name: "Lookup",
       actions: [{ action: "find", label: "Find", inputs: [] }],
     },
   });
-  return p;
+  const stream = await h.openEvents(p.key);
+  return { ...p, stream };
 }
 test("F1 only recipient and answering kind settle requests [api.md#operator-requests, api.md#plugins]", async () => {
   const c = simulatedClock(),
@@ -114,9 +112,6 @@ test("F1 only recipient and answering kind settle requests [api.md#operator-requ
     const answer = await h.call("POST", `/plugins/${p.plugin_id}/answers`, {
       key: p.key,
       body: {
-        type: "plugin.result",
-        time: c.now(),
-        plugin_id: p.plugin_id,
         request_id: call.body.event_id,
       },
     });
@@ -733,7 +728,7 @@ test("F19 bootstrap removes only one trailing newline [config.md]", async () => 
     await rm(dir + "-archive", { recursive: true, force: true });
   }
 });
-test("F20 event streams never renew Asset or Plugin contact [api.md#contact, api.md#plugins]", async () => {
+test("F20 Asset streams do not renew contact while an open Plugin stream preserves calls [api.md#contact, api.md#plugins]", async () => {
   const c = simulatedClock(),
     h = await startHarness(c),
     controllers: AbortController[] = [];
@@ -769,8 +764,8 @@ test("F20 event streams never renew Asset or Plugin contact [api.md#contact, api
           `/plugins/${p.plugin_id}/calls/${call.body.event_id}`,
           { cookie: h.admin },
         )
-      ).body.answer.kind,
-      "plugin.dropped",
+      ).body.answer,
+      null,
     );
   } finally {
     for (const ac of controllers) ac.abort();
@@ -793,9 +788,6 @@ test("R2-3 summary uses recipient and answer-kind settlement [reset.md#cores-res
         await h.call("POST", `/plugins/${p.plugin_id}/answers`, {
           key: p.key,
           body: {
-            type: "plugin.result",
-            time: 1794560400000,
-            plugin_id: p.plugin_id,
             request_id: call.body.event_id,
           },
         })
@@ -960,6 +952,9 @@ async function crashCore(config: Record<string, unknown>) {
   return {
     call,
     cookie,
+    openPlugin(key: string) {
+      return fetch(url + "/events", { headers: { authorization: "Bearer " + key, "atlas-definitions": protocol.hash } });
+    },
     async flush() {
       await (await fetch(debugUrl)).text();
     },
@@ -1034,7 +1029,7 @@ test("R2-2 Reset preserves actual last heard across SIGKILL [reset.md#cores-rese
       issued.key,
     );
     await h.call("/about", undefined, gateway.key);
-    await h.call("/about", undefined, plugin.key);
+    assert.equal((await h.openPlugin(plugin.key)).status, 200);
     const after = Date.now();
     await h.crash();
     await new Promise((resolve) => setTimeout(resolve, 1100));
@@ -1153,6 +1148,11 @@ test("R3-3 diagnostics cover versions, contact, downloads, Tracks and drops [log
       { headers: { cookie: h.admin, "atlas-definitions": protocol.hash } },
     );
     await download.arrayBuffer();
+    p.stream.stop();
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const listed = await h.call("GET", "/plugins", { cookie: h.admin });
+      if (listed.body.items[0].contact.contact === "offline") break;
+    }
     c.advance(31000);
     const rows = (await (await fetch(h.core.debugUrl!)).text())
       .trim()
@@ -1312,7 +1312,7 @@ test("R3-7 Reset state retains removed gateways and Plugins [reset.md#cores-rese
     );
     assert.equal(
       (await h.call("GET", "/plugins", { cookie: h.admin })).body.items.length,
-      0,
+      1,
     );
     assert.equal((await h.call("GET", "/about", { key: g.key })).status, 401);
     const stopped = await h.stop();
@@ -1400,9 +1400,6 @@ test("Plugin inline imagery requires GeoTIFF and leaves refused calls open [api.
       h.call("POST", `/plugins/${p.plugin_id}/answers`, {
         key: p.key,
         body: {
-          type: "plugin.result",
-          time: c.now(),
-          plugin_id: p.plugin_id,
           request_id,
           places: [{ kind: "imagery", object_id }],
         },

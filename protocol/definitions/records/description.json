@@ -51,7 +51,8 @@
         "$ref": "../components/subsystem.json"
       },
       "minItems": 1,
-      "maxItems": 16
+      "maxItems": 16,
+      "uniqueBy": "subsystem_id"
     },
     "cameras": {
       "type": "array",
@@ -59,7 +60,8 @@
         "$ref": "../components/camera.json"
       },
       "minItems": 1,
-      "maxItems": 4
+      "maxItems": 4,
+      "uniqueBy": "camera_id"
     }
   },
   "examples": [
@@ -88,10 +90,8 @@
         "run_state",
         "lights",
         "landing_gear",
-        "link_loss_after_s",
         "failsafe_policy",
-        "home_position",
-        "telemetry_every_s"
+        "home_position"
       ],
       "subsystems": [
         {

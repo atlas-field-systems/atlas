@@ -112,7 +112,7 @@ export const ROUTES = {
     method: "PUT",
     path: "/plugins/:plugin_id/description",
     who: ["plugin"],
-    body: "plugin.description",
+    body: "requests.plugin_description",
   },
   callPlugin: {
     method: "POST",
@@ -195,7 +195,7 @@ export const ROUTES = {
 } as const satisfies Record<string, Spec>;
 export type RouteName = keyof typeof ROUTES;
 export type RouteBody<N extends RouteName> = N extends "answerPlugin"
-  ? P["plugin.result"] | P["plugin.failure"]
+  ? P["requests.plugin_result"] | P["requests.plugin_failure"]
   : (typeof ROUTES)[N] extends { body: infer B extends keyof P }
     ? P[B]
     : undefined;
@@ -235,6 +235,7 @@ type Responses = {
   logout: Empty;
   entities: {
     as_of: number;
+    contact_storage_token?: string;
     assets: AssetView[];
     gateways: P["contact"][];
     observations: P["report.observation"][];
@@ -273,7 +274,8 @@ type Responses = {
     plugin_id: string;
     description: P["plugin.description"] | null;
     contact: P["contact"];
-    unanswered: number[];
+    removed: boolean;
+    unanswered: AtlasEvent<"plugin.called">[];
   }>;
   pluginCall: CallEntry;
   answerPlugin: EventAck;

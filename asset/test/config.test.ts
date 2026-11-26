@@ -14,7 +14,7 @@ test("config.md: inspection validates Protocol values without equipment access a
     /exceeds/,
   );
   const { measurement_stale_after_s, ...missing } = input;
-  assert.throws(() => parseConfig(missing), /measurement_stale_after_s/);
+  assert.equal(inspectConfig(parseConfig(missing)).measurement_stale_after_s, 5);
   assert.throws(
     () => parseConfig({ ...input, initial_settings: { run_state: "go" } }),
     /invalid/,
@@ -35,23 +35,23 @@ test("config.md: flying equipment requires a critical battery rule", async () =>
   );
 });
 
-test("config.md: inspection names a missing per-command completion tolerance", async () => {
+test("config.md: inspection fills omitted fields in per-command tolerance overrides", async () => {
   const input = JSON.parse(
     await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"),
   );
-  delete input.completion_tolerances.land;
-  assert.throws(() => parseConfig(input), /completion_tolerances[\s\S]*land/);
+  input.completion_tolerances = { land: { horizontal_m: 4 } };
+  assert.deepEqual(inspectConfig(parseConfig(input)).completion_tolerances.land, { horizontal_m: 4, altitude_m: 0.5, stopped_mps: 0.3 });
 });
 
-test("config.md: reporting-only configuration needs no movement settings", async () => {
+test("config.md: only command-capable equipment requires a safe action", async () => {
   const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
-  input.description = { commands: [], reports: ["telemetry"] };
-  input.initial_settings = {};
-  delete input.completion_tolerances;
-  delete input.command_timeouts;
-  delete input.default_ground_speed_mps;
-  delete input.max_ground_speed_mps;
-  assert.doesNotThrow(() => parseConfig(input));
+  delete input.safe_action;
+  assert.throws(() => parseConfig(input), /safe_action/);
+  const tracker = JSON.parse(await readFile(new URL("../examples/tracker.json", import.meta.url), "utf8"));
+  const effective = inspectConfig(parseConfig(tracker));
+  assert.equal(effective.safe_action, undefined);
+  assert.deepEqual(effective.completion_tolerances, {});
+  assert.equal(effective.reporting.heartbeat_s, 5);
 });
 
 test("config.md: takeoff capability defines flying equipment independent of entity type", async () => {
@@ -67,11 +67,10 @@ for (const kind of ["gpsd", "peripheral"]) test(`config.md: ${kind} acquisition 
   assert.throws(() => parseConfig(input), /acquisition-only equipment/);
 });
 
-for (const profile of ["completion_tolerances", "command_timeouts"]) test(`config.md: movement requires the internal Hold ${profile}`, async () => {
+for (const profile of ["completion_tolerances", "command_timeouts"] as const) test(`config.md: movement supplies the internal Hold ${profile}`, async () => {
   const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
   input.description.commands = input.description.commands.filter((kind: string) => kind !== "hold");
-  delete input[profile].hold;
-  assert.throws(() => parseConfig(input), new RegExp(`${profile}[\\s\\S]*hold`));
+  assert.ok(inspectConfig(parseConfig(input))[profile].hold);
 });
 
 test("config.md: inspection removes URL credentials", async () => {
@@ -106,11 +105,10 @@ test("config.md: reporting-only initial settings may be omitted but control sett
   assert.deepEqual(parseConfig(input).initial_settings, {});
 });
 
-for (const profile of ["completion_tolerances", "command_timeouts"]) test(`config.md and docs/failsafes.md: critical fallback requires internal Return to home ${profile}`, async () => {
+for (const profile of ["completion_tolerances", "command_timeouts"] as const) test(`config.md and docs/failsafes.md: critical fallback supplies internal Return to home ${profile}`, async () => {
   const input = JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8"));
   input.description.commands = ["takeoff", "land", "hold", "failsafe"];
   input.safe_action = { kind: "land" };
   input.initial_settings.failsafe_policy = [{ rule_id: "CB", priority: 99, conditions: [{ kind: "battery_below", battery_percent: 10, critical: true }], response: { kind: "land" } }];
-  delete input[profile].return_to_home;
-  assert.throws(() => parseConfig(input), new RegExp(`${profile}[\\s\\S]*return_to_home`));
+  assert.ok(inspectConfig(parseConfig(input))[profile].return_to_home);
 });

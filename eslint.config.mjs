@@ -7,7 +7,7 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 const parts = {
   protocol: [],
   core: ['protocol(?:/|$)'],
-  sdk: ['protocol(?:/|$)', 'core/event-kinds$'],
+  sdk: ['protocol(?:/|$)'],
   asset: ['sdk(?:/|$)', 'protocol(?:/|$)'],
   simulations: null,
 };

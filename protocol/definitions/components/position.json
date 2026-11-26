@@ -22,7 +22,8 @@
       "items": {
         "$ref": "altitude.json"
       },
-      "maxItems": 4
+      "maxItems": 4,
+      "uniqueBy": "altitude_reference"
     }
   },
   "examples": [

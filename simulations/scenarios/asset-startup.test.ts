@@ -130,9 +130,9 @@ scenario({
 
 for (const [threshold, keepalive, admitted] of [
   [6, 7, false], [7, 7, false], [8, 7, true],
-  [undefined, 45, false], [undefined, 30, false], [undefined, 20, true],
+  [undefined, 45, true],
 ] as const) scenario({
-  name: `Asset startup compares link-loss ${threshold ?? "default"} with Core keepalive ${keepalive}s`,
+  name: `Asset startup compares link-loss ${threshold ?? "unconfigured"} with Core keepalive ${keepalive}s`,
   checks: ["core/docs/api.md#contact"],
   config: { stream_keepalive_s: keepalive },
   async run(w) {
@@ -140,7 +140,7 @@ for (const [threshold, keepalive, admitted] of [
     assert.ok("key" in key);
     const raw = JSON.parse(await readFile(new URL("../../asset/examples/copter.json", import.meta.url), "utf8"));
     const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
-      initial_settings: { ...raw.initial_settings, link_loss_after_s: threshold },
+      initial_settings: { ...raw.initial_settings, failsafe_policy: [...raw.initial_settings.failsafe_policy, ...(threshold === undefined ? [] : [{ rule_id: "LINK", priority: 12, conditions: [{ kind: "contact_lost", for_s: threshold }], response: { kind: "hold" } }])] },
       equipment: { kind: "simulated", position: { latitude: 1, longitude: 2 } },
       log_directory: join(w.root, "asset-logs"), archive_directory: join(w.root, "asset-archives") });
     const result = await w.complete(startApp(config, { clock: w.clock, fetch: w.network.fetchFor("app") })
@@ -150,7 +150,7 @@ for (const [threshold, keepalive, admitted] of [
       assert.ok(admitted, "startup must refuse a threshold at or below Core keepalive");
     } else {
       assert.ok(!admitted);
-      assert.match(String(result.error), /link_loss_after_s.*stream_keepalive_s/);
+      assert.match(String(result.error), /contact_lost.*stream_keepalive_s/);
     }
   },
 });

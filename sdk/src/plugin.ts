@@ -13,14 +13,14 @@ export interface Reply {
   ): Promise<Result<{ object_id: string; event_id: number }>>;
   answer(
     body:
-      | Omit<P["plugin.result"], "request_id">
-      | Omit<P["plugin.failure"], "request_id">,
+      | Omit<P["requests.plugin_result"], "request_id">
+      | Omit<P["requests.plugin_failure"], "request_id">,
   ): Promise<Result<unknown>>;
 }
 export function startPlugin(
   client: Client<{ kind: "plugin"; key: string; plugin_id: string }>,
   options: {
-    description: P["plugin.description"];
+    description: P["requests.plugin_description"];
     onCall(
       call: P["plugin.call"],
       reply: Reply,
@@ -29,8 +29,7 @@ export function startPlugin(
   },
 ) {
   let stopped = false,
-    stream: ReturnType<typeof follow> | undefined,
-    contact: ReturnType<typeof client.holdContact> | undefined;
+    stream: ReturnType<typeof follow> | undefined;
   const credential = internal(client).options.credential;
   if (credential.kind !== "plugin")
     throw new Error("Expected Plugin credential");
@@ -58,7 +57,6 @@ export function startPlugin(
               ? "unauthenticated"
               : "closed",
         };
-      contact = client.holdContact();
       stream = follow(
         client as Client,
         { after: described.value.event_id },
@@ -101,24 +99,25 @@ export function startPlugin(
               return track(() =>
                 client.call("answerPlugin", {
                   params: { plugin_id },
-                  body: { ...body, request_id } as
-                    | P["plugin.result"]
-                    | P["plugin.failure"],
+                  body: { ...body, request_id },
                 }),
               );
             },
           };
           void Promise.resolve()
             .then(() => options.onCall(e.record, reply, e.event_id))
-            .catch(() => {
+            .catch(async () => {
               internal(client).emit("plugin.handler_failed", {
-                request_id: e.event_id,
+                request_id,
               });
+              if (state === "unanswered")
+                await reply.answer({
+                  explanation: "The Plugin handler failed.",
+                });
             });
         },
       );
       const end = await stream.done;
-      contact.stop();
       if (end.reason !== "run_ended") return end;
     }
     return { reason: "stopped" };
@@ -128,7 +127,6 @@ export function startPlugin(
     stop() {
       stopped = true;
       stream?.stop();
-      contact?.stop();
     },
   };
 }

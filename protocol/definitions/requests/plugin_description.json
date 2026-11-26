@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/plugin_description.json",
+  "title": "Plugin description request",
+  "description": "Plugin description content. Core stamps the record type, time and Plugin identity.",
+  "type": "object",
+  "required": [
+    "name",
+    "actions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "$ref": "../variables/name.json"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "../components/plugin_action.json"
+      },
+      "minItems": 1,
+      "maxItems": 16
+    }
+  },
+  "examples": [
+    {
+      "name": "Map lookups",
+      "actions": [
+        {
+          "action": "find_buildings",
+          "label": "Find buildings",
+          "help_text": "Lists every building in the area from OpenStreetMap.",
+          "inputs": [
+            {
+              "input": "box",
+              "label": "Area to search",
+              "input_kind": "area"
+            }
+          ],
+          "in_menu": true,
+          "show_on_map": true
+        },
+        {
+          "action": "weather",
+          "label": "Weather",
+          "inputs": [
+            {
+              "input": "spot",
+              "label": "Where",
+              "input_kind": "position"
+            },
+            {
+              "input": "when",
+              "label": "Forecast time",
+              "input_kind": "time",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "action": "places",
+          "label": "Points of interest",
+          "inputs": [
+            {
+              "input": "box",
+              "label": "Area to search",
+              "input_kind": "area"
+            },
+            {
+              "input": "type",
+              "label": "Kind of place",
+              "input_kind": "choice",
+              "choices": [
+                "hospital",
+                "helipad",
+                "open_field"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

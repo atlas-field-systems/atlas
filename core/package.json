@@ -14,7 +14,6 @@
     "@types/node": "^24.0.0"
   },
   "exports": {
-    ".": "./src/core.ts",
-    "./event-kinds": "./src/api/event-kinds.ts"
+    ".": "./src/core.ts"
   }
 }

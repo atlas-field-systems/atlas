@@ -2,9 +2,9 @@ name: sdk
 on:
   push:
     branches: [main]
-    paths: ['package.json', 'scripts/workspace.mjs', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/sdk.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'sdk/**', 'protocol/**', '.github/workflows/sdk.yml']
   pull_request:
-    paths: ['package.json', 'scripts/workspace.mjs', 'sdk/**', 'core/**', 'protocol/**', '.github/workflows/sdk.yml']
+    paths: ['package.json', 'scripts/workspace.mjs', 'sdk/**', 'protocol/**', '.github/workflows/sdk.yml']
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

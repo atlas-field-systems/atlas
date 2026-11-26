@@ -1,4 +1,5 @@
 import * as entities from "../pillars/entities.ts";
+import type { Contact } from "../contact.ts";
 import { pageAfter } from "../store/events.ts";
 import type { ServerResponse } from "node:http";
 import type { Clock } from "../clock.ts";
@@ -47,19 +48,23 @@ export function startStreams(
   clock: Clock,
   keepaliveMs: number,
   log: DiagnosticLog,
+  contact: Contact,
 ): Streams {
+  const pendingOffline = store.read(tx => tx.env.pendingOffline);
   const closers = new Set<() => void>();
+  const pluginStreams = new Map<string, () => void>();
   return {
     closeAll() {
       for (const close of closers) close();
     },
     open(res, audience, after, valid) {
-      let cursor = after === "latest" ? store.read((tx) => tx.asOf()) : after,
+      const pluginId = audience.kind === "plugin" ? audience.plugin_id : undefined;
+      let cursor = pluginId ? 0 : after === "latest" ? store.read((tx) => tx.asOf()) : after,
         closed = false,
         blocked = false;
       let deadline: ReturnType<Clock["after"]> | undefined;
       let keepalive: ReturnType<Clock["after"]> | undefined;
-      const close = () => {
+      const close = (replaced = false) => {
         if (closed) return;
         closed = true;
         unsubscribe();
@@ -72,7 +77,12 @@ export function startStreams(
           msg: "event stream disconnected",
           route: "/events",
         });
-        res.destroy();
+        if (pluginId && !replaced) {
+          pluginStreams.delete(pluginId);
+          contact.pluginStream(pluginId, false);
+        }
+        if (replaced) res.end("event: plugin.stream_replaced\n\n");
+        else res.destroy();
       };
       const pump = () => {
         if (closed) return;
@@ -114,6 +124,11 @@ export function startStreams(
           close();
         }
       };
+      if (pluginId) {
+        contact.pluginStream(pluginId, true);
+        pluginStreams.get(pluginId)?.();
+        pluginStreams.set(pluginId, () => close(true));
+      }
       const unsubscribe = store.onCommit(pump);
       closers.add(close);
       res.on("close", close);
@@ -124,7 +139,8 @@ export function startStreams(
       });
       const alive = () => {
         if (closed) return;
-        if (!blocked && !res.write(": alive\n\n")) {
+        const token = !blocked && audience.kind === "everything" && entities.contactStorageToken(pendingOffline);
+        if (!blocked && !res.write(token ? `: contact-storage ${token}\n\n` : ": alive\n\n")) {
           blocked = true;
           deadline = clock.after(30000, close);
         }

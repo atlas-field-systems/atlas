@@ -58,7 +58,7 @@ for (const phase of phases)
       effects.length = 0;
       reports.length = 0;
       if (request === "pause" || request === "resume" || request === "settings") {
-        dispatch({ kind: "settings", now: 1, request_id: 42, settings: request === "settings" ? { link_loss_after_s: 50 } : { run_state: request === "pause" ? "paused" : "running" } });
+        dispatch({ kind: "settings", now: 1, request_id: 42, settings: request === "settings" ? { home_position: { latitude: 50, longitude: 1 } } : { run_state: request === "pause" ? "paused" : "running" } });
         const answer = effects.find(e => e.kind === "settings");
         assert.ok(answer?.kind === "settings" && answer.request_id === 42);
         if (table[phase][column] === "refuse") {
@@ -66,7 +66,7 @@ for (const phase of phases)
           assert.deepEqual(state.execution, before.execution);
           assert.equal(effects.some(e => e.kind === "vehicle"), false);
         }
-        else if (request === "settings") assert.equal(answer.settings.link_loss_after_s, 50);
+        else if (request === "settings") assert.equal(answer.settings.home_position?.latitude, 50);
         else assert.equal(answer.settings.run_state, request === "pause" ? "paused" : "running");
       } else {
         if (request === "cancel queued" || request === "cancel running")
@@ -75,7 +75,7 @@ for (const phase of phases)
           q.apply({ kind: "tasks.updated", event_id: 42, record: [{ ...task, destination: { latitude: 3, longitude: 3 } }] });
         else {
           const next: Task = request === "settings task"
-            ? { ...task, task_id: 3, kind: "settings", settings: { link_loss_after_s: 50 }, now: true }
+            ? { ...task, task_id: 3, kind: "settings", settings: { home_position: { latitude: 50, longitude: 1 } }, now: true }
             : request === "task" || request === "now"
             ? { ...task, task_id: 3, now: request === "now" }
             : { ...task, task_id: 3, kind: request, now: true };
@@ -91,7 +91,7 @@ for (const phase of phases)
         } else if (outcome === "queue") assert.deepEqual(q.held(), [2, 3]);
         else if (outcome === "complete") {
           assert.equal(state.execution, null);
-          assert.equal(state.settings.link_loss_after_s, 50);
+          assert.equal(state.settings.home_position?.latitude, 50);
           assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === 1 && r.task_state === "cancelled"));
           assert.ok(reports.some(r => r.type === "report.status" && r.kind === "task" && r.task_id === 3 && r.task_state === "completed"));
           assert.ok(effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));

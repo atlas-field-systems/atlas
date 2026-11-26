@@ -126,9 +126,6 @@ scenario({
       });
       value(
         await reply.answer({
-          type: "plugin.result",
-          time: w.clock.now(),
-          plugin_id: call.plugin_id,
         }),
       );
       calls.push(id);

@@ -12,10 +12,17 @@ type Answer = ProtocolTypes["plugin.result"] | ProtocolTypes["plugin.failure"];
 export function describe(
   tx: Tx,
   plugin_id: string,
-  record: ProtocolTypes["plugin.description"],
+  content: ProtocolTypes["requests.plugin_description"],
 ): { event_id: number } {
-  if (record.plugin_id !== plugin_id)
-    refuse("invalid", "plugin_id must match the path");
+  const record = { ...content, plugin_id, time: tx.now, type: "plugin.description" as const };
+  const names = record.actions.map(a => a.action);
+  if (new Set(names).size !== names.length)
+    refuse("invalid", "Action names must be unique");
+  for (const action of record.actions) {
+    const inputs = action.inputs.map(i => i.input);
+    if (new Set(inputs).size !== inputs.length)
+      refuse("invalid", `Input names must be unique within action ${action.action}`);
+  }
   return admin.setPluginDescription(tx, record);
 }
 export function call(
@@ -25,7 +32,7 @@ export function call(
   body: ProtocolTypes["requests.plugin_call"],
   by: string,
 ): { event_id: number } {
-  if (admin.pluginContact(tx, plugin_id).contact !== "online")
+  if (admin.pluginContact(tx, plugin_id).contact !== "online" || tx.env.pendingOffline.has(`plugin:${plugin_id}`))
     refuse("plugin_offline", "Plugin is offline");
   const offered = admin
     .pluginDescription(tx, plugin_id)
@@ -92,10 +99,11 @@ export function requireOpenCall(
 export function answer(
   tx: Tx,
   plugin_id: string,
-  record: Answer,
+  content: ProtocolTypes["requests.plugin_result"] | ProtocolTypes["requests.plugin_failure"],
 ): { event_id: number } {
-  if (record.plugin_id !== plugin_id)
-    refuse("invalid", "plugin_id must match the path");
+  const record: Answer = "explanation" in content
+    ? { ...content, type: "plugin.failure", time: tx.now, plugin_id }
+    : { ...content, type: "plugin.result", time: tx.now, plugin_id };
   requireOpenCall(tx, plugin_id, record.request_id);
   for (const id of record.geofeature_ids ?? [])
     if (!entities.createdFor(tx, id, record.request_id))

@@ -39,7 +39,8 @@ export interface Contact {
    * the stored state is offline, writes the online transition now, before the
    * request's own change, so its event comes first.
    */
-  heard(who: Subject): void;
+  heard(who: Exclude<Subject, { plugin_id: string }>): void;
+  pluginStream(plugin_id: string, open: boolean): void;
   /** Apply overdue deadlines before accepting requests. */
   resume(): void;
   stop(): void;
@@ -142,6 +143,21 @@ export function startContact(
       heard.set(id, { who, at: clock.now() });
       schedule();
     },
+    pluginStream(plugin_id, open) {
+      if (stopped) return;
+      const who = { plugin_id };
+      const id = key(who);
+      if (open) {
+        const expiredAt = pendingOffline.get(id);
+        if (expiredAt !== undefined) transition(who, "offline", expiredAt);
+        transition(who, "online", clock.now());
+        heard.delete(id);
+        pendingOffline.delete(id);
+      } else {
+        heard.set(id, { who, at: clock.now(), retryAt: clock.now() });
+        expire();
+      }
+    },
     resume() {
       const subjects = store.read((tx) => {
         const ids = admin.onlineGatewaysAndPlugins(tx);
@@ -159,6 +175,10 @@ export function startContact(
               ? admin.lastIdentityHeard(tx, "gateway", who.gateway_id)
               : admin.lastIdentityHeard(tx, "plugin", who.plugin_id),
         );
+        if ("plugin_id" in who) {
+          transition(who, "offline", at ?? clock.now());
+          continue;
+        }
         heard.set(key(who), {
           who,
           at: at ?? clock.now(),

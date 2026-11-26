@@ -163,15 +163,16 @@ reports its contact as the [Core API](../../core/docs/api.md#radio-assets) sets.
 A Plugin uses one client with its own key and makes the
 [Plugin calls](../../core/docs/api.md#plugins): it describes itself, follows its
 event stream for the calls addressed to it, stores what it creates, and posts one
-answer per call. The SDK keeps the Plugin in contact while it is idle.
+answer per call. Its open call stream keeps it online while idle.
 
 `startPlugin(client, {description, onCall})` returns `done` and `stop()`.
 Stopping during connection or description prevents subsequent startup steps,
-contact heartbeats, and call delivery; `done` resolves with `reason: "stopped"`.
+stream contact and call delivery; `done` resolves with `reason: "stopped"`.
 A reply remains unanswered after local validation fails or Core definitively
 refuses it without accepting an answer. An `unknown` result reserves that reply
 for the same attempt: use its `retry()` handle until the outcome is known.
-An accepted answer prevents another answer through that reply.
+An accepted answer prevents another answer through that reply. If a handler
+throws before answering, the SDK sends a failure with a fixed explanation.
 
 ## Reset and idle contact
 
@@ -180,6 +181,6 @@ After a transport failure, the client checks `/about` before resending. A new
 `run_id` fences every old retry and returns `run_ended` without sending. Call
 `connect()` to bind the new `run_id` after discarding the old state. An invalid response returns `invalid_response`.
 
-Gateway and Plugin clients use `holdContact()` while idle. It checks `/about`
+Gateway clients use `holdContact()` while idle. It checks `/about`
 after `heartbeatMs` without a request. Stop its handle when the host ends.
 It stops on lost authentication, a mismatch, a Reset, or client close.

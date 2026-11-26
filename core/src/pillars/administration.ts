@@ -412,15 +412,19 @@ export function gatewayContact(tx: ReadTx, gateway_id: string): Contact {
     ? JSON.parse(row.contact)
     : { time: tx.now, gateway_id, contact: "offline" };
 }
+type PluginContactRow = { contact_run_id: number; contact: string | null };
+function readPluginContact(tx: ReadTx, plugin_id: string, row: PluginContactRow): Contact {
+  return row.contact_run_id === tx.runId && row.contact
+    ? JSON.parse(row.contact)
+    : { time: tx.now, plugin_id, contact: "offline" };
+}
 export function pluginContact(tx: ReadTx, plugin_id: string): Contact {
-  const row = tx.get<{ contact_run_id: number; contact: string | null }>(
+  const row = tx.get<PluginContactRow>(
     "SELECT contact_run_id,contact FROM plugins WHERE plugin_id=? AND removed=0",
     plugin_id,
   );
   if (!row) refuse("not_found", "No such plugin");
-  return row.contact_run_id === tx.runId && row.contact
-    ? JSON.parse(row.contact)
-    : { time: tx.now, plugin_id, contact: "offline" };
+  return readPluginContact(tx, plugin_id, row);
 }
 export function setGatewayContact(
   tx: Tx,
@@ -508,16 +512,21 @@ export function listPlugins(tx: ReadTx): {
   plugin_id: string;
   description: PluginDescription | null;
   contact: Contact;
+  removed: boolean;
 }[] {
   return tx
-    .all<{
+    .all<PluginContactRow & {
       plugin_id: string;
       description: string | null;
-    }>("SELECT plugin_id,description FROM plugins WHERE removed=0")
+      removed: number;
+    }>("SELECT plugin_id,description,removed,contact_run_id,contact FROM plugins WHERE removed=0 OR contact_run_id=?", tx.runId)
     .map((r) => ({
       plugin_id: r.plugin_id,
       description: r.description ? JSON.parse(r.description) : null,
-      contact: pluginContact(tx, r.plugin_id),
+      contact: tx.env.pendingOffline.has(`plugin:${r.plugin_id}`)
+        ? { plugin_id: r.plugin_id, contact: "offline", time: tx.env.pendingOffline.get(`plugin:${r.plugin_id}`)! }
+        : readPluginContact(tx, r.plugin_id, r),
+      removed: Boolean(r.removed),
     }));
 }
 

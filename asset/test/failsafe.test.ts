@@ -179,8 +179,8 @@ for (const override of ["hold", "pause"] as const)
   test(`docs/failsafes.md: ${override} re-arms contact and boundary rules and a lower critical level fires`, async () => {
     const config = parseConfig(JSON.parse(await readFile(new URL("../examples/copter.json", import.meta.url), "utf8")));
     let state = initial(config, 0);
-    state.settings = { ...state.settings, link_loss_after_s: 1, failsafe_policy: [
-      { rule_id: "CONTACT", priority: 50, conditions: [{ kind: "contact_lost" }], response: { kind: "land" } },
+    state.settings = { ...state.settings, failsafe_policy: [
+      { rule_id: "CONTACT", priority: 50, conditions: [{ kind: "contact_lost", for_s: 1 }], response: { kind: "land" } },
       { rule_id: "AREA", priority: 60, conditions: [{ kind: "outside_area", area: [{ latitude: 0, longitude: 0 }, { latitude: 0, longitude: 1 }, { latitude: 1, longitude: 0 }] }], response: { kind: "land" } },
       { rule_id: "LOW", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 5, critical: true }], response: { kind: "land" } },
     ] };

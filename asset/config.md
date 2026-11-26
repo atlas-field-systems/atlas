@@ -9,15 +9,14 @@ and limits that shape how an Asset behaves are set in that Asset's
 configuration, never fixed in the app, because Assets set up differently respond
 differently ([Asset ADR-0007](docs/adr/0007-behavior-values-live-in-each-assets-configuration.md)).
 Atlas ships sensible defaults, and an Asset's configuration lists only what
-differs from them. Inspection still shows every value in use. The built app
-does not have these defaults yet: it requires each behavior value to be set.
+differs from them. Inspection shows every effective value, including defaults and overrides.
 
 ## Startup configuration and live settings
 
 Startup configuration describes the Asset's modules, equipment access, supported
 commands, startup behavior, connection to Core, and diagnostic storage. Live
 settings are shared operating values, such as lights, home, pause, or
-`link_loss_after_s`; Protocol defines them and operators change them through
+the failsafe policy; Protocol defines them and operators change them through
 Core. Editing a configuration file is not another way to send commands.
 Configuration changes need a restart; anything tuned during an operation is a
 live setting.
@@ -29,21 +28,20 @@ missing or incompatible options without moving equipment. The same check runs in
 CI without hardware. Flying configurations require a critical battery rule.
 The app loads one local JSON file.
 
-For the IP link, startup refuses `initial_settings.link_loss_after_s` when it
+For the IP link, startup refuses any initial `contact_lost` condition whose `for_s`
 is at or below Core's keepalive interval. The SDK reads the interval from
 Core before registration; inspection alone cannot check a remote Core.
 See [Core contact](../core/docs/api.md#contact).
 
 ## Inspect a configuration
 
-With Node 24, run `npm ci` in Protocol, Core, the SDK, and Asset, in that order.
+With Node 24, run `npm run setup -- asset` at the repository root.
 From `asset/`, run `node src/main.ts inspect examples/copter.json`.
 The command reads one JSON file, validates it, prints the effective configuration
 with `asset_key` and URL credentials removed, and exits without opening equipment or Core. Invalid
 configuration exits with status 1 and names the affected options.
 
-The [copter example](examples/copter.json) is the implemented format. It requires
-explicit behavior values. Its values are provisional until verified in SITL.
+The [copter example](examples/copter.json) declares its equipment, capabilities, initial policy and safe action. The [tracker example](examples/tracker.json) needs only its key, link, description and equipment.
 `description` is the Protocol registration body and lists supported capabilities.
 `equipment.kind` selects `ardupilot` with a TCP host, port, heartbeat interval in
 seconds, and GCS system ID, `simulated` with a stationary position, or
@@ -56,17 +54,17 @@ The [runtime queue policy](docs/runtime.md#control-loop-failure-containment-and-
 The app uses Protocol's validator for all shared values.
 
 The command registry in `src/commands.ts` owns executable kinds, preparation,
-vehicle steps, observed progress, and failsafe eligibility. Each listed executable
-command requires a `completion_tolerances` object with `horizontal_m`, `altitude_m`,
+vehicle steps, observed progress, and failsafe eligibility. Each reachable
+command receives a `completion_tolerances` object with `horizontal_m`, `altitude_m`,
 and `stopped_mps`, and a positive `command_timeouts` value in seconds.
 Fail-safe activates a policy response and has no execution entry or movement
 configuration. A reporting-only Asset needs neither movement configuration nor
-initial settings. Movement also requires the Hold tolerance and timeout even when
+initial settings. Movement also receives the Hold tolerance and timeout even when
 Hold is not advertised, because handback and command failures use it internally.
-A critical battery rule also requires Return-to-home tolerances and timeout for
+A critical battery rule also receives Return-to-home tolerances and timeout for
 its fixed fallback, even when Return to home is not advertised.
 Acquisition-only `gpsd` and `peripheral` equipment cannot advertise movement commands.
-The configured safe action is unused when no commands are listed.
+Only command-capable Assets require a safe action.
 
 ## Options
 
@@ -78,18 +76,18 @@ The configured safe action is unused when no commands are listed.
 | `equipment` | Equipment kind and connection | Options for each kind are listed above |
 | `initial_settings` | Starting live settings | Explicit home precedes automatic home; includes the configured failsafe policy |
 | `safe_action` | Built-in failsafe response | Used when Fail-safe finds no applicable configured rule |
-| `completion_tolerances`, `command_timeouts` | Completion limits and timeout seconds per command | Required for listed executable commands |
-| `default_ground_speed_mps` | Speed when none is requested | Required for movement; nonnegative and at most the maximum |
-| `max_ground_speed_mps` | Maximum horizontal speed | Required for movement; positive; [faster requests are capped](docs/README.md#move-to-speed) |
-| `measurement_stale_after_s` | Maximum measurement age | Required positive seconds |
-| `final_report_wait_s` | Final acknowledgement wait | Required nonnegative seconds |
-| `control_tick_s` | Control interval | Required positive seconds |
-| `reporting.heartbeat_s` | Report heartbeat interval | Required positive seconds |
-| `log_level` | Diagnostic detail | Required `trace`, `debug`, `info`, `warn`, or `error` |
+| `completion_tolerances`, `command_timeouts` | Completion limits and timeout seconds per command | Defaults supplied for reachable commands |
+| `default_ground_speed_mps` | Speed when none is requested | Defaults to 3 m/s for movement |
+| `max_ground_speed_mps` | Maximum horizontal speed | Defaults to 8 m/s for movement; [faster requests are capped](docs/README.md#move-to-speed) |
+| `measurement_stale_after_s` | Maximum measurement age | Default 5 seconds |
+| `final_report_wait_s` | Final acknowledgement wait | Default 30 seconds |
+| `control_tick_s` | Control interval | Default 0.1 seconds |
+| `reporting.heartbeat_s` | Report heartbeat interval | Default 5 seconds |
+| `log_level` | Diagnostic detail | Default `trace` |
 | `log_directory` | Local operation records | Works while Core is unreachable |
-| `log_message_content` | Trace request and report bodies | Required boolean; credentials removed |
-| `log_queue_limit` | Diagnostic, evidence-write, and ordinary pre-registration report capacity | Required positive integer |
-| `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Required positive integers; starting points 64 MiB per file and 2 GiB per operation, about 17 hours at full detail (estimated from SITL runs at about 115 MB an hour); overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
+| `log_message_content` | Trace request and report bodies | Enabled by default; credentials removed |
+| `log_queue_limit` | Diagnostic, evidence-write, and ordinary pre-registration report capacity | Default 4096 |
+| `log_file_limit_bytes`, `log_total_limit_bytes` | Diagnostic rotation and total limits | Defaults 64 MiB per file and 2 GiB per operation, about 17 hours at full detail (estimated from SITL runs at about 115 MB an hour); overflow becomes [gap evidence](docs/logging.md#when-logging-cannot-keep-up) |
 | `archive_directory` | [Reset ZIP](docs/logging.md#export-the-assets-reset-zip) destination | Copied off by hand; the app never deletes archives |
 
 ArduPilot equipment also accepts `stream_rate_hz`, an integer from 1 through

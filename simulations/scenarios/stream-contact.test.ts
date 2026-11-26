@@ -35,7 +35,7 @@ test("sdk/docs/live.md: data and keepalives advance contact; closing retains the
 });
 
 scenario({
-  name: "an IP Asset with no link-loss timeout holds after 30 seconds without contact",
+  name: "an IP Asset with a 30-second link-loss rule holds after 30 seconds without contact",
   checks: ["core/docs/api.md#contact", "asset/docs/failsafes.md#configure-conditions-as-well-as-responses"],
   async run(w) {
     const app = await assetApp(w, { equipment: "ardupilot", config: {
@@ -55,7 +55,7 @@ scenario({
     const sentAt = w.clock.now();
     value(await w.complete(w.admin.call("changeSettings", { params, body: { settings: { failsafe_policy: [
       ...(app.config.initial_settings.failsafe_policy ?? []),
-      { rule_id: "LINK", priority: 10, conditions: [{ kind: "contact_lost" }], response: { kind: "hold" } },
+      { rule_id: "LINK", priority: 10, conditions: [{ kind: "contact_lost", for_s: 30 }], response: { kind: "hold" } },
     ] } } })));
     await w.until(() => w.events.some(e => e.kind === "report.settings" &&
       e.record.settings.failsafe_policy?.some(r => r.rule_id === "LINK")));

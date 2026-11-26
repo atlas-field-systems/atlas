@@ -1,4 +1,4 @@
-import { EVENT_KINDS as KINDS } from "../api/event-kinds.ts";
+import { EVENT_KINDS as KINDS } from "@atlas/protocol/event-kinds";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { ReadTx, TableDef, Tx } from "./db.ts";
 
@@ -193,10 +193,22 @@ export function appendEvent<K extends EventKind>(
         `Core built invalid ${kind}: ${JSON.stringify(checked.problems)}`,
       );
   }
+  return insertEvent(tx, kind, record, extra);
+}
+
+// The reports route validated the complete batch before entering the transaction.
+export function appendReceivedReport(
+  tx: Tx, report: ProtocolTypes["requests.reports"]["reports"][number], extra?: EventExtra,
+): number {
+  return insertEvent(tx, report.type, report, extra);
+}
+
+function insertEvent<K extends EventKind>(tx: Tx, kind: K, record: RecordOf<K>, extra?: EventExtra): number {
+  const spec: KindSpec = EVENT_KINDS[kind];
   for (const stamp of Object.keys(extra ?? {}))
     if (!spec.stamps?.includes(stamp as "clock_ahead" | "requested_by"))
       throw new Error(`illegal stamp ${stamp}`);
-  const first = records[0];
+  const first = Array.isArray(record) ? record[0] : record;
   const asset =
     first &&
     typeof first === "object" &&
@@ -347,7 +359,7 @@ export function pageAfter(
   }
   if (audience.kind !== "everything") {
     if (audience.kind === "plugin") {
-      filter = " AND e.kind='plugin.called' AND e.plugin_id=?";
+      filter = ` AND e.kind='plugin.called' AND e.plugin_id=? AND NOT EXISTS (SELECT 1 FROM events a WHERE ${settlementMatch})`;
       args = [audience.plugin_id];
     } else {
       const ids = audience.assetIds(tx);

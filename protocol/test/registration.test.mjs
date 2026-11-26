@@ -27,3 +27,17 @@ test('an Asset can list every command', () => {
   const result = protocol.check('description', { time: 1793667600100, asset_id: 'A1', ...body });
   assert.equal(result.ok, true, JSON.stringify(result));
 });
+
+test('registration and descriptions reject repeated subsystem and camera IDs', () => {
+  const camera = { camera_id: 'C1', mount: 'fixed', yaw_deg: 0, pitch_deg: 0, horizontal_fov_deg: 60, vertical_fov_deg: 60 };
+  for (const [name, fields] of [['requests.asset', body], ['description', { ...body, asset_id: 'A1', time: 1 }]]) {
+    for (const entries of [
+      { subsystems: [{ subsystem_id: 'S1', label: 'First' }, { subsystem_id: 'S1', label: 'Second' }] },
+      { cameras: [camera, { ...camera, yaw_deg: 30 }] },
+    ]) {
+      const result = protocol.check(name, { ...fields, ...entries });
+      const [field] = Object.keys(entries);
+      assert.deepEqual(result.problems.map((problem) => problem.path), [`/${field}`]);
+    }
+  }
+});
