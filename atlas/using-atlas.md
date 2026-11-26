@@ -111,7 +111,8 @@ The operator does not need to control that aircraft to observe it through Atlas.
 
 An operator selects a building or area and runs a Plugin action on it. The Plugin
 returns a list, or creates geo features and stores files as Objects. Every
-operator sees the call and its result. [Plugins](plugins.md) has the examples.
+operator can read the call and its answer; listed places show only on the asking
+operator's map until saved. [Plugins](plugins.md) has the examples.
 
 ### Attach a photo to a place
 

@@ -42,17 +42,17 @@ the link's own judgment from its medium and current quality. The IP link offers
 unlimited room and asks whenever `onWaiting` fires.
 
 `storeFile` [uploads a file the Asset captured](../../core/docs/api.md#objects).
-`AssetFile` holds its `name`, `contentType`, bytes, and an optional `place`, a
-`requests.geofeature` body. With a place, the link creates that geo feature
-first and attaches the file to it. A link that cannot carry files, such as a
-narrow radio link, rejects the call, and the file stays in the Asset's
+`AssetFile` holds its `name`, `contentType`, bytes, an optional `place` (a
+`requests.geofeature` body), and an optional `taskId` when the file came from a
+Task. With a place, the link creates that geo feature first and attaches the
+file to it; with `taskId`, Core links the stored Object to that Task. A link
+that cannot carry files, such as a narrow radio link, rejects the call, and the
+file stays in the Asset's
 [Reset ZIP](../../asset/docs/logging.md#export-the-assets-reset-zip).
 
 On IP, the SDK client provides it. On a radio Asset, the Fieldlink's Asset side
-provides it. The
-Asset app's code is the same on all of them. Because Fieldlinks are released on
-their own, this interface changes rarely, and each Fieldlink states which
-versions it works with.
+provides it. The Asset app's code is the same on all of them, and no part of
+the Asset depends on a Fieldlink's internals.
 
 ## Startup on IP
 
@@ -86,16 +86,22 @@ asks.
 - **One batch out at a time.** `take` returns nothing until the batch out is
   settled, so a resent batch never changes. On IP the link resends it with the
   same key until it gets a `200`.
-- **Acknowledged.** `settle({ok: true})` drops the batch's reports. Final Task
-  and failsafe-response reports (`completed`, `failed`, `cancelled`) and answers stay in the outbox
-  until then, across reconnects. Other reports keep their original times when
-  sent after a gap. Which of them to keep during a gap is the
+- **Acknowledged.** `settle({ok: true})` drops the batch's reports. Must-arrive
+  reports (Task-started and final Task reports, request answers, all failsafe
+  reports, and subsystem condition reports) stay in the outbox until then,
+  across reconnects. Other reports keep their original times when sent after a
+  gap. Which of them to keep during a gap is the
   [Asset's choice](../../asset/docs/communications.md#report-from-local-state).
 - **Lost.** `settle` with `lost` means the link gave up on the batch. Its added
   reports are offered again in the next batch, and current state is read
   afresh.
-- **Must arrive.** A batch is `must_arrive` when it holds a final Task or failsafe-response
-  report or answers a request, and `can_skip` otherwise.
+- **Must arrive.** A batch is `must_arrive` when it holds a Task-started
+  (`active`) or final Task report (`completed`, `failed`, `cancelled`), a
+  request answer, a failsafe report, a subsystem condition report, or a
+  contact-proof heartbeat, and `can_skip` otherwise. Must-arrive reports go
+  ahead of skippable telemetry so operator deadlines never wait behind
+  telemetry
+  ([ADR-0021](../../docs/adr/0021-operator-deadlines-come-first-then-fill-the-link.md)).
 - A report answering a request carries `request_id`, the request's `event_id`.
 - After `heartbeatMs` ([configuration](../config.md)) with nothing sent, the next
   `take` returns an empty batch, so Core keeps the Asset
@@ -168,13 +174,14 @@ from [registration](../../core/docs/api.md#operator-requests).
 ## On a radio Asset
 
 A radio Asset runs the same Asset app, outbox and queue helper. Its Fieldlink
-implements the [Asset link](#the-asset-link). It delivers each request with its
-`event_id`. It may deliver a request's Tasks one at a time and in any order,
-because the queue helper orders them by `task_id`.
+implements the [Asset link](#the-asset-link). It delivers each request whole
+with its `event_id` (splitting a request into radio packets only when needed
+and reassembling it before delivery), so the queue helper answers the whole
+request once.
 It asks for reports when it has airtime, settles each batch on end-to-end
 acknowledgement or gives it up as `lost`, and supplies contact. The
-Fieldlink owns its own startup and the hash check on its link. Fieldlinks are not
-part of the SDK.
+Fieldlink owns its own startup and passes the radio's definitions hash up
+through the gateway so Core checks it. Fieldlinks are not part of the SDK.
 
 ## Running over any link
 
@@ -211,10 +218,11 @@ Reports keep emission order within each lane and batch. Priority marks a batch,
 never reorders its reports.
 
 The outbox retains at most 1,024 queued ordinary reports across both lanes,
-excluding reports in the current in-flight batch. Overflow drops the oldest
-ordinary retained reports first, then ordinary live reports. Request answers,
-final Task reports, all failsafe reports, and subsystem condition reports are
-never dropped by this bound and make their batch must-arrive.
+excluding reports in the current in-flight batch. Overflow drops the oldest ordinary retained reports first, then ordinary live
+reports. Request answers, Task-started (`active`) and final Task reports, all
+failsafe reports, and subsystem condition reports are never dropped by this
+bound and make their batch `must_arrive` (as does a contact-proof heartbeat,
+[above](#report-outbox)).
 Protected evidence can exceed the limit. Each drop settles any acknowledgement
 wait for that report and emits `reports.gap` with a dropped count. Consumers
 collect that diagnostic as gap evidence. Local report recording happens before

@@ -80,7 +80,7 @@ Each checks behavior its [Asset page](../../asset/docs/README.md) owns.
 ## Open
 
 - Eval thresholds, such as how close and how fast counts as a pass in SITL.
-- Scenarios for several links and congestion, once the gateway and Fieldlink
+- Scenarios for radio links and congestion, once the gateway and Fieldlink
   designs exist.
 
 ## Run the initial SITL scenarios

@@ -147,7 +147,7 @@ Dates are when the owner decided (America/New_York).
 | 2026-11-12 | Fixed-wing aircraft are not part of the current design. They come later as a new kind of Asset with its own commands. | Asset kinds. | [Assets and their equipment](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/assets.md#movement-module-and-profiles) |
 | 2026-11-11 | There is no remote shutdown or restart. | Assets. | [Asset behavior](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#shut-down-and-retain-evidence) |
 | 2026-11-11 | A crashed Asset is inspected before its next flight. | An Asset after a crash. | [Using Atlas](../using-atlas.md#an-operation-runs-without-planned-restarts) |
-| 2026-11-11 | No part of Atlas assumes an Asset joins Wi-Fi during startup or setup. Some Assets may join known Wi-Fi networks; it is a possibility, not a requirement. | Every Asset. | [Asset communications](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#several-links) |
+| 2026-11-11 | No part of Atlas assumes an Asset joins Wi-Fi during startup or setup. Some Assets may join known Wi-Fi networks; it is a possibility, not a requirement. | Every Asset. | [Asset communications](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#one-link-per-asset) |
 
 ## Build and test
 

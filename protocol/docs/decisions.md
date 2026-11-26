@@ -20,7 +20,7 @@ disagree, fix one of them.
 - takeoff takes a target altitude. move_to takes a destination; without an altitude, the Asset keeps its current one. land takes an optional landing position and an optional transit altitude; without a position, the Asset lands where it is when the Task starts. return_to_home flies to the `home_position` setting. hold stops the Asset where it is and completes once the hold is observed; the Asset then keeps holding, as it does with no Task to run. Hold is work, not pause: it keeps no earlier Task to resume. *[Owner decision](../../atlas/archive/decision-log.md#places-and-tasks).* point_at takes a target position; the Asset works out how to aim there and holds the aim until its next command. *[Owner decision](../../atlas/archive/decision-log.md#places-and-tasks).* failsafe fires the Asset's failsafe as if a rule had fired, running the rule with a `commanded` condition or, with none, the built-in safe action; it is always sent with `now`, completes once the Asset is in failsafe state, and is never a failsafe response. *[Owner decision](../../atlas/archive/decision-log.md#failsafes).*
 - `capture` names a declared `camera_id` and `media` (`photo` or `clip`). Only a clip takes `duration_s`, greater than zero and at most 60 seconds. The cap bounds a single capture so it cannot become an open-ended recording; it does not guarantee a file fits Core's Object limit. [Asset capture behavior](../../asset/docs/README.md#capture-files) owns completion and failure.
 - `move_to` reuses `ground_speed_mps` for requested horizontal speed. Telemetry measures the same quantity, so a second variable would duplicate its meaning. [Asset configuration](../../asset/config.md) owns the default and safe maximum.
-- A completed Task may carry `object_ids`, 1 to 16 existing Object IDs. Any command that makes a file names its Object. The list is absent for work that makes no file.
+- A Capture Task completes once the file is taken and stored on the Asset, before the file is uploaded to Core ([Asset capture behavior](../../asset/docs/README.md#capture-files)). When the Asset later uploads a file made by a Task, Core stamps `task_id` on the `object` record and adds its `object_id` to the Task's `object_ids` on read ([Objects](../../core/docs/api.md#objects)).
 - **A Task keeps a copy of its place.** move_to and land may name a point geo feature by `geofeature_id`. The request gives only the ID; the Task record also carries the position Core copied when it accepted the Task, in `destination` or `landing_position`. A Task's body changes only when the operator who edits that place chooses to update its Tasks: Core sends the Task again with the same `task_id` and the new copy, and keeps showing the old point until the Asset accepts the update. *[Owner decision](../../core/docs/adr/0004-a-task-copies-its-place-and-keeps-showing-it-until-accepted.md).*
 - There are no Plans, only individual Tasks. *[Owner decision](../../atlas/archive/decision-log.md#places-and-tasks).* A queue is the list of an Asset's Tasks not started yet, in `task_id` order. Core numbers each Task and sends it once with its whole body, so the Asset never fetches a body and never receives a list to replace its own.
 - A Task's state only moves forward, and a final state never changes.
@@ -105,9 +105,10 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
 ## Objects and Plugins
 
 - The `object` record is `object_id`, `name`, `content_type`, `size_bytes`, an
-  optional `geofeature_id`, and `requested_by`, the account, Plugin, or Asset
-  that stored it. An Asset's Object reaches the map only through a geo feature
-  the Asset creates alongside it. *[Owner decision](../../atlas/archive/decision-log.md#the-picture-and-plugins).* `deletion` records an operator deleting one; the Object is hidden, not destroyed. *[Owner decision](../../atlas/archive/decision-log.md#the-picture-and-plugins).*
+  optional `geofeature_id`, an optional `task_id` when an Asset uploads a file
+  made by a Task, and `requested_by`, the account, Plugin, or Asset that stored
+  it. An Asset's Object reaches the map only through a geo feature the Asset
+  creates alongside it. *[Owner decision](../../atlas/archive/decision-log.md#the-picture-and-plugins).* `deletion` records an operator deleting one; the Object is hidden, not destroyed. *[Owner decision](../../atlas/archive/decision-log.md#the-picture-and-plugins).*
 - **Plugins describe their own actions.** `plugin.description` lists each
   action by name, with a label, optional `help_text`, and its inputs, each a
   `plugin_input` that names one of the fixed `input_kind` values. Its display
@@ -115,8 +116,9 @@ the compact and compressed bytes in hex dump and base64, so you can inspect the 
   input given. Protocol does not list actions, so a new Plugin or action needs
   no Protocol change; a new input kind does.
 - **Every action answers the same way.** `plugin.result` holds `places`
-  (bodies of geo features listed, not stored), `facts` (a label and a text
-  value), and the `geofeature_ids` and `object_ids` the Plugin created. All are
+  (point, line, or area geo feature bodies listed, not stored; listed imagery
+  is not allowed), `facts` (a label and a text value), and the `geofeature_ids`
+  and `object_ids` the Plugin created. All are
   optional, so an empty result means nothing was found. `plugin.failure` holds
   an `explanation` and what was already created. Each list holds at most 1000
   items; a Plugin with more fails rather than answering in part. *[Owner decision](../../atlas/archive/decision-log.md#the-picture-and-plugins).*

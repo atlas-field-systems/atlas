@@ -85,21 +85,22 @@ traffic.
 
 Optional local-picture and subscription ideas are in the [drawer](../../docs/drawer/meshtastic-listening.md).
 
-## Several links
+## One link per Asset
 
-Initial Assets use one link: Wi-Fi, FLRC, or LoRa. A later Asset may have
-several, for example Wi-Fi nearby, FLRC farther out, and LoRa at the edge of
-range, and report in less detail as link capacity decreases. The best path
-depends on current conditions, not a fixed ranking of radio types. A nearby
-radio peer does not show that Core is reachable.
+Each Asset uses one link: either direct IP (such as Wi-Fi or Ethernet) or one
+radio network's Fieldlink
+([ADR-0011](../../docs/adr/0011-one-gateway-per-radio-network.md)). A mesh
+relaying inside one Fieldlink still works, including a multi-layer mesh that
+one Fieldlink manages behind one gateway. A nearby radio peer does not show
+that Core is reachable.
 
-Some Assets may join known Wi-Fi networks, for example for setup work such as
-setting the clock, or for large transfers of retained reports. Wi-Fi is then
-one of that Asset's links. It is a possibility, not a requirement: no part of
-Atlas assumes an Asset connects to Wi-Fi during startup or setup.
+Switching an Asset between separate links (such as Wi-Fi and a radio Fieldlink),
+or joining a known Wi-Fi network later to upload retained reports or files, is
+not supported and waits in the [drawer](../../docs/drawer/multiple-links.md).
+No part of Atlas assumes an Asset connects to Wi-Fi during startup or setup.
 
 ## Open
 
 - The exact order within each priority, and what counts as a change that matters
   for each kind of report.
-- How several links, and relaying for peers, fit behind the one interface.
+- How relaying for peers inside one Fieldlink fits behind the one interface.

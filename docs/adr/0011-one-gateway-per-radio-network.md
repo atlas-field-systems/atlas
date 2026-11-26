@@ -9,4 +9,8 @@ One gateway serves each radio network, and each radio Asset uses exactly one gat
 
 One Core can serve several networks at once when their links cannot clash, such as networks in different areas or on different bands.
 
-Rules: [Setup](../../atlas/scale.md#setup), [Radio Assets](../../atlas/reset-and-identity.md#radio-assets)
+Each Asset uses one link: either direct IP or one radio network's Fieldlink. Switching an Asset between links waits in the [drawer](../drawer/multiple-links.md).
+
+Why: gateways never have to coordinate registration, duplicate suppression, or command routing.
+
+Rules: [Setup](../../atlas/scale.md#setup), [Radio Assets](../../atlas/reset-and-identity.md#radio-assets), [One link per Asset](../../asset/docs/communications.md#one-link-per-asset)

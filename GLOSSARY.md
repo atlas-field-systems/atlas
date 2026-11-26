@@ -119,7 +119,7 @@ One thing a **Plugin** offers to do, such as finding the buildings in an area. T
 One execution of a **Plugin action** with its inputs. It ends with a result or failure, or is dropped if the **Plugin** goes offline or is removed first. [Plugins](core/docs/api.md#plugins)
 
 **Result overlay**:
-A **Plugin**'s listed results drawn privately on one operator's map. The operator can share an item by saving it as a **Geo feature**. [Plugin results](command-interface/docs/plugins-and-objects.md#run-a-plugin)
+A **Plugin**'s listed places (points, lines, or areas, never **Imagery**) drawn privately on the asking operator's map. Everyone can still read the answer, and the asking operator can share a listed place by saving it as a **Geo feature**. [Plugin results](command-interface/docs/plugins-and-objects.md#results)
 
 ### Parts and links
 
@@ -130,10 +130,10 @@ An Atlas participant that reports information and may offer equipment control.
 A system on its own computer that connects Core to one field radio network through a **Fieldlink**. Each network has one **Gateway**, and Core can serve several. [Gateway](gateway/README.md)
 
 **Gateway app**:
-The framework every **Gateway** runs to connect to Core and register the **Assets** its radio hears. It installs **Fieldlinks** and runs one at a time through its stable gateway interface. [Gateway](gateway/README.md)
+The framework every **Gateway** runs to connect to Core and register the **Assets** its radio hears. It runs one configured **Fieldlink** at a time through its gateway interface. [Gateway](gateway/README.md)
 
 **Fieldlink**:
-A separately released package that carries Atlas over one kind of field link, defined by its radio hardware and software. It holds both a **Gateway** side and an **Asset** side. [Fieldlink](fieldlink/README.md)
+A folder shipped with Atlas that carries Atlas over one kind of field link, defined by its radio hardware and software. It holds both a **Gateway** side and an **Asset** side. [Fieldlink](fieldlink/README.md)
 
 **Atlas Tool**:
 A ready setup that packages existing Atlas parts with the glue for one kind of equipment, such as the SiK tool for first flight. It carries no Atlas messages over a field link, and no part depends on it. [Atlas Tools](tools/README.md)
