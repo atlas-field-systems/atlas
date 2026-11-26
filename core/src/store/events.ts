@@ -404,8 +404,13 @@ export function latestReport(
     filter += " AND json_extract(record,?) IS NOT NULL";
     args.push("$.settings." + where.setting);
   }
+  const order = where.kind === "report.settings" ? "event_id DESC" : "order_time DESC,event_id DESC";
+  if (where.kind === "report.settings" || where.kind === "report.failsafe") {
+    filter += " AND event_id > COALESCE((SELECT MAX(event_id) FROM events WHERE run_id=? AND asset_id=? AND kind='asset.described'),0)";
+    args.push(tx.runId, where.asset_id);
+  }
   const row = tx.get<EventRow>(
-    `SELECT * FROM events WHERE run_id=? AND asset_id=? AND kind=? AND clock_ahead=0${filter} ORDER BY order_time DESC,event_id DESC LIMIT 1`,
+    `SELECT * FROM events WHERE run_id=? AND asset_id=? AND kind=? AND clock_ahead=0${filter} ORDER BY ${order} LIMIT 1`,
     ...args,
   );
   return row ? (event(row) as AtlasEvent<ReportKind>) : undefined;
@@ -423,6 +428,7 @@ export type HistoryQuery =
       of: "reports";
       asset_id?: string;
       report?: ReportKind;
+      observation_id?: string;
       since?: number;
       until?: number;
     }
@@ -447,7 +453,7 @@ export function historyPage(
       : q.of === "tracks"
         ? "kind LIKE 'track.%'"
         : "kind LIKE 'geofeature.%'";
-  for (const key of ["asset_id", "track_id", "geofeature_id"] as const)
+  for (const key of ["asset_id", "observation_id", "track_id", "geofeature_id"] as const)
     if (key in q) {
       const value = Reflect.get(q, key);
       if (typeof value === "string") {
@@ -468,11 +474,15 @@ export function historyPage(
     args.push(q.until);
   }
   const order = q.of === "geofeatures" ? "event_id" : "order_time";
+  let as_of = tx.asOf();
   if (cursor) {
-    const [time, id] = JSON.parse(Buffer.from(cursor, "base64url").toString());
+    const [time, id, snapshot] = JSON.parse(Buffer.from(cursor, "base64url").toString());
     filter += ` AND (${order},event_id)>(?,?)`;
     args.push(time, id);
+    as_of = Math.min(snapshot ?? as_of, as_of);
   }
+  filter += " AND event_id<=?";
+  args.push(as_of);
   const size = Math.min(1000, Math.max(1, limit));
   const rows = tx.all<EventRow & { order_time: number }>(
     `SELECT * FROM events WHERE run_id=? AND ${filter} ORDER BY ${order},event_id LIMIT ?`,
@@ -483,7 +493,7 @@ export function historyPage(
   const selected = rows.slice(0, size);
   const last = selected.at(-1);
   return {
-    as_of: tx.asOf(),
+    as_of,
     items: selected.map(event),
     next_cursor:
       more && last
@@ -491,6 +501,7 @@ export function historyPage(
             JSON.stringify([
               q.of === "geofeatures" ? last.event_id : last.order_time,
               last.event_id,
+              as_of,
             ]),
           ).toString("base64url")
         : null,

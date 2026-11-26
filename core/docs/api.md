@@ -299,10 +299,11 @@ admins.
 
 `GET /entities/assets` returns `{as_of, items, gateways}`. Each Asset entry
 contains `asset_id`, `gateway_id` (or null), `description` (or null), `contact`,
-`reports` (latest by report kind, excluding Observations and gimbals),
-`settings` (latest report per setting), `subsystems` (latest condition per declared
+`reports` (latest by report kind, excluding Observations, gimbals, status, settings and failsafes),
+`failsafes` (latest report per failsafe kind since sign-up),
+`settings` (most recently received eligible value per setting since the last sign-up), `subsystems` (latest condition per declared
 subsystem), and `gimbals` (latest report per declared gimbal `camera_id`).
-`GET /entities/assets/{asset_id}` returns `{as_of, item}` with the same entry.
+`GET /entities/assets/{asset_id}` returns `{as_of, item}` with the same entry. For a removed Asset it includes the last entry and its `removal` record until Reset.
 `GET /tasks/{asset_id}` returns `{as_of, items, held}`. Each Task entry has `task`,
 `state`, `state_time`, and optional `object_ids`. `held` is the latest reported
 list of Task IDs since the Asset app last signed up; signing up again clears
@@ -313,7 +314,7 @@ the earlier queue.
 | `GET /entities/assets` | Every Asset: description, contact, the gateway carrying it, latest reports except `report.observation` (see [Observations](#observations)), each setting's latest value, and each declared subsystem's latest condition; and each gateway's contact |
 | `GET /entities/assets/{asset_id}` | One Asset, the same way |
 | `GET /tasks/{asset_id}` | Task bodies, latest states, and the Tasks the Asset reports holding |
-| `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
+| `GET /history?asset_id&observation_id&report&since&until&cursor&limit` | Reports pinned to the first page’s `as_of`, ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
 | `GET /history/geofeatures?geofeature_id&since&until&cursor&limit` | Stored geo feature events in `event_id` order, paged the same way |
 
 Geo feature history is what review replays: each geo feature as it stood at the
@@ -527,7 +528,7 @@ Objects are not Entities.
 
 | Request | Returns |
 | --- | --- |
-| `GET /entities` | `{as_of, assets, observations, geofeatures}`: one consistent cut of the whole picture |
+| `GET /entities` | `{as_of, assets, gateways, observations, geofeatures}`: one consistent cut of the whole picture |
 | `GET /entities/observations` | `{as_of, items}`: every Observation |
 | `GET /entities/geofeatures` | `{as_of, items}`: every geo feature |
 | `GET /entities/geofeatures/{geofeature_id}` | `{as_of, item}`: one geo feature |
