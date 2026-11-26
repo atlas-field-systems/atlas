@@ -611,24 +611,10 @@ export async function startAsset(
       };
     },
     async storeFile(file) {
-      let geofeature_id: string | undefined;
-      if (file.place) {
-        const result = await known(
-          client.call("createGeofeature", { body: file.place }),
-        );
-        if (!result.ok)
-          return {
-            ok: false,
-            error: result.error,
-            status: result.status,
-            explanation: result.explanation,
-          };
-        geofeature_id = result.value.geofeature.geofeature_id;
-      }
       return known(
         client.uploadObject(file.bytes, file.contentType, {
           name: file.name,
-          geofeature_id,
+          place: JSON.stringify(file.place),
         }),
       );
     },

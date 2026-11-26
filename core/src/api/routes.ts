@@ -441,21 +441,25 @@ export const ROUTES: readonly Route[] = [
     who: ["account", "plugin", "asset", "gateway"],
     actsFor: "query:asset_id",
     body: { kind: "file" },
-    commit: (tx, r) =>
-      created(
-        objects.store(
-          tx,
-          r.body,
-          {
-            name: r.query.get("name") ?? "",
-            ...(r.query.has("geofeature_id")
-              ? { geofeature_id: r.query.get("geofeature_id")! }
-              : {}),
-          },
-          r.who.by,
-          creatingCall(tx, r),
-        ),
-      ),
+    commit: (tx, r) => {
+      const call = creatingCall(tx, r);
+      let placeId = r.query.get("geofeature_id");
+      const encoded = r.query.get("place");
+      if (encoded !== null) {
+        if (placeId !== null) refuse("invalid", "Choose an existing or new place");
+        let value: unknown;
+        try { value = JSON.parse(encoded); }
+        catch { refuse("invalid", "Invalid place JSON"); }
+        const place = checkOrRefuse<ProtocolTypes["requests.geofeature"]>(
+          tx.env.protocol, "requests.geofeature", value,
+        );
+        placeId = entities.createGeofeature(tx, place, r.who.by, call).geofeature.geofeature_id;
+      }
+      return created(objects.store(tx, r.body, {
+        name: r.query.get("name") ?? "",
+        ...(placeId === null ? {} : { geofeature_id: placeId }),
+      }, r.who.by, call));
+    },
   }),
   read({
     method: "GET",

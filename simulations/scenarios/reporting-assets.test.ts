@@ -91,11 +91,13 @@ scenario({
           assert.ok(objects.items[0].geofeature_id);
           const place = value(await w.complete(w.admin.call("geofeature", { params: { geofeature_id: objects.items[0].geofeature_id } })));
           assert.equal(place.item.kind, "point");
+          assert.equal(place.item.requested_by, app.asset_id);
           w.network.once("peripheral-true", "/objects", { kind: "refuse", status: 403 });
-          send!({ kind: "file", name: "refused.txt", contentType: "text/plain", base64: Buffer.from("retained").toString("base64") });
+          send!({ kind: "file", name: "refused.txt", contentType: "text/plain", place: { kind: "point", position: { latitude: 7, longitude: 8 } }, base64: Buffer.from("retained").toString("base64") });
           await w.until(() => w.network.traffic.some(e => JSON.stringify(e).includes("403")));
           const picture = value(await w.complete(w.admin.call("entities")));
           assert.equal(picture.assets.length, 2);
+          assert.equal(picture.geofeatures.length, 1);
           for (const asset of picture.assets) {
             const position = asset.reports["report.telemetry"];
             assert.ok(position && position.type === "report.telemetry");

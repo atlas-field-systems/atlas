@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS geofeatures (
   run_id        INTEGER NOT NULL,
   geofeature_id TEXT    NOT NULL,          -- from runs.last_geofeature_seq, never reused in the run
   record        TEXT    NOT NULL,
-  requested_by  TEXT    NOT NULL,          -- who created it; not in the record (api.md#geo-features)
+  requested_by  TEXT    NOT NULL,          -- original creator
   object_id     TEXT GENERATED ALWAYS AS (json_extract(record, '$.object_id')) VIRTUAL,  -- imagery
   PRIMARY KEY (run_id, geofeature_id)
 );
@@ -446,6 +446,16 @@ export function getTrack(
   if (!row) refuse("not_found", "No such Track");
   return { as_of: tx.asOf(), item: JSON.parse(row.record) };
 }
+type PlaceRow = { record: string; requested_by: string; creating_call: number | null };
+
+function storedPlace(row: PlaceRow): Geofeature {
+  return {
+    ...JSON.parse(row.record),
+    requested_by: row.requested_by,
+    ...(row.creating_call === null ? {} : { request_id: row.creating_call }),
+  };
+}
+
 export function listGeofeatures(tx: ReadTx): {
   as_of: number;
   items: Geofeature[];
@@ -453,24 +463,24 @@ export function listGeofeatures(tx: ReadTx): {
   return {
     as_of: tx.asOf(),
     items: tx
-      .all<{ record: string }>(
-        "SELECT record FROM geofeatures WHERE run_id=? ORDER BY geofeature_id",
+      .all<PlaceRow>(
+        "SELECT record,requested_by,creating_call FROM geofeatures WHERE run_id=? ORDER BY geofeature_id",
         tx.runId,
       )
-      .map((r) => JSON.parse(r.record)),
+      .map(storedPlace),
   };
 }
 export function getGeofeature(
   tx: ReadTx,
   geofeature_id: string,
 ): { as_of: number; item: Geofeature } {
-  const row = tx.get<{ record: string }>(
-    "SELECT record FROM geofeatures WHERE run_id=? AND geofeature_id=?",
+  const row = tx.get<PlaceRow>(
+    "SELECT record,requested_by,creating_call FROM geofeatures WHERE run_id=? AND geofeature_id=?",
     tx.runId,
     geofeature_id,
   );
   if (!row) refuse("not_found", "No such geo feature");
-  return { as_of: tx.asOf(), item: JSON.parse(row.record) };
+  return { as_of: tx.asOf(), item: storedPlace(row) };
 }
 export function picture(tx: ReadTx): {
   as_of: number;
@@ -571,6 +581,8 @@ export function createGeofeature(
   if (body.kind === "imagery") objects.objectForImagery(tx, body.object_id);
   const geofeature: Geofeature = {
     ...body,
+    requested_by: by,
+    ...(creatingCall === null ? {} : { request_id: creatingCall }),
     time: tx.now,
     geofeature_id: encodeShortId(nextRunSeq(tx, "geofeature")),
   };
@@ -610,7 +622,7 @@ export function replaceGeofeature(
     )
   )
     refuse("imagery_fixed", "Imagery may change only its name");
-  const geofeature: Geofeature = { ...body, time: tx.now, geofeature_id };
+  const geofeature: Geofeature = { ...body, requested_by: old.requested_by, ...(old.request_id === undefined ? {} : { request_id: old.request_id }), time: tx.now, geofeature_id };
   tx.run(
     "UPDATE geofeatures SET record=? WHERE run_id=? AND geofeature_id=?",
     JSON.stringify(geofeature),
@@ -633,6 +645,8 @@ export function deleteGeofeature(
   by: string,
 ): { event_id: number } {
   const old = getGeofeature(tx, geofeature_id).item;
+  for (const file of objects.list(tx, geofeature_id).items)
+    objects.attach(tx, file.object_id, null);
   tx.run(
     "DELETE FROM geofeatures WHERE run_id=? AND geofeature_id=?",
     tx.runId,

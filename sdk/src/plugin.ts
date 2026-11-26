@@ -1,7 +1,12 @@
+import type { CallEntry } from "./routes.ts";
 import { internal } from "./internal.ts";
 import type { ProtocolTypes as P } from "@atlas/protocol/types";
 import type { Client, Result } from "./client.ts";
 import { follow, type FollowEnd } from "./stream.ts";
+export function listedPlacesForOperator(entry: CallEntry, operatorId: string) {
+  if (entry.call.record.requested_by !== operatorId || entry.answer?.kind !== "plugin.result") return [];
+  return entry.answer.record.places ?? [];
+}
 export interface Reply {
   createGeofeature(
     body: P["requests.geofeature"],

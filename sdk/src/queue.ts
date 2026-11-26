@@ -107,13 +107,14 @@ function reduce(
   const effects: Effect[] = [];
   const report = (body: ProtocolTypes["report.status"]) =>
     effects.push({ kind: "report", body });
-  const queue = (request_id?: number) =>
+  const queue = (request_id?: number, updated_task_ids?: number[]) =>
     report({
       type: "report.status",
       asset_id,
       time,
       kind: "queue",
       task_ids: held(s),
+      ...(updated_task_ids ? { updated_task_ids } : {}),
       ...(request_id === undefined ? {} : { request_id }),
     });
   const final = (
@@ -191,9 +192,10 @@ function reduce(
       }
       queue(input.event_id);
       break;
-    case "tasks.updated":
+    case "tasks.updated": {
+      const accepted: number[] = [];
       if (refuse?.({ kind: "update" }) !== undefined) {
-        queue(input.event_id);
+        queue(input.event_id, accepted);
         break;
       }
       for (const task of input.record) {
@@ -205,6 +207,7 @@ function reduce(
         )
           continue;
         if (task.task_id < s.supersededBelow && !slot) continue;
+        accepted.push(task.task_id);
         if (!slot || slot.at === "pending_update")
           slots.set(task.task_id, { at: "pending_update", task });
         else {
@@ -213,8 +216,9 @@ function reduce(
             effects.push({ kind: "update", task });
         }
       }
-      queue(input.event_id);
+      queue(input.event_id, accepted);
       break;
+    }
     case "cancel.requested": {
       const id = input.record.task_id,
         slot = slots.get(id),

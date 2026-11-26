@@ -106,6 +106,7 @@
         "components/input_value.json",
         "components/plugin_input.json",
         "components/plugin_action.json",
+        "components/listed_place.json",
         "components/fact.json"
       ]
     },
