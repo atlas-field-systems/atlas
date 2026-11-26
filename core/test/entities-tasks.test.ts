@@ -426,7 +426,7 @@ test("16. settings keep independent latest values by report time, ties use event
   }
 });
 
-test("place copies, optional updates, imagery kind rules and Fusion freshness [api.md#geo-features, fusion.md#temporary-first-iteration]", async () => {
+test("place copies, optional updates, imagery kind rules [api.md#geo-features]", async () => {
   const c = simulatedClock(),
     h = await startHarness(c);
   try {
@@ -509,36 +509,6 @@ test("place copies, optional updates, imagery kind rules and Fusion freshness [a
       (await h.call("GET", `/tasks/${other.id}`, { key: a.key })).status,
       200,
     );
-    await report(h, a, [
-      {
-        type: "report.observation",
-        kind: "coordinates",
-        time: c.now(),
-        asset_id: a.id,
-        observation_id: "OBS",
-        position: { latitude: 10, longitude: 20 },
-        entity_type: "person",
-      },
-    ]);
-    let tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin }))
-      .body.items;
-    assert.equal(tracks.length, 1);
-    assert.equal(tracks[0].position.latitude, 10);
-    await report(h, a, [
-      {
-        type: "report.observation",
-        kind: "bearing",
-        time: c.now() - 100,
-        asset_id: a.id,
-        observation_id: "OBS",
-        origin: { latitude: 0, longitude: 0 },
-        bearing_deg: 90,
-      },
-    ]);
-    tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin })).body
-      .items;
-    assert.equal(tracks.length, 1);
-    assert.equal(tracks[0].time, c.now());
     await h.call("DELETE", `/entities/geofeatures/${place}`, {
       cookie: h.admin,
     });

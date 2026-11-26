@@ -12,7 +12,6 @@ import * as admin from "./pillars/administration.ts";
 import * as entities from "./pillars/entities.ts";
 import * as tasks from "./pillars/tasks.ts";
 import * as objects from "./pillars/objects.ts";
-import * as fusion from "./pillars/fusion.ts";
 import { startContact } from "./contact.ts";
 import { startStreams } from "./api/stream.ts";
 import { startServer } from "./api/server.ts";
@@ -117,7 +116,6 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     ...entities.TABLES,
     ...tasks.TABLES,
     ...objects.TABLES,
-    ...fusion.TABLES,
   ];
   const store = openStore(env, tables);
   let stopContact: (() => void) | undefined;
@@ -158,7 +156,6 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     );
     stopContact = () => contact.stop();
     contact.resume();
-    const follower = fusion.startFusion(store, fusion.onePerObservation);
     const streams = startStreams(store, options.clock, config.stream_keepalive_s * 1000, log);
     const server = await startServer(env, store, contact, streams);
     process.stdout.write(
@@ -178,10 +175,6 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
           closeServer: () => server.close(),
           stopContact: () => contact.stop(),
           lastHeard: (id) => contact.lastHeard(id),
-          async drainFusion() {
-            await follower.drain();
-            follower.stop();
-          },
         }));
       },
     };

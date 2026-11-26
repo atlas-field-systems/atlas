@@ -632,11 +632,6 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     },
     history: (q?: Query) =>
       pages<AtlasEvent<Extract<EventKind, `report.${string}`>>>("/history", q),
-    trackHistory: (q?: Query) =>
-      pages<AtlasEvent<"track.updated" | "track.removed">>(
-        "/history/tracks",
-        q,
-      ),
     geofeatureHistory: (q?: Query) =>
       pages<
         AtlasEvent<

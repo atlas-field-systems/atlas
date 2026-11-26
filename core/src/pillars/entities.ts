@@ -1,4 +1,3 @@
-import { isDeepStrictEqual } from "node:util";
 import * as objects from "./objects.ts";
 import { refuse, checkOrRefuse } from "../api/errors.ts";
 import { nextGlobalId, nextRunSeq } from "../store/runs.ts";
@@ -22,7 +21,6 @@ import type {
 
 type Description = ProtocolTypes["description"];
 type Contact = ProtocolTypes["contact"];
-type Track = ProtocolTypes["track"];
 type Geofeature = ProtocolTypes["geofeature"];
 type Observation = ProtocolTypes["report.observation"];
 type Settings = ProtocolTypes["settings_change"]["settings"];
@@ -62,18 +60,6 @@ CREATE TABLE IF NOT EXISTS assets (
 -- "A key registers at most one Asset at a time" (api.md)
 CREATE UNIQUE INDEX IF NOT EXISTS assets_key ON assets(run_id, key_id) WHERE key_id IS NOT NULL AND removed = 0;
 CREATE INDEX IF NOT EXISTS assets_gateway ON assets(run_id, gateway_id) WHERE gateway_id IS NOT NULL;`,
-  },
-  {
-    owner: "entities",
-    name: "tracks",
-    runScoped: true,
-    ddl: `
-CREATE TABLE IF NOT EXISTS tracks (
-  run_id   INTEGER NOT NULL,
-  track_id TEXT    NOT NULL,               -- from runs.last_track_seq, never reused in the run
-  record   TEXT    NOT NULL,               -- the track record as Fusion last wrote it
-  PRIMARY KEY (run_id, track_id)
-);`,
   },
   {
     owner: "entities",
@@ -423,29 +409,6 @@ export function listObservations(tx: ReadTx): {
       .map((r) => JSON.parse(r.record)),
   };
 }
-export function listTracks(tx: ReadTx): { as_of: number; items: Track[] } {
-  return {
-    as_of: tx.asOf(),
-    items: tx
-      .all<{ record: string }>(
-        "SELECT record FROM tracks WHERE run_id=? ORDER BY track_id",
-        tx.runId,
-      )
-      .map((r) => JSON.parse(r.record)),
-  };
-}
-export function getTrack(
-  tx: ReadTx,
-  track_id: string,
-): { as_of: number; item: Track } {
-  const row = tx.get<{ record: string }>(
-    "SELECT record FROM tracks WHERE run_id=? AND track_id=?",
-    tx.runId,
-    track_id,
-  );
-  if (!row) refuse("not_found", "No such Track");
-  return { as_of: tx.asOf(), item: JSON.parse(row.record) };
-}
 export function listGeofeatures(tx: ReadTx): {
   as_of: number;
   items: Geofeature[];
@@ -476,21 +439,19 @@ export function picture(tx: ReadTx): {
   as_of: number;
   assets: AssetEntry[];
   observations: Observation[];
-  tracks: Track[];
   geofeatures: Geofeature[];
 } {
   return {
     as_of: tx.asOf(),
     assets: listAssets(tx).items,
     observations: listObservations(tx).items,
-    tracks: listTracks(tx).items,
     geofeatures: listGeofeatures(tx).items,
   };
 }
 
 export function history(
   tx: ReadTx,
-  of: "reports" | "tracks" | "geofeatures",
+  of: "reports" | "geofeatures",
   query: URLSearchParams,
   cursor: Cursor | null,
 ): HistoryPage<AtlasEvent> {
@@ -542,21 +503,13 @@ export function history(
   }
   return historyPage(
     tx,
-    of === "tracks"
-      ? {
-          of,
-          ...common,
-          ...(query.has("track_id")
-            ? { track_id: query.get("track_id")! }
-            : {}),
-        }
-      : {
-          of,
-          ...common,
-          ...(query.has("geofeature_id")
-            ? { geofeature_id: query.get("geofeature_id")! }
-            : {}),
-        },
+    {
+      of,
+      ...common,
+      ...(query.has("geofeature_id")
+        ? { geofeature_id: query.get("geofeature_id")! }
+        : {}),
+    },
     cursor,
     limit,
   );
@@ -661,54 +614,6 @@ export function imageryShows(tx: ReadTx, object_id: string): boolean {
     tx.runId,
     object_id,
   );
-}
-
-export function putTrack(
-  tx: Tx,
-  track: Omit<Track, "track_id"> & { track_id?: string },
-): string {
-  const record: Track = {
-    ...track,
-    track_id: track.track_id ?? encodeShortId(nextRunSeq(tx, "track")),
-  };
-  const old = tx.get<{ record: string }>(
-    "SELECT record FROM tracks WHERE run_id=? AND track_id=?",
-    tx.runId,
-    record.track_id,
-  );
-  if (old && isDeepStrictEqual(JSON.parse(old.record), record))
-    return record.track_id;
-  tx.run(
-    "INSERT INTO tracks VALUES (?,?,?) ON CONFLICT(run_id,track_id) DO UPDATE SET record=excluded.record",
-    tx.runId,
-    record.track_id,
-    JSON.stringify(record),
-  );
-  tx.append("track.updated", record);
-  return record.track_id;
-}
-export function removeTrack(tx: Tx, track_id: string): void {
-  const old = getTrack(tx, track_id).item;
-  tx.run(
-    "DELETE FROM tracks WHERE run_id=? AND track_id=?",
-    tx.runId,
-    track_id,
-  );
-  tx.append("track.removed", old);
-}
-export function tracksWithSource(
-  tx: ReadTx,
-  asset_id: string,
-  observation_id: string,
-): Track[] {
-  return tx
-    .all<{ record: string }>(
-      "SELECT record FROM tracks WHERE run_id=? AND EXISTS (SELECT 1 FROM json_each(tracks.record,'$.sources') s WHERE json_extract(s.value,'$.asset_id')=? AND json_extract(s.value,'$.observation_id')=?)",
-      tx.runId,
-      asset_id,
-      observation_id,
-    )
-    .map((r) => JSON.parse(r.record));
 }
 
 export function assetIdInUse(tx: ReadTx, id: string): boolean {

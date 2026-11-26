@@ -31,8 +31,6 @@ export const EVENT_KINDS = {
   "report.gimbal": { record: "report.gimbal" },
   "report.settings": { record: "report.settings" },
   "report.observation": { record: "report.observation" },
-  "track.updated": { record: "track" },
-  "track.removed": { record: "track" },
   "geofeature.created": { record: "geofeature" },
   "geofeature.replaced": { record: "geofeature" },
   "geofeature.deleted": { record: "geofeature" },

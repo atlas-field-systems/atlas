@@ -227,14 +227,6 @@ export const ROUTES: readonly Route[] = [
   }),
   read({
     method: "GET",
-    path: "/history/tracks",
-    doc: "reads",
-    who: READERS,
-    serve: (tx, r) =>
-      entities.history(tx, "tracks", r.query, page(r.query).cursor),
-  }),
-  read({
-    method: "GET",
     path: "/history/geofeatures",
     doc: "reads",
     who: READERS,
@@ -308,20 +300,6 @@ export const ROUTES: readonly Route[] = [
     doc: "observations",
     who: READERS,
     serve: (tx) => entities.listObservations(tx),
-  }),
-  read({
-    method: "GET",
-    path: "/entities/tracks",
-    doc: "tracks",
-    who: READERS,
-    serve: (tx) => entities.listTracks(tx),
-  }),
-  read({
-    method: "GET",
-    path: "/entities/tracks/:track_id",
-    doc: "tracks",
-    who: READERS,
-    serve: (tx, r) => entities.getTrack(tx, r.params.track_id!),
   }),
   read({
     method: "GET",

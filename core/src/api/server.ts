@@ -93,7 +93,6 @@ export async function startServer(
             "plugin_id",
             "object_id",
             "geofeature_id",
-            "track_id",
             "task_id",
             "event_id",
             "action",

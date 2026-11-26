@@ -550,64 +550,6 @@ test("F15 streams end when their credential is revoked [api.md#callers-and-crede
     await h.close();
   }
 });
-test("F16 equal-time later Observations update Tracks and bearings clear positions [api.md#reads, fusion.md#temporary-first-iteration]", async () => {
-  const c = simulatedClock(),
-    h = await startHarness(c);
-  try {
-    const a = await asset(h);
-    for (const position of [
-      { latitude: 1, longitude: 0 },
-      { latitude: 2, longitude: 0 },
-    ])
-      await report(h, a, [
-        {
-          type: "report.observation",
-          kind: "coordinates",
-          time: c.now(),
-          asset_id: a.id,
-          observation_id: "O1",
-          position,
-        },
-      ]);
-    const beforeRepeat = (await events(h)).filter(
-      (e) => e.kind === "track.updated",
-    ).length;
-    await report(h, a, [
-      {
-        type: "report.observation",
-        kind: "coordinates",
-        time: c.now(),
-        asset_id: a.id,
-        observation_id: "O1",
-        position: { latitude: 2, longitude: 0 },
-      },
-    ]);
-    assert.equal(
-      (await events(h)).filter((e) => e.kind === "track.updated").length,
-      beforeRepeat,
-    );
-    let tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin }))
-      .body.items;
-    assert.equal(tracks[0].position.latitude, 2);
-    await report(h, a, [
-      {
-        type: "report.observation",
-        kind: "bearing",
-        time: c.now(),
-        asset_id: a.id,
-        observation_id: "O1",
-        origin: { latitude: 0, longitude: 0 },
-        bearing_deg: 90,
-      },
-    ]);
-    tracks = (await h.call("GET", "/entities/tracks", { cookie: h.admin })).body
-      .items;
-    assert.equal(tracks.length, 1);
-    assert.equal(tracks[0].position, undefined);
-  } finally {
-    await h.close();
-  }
-});
 test("F17 failsafe responses must name supported commands [api.md#operator-requests]", async () => {
   const h = await startHarness();
   try {
@@ -1112,7 +1054,7 @@ test("R3-2 gateway and radio refusals count separately [api.md#basics]", async (
   }
 });
 
-test("R3-3 diagnostics cover versions, contact, downloads, Tracks and drops [logging.md#record-the-whole-path-through-core]", async () => {
+test("R3-3 diagnostics cover versions, contact, downloads and drops [logging.md#record-the-whole-path-through-core]", async () => {
   const c = simulatedClock(),
     h = await startHarness(c, { debug_endpoint: true });
   try {
@@ -1193,7 +1135,6 @@ test("R3-3 diagnostics cover versions, contact, downloads, Tracks and drops [log
     )
       missing.push("download");
     for (const kind of [
-      "track.updated",
       "task.dropped",
       "request.dropped",
       "plugin.dropped",
