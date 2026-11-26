@@ -83,7 +83,7 @@ hash, or session token.
 ## Check, then clear
 
 Core writes the ZIP under a temporary name, reads it back, and checks every file
-against `manifest.json`. Only then does it give the ZIP its final name and clear
+against `manifest.json`. It compares the archive with the frozen picture’s table counts, Object inventory, and diagnostic files. Only then does it give the ZIP its final name and clear
 the picture. A ZIP with any other name is not a Reset ZIP. Once the ZIP has its
 final name and has passed the check, the Reset is done
 ([ADR-0005](../../docs/adr/0005-the-reset-zip-is-the-only-copy.md)).
@@ -107,8 +107,8 @@ diagnostics, prints it, and removes the incomplete file, so a failed export
 never looks like a finished ZIP.
 
 Core does not try again, and Atlas has no export or retry feature for that
-data. The next start begins an empty picture as usual, and the old data stays
-in the database for the admin to handle by hand
+data. When Core records the failed Reset, the next start begins an empty picture and the old data stays
+in the database for the admin to handle by hand. If storage also refuses the failure record, the next start resumes the existing picture. The stop error tells the admin which outcome to expect
 ([storage](storage.md#reset-and-run_id)).
 
 A failed startup cancels its contact deadlines before closing storage; it leaves
@@ -139,11 +139,11 @@ A crash while Core is stopping depends on how far the ZIP got:
 - **The ZIP was checked.** If a final-named ZIP is already there, the Reset is
   done. Core checks the ZIP again, finishes the clear, and starts an empty
   picture.
-- **The ZIP was not checked.** Core removes any incomplete ZIP file and keeps
+- **The ZIP was not checked.** Core removes its incomplete ZIP for this picture and keeps
   the picture, as after any crash. The user stops Core again to Reset.
 
 If a final-named ZIP fails its check again at the next start, Core keeps the
-picture and refuses to overwrite that ZIP on the next stop.
+picture and moves that ZIP aside for the admin. The next stop writes a fresh ZIP.
 
 ## Scenarios
 

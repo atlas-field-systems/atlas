@@ -13,7 +13,6 @@ export interface CoreConfig {
   clock_ahead_s: number;
   log_level: "error" | "warn" | "info" | "debug" | "trace";
   log_directory: string;
-  log_message_content: boolean;
   log_file_limit_bytes: number;
   log_total_limit_bytes: number;
   debug_endpoint: boolean;
@@ -35,7 +34,6 @@ export const CONFIG_DEFAULTS: Omit<
   max_object_bytes: 100_000_000,
   clock_ahead_s: 10,
   log_level: "trace",
-  log_message_content: true,
   log_file_limit_bytes: 64 * 1024 * 1024,
   log_total_limit_bytes: 2 * 1024 * 1024 * 1024,
   debug_endpoint: false,

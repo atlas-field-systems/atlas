@@ -45,6 +45,7 @@ export interface Env {
   readonly paths: Paths;
   readonly clock: Clock;
   readonly log: DiagnosticLog;
+  readonly pendingOffline: Map<string, number>;
   readonly versions: {
     core_version: string;
     protocol_version: string;
@@ -97,7 +98,6 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     directory: config.log_directory,
     gapDirectory: join(config.data_directory, "diagnostic-gaps"),
     level: config.log_level,
-    content: config.log_message_content,
     fileLimit: config.log_file_limit_bytes,
     totalLimit: config.log_total_limit_bytes,
   });
@@ -105,6 +105,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
     protocol,
     config,
     paths,
+    pendingOffline: new Map(),
     clock: options.clock,
     log,
     versions,
@@ -155,6 +156,7 @@ export async function startCore(options: CoreOptions): Promise<RunningCore> {
       store,
       options.clock,
       config.offline_after_s * 1000,
+      env.pendingOffline,
     );
     stopContact = () => contact.stop();
     contact.resume();

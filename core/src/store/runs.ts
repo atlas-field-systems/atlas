@@ -1,4 +1,3 @@
-import { readdirSync, unlinkSync } from "node:fs";
 import { encodeShortId, SHORT_ID_CAPACITY } from "../ids.ts";
 import type { Store, TableDef, Tx } from "./db.ts";
 import type { Env } from "../core.ts";
@@ -44,9 +43,6 @@ export type RunStart =
     };
 
 export function beginOrResume(env: Env, store: Store): RunStart {
-  for (const file of readdirSync(env.config.archive_directory))
-    if (file.endsWith(".partial"))
-      unlinkSync(`${env.config.archive_directory}/${file}`);
   const result = store.write((tx) => {
     const open = tx.get<{
       run_id: number;

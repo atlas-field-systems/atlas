@@ -75,6 +75,9 @@ its ZIP failed, until the admin handles it by hand.
 - If a change cannot be written, because the disk is full or the database
   fails, Core refuses the request with `507 storage_full` and stores nothing.
   Nothing is accepted without its event.
+- If an offline transition cannot be stored, the Asset snapshot shows offline
+  with `contact_storage_pending: true`. Core retries the write, refuses new
+  work for the expired Asset, and clears the flag once the event is committed.
 
 Diagnostic loss counts are durable metadata, kept until the next Reset, in `data_directory/diagnostic-gaps/`.
 Core coalesces loss counts into one asynchronous, atomic ledger writer, separately
@@ -84,11 +87,11 @@ listed as a gap. Reset includes the counts in its manifest and
 summary and removes the ledger only after checking the ZIP.
 
 Entities keeps each Asset's actual last arrival in `asset_heard`, including empty
-report batches. Contact deadlines restart at resume independently of this evidence;
-Reset uses the stored arrival rather than the later offline transition.
+report batches. Core uses the stored arrival for both the contact deadline and the Reset summary.
+On restart, Core expires overdue contact before serving requests.
 
 Administration keeps gateway and Plugin arrivals in `identity_heard` rows kept until the next Reset.
-Resumed offline records retain those arrival times while their deadlines restart.
+Resumed offline records retain those arrival times.
 
 Only one Core may open a `data_directory` at a time; a second startup refuses
 before recovery or upload cleanup can change the stored picture.

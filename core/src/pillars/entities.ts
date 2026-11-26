@@ -258,7 +258,7 @@ export function storeReports(
       report,
       ahead ? { clock_ahead: true } : undefined,
     );
-    tx.env.log.record({
+    tx.logAfterCommit({
       level: "trace",
       area: "entities",
       msg: "Report stored",
@@ -321,7 +321,7 @@ export type AdmissionView = {
 export function admissionView(tx: ReadTx, asset_id: string): AdmissionView {
   const row = requireAsset(tx, asset_id);
   const online =
-    JSON.parse(row.contact).contact === "online" &&
+    !contactStoragePending(tx, row) && JSON.parse(row.contact).contact === "online" &&
     (!row.gateway_id ||
       admin.gatewayContact(tx, row.gateway_id).contact === "online");
   if (!row.description) refuse("not_supported", "Asset has no description");
@@ -379,6 +379,7 @@ export type AssetEntry = {
   gateway_id: string | null;
   description: Description | null;
   contact: Contact;
+  contact_storage_pending?: true;
   reports: Partial<Record<Exclude<ReportKind, "report.observation" | "report.gimbal">, Report>>;
   settings: Partial<{
     [K in keyof Settings]: { value: Settings[K]; time: number };
@@ -756,6 +757,10 @@ export function checkSettings(v: AdmissionView, settings: Settings): void {
 const reportKinds = Object.keys(EVENT_KINDS).filter((k): k is ReportKind =>
   k.startsWith("report."),
 );
+function contactStoragePending(tx: ReadTx, row: AssetRow): boolean {
+  return tx.env.pendingOffline.has(row.gateway_id ? `gateway:${row.gateway_id}` : `asset:${row.asset_id}`);
+}
+
 function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
   const description: Description | null = row.description
     ? JSON.parse(row.description)
@@ -806,7 +811,12 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
     asset_id: row.asset_id,
     gateway_id: row.gateway_id,
     description,
-    contact: JSON.parse(row.contact),
+    ...(contactStoragePending(tx, row)
+      ? {
+          contact_storage_pending: true,
+          contact: { contact: "offline", time: lastHeard(tx, row.asset_id) ?? tx.now, asset_id: row.asset_id },
+        } as const
+      : { contact: JSON.parse(row.contact) }),
     reports,
     settings,
     subsystems,

@@ -316,9 +316,15 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
         headers: { ...headers, cookie },
       })
     ).json();
+    const overdueKey = await request("/administration/asset-keys");
+    const overdue = await request("/entities/assets", description, overdueKey.key);
     assert.equal(tracksBefore.items.length, 1);
     await running.kill("SIGKILL");
     running = undefined;
+    const frozen = new DatabaseSync(join(dir, "core.sqlite"));
+    try {
+      frozen.prepare("UPDATE asset_heard SET last_heard=1 WHERE asset_id=?").run(overdue.asset_id);
+    } finally { frozen.close(); }
     const blocker = createServer();
     blocker.listen(0, "127.0.0.1");
     await once(blocker, "listening");
@@ -341,6 +347,11 @@ test("10. SIGKILL resumes run, session and ID counter [reset.md#when-core-stops-
       ).status,
       200,
     );
+    const expired = await (await fetch(running.url + `/entities/assets/${overdue.asset_id}`, {
+      headers: { ...headers, cookie },
+    })).json();
+    assert.equal(expired.item.contact.contact, "offline");
+    assert.equal(expired.item.contact.time, 1);
     const repeat = await (
       await fetch(running.url + "/administration/gateways", {
         method: "POST",
@@ -632,6 +643,7 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
       }
     }
     assert.ok(partial);
+    await writeFile(join(dir + "-archive", "unrelated.partial"), "keep");
     running.process.kill("SIGKILL");
     assert.equal((await exited)[1], "SIGKILL");
     running = await child(cfg);
@@ -639,7 +651,7 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
       (await (await fetch(running.url + "/about")).json()).run_id,
       run,
     );
-    assert.deepEqual(await readdir(dir + "-archive"), []);
+    assert.deepEqual(await readdir(dir + "-archive"), ["unrelated.partial"]);
     assert.equal((await running.kill("SIGTERM"))[0], 0);
     running = undefined;
   } finally {
@@ -649,8 +661,9 @@ test("13. SIGKILL during ZIP resumes run and removes partial [reset.md#scenarios
   }
 });
 
-test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes without overwrite [reset.md#when-core-stops-unexpectedly]", async () => {
-  for (const corrupt of [false, true]) {
+test("13b. recovery checks ZIP integrity and frozen inventory before clearing [reset.md#when-core-stops-unexpectedly]", async () => {
+  for (const mode of ["valid", "corrupt", "incomplete"]) {
+    const resumePicture = mode !== "valid";
     const h = await startHarness();
     let resumed: Awaited<ReturnType<typeof startCore>> | undefined;
     const snapshot = await mkdtemp(join(tmpdir(), "atlas-reset-snapshot-"));
@@ -660,7 +673,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
       const stopped = await h.stop();
       assert.equal(stopped.archived, true);
       const zip = stopped.zip;
-      if (corrupt) {
+      if (mode === "corrupt") {
         const { open } = await import("node:fs/promises");
         const file = await open(zip, "r+");
         try {
@@ -673,15 +686,30 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
       const zipBytes = await readFile(zip);
       for (const name of ["core.sqlite", "core.sqlite-wal"])
         await copyFile(join(snapshot, name), join(h.dataDir, name));
+      // Simulate the crash before the checked clear has removed the source files.
+      const logDir = join(h.dataDir, "diagnostics", `run-${h.core.runId}`);
+      await mkdir(logDir, { recursive: true });
+      if (mode !== "corrupt") {
+        for (const entry of await readZip(zip))
+          if (entry.name.startsWith("diagnostics/"))
+            await writeFile(join(logDir, entry.name.slice("diagnostics/".length)), entry.open());
+      }
+      if (mode === "incomplete")
+        await writeFile(join(logDir, "unarchived.jsonl"), "retained evidence\n");
       resumed = await startCore({ clock, config: h.config });
-      assert.equal(resumed.runId, h.core.runId + (corrupt ? 0 : 1));
+      assert.equal(resumed.runId, h.core.runId + (resumePicture ? 0 : 1));
       const response = await fetch(resumed.url + "/administration/me", {
         headers: { "atlas-definitions": protocol.hash, cookie: h.admin },
       });
-      assert.equal(response.status, corrupt ? 200 : 401);
+      assert.equal(response.status, resumePicture ? 200 : 401);
       await response.text();
-      assert.equal((await stopCore(resumed)).archived, !corrupt);
-      assert.deepEqual(await readFile(zip), zipBytes);
+      assert.equal((await stopCore(resumed)).archived, true);
+      assert.equal((await checkZip(zip)).ok, true);
+      if (resumePicture) {
+        const rejected = (await readdir(h.dataDir + "-archive")).find(name => name.includes(".rejected-"));
+        assert.ok(rejected);
+        assert.deepEqual(await readFile(join(h.dataDir + "-archive", rejected)), zipBytes);
+      } else assert.deepEqual(await readFile(zip), zipBytes);
     } finally {
       resumed && (await stopCore(resumed));
       await h.close();

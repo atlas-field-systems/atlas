@@ -23,7 +23,6 @@ for HTTPS. Without them Core listens only on loopback.
 | `clock_ahead_s` | `10` |
 | `log_level` | `trace` |
 | `log_directory` | `<data_directory>/diagnostics` |
-| `log_message_content` | `true`; credentials removed |
 | `log_file_limit_bytes` | `67108864` (64 MiB) |
 | `log_total_limit_bytes` | `2147483648` (2 GiB) |
 | `debug_endpoint` | `false` |
