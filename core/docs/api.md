@@ -471,7 +471,7 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | Request | Purpose |
 | --- | --- |
 | `POST /administration/login`, `POST /administration/logout`, `GET /administration/me` | Start, end, and read a session |
-| `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
+| `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an account. Removing the last admin returns 409 `last_admin`. Removed gateway and Plugin IDs stay reserved until Reset. |
 | `POST /administration/asset-keys`, `DELETE /administration/asset-keys/{key_id}` | Create or remove an Asset key for an Asset on IP; creating returns its `key_id` and key once |
 | `POST /administration/asset-keys/{key_id}/key` | Replace an Asset key; returns the new key once |
 | `DELETE /administration/assets/{asset_id}` | Remove an Asset from the picture. It may come back by registering again, as a new Asset |

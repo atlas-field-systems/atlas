@@ -990,3 +990,29 @@ test("PR53-6 prepared login cannot commit after stop grace [api.md#basics, reset
     await h.close();
   }
 });
+
+test("account administration preserves the last admin and reserved IDs", async () => {
+  const h = await startHarness();
+  try {
+    const auth = { cookie: h.admin };
+    const accounts = "/administration/accounts";
+    const removeAdmin = () => h.call("DELETE", accounts + "/ADM", auth);
+    assert.equal((await removeAdmin()).body.error, "last_admin");
+    for (const [resource, field] of [["gateways", "gateway_id"], ["plugins", "plugin_id"]] as const) {
+      const path = "/administration/" + resource;
+      const issued = await h.call("POST", path, auth);
+      const id = issued.body[field];
+      assert.equal((await h.call("DELETE", path + "/" + id, auth)).status, 200);
+      const reused = await h.call("POST", accounts, {
+        ...auth, body: { operator_id: id, admin: false, password },
+      });
+      assert.equal(reused.body.error, "id_taken");
+    }
+    assert.equal((await h.call("POST", accounts, {
+      ...auth, body: { operator_id: "ADM2", admin: true, password },
+    })).status, 201);
+    assert.equal((await removeAdmin()).status, 200);
+  } finally {
+    await h.close();
+  }
+});
