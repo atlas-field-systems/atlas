@@ -3,8 +3,7 @@ import { EVENT_KINDS } from "@atlas/core/event-kinds";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { Client } from "./client.ts";
 import { backoffDelay, defaultBackoff, type Timer } from "./clock.ts";
-// Counted in UTF-16 code units, which never exceed a string's UTF-8 bytes.
-const MAX_SSE_FRAME = 16 * 1024 * 1024 + 1024;
+import { MAX_EVENT_FRAME_BYTES } from "@atlas/core/event-frame";
 
 export type EventKind = keyof typeof EVENT_KINDS;
 type RecordOf<K extends EventKind> = (typeof EVENT_KINDS)[K] extends {
@@ -124,7 +123,7 @@ export function follow(
               internal(client).emit("stream.open");
               const reader = response.body.getReader(),
                 decoder = new TextDecoder();
-              let buffer = "",
+              let fragments: string[] = [],
                 data: string[] = [],
                 frameLength = 0;
               const resetIdle = () => {
@@ -148,17 +147,18 @@ export function follow(
                   });
                   if (chunk.done) break;
                   resetIdle();
-                  buffer += decoder.decode(chunk.value, { stream: true });
-                  let index: number;
-                  while (!terminal() && (index = buffer.indexOf("\n")) >= 0) {
-                    frameLength += index + 1;
-                    if (frameLength > MAX_SSE_FRAME)
-                      return {
-                        reason: "invalid_event",
-                        error: "SSE frame too large",
-                      };
-                    const line = buffer.slice(0, index).replace(/\r$/, "");
-                    buffer = buffer.slice(index + 1);
+                  let start = 0;
+                  while (!terminal() && start < chunk.value.length) {
+                    const newline = chunk.value.indexOf(10, start);
+                    const end = newline < 0 ? chunk.value.length : newline + 1;
+                    frameLength += end - start;
+                    if (frameLength > MAX_EVENT_FRAME_BYTES)
+                      return { reason: "invalid_event", error: "SSE frame too large" };
+                    fragments.push(decoder.decode(chunk.value.subarray(start, end), { stream: true }));
+                    start = end;
+                    if (newline < 0) break;
+                    const line = fragments.join("").replace(/\r?\n$/, "");
+                    fragments = [];
                     if (line === "") frameLength = 0;
                     if (line.startsWith(":")) {
                       internal(client).emit("stream.alive");
@@ -215,11 +215,6 @@ export function follow(
                       internal(client).emit("stream.handled", { cursor });
                     }
                   }
-                  if (frameLength + buffer.length > MAX_SSE_FRAME)
-                    return {
-                      reason: "invalid_event",
-                      error: "SSE frame too large",
-                    };
                 }
               } finally {
                 idle?.cancel();
