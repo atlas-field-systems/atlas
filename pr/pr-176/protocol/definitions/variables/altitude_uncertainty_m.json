@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/altitude_uncertainty_m.json",
+  "title": "altitude_uncertainty_m",
+  "description": "How far off the altitudes may be, in metres up or down. A 95% bound.",
+  "type": "number",
+  "exclusiveMinimum": 0,
+  "examples": [
+    15
+  ]
+}
