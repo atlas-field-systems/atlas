@@ -10,6 +10,8 @@ import {
   type QueueHost,
   type Report,
 } from "./queue.ts";
+// Protocol defines this default for link_loss_after_s.
+export const defaultLinkLossAfterS = 30;
 export type LinkFailure = {
   ok: false;
   error:
@@ -431,8 +433,11 @@ export async function startAsset(
     connected = await client.connect();
   }
   if (!connected.ok) return connected;
-  const threshold = options.settings().link_loss_after_s;
-  if (threshold !== undefined && threshold <= connected.value.stream_keepalive_s)
+  const settings = options.settings();
+  const usesLinkLoss = settings.link_loss_after_s !== undefined ||
+    options.description.settings?.some(name => name === "link_loss_after_s" || name === "failsafe_policy") ||
+    settings.failsafe_policy?.some(rule => rule.conditions.some(condition => condition.kind === "contact_lost"));
+  if (usesLinkLoss && (settings.link_loss_after_s ?? defaultLinkLossAfterS) <= connected.value.stream_keepalive_s)
     return { ok: false as const, error: "refused" as const, explanation: "initial_settings.link_loss_after_s must exceed Core stream_keepalive_s" };
   const registered = await known(
     client.call("register", { body: options.description }),

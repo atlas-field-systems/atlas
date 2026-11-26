@@ -100,7 +100,7 @@ SHA-256. It stores them in `~/.cache/atlas-sitl`, outside source. Set
 from the caller's working directory before SITL changes to its evidence directory. The binary URL names `stable-4.7.2`; a changed binary fails verification
 instead of silently changing the test equipment.
 
-The twenty-one scenarios run the real Asset, SDK, Protocol, and a separate Core process.
+The twenty-two scenarios run the real Asset, SDK, Protocol, and a separate Core process.
 Each scenario allocates equipment TCP ports from the operating system instead
 of reusing fixed ports. Cleanup waits for SITL to exit before the next scenario.
 Destination landing and Return to home each end with Core telemetry within
@@ -148,6 +148,11 @@ socket data event completes. The socket observer changes no production path.
 Each scenario saves both cut times and telemetry times in `equipment-cut.json`. After
 restoration, telemetry must resume with new acquisition times. The flight
 controller retains its GCS failsafe throughout.
+
+The Land refusal scenario interrupts a moving copter with Land. The equipment
+proxy denies the mode change while SITL still has the previous movement target.
+Core must report Land failed. A separate SITL connection checks the copter
+stops at flight altitude before reaching that target and stays stopped.
 
 The battery-layering scenario uses the [quadcopter setup](../../asset/docs/assets.md#ardupilot-quadcopter)
 with a 1000 mAh simulated pack and proportionate remaining-charge thresholds.

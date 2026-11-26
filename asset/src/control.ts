@@ -1,4 +1,4 @@
-import type { Task, QueueRequest } from "@atlas/sdk";
+import { defaultLinkLossAfterS, type Task, type QueueRequest } from "@atlas/sdk";
 import type {
   ComponentsSettings,
   ComponentsFailsafeRule,
@@ -19,6 +19,13 @@ import {
   type Execution,
 } from "./commands.ts";
 import { fresh, type Measurements, type VehicleCommand } from "./vehicle.ts";
+const isCritical = (rule: ComponentsFailsafeRule) =>
+  rule.conditions.some((c) => c.kind === "battery_below" && c.critical);
+function compareRulePriority(a: ComponentsFailsafeRule, b: ComponentsFailsafeRule) {
+  const critical = isCritical(a);
+  if (critical !== isCritical(b)) return critical ? 1 : -1;
+  return a.priority - b.priority;
+}
 type Work = {
   execution: Execution;
   pausedAt: number | null;
@@ -27,6 +34,10 @@ type Work = {
   rule: ComponentsFailsafeRule | null;
   fallback: boolean;
   override: "rearm" | "stand" | null;
+  // The vehicle command for the current stage, and whether the flight
+  // controller confirmed it. A Land counts as descending only once confirmed.
+  issued: number;
+  confirmed: boolean;
 };
 export interface State {
   phase: "ordinary" | "failsafe" | "flight_controller" | "stopping";
@@ -86,7 +97,9 @@ export type Effect =
   | { kind: "diagnostic"; explanation: string };
 export function refusal(state: State, request: QueueRequest): string | undefined {
   if (state.phase === "flight_controller") return "flight controller is in control";
-  if (state.safeStop && request.kind === "task" && !(request.task.now && isOverride(request.task.kind))) return "equipment stop is pending";
+  // An override or the operator's Fail-safe replaces a pending stop.
+  if (state.safeStop && request.kind === "task" &&
+    !(request.task.now && (isOverride(request.task.kind) || request.task.kind === "failsafe"))) return "equipment stop is pending";
   if (state.phase === "ordinary") return;
   if (request.kind === "task" && request.task.now && isOverride(request.task.kind)) return;
   return "failsafe locks ordinary work";
@@ -162,6 +175,8 @@ export function reduce(
         pausedMs: 0,
         fallback,
         override: state.override === "pause" ? null : state.override,
+        issued: state.commandId + 1,
+        confirmed: false,
       };
       if (task) effects.push({ kind: "task", task, status: "active" });
       else effects.push({ kind: "response", rule, action, status: "active" });
@@ -196,7 +211,7 @@ export function reduce(
     else effects.push({ kind: "response", rule, action, status: "failed", explanation });
     effects.push({ kind: "clear" });
     const failedStandingOverride = state.override === "stand" || state.execution?.override === "stand";
-    const inDescent = descending(state.execution?.execution);
+    const inDescent = state.execution?.confirmed === true && descending(state.execution.execution);
     state.execution = null;
     if (failedStandingOverride) {
       state.override = "rearm";
@@ -270,7 +285,7 @@ export function reduce(
         case "contact_lost":
           holds = (
             now - state.lastHeard >=
-            (state.settings.link_loss_after_s ?? Infinity) * 1000
+            (state.settings.link_loss_after_s ?? defaultLinkLossAfterS) * 1000
           );
           break;
         case "idle":
@@ -305,7 +320,7 @@ export function reduce(
   function issue(w: Work, now: number) {
     try {
       const command = vehicleStep({ execution: w.execution, measurements: state.measurements, config, now });
-      state.execution = w;
+      state.execution = { ...w, issued: state.commandId + 1, confirmed: false };
       effects.push({ kind: "vehicle", execution_id: ++state.commandId, command });
     } catch (error) {
       failed(w.execution.action, w.task, w.rule, now, w.fallback, error);
@@ -348,9 +363,10 @@ export function reduce(
         break;
       try {
         const execution = updateExecution(w.execution, event.task, state.settings, state.measurements, event.now, config);
-        const updated = { ...w, task: event.task, execution };
+        const updated = { ...w, task: event.task, execution, confirmed: false };
         if (updated.pausedAt === null) {
           const command = vehicleStep({ execution, measurements: state.measurements, config, now: event.now });
+          updated.issued = state.commandId + 1;
           effects.push({ kind: "vehicle", execution_id: ++state.commandId, command });
         }
         state.execution = updated;
@@ -455,7 +471,7 @@ export function reduce(
       const paused = state.settings.run_state === "paused";
       const w = state.execution;
       if (paused && !wasPaused) {
-        if (w) state.execution = { ...w, pausedAt: event.now };
+        if (w) state.execution = { ...w, pausedAt: event.now, confirmed: false };
         effects.push({
           kind: "vehicle",
           execution_id: ++state.commandId,
@@ -482,6 +498,8 @@ export function reduce(
     case "command_accepted":
       if (event.execution_id === state.commandId && state.safeStop)
         state.safeStop = { ...state.safeStop, acceptedAt: event.now };
+      if (state.execution?.issued === event.execution_id)
+        state.execution = { ...state.execution, confirmed: true };
       break;
     case "command_failed": {
       if (
@@ -582,27 +600,13 @@ export function reduce(
           state.rules[r.rule_id]!.holds = holds;
           return holds;
         })
-        .sort((a, b) => b.priority - a.priority);
-      const held =
-        state.override === "rearm" || state.override === "pause";
-      const critical = held
-        ? matching.find((r) =>
-            r.conditions.some((c) => c.kind === "battery_below" && c.critical),
-          )
-        : undefined;
-      const candidate =
-        critical ??
-        matching.find(
-          (r) =>
-            started.has(r.rule_id),
-        );
-      const current = state.execution;
-      const protectedOverride =
-        state.override === "stand";
+        .sort((a, b) => compareRulePriority(b, a));
+      const held = state.override === "rearm" || state.override === "pause";
+      const candidate = matching.find(r => started.has(r.rule_id) || (held && isCritical(r)));
+      const current = state.execution?.rule;
       if (
-        candidate &&
-        !protectedOverride &&
-        (held || !current?.rule || candidate.priority > current.rule.priority)
+        candidate && state.override !== "stand" &&
+        (held || !current || compareRulePriority(candidate, current) > 0)
       ) {
         activate(candidate.response, candidate, now);
       }

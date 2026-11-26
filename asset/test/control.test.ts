@@ -668,6 +668,7 @@ for (const failure of ["refusal", "timeout"] as const)
   test(`docs/failsafes.md: Land descent ${failure} never commands Hold`, async () => {
     const { config, state: start } = await setup();
     let state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
+    state = reduce(state, { kind: "command_accepted", execution_id: state.commandId, now: 0 }, config).state;
     const result = reduce(state, failure === "refusal"
       ? { kind: "command_failed", execution_id: state.commandId, explanation: "Land refused", now: 1 }
       : { kind: "tick", now: config.command_timeouts.land! * 1000 + 1, hasWork: false }, config);
@@ -721,6 +722,7 @@ for (const stage of ["climb", "transit", "descend"] as const) for (const reason 
   test(`docs/failsafes.md: Land ${reason} during ${stage} stops only before descent`, async () => {
     const { config, state: start } = await setup();
     let state = reduce(start, { kind: "task", task: { ...hold, kind: "land", landing_position: { latitude: 2, longitude: 2 }, transit_altitude: { altitude_m: 10, altitude_reference: "launch" } }, now: 0 }, config).state;
+    state = reduce(state, { kind: "command_accepted", execution_id: state.commandId, now: 0 }, config).state;
     assert.ok(state.execution);
     state.execution.execution.stage = stage;
     const now = reason === "timeout" ? 120001 : 1;
@@ -802,4 +804,80 @@ for (const source of ["operator", "critical"] as const) test(`docs/failsafes.md:
   result.state.measurements.airborne = { value: false, source: "vehicle", time: 1 };
   result = reduce(result.state, { kind: "tick", now: 1, hasWork: false }, config);
   assert.ok(result.effects.some(e => (e.kind === "task" || e.kind === "response") && e.status === "completed"));
+});
+
+test("docs/failsafes.md: contact loss without link_loss_after_s uses Protocol's 30 s default", async () => {
+  const { config, state: start } = await setup();
+  delete start.settings.link_loss_after_s;
+  start.settings.failsafe_policy = [{ rule_id: "LINK", priority: 50, conditions: [{ kind: "contact_lost" }], response: { kind: "hold" } }];
+  for (const m of [start.measurements.position!, start.measurements.armed!]) m.time = 30000;
+  assert.equal(reduce(start, { kind: "tick", now: 29999, hasWork: false }, config).state.phase, "ordinary");
+  const fired = reduce(start, { kind: "tick", now: 30000, hasWork: false }, config);
+  assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "LINK" && e.status === "active"));
+});
+
+for (const failure of ["refusal", "timeout"] as const)
+  test(`docs/failsafes.md: Land ${failure} before the flight controller confirms Land mode hovers`, async () => {
+    const { config, state: start } = await setup();
+    const state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
+    const now = config.command_timeouts.land! * 1000 + 1;
+    for (const m of Object.values(state.measurements)) if (m && "time" in m) m.time = now;
+    const result = reduce(state, failure === "refusal"
+      ? { kind: "command_failed", execution_id: state.commandId, explanation: "Land mode refused", now }
+      : { kind: "tick", now, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "task" && e.status === "failed"));
+    assert.ok(result.effects.some(e => e.kind === "clear"));
+    assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
+  });
+
+for (const path of [[25, 4], [4]] as const)
+  test(`docs/failsafes.md: a critical battery rule acts below a higher-priority rule, battery ${path.join(" then ")}%`, async () => {
+    const { config, state: start } = await setup();
+    start.settings.home_position = { latitude: 2, longitude: 2 };
+    start.settings.failsafe_policy = [
+      { rule_id: "LB", priority: 90, conditions: [{ kind: "battery_below", battery_percent: 30 }], response: { kind: "return_to_home" } },
+      { rule_id: "CB", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 5, critical: true }], response: { kind: "land" } },
+    ];
+    let state = start;
+    let effects: ReturnType<typeof reduce>["effects"] = [];
+    for (const [i, battery] of path.entries()) {
+      for (const m of Object.values(state.measurements)) if (m && "time" in m) m.time = i;
+      state.measurements.battery = { value: battery, source: "vehicle", time: i };
+      ({ state, effects } = reduce(state, { kind: "tick", now: i, hasWork: false }, config));
+    }
+    assert.ok(effects.some(e => e.kind === "response" && e.rule?.rule_id === "CB" && e.status === "active"));
+    assert.equal(state.execution?.rule?.rule_id, "CB");
+  });
+
+test("docs/failsafes.md: losing contact during a critical landing keeps the landing active", async () => {
+  const { config, state } = await setup();
+  state.settings.home_position = { latitude: 2, longitude: 2 };
+  state.settings.link_loss_after_s = 1;
+  state.settings.failsafe_policy = [
+    { rule_id: "LINK", priority: 90, conditions: [{ kind: "contact_lost" }], response: { kind: "return_to_home" } },
+    { rule_id: "CB", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 5, critical: true }], response: { kind: "land" } },
+  ];
+  state.measurements.battery = { value: 4, source: "vehicle", time: 0 };
+  const landing = reduce(state, { kind: "tick", now: 0, hasWork: false }, config);
+  assert.ok(landing.effects.some(e => e.kind === "response" && e.rule?.rule_id === "CB" && e.status === "active"));
+  const lostContact = reduce(landing.state, { kind: "tick", now: 1000, hasWork: false }, config);
+  assert.equal(lostContact.state.execution?.rule?.rule_id, "CB");
+  assert.ok(!lostContact.effects.some(e => e.kind === "response" || e.kind === "vehicle"));
+});
+
+test("docs/failsafes.md: the operator's Fail-safe replaces an unconfirmed stop, but not a flight-controller takeover", async () => {
+  const { config, state: start } = await setup();
+  start.settings.home_position = { latitude: 2, longitude: 2 };
+  const failsafe = { ...hold, task_id: 11, kind: "failsafe" } as const;
+  const moving = reduce(start, { kind: "task", task: { ...hold, kind: "move_to", destination: { latitude: 2, longitude: 2 } }, now: 0 }, config).state;
+  const stopping = reduce(moving, { kind: "cancel", id: hold.task_id, now: 1 }, config).state;
+  assert.ok(stopping.safeStop, "the cancel leaves a Hold that the equipment has not confirmed");
+  const fired = reduce(stopping, { kind: "task", task: failsafe, now: 2 }, config);
+  assert.ok(fired.effects.some(e => e.kind === "task" && e.task.task_id === 11 && e.status === "completed"));
+  assert.ok(fired.effects.some(e => e.kind === "response" && e.status === "active"));
+  assert.equal(fired.state.phase, "failsafe");
+  const takenOver = reduce(stopping, { kind: "measurements", measurements: { in_control: { value: false, source: "vehicle", time: 2 } } }, config).state;
+  const refused = reduce(takenOver, { kind: "task", task: failsafe, now: 3 }, config);
+  assert.ok(refused.effects.some(e => e.kind === "task" && e.status === "failed" && e.explanation === "flight controller is in control"));
+  assert.equal(refused.state.phase, "flight_controller");
 });

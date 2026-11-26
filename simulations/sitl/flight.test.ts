@@ -10,6 +10,7 @@ import { crash } from "./crash.ts";
 import { failsafeSignal } from "./failsafe-signal.ts";
 import { takeover } from "./takeover.ts";
 import { landPosition } from "./land-position.ts";
+import { landRefused } from "./land-refused.ts";
 import { idleGap } from "./idle-gap.ts";
 import { battery } from "./battery.ts";
 import { flight } from "./flight.ts";
@@ -29,6 +30,7 @@ const stories = {
   takeover: takeover,
   "takeover-response": takeover,
   "land-position": landPosition,
+  "land-refused": landRefused,
   "atlas-home": landPosition,
   "idle-gap": idleGap,
   battery: battery,

@@ -246,6 +246,19 @@ export async function flightFixture(t: TestContext, scenario: Scenario) {
     splitter.on("data", (frame) => {
       parser.once("data", async (packet) => {
         if (
+          scenario === "land-refused" &&
+          failEquipment &&
+          packet.header.msgid === common.SetMode.MSG_ID &&
+          packet.protocol.data(packet.payload, common.SetMode).customMode === 9
+        ) {
+          const ack = new common.CommandAck();
+          ack.command = common.MavCmd.DO_SET_MODE;
+          ack.result = common.MavResult.DENIED;
+          failEquipment = false;
+          await send(peer, ack, new MavLinkProtocolV2(1, 1));
+          return;
+        }
+        if (
           failEquipment &&
           packet.header.msgid === common.CommandLong.MSG_ID &&
           packet.protocol.data(packet.payload, common.CommandLong).command ===
@@ -421,6 +434,7 @@ export async function flightFixture(t: TestContext, scenario: Scenario) {
     });
   }
   if (scenario === "equipment-timeout") config.command_timeouts.move_to = 2;
+  if (scenario === "land-refused") config.command_timeouts.land = 2;
   const events: AtlasEvent[] = [];
   const audit = follow(admin, { after: 0 }, (event) => {
     events.push(event);
@@ -622,6 +636,7 @@ export type Scenario =
   | "battery-layers"
   | "armed-startup"
   | "equipment-drop"
+  | "land-refused"
   | "equipment-refused"
   | "equipment-timeout"
   | "subsystem"
