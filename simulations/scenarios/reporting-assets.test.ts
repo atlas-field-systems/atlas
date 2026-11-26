@@ -28,8 +28,8 @@ scenario({
 });
 
 scenario({
-  name: "GPS peripheral and detector feed the real Core picture and retain refused captures",
-  checks: ["asset/docs/assets.md#local-state-and-data-flow", "asset/docs/README.md#capture-files", "core/docs/api.md#observations"],
+  name: "A survey copter visits a detector Observation and reporting peripherals retain capture evidence",
+  checks: ["asset/docs/assets.md#local-state-and-data-flow", "asset/docs/README.md#capture-files", "core/docs/api.md#observations", "atlas/goal.md#how-we-know-it-works"],
   async run(w) {
     const { createServer } = await import("node:net");
     const { unzipSync, strFromU8 } = await import("fflate");
@@ -81,7 +81,7 @@ scenario({
         if (detector) {
           const time = w.clock.now();
           send!({ kind: "observation", source: "detector", observation: { type: "report.observation", time,
-            kind: "coordinates", observation_id: "O1", position: { latitude: 5, longitude: 6 } } });
+            kind: "coordinates", observation_id: "O1", position: { latitude: 1.001, longitude: 2.001 } } });
           await w.until(() => w.events.some(e => e.kind === "report.observation"));
           send!({ kind: "file", name: "sample.txt", contentType: "text/plain", base64: Buffer.from("captured").toString("base64"),
             place: { kind: "point", position: { latitude: 3, longitude: 4 } } });
@@ -104,6 +104,20 @@ scenario({
           assert.equal(picture.observations.length, 1);
           assert.equal(picture.observations[0].observation_id, "O1");
           assert.equal(picture.observations[0].time, time);
+          const observation = picture.observations[0];
+          assert.equal(observation.asset_id, app.asset_id);
+          assert.ok(observation.kind === "coordinates");
+          const survey = await assetApp(w, { name: "survey", equipment: "ardupilot" });
+          const equipment = survey.equipment;
+          assert.ok(equipment);
+          value(await w.complete(w.admin.call("sendTasks", {
+            params: { asset_id: survey.asset_id },
+            body: { tasks: [
+              { kind: "takeoff", target_altitude: { altitude_reference: "launch", altitude_m: 10 } },
+              { kind: "move_to", destination: observation.position },
+            ] },
+          })));
+          await w.until(() => equipment.targets.some(p => p.latitude === 1.001 && p.longitude === 2.001));
           const zip = unzipSync(await readFile(await w.complete(app.stop())));
           for (const expected of ["retained", "captured"])
             assert.ok(Object.entries(zip).some(([name, bytes]) => name.startsWith("files/") && strFromU8(bytes) === expected));
