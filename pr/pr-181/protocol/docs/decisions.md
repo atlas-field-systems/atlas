@@ -52,7 +52,7 @@ disagree, fix one of them.
 
 ## The shared picture
 
-- **An Observation is the latest `report.observation`** for one `asset_id` and `observation_id`, ordered by report time and then `event_id`, as settings are. A report Core marks `clock_ahead` never becomes the latest. Earlier reports are history.
+- **An Observation is the latest `report.observation`** for one `asset_id` and `observation_id`, ordered by report time and then `event_id`. A report Core marks `clock_ahead` never becomes the latest. Earlier reports are history.
 - **Observation reports are whole.** Each carries everything the Asset knows about the target, so a field left out is not known. Protocol never merges partial reports and has no `null` to clear a fact. Fieldlinks may avoid resending unchanged fields in their own encoding.
 - **The Asset chooses `observation_id`**, unique for that Asset until the next Reset, and keeps it while it keeps seeing the same target. Core assigns `geofeature_id`. *[Owner decision](../../docs/adr/0006-core-assigns-asset-ids-fresh-after-each-reset.md).*
 - **A `coordinates` Observation** says where the target is, with an optional uncertainty. **A `bearing` Observation** says which way it is from where the sensor was, with optional elevation and range.
