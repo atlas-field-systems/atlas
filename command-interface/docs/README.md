@@ -142,8 +142,9 @@ setting value is known. A reporting-only tracker needs no movement controls,
 pause control, or artificial home.
 
 For Capture, the operator chooses one of the Asset's declared cameras, then
-a photo or clip. A clip also asks for its duration. Finished Tasks link to the
-Objects they made ([capture behavior](../../asset/docs/README.md#capture-files)).
+a photo or clip. A clip also asks for its duration. Completed Capture Tasks
+link to the Objects they made once those files reach Core
+([capture behavior](../../asset/docs/README.md#capture-files)).
 Move To offers an optional speed and explains the Asset's
 [configured default and cap](../../asset/docs/README.md#move-to-speed).
 

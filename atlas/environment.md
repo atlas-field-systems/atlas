@@ -9,15 +9,18 @@ Radio technology, IP connectivity, and edge networks will keep changing.
 Atlas is designed around constrained links with different capabilities.
 A LoRa-scale data rate is not a ceiling for the whole system.
 
-The field radio starts as pure LoRa. The next step is a multi-layer
-mesh: 2.4 GHz FLRC between Assets wherever FLRC is viable, and 915 MHz LoRa
-where it is not. Wi-Fi is a possible addition. FLRC is expected to carry more
-than single-digit kilobits per second. Initial Assets use a single link, so
-multiple-link routing is not a prerequisite for them. The radio project owns the
-detailed design as the hardware evolves.
+Each Asset uses one link: either IP or one radio network's Fieldlink
+([Asset communications](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/communications.md#one-link-per-asset)).
+The field radio starts as pure LoRa. A later multi-layer mesh inside one
+Fieldlink, such as 2.4 GHz FLRC between Assets wherever FLRC is viable and
+915 MHz LoRa where it is not, is still one Fieldlink behind one gateway. FLRC
+is expected to carry more than single-digit kilobits per second. Switching an
+Asset between separate links, such as Wi-Fi and a radio Fieldlink, waits in the
+[drawer](https://github.com/atlas-field-systems/atlas/blob/main/docs/drawer/multiple-links.md).
+The radio project owns the detailed design as the hardware evolves.
 
 Field links carry Atlas through [Fieldlinks](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md),
-each holding both ends of its link.
+each holding both ends of its link and shipped with Atlas.
 A Fieldlink sends compact frames in a proven existing encoding, not a custom
 one. The LoRa phase builds on [Meshtastic](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md),
 and FLRC gets its own Fieldlink. First flight needs no field link: its ground

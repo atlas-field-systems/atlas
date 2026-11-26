@@ -26,8 +26,8 @@ Propose changes to the owner rather than making them quietly. See
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, and serves the [Core API](core/docs/api.md). Runtime code is built | Built |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | IP runtime, crash lifecycle and Reset ZIP verified in SITL |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
-| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Planning |
-| [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink package, holding both ends of its field link, released on its own | Planning; Meshtastic is sketched |
+| [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that runs one configured Fieldlink at a time and gives it the gateway interface | Planning |
+| [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink folder, holding both ends of its field link, shipped with Atlas | Planning; Meshtastic is sketched |
 | [tools/](tools/) | Atlas Tools: ready setups that package existing parts and the glue for one kind of equipment, such as the SiK tool for first flight. No part depends on one | Planning; SiK is sketched |
 | [simulations/](simulations/) | Atlas Simulations: the real parts run together in a simulated world, as end-to-end tests and evals. Each part's own unit tests stay in its folder | Built for Core, SDK, and initial Asset IP runtime |
 
@@ -37,7 +37,7 @@ Propose changes to the owner rather than making them quietly. See
 - Want how an Asset behaves? Go to `asset/`.
 - Want how the command interface works? Go to `command-interface/`.
 - Want the client programs use to call the Core API? Go to `sdk/`.
-- Want how a gateway connects to Core and installs Fieldlinks? Go to `gateway/`.
+- Want how a gateway connects to Core and runs a Fieldlink? Go to `gateway/`.
 - Want how a Fieldlink carries Atlas across a field link? Go to `fieldlink/`.
 - Want how the parts are tested together end to end? Go to `simulations/`.
 - Want a ready setup for one kind of equipment, such as SiK? Go to `tools/`.
@@ -69,7 +69,7 @@ Each topic has one home. Other pages link to it.
 | Failsafes and their overrides | [asset/docs/failsafes.md](asset/docs/failsafes.md) |
 | Settings, intended use | [atlas/settings.md](atlas/settings.md) |
 | Plugins, intended use | [atlas/plugins.md](atlas/plugins.md) |
-| The gateway app, installing Fieldlinks, the gateway interface, the gateway's Reset ZIP | [gateway/README.md](gateway/README.md) |
+| The gateway app, running Fieldlinks, the gateway interface, the gateway's Reset ZIP | [gateway/README.md](gateway/README.md) |
 | What every Fieldlink is and provides, and where a Fieldlink stops and the Asset starts | [fieldlink/README.md](fieldlink/README.md) |
 | One Fieldlink's radio, behavior, and security | `fieldlink/<name>/README.md` |
 | What an Atlas Tool is, and each Tool's setup | [tools/README.md](tools/README.md), `tools/<name>/README.md` |

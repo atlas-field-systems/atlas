@@ -5,7 +5,7 @@ date: 2026-11-13
 
 # Every file is an Object and goes through Core
 
-Core holds every Atlas file as an Object, including photos and clips. An Asset sends any file requested by a Task with that Task, and chooses which other files to send from its configuration and available link.
+Core holds every Atlas file as an Object, including photos and clips. A Capture Task completes once the photo or clip is taken and stored on the Asset; the Asset sends captured files to Core when its configuration and available link allow, never holding up or failing a Task on upload.
 
 Operators get files only through Core and cannot ask an Asset directly for an earlier file. To show a file at a place on the map, the Asset creates and links a geo feature explicitly.
 

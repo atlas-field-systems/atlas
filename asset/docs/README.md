@@ -215,8 +215,8 @@ so no old request arrives late.
 
 An Asset can record more reports than its live link can carry. For the
 [model-rocket flight](../../command-interface/docs/README.md#review-a-model-rocket-flight),
-it keeps the extra samples locally and sends a live subset. After landing, with
-contact restored or a faster link available, it sends the retained reports in
+it keeps the extra samples locally and sends a live subset. After landing, once
+contact is restored and airtime allows, it sends the retained reports in
 [report batches with their original times](../../core/docs/api.md#asset-and-gateway-calls).
 An Asset returning after a disconnection catches up the same way.
 
@@ -225,12 +225,18 @@ and Reset ZIPs.
 
 ## Capture files
 
-Capture asks a declared camera for a photo or a clip. The Asset captures the
-file and stores it in Core as an Object, with a geo feature alongside it. The
-Task completes only once the Object is stored. If capture or sending fails,
-the Task fails with an explanation. Its command timeout bounds the wait. Every
-command that produces a file names its stored Object in its completed Task
-report ([Protocol](../../protocol/definitions/records/report/status/task.json)).
+Capture asks a declared camera for a photo or a clip. The Task completes once
+the photo or clip is taken and stored on the Asset. Only a camera or local
+capture failure fails the Task (with an explanation, clearing the remaining
+queue like any failed Task). Its command timeout bounds the capture, not the
+upload.
+
+Once captured, the file goes to Core as an [Object](../../core/docs/api.md#objects)
+when the Asset's configuration and link allow, like any other captured file. A
+slow or failed upload never fails the Task or clears the queue. When the Asset
+uploads a file made by a Task, it names that `task_id` on the upload, so Core
+links the stored Object to the completed Task. Until the file reaches Core, the
+completed Task has no linked Object.
 
 An Asset with a camera or another sensor can send what it captures, such as a
 photo or a short clip, to Core as an [Object](../../core/docs/api.md#objects).
@@ -243,10 +249,10 @@ Files reach operators only through Core; an Asset never answers an operator
 directly. Which files to send is the Asset's choice, set in its
 [configuration](../config.md):
 
-- **A file a Task asks for is sent** as part of that Task.
-- **Other files go when the link allows.** Over a fast link such as Wi-Fi the
-  Asset sends them; over a narrow one such as LoRa it does not. A link that
-  cannot carry files refuses them, and the file stays in the Reset ZIP.
+- **Captured files go when the link allows**, including files from a Capture
+  Task. Over a fast link such as IP the Asset sends them; over a narrow link
+  such as LoRa it does not. A link that cannot carry files refuses them, and the
+  file stays in the Reset ZIP.
 - **A file not sent is never asked for later.** No operator request fetches an
   earlier file. Its [Reset ZIP](logging.md#export-the-assets-reset-zip) keeps
   every file it captured.

@@ -7,9 +7,9 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 ## This folder
 
 - `README.md` owns what every Fieldlink is and provides. Each Fieldlink lives in
-  `<name>/` as its own package with its own version, holding both its gateway
-  side and its Asset side. A radio that carries no Atlas messages, such as SiK,
-  is equipment for an [Atlas Tool](../tools/README.md), not a Fieldlink.
+  `<name>/`, shipped with Atlas, holding both its gateway side and its Asset
+  side. A radio that carries no Atlas messages, such as SiK, is equipment for an
+  [Atlas Tool](../tools/README.md), not a Fieldlink.
 - Each Fieldlink owns compact encoding, retries, duplicate handling, contact
   timing, and link security for its medium. Put those rules with that Fieldlink.
 - A Fieldlink never decides Asset behavior. It reports link facts and carries

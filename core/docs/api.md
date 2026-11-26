@@ -388,8 +388,9 @@ authenticates to the gateway, not to Core.
 A gateway runs on its own computer, apart from Core. Its link to Core is IP with
 broadband speed, so the gateway follows the event stream for every Asset it
 carries, keeps their current state, and sends over the radio only what each
-Asset does not already have. Tasks may cross the radio one at a time and in any
-order, because the Asset orders them by `task_id`.
+Asset does not already have. A Fieldlink delivers each request's Tasks whole to
+the Asset, splitting a request into radio packets only when its frame size
+requires it.
 
 ### Radio Assets
 
@@ -622,13 +623,14 @@ Core accepts imagery only when the file is a TIFF with GeoKeyDirectory tag
 end state adds no event and returns its existing latest Object `event_id`.
 
 An Object is a file Core holds, with an `object` record that says what it is:
-`object_id`, `name`, `content_type`, `size_bytes`, and an optional
-`geofeature_id`. Operators, Plugins, and Assets store Objects. Reading Objects
-follows [Reads](#reads).
+`object_id`, `name`, `content_type`, `size_bytes`, an optional `geofeature_id`,
+and an optional `task_id` when an Asset uploads a file made by a Task.
+Operators, Plugins, and Assets store Objects. Reading Objects follows
+[Reads](#reads).
 
 | Request | Who | Result |
 | --- | --- | --- |
-| `POST /objects?name=<name>&geofeature_id=<id>` | Account, Plugin, or Asset | Stores the file; `201 {object_id, event_id}` |
+| `POST /objects?name=<name>&geofeature_id=<id>&task_id=<id>` | Account, Plugin, or Asset | Stores the file; `201 {object_id, event_id}` |
 | `GET /objects?geofeature_id=<id>` | [Readers](#reads) | Every Object record, or those attached to one geo feature, with `as_of` |
 | `GET /objects/{object_id}` | [Readers](#reads) | One Object record |
 | `GET /objects/{object_id}/file` | [Readers](#reads) | The file, with its `content_type` |
@@ -653,9 +655,15 @@ All files, including photos and clips, are Objects
   both calls to say which Asset it acts for, and Core refuses an Asset it does
   not carry with `403`; an Asset on IP needs none, because its key names it.
   `requested_by` is that `asset_id`. An Asset never moves or deletes an Object.
-- **Task output names its Objects.** A completed Task report carries the
-  `object_ids` of files it made, as [Protocol defines](../../protocol/definitions/records/report/status/task.json).
-  These are the IDs returned by upload, not file names.
+- **Task output names its Objects once stored.** A Capture Task completes once
+  the photo or clip is taken and stored on the Asset, before the file reaches
+  Core ([Capture files](../../asset/docs/README.md#capture-files)). When the
+  Asset later uploads that file, it passes `task_id=<id>` on `POST /objects`
+  (alongside `asset_id=<id>` through a gateway). Core checks that `task_id`
+  names a Task of that Asset (otherwise `404`), stamps `task_id` on the stored
+  `object` record (emitted in `object.stored`), and lists that `object_id` in
+  the Task's `object_ids` on `GET /tasks/{asset_id}`. Until the file is stored,
+  the completed Task has no `object_ids`.
 - **Core assigns `object_id`** and never reuses it before the next Reset, even after a delete.
 - **Stored whole or not at all.** Core writes the file, then adds the Object's
   row and its `object.stored` event in one transaction. There is no half-stored
@@ -747,8 +755,9 @@ they can use.
   record Core stamps from the body. Its `event_id` names the call
   from then on, as a request's `event_id` does for an Asset. There is no other
   call ID.
-- Every account sees every call and its answer, because Atlas keeps one shared
-  picture and one history.
+- Every account can read every call and its answer, because Atlas keeps one
+  history. Listed places travel only in the answer and never enter
+  `/entities/geofeatures` ([Plugins](../../atlas/plugins.md#what-the-operator-sees)).
 - There is no stop for a call. An operator who no longer wants the answer
   ignores it. A call is never repeated by itself; an operator who wants fresh
   data calls again.
@@ -766,9 +775,11 @@ cannot claim each other's output.
 call with `request_id`, the call's `event_id`. Every action answers the same
 way:
 
-- **A result** (`plugin.result`): places it lists without storing them, of
-  any kind (point, line, area, or imagery), short facts, and the IDs of the geo features and Objects it created, in any mix.
-  An empty result means it found nothing. Core stores it as `plugin.result`.
+- **A result** (`plugin.result`): places it lists without storing them (point,
+  line, or area; listed imagery is refused with `400 invalid`), short facts,
+  and the IDs of the geo features (including imagery) and Objects it created,
+  in any mix. An empty result means it found nothing. Core stores it as
+  `plugin.result`.
 - **A failure** (`plugin.failure`): an `explanation`, and the IDs of anything
   it had already created. Core stores it as `plugin.failed`.
 - **No partial lists.** Each list in an answer holds at most 1000 items. A
@@ -800,3 +811,6 @@ These recent decisions are not yet implemented in the built Core, Protocol, and 
 - Core and the SDK queue still enforce the old queue limit until #120.
 - An Asset on IP whose command stream is down while reports arrive still shows online and accepts work until #121.
 - A place edit with `update_tasks=true` still changes Core's shown Task point before the Asset accepts it until #131.
+- The SDK outbox does not yet separate deadline priority tiers or mark Task-started reports and contact-proof heartbeats `must_arrive` until #155.
+- Core, Protocol, and the SDK still link Task files through `object_ids` on the completed Task report instead of `task_id` on `POST /objects` until #160.
+- Core and Protocol still allow imagery in a Plugin's listed `places` until #169.

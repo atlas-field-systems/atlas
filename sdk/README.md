@@ -21,8 +21,8 @@ types](../protocol/docs/decisions.md#typescript-types).
 ## Non-goals
 
 - **Core does not use the SDK.** Core implements the API; the SDK calls it.
-- **No field links.** Gateways and radio Assets run Fieldlinks, which are their own
-  package. The SDK's [Asset helpers](docs/asset.md#on-a-radio-asset) work over a
+- **No field links.** Gateways and radio Assets run Fieldlinks, which live
+  under [fieldlink/](../fieldlink/README.md). The SDK's [Asset helpers](docs/asset.md#on-a-radio-asset) work over a
   Fieldlink, but the SDK contains none.
 - **No flying.** Helpers carry requests, reports and contact. The Asset app owns
   motion, equipment checks and failsafes.

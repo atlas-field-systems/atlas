@@ -2,12 +2,12 @@
 
 A gateway carries Atlas across a field link. It runs on its own computer,
 uplinks to the [Core API](../core/docs/api.md) over broadband IP, and talks to
-Assets over a radio through one installed [Fieldlink](../fieldlink/README.md). A
+Assets over a radio through one configured [Fieldlink](../fieldlink/README.md). A
 gateway is not an Asset.
 
 **Planning.** Nothing is built. This page owns the gateway app: the framework
-every gateway runs, how it installs and runs a Fieldlink, and the gateway
-interface it gives that Fieldlink.
+every gateway runs, how it runs a Fieldlink, and the gateway interface it gives
+that Fieldlink.
 
 ## The gateway app is a framework
 
@@ -22,34 +22,30 @@ The gateway app does the work every gateway shares, whatever its radio:
 
 Everything about the radio belongs to the Fieldlink.
 
-## Installing and running Fieldlinks
+## Running Fieldlinks
 
-- **Installing and updating takes one action.** The gateway app has a text
-  screen (TUI) on the gateway's console. It lists every published Fieldlink,
-  marks which are installed and which have an update, and installs or updates
-  one with a single keypress. The same actions are plain commands (CLI) for
-  scripts. With internet, the gateway fetches the package from the Atlas
-  releases and checks it against its published checksum. Without internet, the
-  admin picks a package file, such as one on a USB stick, from the same screen.
-  The gateway app refuses a Fieldlink that does not work with its
-  [gateway interface](#the-gateway-interface) version, and says which version it
-  needs. An install or update takes effect when the gateway next starts.
-- **One Fieldlink at a time.** The admin picks one installed Fieldlink in the
-  gateway's configuration. At start the gateway app checks that the Fieldlink
-  is installed and fits its version, and that its radio hardware is present; if
-  not, it does not start and prints why. Changing Fieldlinks means changing the
-  configuration and restarting the gateway.
+Fieldlinks ship with Atlas
+([ADR-0025](../docs/adr/0025-fieldlinks-ship-with-atlas-and-hold-both-ends-of-a-link.md)).
+Separate Fieldlink releases, a gateway installer (menus, CLI, USB installs),
+and versioned plugin interfaces wait in the
+[drawer](../docs/drawer/fieldlink-packages.md).
+
+- **One Fieldlink at a time.** The admin picks one Fieldlink in the gateway's
+  configuration. At start the gateway app checks that the configured Fieldlink
+  exists and that its radio hardware is present; if not, it does not start and
+  prints why. Changing Fieldlinks means changing the configuration and
+  restarting the gateway.
 
 ## The gateway interface
 
-The gateway app gives its Fieldlink a small, stable interface, built on the SDK.
-A Fieldlink uses only this interface and never calls the SDK directly, so an SDK
-update changes the gateway app, not every Fieldlink. The interface changes only
-with a new gateway app version, and each Fieldlink states which versions it
-works with.
+The gateway app gives its Fieldlink a small interface, built on the SDK. A
+Fieldlink uses only this interface and never calls the SDK directly, so no
+other part depends on a Fieldlink's internals and SDK changes stay in the
+gateway app.
 
-- **A radio was heard.** The Fieldlink reports a new radio; the gateway app
-  registers it and answers with its `asset_id`.
+- **A radio was heard.** The Fieldlink reports a new radio with its definitions
+  hash; the gateway app passes the hash to Core to register it and answers with
+  its `asset_id` (or refuses it if Core reports a definitions mismatch).
 - **Per Asset**, the gateway app supplies its requests in event order, sends its
   reports, takes its contact, and stores its files: the
   [Asset link](../sdk/docs/asset.md#the-asset-link), on the gateway's own Core
@@ -141,13 +137,6 @@ Behavior tests come from these, once the gateway exists.
 - Replace the gateway's key. Every radio stays online once the gateway reconnects.
 - Configure a Fieldlink whose radio is not plugged in. The gateway does not
   start and prints which radio it is missing.
-- Open the gateway's screen with internet, and press install on Meshtastic.
-  It is installed with no other step.
-- Install a newer version of the gateway's Fieldlink from a file, with no
-  internet, and restart the gateway. It runs the new version with
-  the same gateway app.
-- Install a Fieldlink that does not work with this gateway app's version. The
-  gateway app refuses it and says which versions it needs.
 - Stop the gateway. The gateway and every radio it carries show offline after
   `offline_after_s`.
 - Remove the gateway and add a new one. Each radio the new

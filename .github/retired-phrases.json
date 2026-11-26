@@ -319,11 +319,6 @@
     "example": "Files from Assets, such as drone photos, are not designed yet."
   },
   {
-    "phrase": "\\b(every|each) Fieldlink ships with the gateway app\\b|\\bnothing is (downloaded or )?installed separately\\b",
-    "why": "Fieldlinks are separate packages, released and installed on their own.",
-    "example": "Every Fieldlink ships with the gateway app."
-  },
-  {
     "phrase": "\\b(implements?|builds?) everything (together|at once)\\b|\\bnot one slice at a time\\b",
     "why": "The build goes one part at a time: Protocol, then Core, then the SDK. Each part is built whole.",
     "example": "The build then implements everything together from the finished design, not one slice at a time."
@@ -559,5 +554,38 @@
     "unless": "\\b(misleading|avoid|not \"not done\")\\b",
     "why": "A dropped Task shows outcome unknown, not \"not done\" (ADR-0024).",
     "example": "Dropped Tasks show as not done."
+  },
+  {
+    "phrase": "\\b(capture|the task) completes only once the object is stored\\b|\\ba file a task asks for is sent as part of that task\\b|\\bsends? any file requested by a task with that task\\b|\\bif capture or sending fails\\b",
+    "why": "Capture completes once the photo or clip is taken and stored on the Asset; upload happens when the link allows and never fails a Task.",
+    "example": "The Task completes only once the Object is stored."
+  },
+  {
+    "phrase": "\\b(separately|independently) released (fieldlink )?packages?\\b|\\bfieldlinks? (is|are) (its|their) own package\\b|\\breleased on (its|their) own\\b[^.]*\\bfieldlink|\\bfieldlink[^.]*\\breleased on (its|their) own\\b|\\bgateway (app )?installs? fieldlinks?\\b|\\binstalls? and runs? one fieldlink\\b|\\btext screen \\(tui\\) on the gateway",
+    "unless": "\\b(drawer|wait|later|not|no|never|could)\\b",
+    "why": "Fieldlinks ship with Atlas in fieldlink/<name>/; separate releases, the gateway installer, and versioned plugin interfaces wait in the drawer (ADR-0025).",
+    "example": "Each Fieldlink is an independently released package, and the gateway app installs Fieldlinks from a text screen (TUI) on the gateway."
+  },
+  {
+    "phrase": "\\ba later asset may have several\\b|\\bwi-?fi is then one of that asset's links\\b|\\bwith contact restored or a faster link available\\b",
+    "unless": "\\b(drawer|wait|not|no|never)\\b",
+    "why": "One Asset uses one link; switching between links or joining Wi-Fi to upload later waits in the drawer.",
+    "example": "A later Asset may have several links, and Wi-Fi is then one of that Asset's links."
+  },
+  {
+    "phrase": "\\bpoints, lines, areas, or imagery the plugin lists\\b|\\bplaces it lists without storing them, of any kind \\(point, line, area, or imagery\\)",
+    "unless": "\\b(not|never|no|refused|except)\\b",
+    "why": "Listed imagery is not allowed in a Plugin answer; an image a Plugin wants on the map is an imagery geo feature the Plugin creates.",
+    "example": "Points, lines, areas, or imagery the Plugin lists and returns to the caller."
+  },
+  {
+    "phrase": "\\b(tasks? may cross the radio|deliver a request's tasks) one at a time\\b",
+    "why": "A Fieldlink delivers each request's Tasks whole, splitting into radio packets only when needed.",
+    "example": "Tasks may cross the radio one at a time and in any order."
+  },
+  {
+    "phrase": "\\bthe fieldlink compares the radio's hash with the gateway's\\b|\\bthe gateway compares it with its own\\b",
+    "why": "A Fieldlink passes the radio's definitions hash up through the gateway so Core refuses a mismatch and records definitions.refused.",
+    "example": "The Fieldlink compares the radio's hash with the gateway's."
   }
 ]

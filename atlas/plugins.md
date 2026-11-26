@@ -46,13 +46,16 @@ decides.
 
 An answer is made of the same three things for every action, in any mix:
 
-- **Places.** Points, lines, areas, or imagery the Plugin lists and returns
-  to the caller, such as "Main St Hospital" at a position. They are not stored as geo
-  features.
+- **Places.** Points, lines, or areas the Plugin lists and returns to the
+  caller, such as "Main St Hospital" at a position. They are not stored as geo
+  features, and show only on the asking operator's map until that operator saves
+  one as a place. Listed imagery is not allowed: an image a Plugin wants on the
+  map is an imagery geo feature the Plugin creates.
 - **Short facts.** A label and a value, such as "Wind: 12 m/s from the west".
-- **References.** The Plugin creates geo features or Objects in Core, and the
-  answer names them. They stay in Core, where the operator can find them later.
-  Plugins create nothing else: Observations come only from Assets.
+- **References.** The Plugin creates geo features (including imagery) or Objects
+  in Core, and the answer names them. They enter the shared picture and stay in
+  Core until the next Reset, where every operator sees them. Plugins create
+  nothing else: Observations come only from Assets.
 
 An empty answer means the Plugin found nothing. A list never holds more than
 1000 items. A Plugin that would need more fails with a clear message, such as
@@ -68,8 +71,10 @@ the whole answer.
   finished. Nothing reruns by itself; the operator calls again if they still
   want it.
 - **There is no stop.** An operator who no longer wants an answer ignores it.
-- **Everyone sees every call.** Every logged-in operator sees every Plugin call
-  and its result, because Atlas keeps one shared picture and one history.
+- **Everyone can read every call and answer.** Every logged-in operator sees
+  every Plugin call and can read its answer, because Atlas keeps one history.
+  Listed places show only on the asking operator's map until that operator saves
+  one as a place; geo features the Plugin creates appear on everyone's map.
 - **Calls are not repeated.** The operator runs a call again when they want new
   data.
 

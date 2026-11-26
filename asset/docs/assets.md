@@ -103,11 +103,12 @@ name. There is no leader module and no universal internal message bus. Modules
 use direct interfaces, with subscriptions where several consumers need the same
 observations.
 
-The communications module owns the Asset's link to Core: the SDK client on IP,
-or a Fieldlink on radio. It routes incoming requests to the responsible module,
-selects reports from [local state](#local-state-and-data-flow), and supplies
-contact and link diagnostics to the app. [Communications](communications.md) has
-the detail. Behavior modules own equipment execution.
+The communications module owns the Asset's one link to Core: the SDK client on
+IP, or one configured Fieldlink on radio (shipped with Atlas). It routes
+incoming requests to the responsible module, selects reports from
+[local state](#local-state-and-data-flow), and supplies contact and link
+diagnostics to the app. [Communications](communications.md) has the detail.
+Behavior modules own equipment execution.
 
 An equipment driver talks to external equipment and supplies its observed state.
 It can support acquisition, control, or both. The GPS tracker needs acquisition

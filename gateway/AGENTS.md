@@ -6,7 +6,7 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
 
 ## This folder
 
-- The gateway app goes here: connecting to Core, installing and running a
+- The gateway app goes here: connecting to Core, running one configured
   Fieldlink, the [gateway interface](README.md#the-gateway-interface), contact,
   and the gateway's Reset ZIP.
 - Fieldlinks live in [fieldlink/](../fieldlink/), not here. Radio rules belong

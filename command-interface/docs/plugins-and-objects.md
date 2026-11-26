@@ -22,8 +22,8 @@ a Plugin that sets none still works. For each action:
   point on the map. Off unless the Plugin turns it on. It appears only when the
   action has exactly one input of the clicked kind, which the clicked item
   fills;
-- whether listed results with a position show on the map by default. Off unless
-  the Plugin turns it on.
+- whether listed places show on the asking operator's map by default. Off
+  unless the Plugin turns it on.
 
 A Plugin cannot bring its own screens or code into the interface. Custom
 Plugin screens are a possible later step, not part of the first build.
@@ -59,12 +59,14 @@ fresh data runs the action again.
 
 ## Results
 
-A call's result shows on its page:
+Every operator can open a call's page and read its answer:
 
-- **Listed items**, such as the buildings in an area, show as a list. Items
-  with a position can show on the map as a result overlay that only that
-  operator sees, and that never enters the shared picture. Each item has
+- **Listed places** (points, lines, or areas, such as the buildings in an area)
+  show as a list. They can draw on the map as a result overlay only on the
+  asking operator's map, and never enter the shared picture. Each item has
   **Save as place**, which saves it as an ordinary place made by that operator.
+  Listed imagery is not allowed: an image a Plugin wants on the map is an
+  imagery place the Plugin creates.
 - **Places the Plugin made**, imagery included, appear on everyone's map like other places. Their
   page names the Plugin and links to the call.
 - **Objects the Plugin stored** appear in the Objects list and on the page of

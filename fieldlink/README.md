@@ -2,8 +2,9 @@
 
 A Fieldlink carries Atlas across one kind of field link. It is defined by two
 things: the radio hardware, and the software that runs over it. Each Fieldlink
-holds both ends of its link in one package: the side a
-[gateway](../gateway/README.md) runs, and the side an Asset's
+holds both ends of its link in one folder, shipped with Atlas
+([ADR-0025](../docs/adr/0025-fieldlinks-ship-with-atlas-and-hold-both-ends-of-a-link.md)):
+the side a [gateway](../gateway/README.md) runs, and the side an Asset's
 [communications module](../asset/docs/communications.md) runs.
 
 **Planning.** Nothing is built.
@@ -20,19 +21,20 @@ crossing it, is equipment, not a Fieldlink. SiK is one: first flight uses it
 through the [SiK tool](../tools/sik/README.md)
 ([ADR-0018](../docs/adr/0018-sik-is-equipment-used-through-an-atlas-tool-not-a-fieldlink.md)).
 
-## Packages and versions
+## How Fieldlinks fit
 
-- **Each Fieldlink is its own package** with its own version, released on its
-  own from `prod`, so updating a Fieldlink never needs a new gateway app or
-  Asset app. Publishing is set up when the first one has code.
-- **A gateway installs it with one action** from its install screen, and runs
-  one at a time ([Gateway](../gateway/README.md#installing-and-running-fieldlinks)).
-  An Asset app installs the Asset side the same way.
-- **It states which interface versions it works with**: the
+- **One folder per Fieldlink, shipped with Atlas.** Each Fieldlink lives in
+  `fieldlink/<name>/` with both its gateway side and its Asset side, and ships
+  and updates with the rest of Atlas. Separate Fieldlink releases, a gateway
+  installer, and versioned plugin interfaces wait in the
+  [drawer](../docs/drawer/fieldlink-packages.md).
+- **One Fieldlink at a time.** A gateway or radio Asset picks one Fieldlink in
+  its configuration ([Gateway](../gateway/README.md#running-fieldlinks)).
+- **Clean boundaries.** A Fieldlink uses only the
   [gateway interface](../gateway/README.md#the-gateway-interface) on the gateway
   side and the [Asset link](../sdk/docs/asset.md#the-asset-link) on the Asset
-  side. A Fieldlink never calls the SDK directly, so an SDK update does not
-  touch any Fieldlink.
+  side, never the SDK directly. No other part depends on a Fieldlink's
+  internals.
 
 ## Both sides run Atlas
 
@@ -77,9 +79,11 @@ own page. The rules are the same for all of them.
 - **Joining the field link is the Fieldlink's own step**, such as receiving a
   private channel's key. A radio that has joined can appear as a new Asset, but
   it is never taken for an Asset that is already some other radio.
-- **The definitions hash is checked each time a radio's link opens.** The
-  Fieldlink compares the radio's hash with the gateway's. A radio with different
-  definitions is refused and not added as an Asset; operators see "a radio on
+- **The definitions hash is passed to Core each time a radio's link opens.**
+  The Fieldlink carries the radio's hash to the gateway, and the gateway sends
+  it to Core ([radio Assets](../core/docs/api.md#radio-assets)). Core refuses a
+  different hash with `409 definitions_mismatch` and records
+  `definitions.refused`, so no Asset is added and operators see "a radio on
   gateway G1 was refused: different definitions", as they would for an Asset on
   IP.
 
@@ -88,6 +92,6 @@ own page. The rules are the same for all of them.
 | Path | Holds |
 | --- | --- |
 | `fieldlink/README.md` | This page: what every Fieldlink is and provides |
-| `fieldlink/<name>/` | One Fieldlink package, both its sides: its page now, its code later |
+| `fieldlink/<name>/` | One Fieldlink, both its sides: its page now, its code later |
 
 AI agents: read [AGENTS.md](AGENTS.md).

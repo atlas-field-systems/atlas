@@ -24,7 +24,7 @@ below records the intended link; the optional concepts are listed separately.
 ## Gateway and Asset
 
 As [every Fieldlink](../README.md#both-sides-run-atlas) does,
-each Asset runs the Asset app with this package's Asset side. On top of Meshtastic, the
+each Asset runs the Asset app with this Fieldlink's Asset side. On top of Meshtastic, the
 Fieldlink adds end-to-end acknowledgement of Tasks and final reports,
 idempotency by `task_id`, and per-Asset contact reports to Core. Protocol defines
 no short keys, so the Fieldlink chooses its own compact encoding. The gateway's
@@ -38,7 +38,8 @@ sends over the radio only what each Asset does not already have.
   from that Asset's node key, and rejects replays.
 - **Joining.** Receiving the private channel's key.
 - **Definitions hash.** Each radio sends its hash when its link opens, and the
-  gateway compares it with its own.
+  Fieldlink passes it through the gateway to Core so Core refuses a mismatch
+  and records it.
 
 ## Proposal: binary encoding
 

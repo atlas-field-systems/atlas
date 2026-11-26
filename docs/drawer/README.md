@@ -20,5 +20,7 @@ owner drops it.
 | [Drops](drops.md) | Yes |
 | [Atlas Tools ZIP](atlas-tools-zip.md) | Yes |
 | [Rough operator screen](rough-operator-screen.md) | Yes |
+| [Separate Fieldlink packages and gateway installer](fieldlink-packages.md) | Yes |
 | [Terrain and ground elevation](ground-elevation.md) | No |
 | [Meshtastic listening and local picture](meshtastic-listening.md) | No |
+| [Switching links and multiple links per Asset](multiple-links.md) | No |
