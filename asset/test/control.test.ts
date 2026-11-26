@@ -829,3 +829,22 @@ for (const failure of ["refusal", "timeout"] as const)
     assert.ok(result.effects.some(e => e.kind === "clear"));
     assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
   });
+
+for (const path of [[25, 4], [4]] as const)
+  test(`docs/failsafes.md: a critical battery rule acts below a higher-priority rule, battery ${path.join(" then ")}%`, async () => {
+    const { config, state: start } = await setup();
+    start.settings.home_position = { latitude: 2, longitude: 2 };
+    start.settings.failsafe_policy = [
+      { rule_id: "LB", priority: 90, conditions: [{ kind: "battery_below", battery_percent: 30 }], response: { kind: "return_to_home" } },
+      { rule_id: "CB", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 5, critical: true }], response: { kind: "land" } },
+    ];
+    let state = start;
+    let effects: ReturnType<typeof reduce>["effects"] = [];
+    for (const [i, battery] of path.entries()) {
+      for (const m of Object.values(state.measurements)) if (m && "time" in m) m.time = i;
+      state.measurements.battery = { value: battery, source: "vehicle", time: i };
+      ({ state, effects } = reduce(state, { kind: "tick", now: i, hasWork: false }, config));
+    }
+    assert.ok(effects.some(e => e.kind === "response" && e.rule?.rule_id === "CB" && e.status === "active"));
+    assert.equal(state.execution?.rule?.rule_id, "CB");
+  });

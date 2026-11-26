@@ -19,6 +19,8 @@ import {
   type Execution,
 } from "./commands.ts";
 import { fresh, type Measurements, type VehicleCommand } from "./vehicle.ts";
+const isCritical = (rule: ComponentsFailsafeRule) =>
+  rule.conditions.some((c) => c.kind === "battery_below" && c.critical);
 // Protocol's documented default for the link_loss_after_s setting.
 const LINK_LOSS_AFTER_S_DEFAULT = 30;
 type Work = {
@@ -596,11 +598,11 @@ export function reduce(
         .sort((a, b) => b.priority - a.priority);
       const held =
         state.override === "rearm" || state.override === "pause";
-      const critical = held
-        ? matching.find((r) =>
-            r.conditions.some((c) => c.kind === "battery_below" && c.critical),
-          )
-        : undefined;
+      // A critical battery rule acts whatever its priority: at once during Hold
+      // or pause, and over any non-critical response when it starts to hold.
+      const critical = matching.find((r) =>
+        isCritical(r) && (held || started.has(r.rule_id)),
+      );
       const candidate =
         critical ??
         matching.find(
@@ -613,7 +615,8 @@ export function reduce(
       if (
         candidate &&
         !protectedOverride &&
-        (held || !current?.rule || candidate.priority > current.rule.priority)
+        (held || !current?.rule || (critical !== undefined && !isCritical(current.rule)) ||
+          candidate.priority > current.rule.priority)
       ) {
         activate(candidate.response, candidate, now);
       }
