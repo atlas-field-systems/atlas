@@ -404,7 +404,8 @@ Asset on its own side and speaks to Core only by `asset_id`.
 - When the gateway hears a radio that has no `asset_id` since the last Reset, it sends
   `POST /entities/assets/radios` with `requests.radio`: the radio's
   definitions hash. Core assigns the next `asset_id`, adds `asset.registered`
-  with the gateway as `requested_by`, and answers `201 {asset_id, as_of}`. The gateway
+  with the gateway as `requested_by`, and answers `201 {asset_id, last_task_id, as_of}`
+  with `last_task_id` zero. The gateway
   carries that Asset, keeps which radio has which ID, and tells the radio its
   ID through the Fieldlink.
 - Core refuses a different definitions hash with `409 definitions_mismatch` and
@@ -418,7 +419,9 @@ Asset on its own side and speaks to Core only by `asset_id`.
   `PUT /entities/assets/{asset_id}/description` and its description record:
   once after the gateway registers it, and again each time its app starts.
   Core treats that as any [restarted app](#operator-requests); there is no
-  separate restart signal.
+  separate restart signal. The answer is `200 {event_id, last_task_id, as_of}`.
+  The gateway returns the Task floor and event cursor from this sign-up to the
+  radio so it can accept the next Task and follow requests after the sign-up.
   A gateway that replaces it registers its radios as new Assets.
 - When an admin removes a radio Asset, its ID ends. If the radio is heard
   again, its gateway registers it as a new Asset with a new ID.

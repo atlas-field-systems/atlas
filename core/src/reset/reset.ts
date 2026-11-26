@@ -349,7 +349,7 @@ export function writeSummary(
   const assets = store.read(tx => entities.summaryAssets(tx, runId));
   for (const asset of assets)
     lines.push(
-      `Asset ${asset.asset_id}, gateway ${asset.gateway_id ?? "none"}, first heard ${asset.first}, last heard ${lastHeard(asset.asset_id) ?? asset.last}.`,
+      `Asset ${asset.asset_id}, gateway ${asset.gateway_id ?? "none"}, first received by Core ${asset.first}, last received by Core ${lastHeard(asset.asset_id) ?? asset.last}.`,
     );
   const tasks = store.read(tx => taskPillar.summaryTasks(tx, runId));
   for (const task of tasks) {

@@ -17,7 +17,7 @@ for HTTPS. Without them Core listens only on loopback.
 | `tls_certificate`, `tls_key` | `null`, `null` |
 | `data_directory` | `/var/lib/atlas-core` |
 | `first_admin` | `null`; or `{operator_id, password_file}`, used only if no account exists |
-| `offline_after_s` | `30` |
+| `offline_after_s` | `12`, at most 15 seconds under the [operator deadline](../atlas/scale.md#operator-deadlines-come-first) |
 | `stream_keepalive_s` | `10`; interval between event-stream keepalive comments, at most 2147483.647 seconds to fit the system timer |
 | `max_object_bytes` | `100000000` |
 | `clock_ahead_s` | `10` |

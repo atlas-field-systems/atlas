@@ -46,7 +46,8 @@ export interface ReportSource {
   onWaiting(cb: () => void): () => void;
 }
 export interface AssetLink {
-  events(after: number): AsyncIterable<AssetEvent>;
+  startup(): Promise<Result<{ asset_id: string; as_of: number; last_task_id: number }>>;
+  events(after: number, rejoin: () => Promise<void>): AsyncIterable<AssetEvent>;
   serve(source: ReportSource): () => void;
   onContact(
     cb: (c: { open: boolean; last_heard: number | null }) => void,
@@ -362,7 +363,7 @@ export function runAsset(
         return {
           reason: initial.error === "refused" ? "closed" : initial.error,
         };
-      const iterator = link.events(registration.after)[Symbol.asyncIterator]();
+      const iterator = link.events(registration.after, rejoin)[Symbol.asyncIterator]();
       try {
         while (!stopped) {
           const next = await untilStopped(iterator.next());
@@ -406,6 +407,17 @@ export function runAsset(
     },
   };
 }
+export async function startLinkedAsset(
+  link: AssetLink,
+  options: AssetOptions,
+  emit = diagnostics(options.clock, options.observer),
+) {
+  const registration = await link.startup();
+  if (!registration.ok)
+    return { ok: false as const, error: registration.error, explanation: registration.explanation, status: registration.status };
+  const { asset_id, as_of, last_task_id } = registration.value;
+  return { ok: true as const, value: runAsset(link, { asset_id, after: as_of, last_task_id }, options, emit) };
+}
 async function known<T>(initial: Promise<Result<T>>): Promise<Result<T>> {
   let result = await initial;
   while (!result.ok && result.retry && result.error === "unknown")
@@ -418,32 +430,8 @@ export async function startAsset(
     description: P["requests.asset"];
   },
 ) {
-  let connected = await client.connect();
-  let attempt = 0;
-  while (!connected.ok && connected.error === "unknown") {
-    await new Promise<void>((resolve) =>
-      options.clock.after(
-        backoffDelay(
-          attempt++,
-          internal(client).options.backoff ?? defaultBackoff,
-        ),
-        resolve,
-      ),
-    );
-    connected = await client.connect();
-  }
-  if (!connected.ok) return connected;
-  const settings = options.settings();
-  const usesLinkLoss = settings.link_loss_after_s !== undefined ||
-    options.description.settings?.some(name => name === "link_loss_after_s" || name === "failsafe_policy") ||
-    settings.failsafe_policy?.some(rule => rule.conditions.some(condition => condition.kind === "contact_lost"));
-  if (usesLinkLoss && (settings.link_loss_after_s ?? defaultLinkLossAfterS) <= connected.value.stream_keepalive_s)
-    return { ok: false as const, error: "refused" as const, explanation: "initial_settings.link_loss_after_s must exceed Core stream_keepalive_s" };
-  const registered = await known(
-    client.call("register", { body: options.description }),
-  );
-  if (!registered.ok) return registered;
-  const { asset_id, as_of, last_task_id } = registered.value;
+  let asset_id: string;
+  let contact: { open: boolean; last_heard: number | null } = { open: false, last_heard: null };
   const contacts = new Set<
     (c: { open: boolean; last_heard: number | null }) => void
   >();
@@ -515,7 +503,36 @@ export async function startAsset(
     };
   }
   const link: AssetLink = {
-    async *events(after) {
+    async startup() {
+      let connected = await client.connect();
+      let attempt = 0;
+      while (!connected.ok && connected.error === "unknown") {
+        await new Promise<void>((resolve) =>
+          options.clock.after(
+            backoffDelay(
+              attempt++,
+              internal(client).options.backoff ?? defaultBackoff,
+            ),
+            resolve,
+          ),
+        );
+        connected = await client.connect();
+      }
+      if (!connected.ok) return { ok: false as const, error: connected.error, explanation: connected.explanation, status: connected.status };
+      const settings = options.settings();
+      const usesLinkLoss = settings.link_loss_after_s !== undefined ||
+        options.description.settings?.some(name => name === "link_loss_after_s" || name === "failsafe_policy") ||
+        settings.failsafe_policy?.some(rule => rule.conditions.some(condition => condition.kind === "contact_lost"));
+      if (usesLinkLoss && (settings.link_loss_after_s ?? defaultLinkLossAfterS) <= connected.value.stream_keepalive_s)
+        return { ok: false as const, error: "refused" as const, explanation: "initial_settings.link_loss_after_s must exceed Core stream_keepalive_s" };
+      const registered = await known(
+        client.call("register", { body: options.description }),
+      );
+      if (!registered.ok) return registered;
+      asset_id = registered.value.asset_id;
+      return registered;
+    },
+    async *events(after, rejoin) {
       let pending: AssetEvent | undefined;
       let ended = false;
       let firstOpen = true;
@@ -525,10 +542,11 @@ export async function startAsset(
           after,
           beforeOpen: async () => {
             if (firstOpen) firstOpen = false;
-            else await session?.rejoin();
+            else await rejoin();
           },
           onContact: (c) => {
-            for (const cb of contacts) cb(c);
+            contact = c;
+            for (const cb of contacts) cb({ ...contact });
           },
         },
         async (event) => {
@@ -606,6 +624,7 @@ export async function startAsset(
     },
     onContact(cb) {
       contacts.add(cb);
+      cb({ ...contact });
       return () => {
         contacts.delete(cb);
       };
@@ -633,12 +652,13 @@ export async function startAsset(
       );
     },
   };
-  session = runAsset(
+  const started = await startLinkedAsset(
     link,
-    { asset_id, after: as_of, last_task_id },
     { ...options, observer: internal(client).options.observer },
     internal(client).emit,
   );
+  if (!started.ok) return started;
+  session = started.value;
   const running = session;
   const unsubscribe = client.onStatus((status) => {
     if (

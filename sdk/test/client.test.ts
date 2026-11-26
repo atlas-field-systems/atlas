@@ -45,6 +45,7 @@ test("a later diagnostic gap counts observer throws and rejections [sdk/docs/log
       return Response.json({
         run_id: 1,
         definitions_hash: protocol.hash,
+        stream_keepalive_s: 2,
         core_version: "test",
         protocol_version: "test",
       });
@@ -66,4 +67,28 @@ test("a later diagnostic gap counts observer throws and rejections [sdk/docs/log
     delivered.filter(event => event.name === "diagnostics.gap").map(event => event.detail.dropped),
     [3],
   );
+});
+
+test("malformed successful handshakes and entity snapshots return invalid_response [sdk/docs/client.md]", async t => {
+  const protocol = await loadPackagedProtocol();
+  let body: unknown = { definitions_hash: protocol.hash };
+  const client = createClient({
+    protocol,
+    credential: { kind: "account" },
+    clock: systemClock,
+    baseUrl: "http://localhost",
+    fetch: async () => Response.json(body),
+  });
+  t.after(() => client.close());
+  const handshake = await client.connect();
+  assert.equal(!handshake.ok && handshake.error, "invalid_response");
+  body = { definitions_hash: protocol.hash, run_id: 1, stream_keepalive_s: 2, core_version: "test", protocol_version: "test" };
+  assert.equal((await client.connect()).ok, true);
+  const snapshot = { as_of: 0, assets: [], observations: [], tracks: [], geofeatures: [] };
+  for (body of [{ ...snapshot, assets: null }, { ...snapshot, observations: [{}] }]) {
+    const result = await client.call("entities");
+    assert.equal(!result.ok && result.error, "invalid_response");
+  }
+  body = snapshot;
+  assert.equal((await client.call("entities")).ok, true);
 });

@@ -302,6 +302,9 @@ scenario({
       }),
     );
     assert.ok(!rejected.ok && rejected.error === "definitions_mismatch");
+    await w.until(() => w.events.some(e => e.kind === "definitions.refused" &&
+      e.record.radio && e.record.definitions_hash === "0".repeat(64)));
+    assert.deepEqual(value(await w.complete(w.admin.call("assets"))).items.map(a => a.asset_id), [radio.asset_id]);
     assert.equal(radio.client.status.phase, "connected");
     value(
       await w.complete(

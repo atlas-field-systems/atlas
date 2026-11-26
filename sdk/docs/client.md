@@ -178,7 +178,7 @@ An accepted answer prevents another answer through that reply.
 A connection binds one `run_id`, the counter Core changes at each Reset.
 After a transport failure, the client checks `/about` before resending. A new
 `run_id` fences every old retry and returns `run_ended` without sending. Call
-`connect()` to bind the new `run_id` after discarding the old state. An invalid response returns `invalid_response`.
+`connect()` to bind the new `run_id` after discarding the old state. The SDK returns `invalid_response` when a successful reply is missing required fields or contains a record that fails Protocol validation.
 
 Gateway and Plugin clients use `holdContact()` while idle. It checks `/about`
 after `heartbeatMs` without a request. Stop its handle when the host ends.

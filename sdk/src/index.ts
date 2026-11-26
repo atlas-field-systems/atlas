@@ -26,7 +26,7 @@ export type {
   FinishFields,
   Queue,
 } from "./queue.ts";
-export { defaultLinkLossAfterS, runAsset, startAsset } from "./asset.ts";
+export { defaultLinkLossAfterS, runAsset, startLinkedAsset, startAsset } from "./asset.ts";
 export type {
   LinkResult,
   LinkFailure,
