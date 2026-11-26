@@ -1,10 +1,10 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Design decisions</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="decision-log.html">Decision log</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html" class="on">Design decisions</a><a href="experimental.html">Experimental ideas</a></nav><main><h1 id="design-decisions">Design decisions</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html" class="on">Design decisions</a></nav><main><h1 id="design-decisions">Design decisions</h1>
 <p>Project-wide choices that every Atlas part follows.</p>
 <p>Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in <a href="CHARTER.html#keep-judgment-sharp">Keep judgment sharp</a>.</p>
-<p>The owner&#39;s dated product decisions are in the <a href="decision-log.html">decision log</a>,
-which wins over this page.</p>
+<p>The owner&#39;s dated product decisions are the accepted <a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md">ADRs</a>,
+which win over this page.</p>
 <h2 id="two-layers-of-documentation">Two layers of documentation</h2>
 <p>Each part has short pages a person can read, backed by exact definitions,
 examples, and tests. The pages explain. The definitions, examples, and tests
@@ -185,10 +185,10 @@ version, with no separate version counter.</li>
 use. A mismatch is refused with an explanation.</li>
 <li>Protocol stays unpublished during the first development run. Other parts use
 it from this repository; it will be public later
-(<a href="decision-log.html#build-and-test">decision log</a>).</li>
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/decision-log.md#build-and-test">decision log</a>).</li>
 <li>Any change to Protocol files, wording included, is a new version. Wording
 fixes wait for the next real release, and every part updates together
-(<a href="decision-log.html#build-and-test">decision log</a>).</li>
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/adr/0001-any-change-to-protocol-is-a-new-version.md">Protocol ADR-0001</a>).</li>
 <li>Once published, programs select Protocol through their package dependency.</li>
 <li>All Atlas work lands in this repository through <code>main</code>. Only approved commits
 on <code>main</code> are released through <code>prod</code>.</li>
