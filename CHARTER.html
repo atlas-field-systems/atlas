@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>The Atlas charter</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
 <p>Atlas helps operators understand field systems, request work, and retain evidence.
 Read the <a href="environment.html">operating environment</a> before designing a subsystem.</p>
 <h2 id="everything-is-a-draft">Everything is a draft</h2>
@@ -18,22 +18,40 @@ Use short user stories and visible data flows to expose mismatches with intended
 Describe and review the intended user-visible flow before implementing it.
 Keep unresolved product decisions visible in the owning subsystem&#39;s documentation.
 Put a consequential restriction in its owning system&#39;s story before adopting it.</p>
+<p>Each part has two layers of documentation. Short pages a person can read
+explain it. Exact definitions, examples, and tests make it precise, and they
+keep AI agents from drifting.</p>
+<h2 id="keep-designs-proven-and-lean">Keep designs proven and lean</h2>
+<p>Prefer proven existing systems over building our own. Keep each design lean and
+minimal: give a part only what the product needs.</p>
+<p>Do not tie Atlas to one vendor, link, library or communication pattern. Keep
+patterns flexible (push, ask, repeat, one link or many) so a part can change
+without reworking the rest.</p>
+<p>Generate code where it is a good idea, judged case by case.</p>
 <h2 id="keep-the-systems-replaceable">Keep the systems replaceable</h2>
-<p>Atlas is a walled city. Core and Fusion sit inside the inner wall. Plugins sit
-in the second ring and reach Core only through its Plugin interface. Gateways,
-Assets, and operator applications sit outside the city and reach Core only
-through the public Core API. <a href="design-decisions.html#a-walled-city">Design decisions</a>
-has the layout.</p>
-<p>Inside Core, <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md">pillars</a>
+<p>Atlas is a <a href="using-atlas.html#the-walled-city">walled city</a>, laid out in rings so
+each can change without breaking the others. Inside Core,
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md">pillars</a>
 such as Entities, Tasks, and Objects keep interfaces small enough to rebuild one
-without rebuilding Atlas.</p>
-<p>Core retains the shared picture and requests for work. Separate projects provide
-vehicle control, field links, map rendering, and operator applications.
-The <a href="using-atlas.html">system overview</a> shows how those parts fit together.</p>
+without rebuilding Atlas. <a href="using-atlas.html">Using Atlas</a> shows what each part does.</p>
+<p>Keep each decision with the part that has the authoritative information. Core
+checks requests before they cross a field link, using Protocol&#39;s validator.
+Assets own current equipment checks, execution, and local failsafes. Gateways
+and their Fieldlinks supply field-link mechanics. This keeps decisions local and
+avoids unneeded exchanges over constrained links.
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/requests.md">Core request admission</a>
+and <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md">Asset behavior</a>
+own the details.</p>
+<p>The SDK, gateways, and Fieldlinks carry requests, reports, and contact. The Asset
+app owns motion and failsafes. No other component controls flight.</p>
 <h2 id="keep-evidence-honest">Keep evidence honest</h2>
-<p>An accepted request and an observed result are different facts.
-Receiving a report does not prove fresh measurements or two-way contact.
-Each subsystem defines how it represents that evidence.</p>
+<p>An accepted request and an observed result are different facts. Asset reports
+are the observed outcome, not the same fact as acceptance. Receiving a report
+does not prove fresh measurements or two-way contact. Preserve uncertainty when
+the outcome is not known. Each subsystem defines how it represents that evidence.</p>
+<p>State guarantees together with their assumptions and recovery boundaries. Make
+retries safe so a repeated request never repeats an effect. Exact rules belong
+in the Core API and Fieldlink docs.</p>
 <h2 id="keep-shared-data-simple">Keep shared data simple</h2>
 <p>The owner decides Atlas&#39;s data formats and data structures. Protocol follows them and adds the exact fields.</p>
 <ul>
@@ -44,20 +62,27 @@ the component that uses them; they are not Protocol contracts.</li>
 <li>Each record has one time for the whole record. Mixed times are rare and need
 their own case. Records about one Asset carry <code>asset_id</code>. Where it matters, a
 record has a field for who requested or reported it.</li>
-<li>Times are in milliseconds. Only specialized radio data uses nanosecond timing.</li>
+<li>Times are in milliseconds.</li>
 <li>Counters are ordinary numbers, not long numbers written as text.</li>
 <li>IDs that people read or that cross a field link are 1 to 4 letters or digits.
 Event IDs are integers. Assets choose <code>observation_id</code>; Core assigns the
 others, <code>asset_id</code> included (<a href="runs-and-identity.html#ids">Runs and identity</a>).</li>
+<li>Records never carry credentials.</li>
+<li>Protocol&#39;s package version is its only version
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/laws.md">law 14</a>).
+Never silently reinterpret unsupported records or conceal incompatible
+behavior. Do not invent record fields for attribution or routing that Core or
+a gateway already owns.</li>
 </ul>
 <h2 id="document-ownership">Document ownership</h2>
 <ul>
 <li>This charter owns Atlas&#39;s purpose, operating context, project-wide principles,
 and end-to-end usage examples.</li>
 <li>Subsystem documentation owns its behavior, failure cases, and planning decisions.</li>
-<li>Protocol owns the exact shared records and their validator within the charter&#39;s
-<a href="#keep-shared-data-simple">shared data rules</a>. Core owns the Core API and
-server mechanisms. The SDK owns the client for that API.
+<li>Protocol owns the exact shared records and the one validator within the charter&#39;s
+<a href="#keep-shared-data-simple">shared data rules</a>. No program builds a second
+validator. Core owns the Core API, the business rules, and server mechanisms.
+The SDK owns the client for that API.
 <a href="https://github.com/atlas-field-systems/atlas/tree/main/gateway">Gateway</a>
 owns the gateway app, and
 <a href="https://github.com/atlas-field-systems/atlas/tree/main/fieldlink">Fieldlink</a>
@@ -67,7 +92,9 @@ owns how an Asset behaves, and
 <a href="https://github.com/atlas-field-systems/atlas/tree/main/command-interface">Command Interface</a>
 owns how the operator application works.
 <a href="https://github.com/atlas-field-systems/atlas/tree/main/simulations">Simulations</a>
-owns the end-to-end simulations that test the parts together. Other
+owns the end-to-end simulations that test the parts together.
+<a href="https://github.com/atlas-field-systems/atlas/tree/main/tools">Atlas Tools</a>
+owns ready setups for equipment, built from the other parts. Other
 components own their runtime details.</li>
 </ul>
 <p>Keep each rule with its owner and link to it from other documents.
@@ -76,7 +103,7 @@ and resolve it explicitly. Neither document silently overrides the other.
 Intended behavior is not proof of implementation.</p>
 <h2 id="keep-judgment-sharp">Keep judgment sharp</h2>
 <p>Coding agents uphold these fundamentals before changing Atlas. Subsystem AGENTS.md
-files point here. Architecture detail lives in <a href="design-decisions.html">design-decisions.md</a>.</p>
+files point here.</p>
 <p>Fix the real hole. Adding a new concept, field, or mechanism to paper over a bug is
 a design problem. Prefer deleting the wrong thing over layering a new one.</p>
 <p>Name important domain distinctions early so first flight does not conflate them
@@ -85,43 +112,28 @@ concrete story, consumer, or prototype establishes what the contract needs. Comm
 an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.</p>
-<p>Protocol&#39;s published package version is its only version. Definitions and records
-carry no protocol version. Package dependencies select the definitions a program
-uses. The Core API and each Fieldlink report the hash of the definitions they use,
-and a mismatch is refused with an explanation. Never silently reinterpret
-unsupported records or conceal incompatible behavior. Do not invent record fields
-for attribution or routing that Core or a gateway already owns.</p>
-<p>Protocol is the spec and owns the one validator. Core implements the Core API and
-keeps the business rules. The SDK is the client for that API, and gateways run
-Fieldlinks. No program builds a second validator.
-See <a href="design-decisions.html">design-decisions.md</a>.</p>
 <p>An accepted <a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md">ADR</a> beats every other page. How-it-works docs,
 laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose, in a pull request the owner approves; do not
 quietly diverge in code.</p>
-<p>Accepted acknowledgment and observed Asset outcomes are different facts. Asset
-reports are the observed outcome under the contract, not the same fact as
-acceptance. Preserve uncertainty when the outcome is not known — see
-<a href="#keep-evidence-honest">Keep evidence honest</a>. State guarantees together with
-their assumptions and recovery boundaries. Make retries safe so a
-repeated request never repeats an effect. Exact rules belong in the Core API and
-Fieldlink docs.</p>
-<p>The SDK, gateways, and Fieldlinks carry requests, reports, and contact. The Asset
-app owns motion and failsafes. No other component controls flight.</p>
 <p>Core, gateways, Assets, and the libraries they use provide detailed diagnostic
 logging from the start. Each program collects its own events and its libraries&#39;
-events for its run archive. Their owning docs define logging and configurable
-options; Protocol defines shared data, not a runtime logging service.</p>
-<p>Stress undecided ideas with small prototypes and write findings back into the docs.
-The docs stay the source.</p>
-<p>Every coding agent reads and upholds this charter and
-<a href="design-decisions.html">design-decisions.md</a>. The Charter is the <strong>review standard</strong>.
+events for its run archive. Logging never blocks equipment control or request
+handling, and every gap is listed in the archive. Their owning docs define
+logging and configurable options; Protocol defines shared data, not a runtime
+logging service.</p>
+<p>Build small prototypes early to stress undecided ideas and sanity-test the
+docs. Write what they find back into the spec and the owning docs. A prototype
+proves nothing on its own; the docs stay the source.</p>
+<p>Every coding agent reads and upholds this charter. The Charter is the <strong>review standard</strong>.
 Reading or quoting it does not prove a change meets it. A change should make clear
 what problem it solves, why this is the simplest credible fix, and what evidence
 supports the claim.</p>
 <h2 id="test-what-matters">Test what matters</h2>
 <p>Tests exist to catch bugs. Count the bugs a test could catch, not the tests
 written. AI agents write most of Atlas&#39;s code, and they overproduce tests that
-check nothing, so these rules guard against that first.</p>
+check nothing, so these rules guard against that first.
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0019-simulations-prove-atlas-works-and-deep-modules-get-focused-tests.md">ADR-0019</a>
+records the owner&#39;s decision.</p>
 <ul>
 <li><strong>The docs are the answer key.</strong> A test checks a rule that a page states, and
 names that page. Expected results come from the docs, ArduPilot SITL, and
@@ -129,15 +141,16 @@ hardware. They never come from running the code under test, and tests are
 never generated from Protocol&#39;s definitions: a system and its tests made
 from the same source agree even when both are wrong. Protocol&#39;s examples test
 only record shapes and the validator.</li>
-<li><strong>Simulations are the main tests.</strong> Most testing runs the real parts
-together, through their public interfaces, in
+<li><strong>Simulations prove Atlas works.</strong> Behavior that crosses parts is tested by
+running the real parts together, through their public interfaces, in
 <a href="https://github.com/atlas-field-systems/atlas/tree/main/simulations">Simulations</a>.
 Every run can be repeated and leaves a record someone can check again.</li>
-<li><strong>Few other tests, each at a contract.</strong> A part keeps its own tests only for
-a contract a simulation checks poorly, such as Protocol&#39;s validator, storage
-and recovery, credentials, or a rule with many cases like Task ordering. They
-go through the part&#39;s public interface. Before adding one, say what behavior
-it protects, what realistic bug would make it fail, and why no existing test
+<li><strong>Focused tests for deep modules.</strong> Dense logic inside one part, such as
+failsafe rules, the Task queue, Protocol&#39;s validator, or storage and
+recovery, may have focused tests at that module&#39;s own interface, never its
+internals. Prefer deep modules, a small interface over a lot of behavior, so
+that logic is easy to test this way. Before adding one, say what behavior it
+protects, what realistic bug would make it fail, and why no existing test
 already catches that bug.</li>
 <li><strong>No tautological tests.</strong> A test that repeats the code back to itself is
 deleted. That includes comparing a value with itself, searching source text,
@@ -148,7 +161,7 @@ shipped program also passes in, such as its clock, is not such a hook.</li>
 <li><strong>The failing test comes first.</strong> Every failure is first reproduced by a
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#every-failure-becomes-a-test">test that fails</a>
 for the right reason: a simulation when the failure crosses parts, or a test
-at one part&#39;s contract when it stays inside it. The fix makes it pass, and it
+at the interface of the module it stays inside. The fix makes it pass, and it
 stays. One test per bug, not one at every layer the bug passed through.</li>
 <li><strong>Protect the check.</strong> A change that fixes code never weakens the test that
 checks it. A test&#39;s expected result changes only after its page changes, in a
@@ -167,8 +180,7 @@ about real flight or radios.</li>
 <h2 id="change-atlas-deliberately">Change Atlas deliberately</h2>
 <p>The owner approves behavior and scope. Engineers choose conforming details.
 Keep selected decisions, proposals, and open questions distinct in subsystem docs.
-Coding agents and their subagents follow this charter and
-<a href="design-decisions.html">design-decisions.md</a>. When evidence shows an approved
+Coding agents and their subagents follow this charter. When evidence shows an approved
 assumption is wrong, the agent explains the mismatch and proposes the smallest
 correction; the owner still decides. Generated output, reviews, and
 historical specifications do not approve changes and do not override this charter.</p>

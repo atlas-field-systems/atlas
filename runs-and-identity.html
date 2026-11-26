@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Runs and identity</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html" class="on">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a><a href="design-decisions.html">Design decisions</a></nav><main><h1 id="runs-and-identity">Runs and identity</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html" class="on">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="runs-and-identity">Runs and identity</h1>
 <p>What a run is, what Reset does, what carries over, and how Assets get and keep
 their IDs. This page owns those rules. The <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#asset-and-gateway-calls">Core API</a>
 has the calls behind them, <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Core Reset</a> the ZIP, and
@@ -125,8 +125,7 @@ registers it as a new Asset with a new ID.</li>
 <li><strong>One gateway for each network.</strong> Each radio network has one gateway, and a
 Core may run several networks (<a href="scale.html#setup">Scale</a>). On a mesh
 Fieldlink, Assets talk to each other and to their network&#39;s gateway, and
-every radio Asset on the network rides on it; the
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md">SiK Fieldlink</a> carries one drone.
+every radio Asset on the network rides on it.
 No Asset uses two gateways. Two gateways in one network, and moving a
 radio Asset to another gateway while it keeps its ID, are out of scope.</li>
 </ul>
