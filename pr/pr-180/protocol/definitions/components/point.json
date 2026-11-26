@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/point.json",
+  "title": "point",
+  "description": "A place on the ground plan: latitude and longitude only. Used for the corners of an area.",
+  "type": "object",
+  "required": [
+    "latitude",
+    "longitude"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "latitude": {
+      "$ref": "../variables/latitude.json"
+    },
+    "longitude": {
+      "$ref": "../variables/longitude.json"
+    }
+  },
+  "examples": [
+    {
+      "latitude": 42.2761,
+      "longitude": -71.8031
+    }
+  ]
+}
