@@ -128,10 +128,13 @@ scenario({
   },
 });
 
-for (const threshold of [6, 7, 8]) scenario({
-  name: `Asset startup compares link-loss ${threshold}s with Core keepalive 7s`,
+for (const [threshold, keepalive, admitted] of [
+  [6, 7, false], [7, 7, false], [8, 7, true],
+  [undefined, 45, false], [undefined, 30, false], [undefined, 20, true],
+] as const) scenario({
+  name: `Asset startup compares link-loss ${threshold ?? "default"} with Core keepalive ${keepalive}s`,
   checks: ["core/docs/api.md#contact"],
-  config: { stream_keepalive_s: 7 },
+  config: { stream_keepalive_s: keepalive },
   async run(w) {
     const key = value(await w.complete(w.admin.call("createAssetKey")));
     assert.ok("key" in key);
@@ -144,9 +147,9 @@ for (const threshold of [6, 7, 8]) scenario({
       .then(app => ({ app }), error => ({ error })));
     if ("app" in result) {
       await w.complete(result.app.stop());
-      assert.ok(threshold > 7, "startup must refuse a threshold at or below Core keepalive");
+      assert.ok(admitted, "startup must refuse a threshold at or below Core keepalive");
     } else {
-      assert.ok(threshold <= 7);
+      assert.ok(!admitted);
       assert.match(String(result.error), /link_loss_after_s.*stream_keepalive_s/);
     }
   },

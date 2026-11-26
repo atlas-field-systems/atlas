@@ -849,6 +849,22 @@ for (const path of [[25, 4], [4]] as const)
     assert.equal(state.execution?.rule?.rule_id, "CB");
   });
 
+test("docs/failsafes.md: losing contact during a critical landing keeps the landing active", async () => {
+  const { config, state } = await setup();
+  state.settings.home_position = { latitude: 2, longitude: 2 };
+  state.settings.link_loss_after_s = 1;
+  state.settings.failsafe_policy = [
+    { rule_id: "LINK", priority: 90, conditions: [{ kind: "contact_lost" }], response: { kind: "return_to_home" } },
+    { rule_id: "CB", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 5, critical: true }], response: { kind: "land" } },
+  ];
+  state.measurements.battery = { value: 4, source: "vehicle", time: 0 };
+  const landing = reduce(state, { kind: "tick", now: 0, hasWork: false }, config);
+  assert.ok(landing.effects.some(e => e.kind === "response" && e.rule?.rule_id === "CB" && e.status === "active"));
+  const lostContact = reduce(landing.state, { kind: "tick", now: 1000, hasWork: false }, config);
+  assert.equal(lostContact.state.execution?.rule?.rule_id, "CB");
+  assert.ok(!lostContact.effects.some(e => e.kind === "response" || e.kind === "vehicle"));
+});
+
 test("docs/failsafes.md: the operator's Fail-safe replaces an unconfirmed stop, but not a flight-controller takeover", async () => {
   const { config, state: start } = await setup();
   start.settings.home_position = { latitude: 2, longitude: 2 };

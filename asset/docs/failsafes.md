@@ -157,8 +157,8 @@ nothing.
 
 Each rule requires all its conditions to hold. Alternative combinations are
 separate rules, with an explicit priority order, and the highest-priority
-matching rule selects the response. Battery rules are configured like the rest;
-none has an implicit priority.
+matching rule selects the response, subject to the
+[critical battery rule](#an-override-with-hold-or-pause-re-arms-protection).
 
 Conditions can include:
 
@@ -211,10 +211,11 @@ and its start time name it; the built-in safe action has no rule. The Asset
 reports its state in a failsafe report, starting
 with the response it runs and what set it off.
 
-A rule fires when its conditions start to hold. While a response runs, only a
-higher-priority rule interrupts it: the Asset reports the interrupted Task
-`cancelled` and starts the new rule's response. An equal- or lower-priority
-rule that fires then starts nothing. When neither a response nor an operator
+A rule fires when its conditions start to hold. Critical battery rules take
+precedence over non-critical rules when choosing or interrupting a response.
+Within either group, a rule needs higher priority to interrupt. The Asset
+reports the interrupted Task `cancelled` and starts the new response. When
+neither a response nor an operator
 override is running, the next rule that fires starts its response. During an
 override, only the rules that
 [an override re-arms](#an-override-with-hold-or-pause-re-arms-protection) act.

@@ -1,4 +1,4 @@
-import type { Task, QueueRequest } from "@atlas/sdk";
+import { defaultLinkLossAfterS, type Task, type QueueRequest } from "@atlas/sdk";
 import type {
   ComponentsSettings,
   ComponentsFailsafeRule,
@@ -21,8 +21,11 @@ import {
 import { fresh, type Measurements, type VehicleCommand } from "./vehicle.ts";
 const isCritical = (rule: ComponentsFailsafeRule) =>
   rule.conditions.some((c) => c.kind === "battery_below" && c.critical);
-// Protocol's documented default for the link_loss_after_s setting.
-const LINK_LOSS_AFTER_S_DEFAULT = 30;
+function compareRulePriority(a: ComponentsFailsafeRule, b: ComponentsFailsafeRule) {
+  const critical = isCritical(a);
+  if (critical !== isCritical(b)) return critical ? 1 : -1;
+  return a.priority - b.priority;
+}
 type Work = {
   execution: Execution;
   pausedAt: number | null;
@@ -282,7 +285,7 @@ export function reduce(
         case "contact_lost":
           holds = (
             now - state.lastHeard >=
-            (state.settings.link_loss_after_s ?? LINK_LOSS_AFTER_S_DEFAULT) * 1000
+            (state.settings.link_loss_after_s ?? defaultLinkLossAfterS) * 1000
           );
           break;
         case "idle":
@@ -597,28 +600,13 @@ export function reduce(
           state.rules[r.rule_id]!.holds = holds;
           return holds;
         })
-        .sort((a, b) => b.priority - a.priority);
-      const held =
-        state.override === "rearm" || state.override === "pause";
-      // A critical battery rule acts whatever its priority: at once during Hold
-      // or pause, and over any non-critical response when it starts to hold.
-      const critical = matching.find((r) =>
-        isCritical(r) && (held || started.has(r.rule_id)),
-      );
-      const candidate =
-        critical ??
-        matching.find(
-          (r) =>
-            started.has(r.rule_id),
-        );
-      const current = state.execution;
-      const protectedOverride =
-        state.override === "stand";
+        .sort((a, b) => compareRulePriority(b, a));
+      const held = state.override === "rearm" || state.override === "pause";
+      const candidate = matching.find(r => started.has(r.rule_id) || (held && isCritical(r)));
+      const current = state.execution?.rule;
       if (
-        candidate &&
-        !protectedOverride &&
-        (held || !current?.rule || (critical !== undefined && !isCritical(current.rule)) ||
-          candidate.priority > current.rule.priority)
+        candidate && state.override !== "stand" &&
+        (held || !current || compareRulePriority(candidate, current) > 0)
       ) {
         activate(candidate.response, candidate, now);
       }
