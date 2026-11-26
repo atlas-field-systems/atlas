@@ -1,7 +1,7 @@
 # Build order after the first version
 
 The owner decided this order on 2026-11-14
-([decision log](archive/decision-log.md#build-and-test)). The numbered steps are the
+([decision log](https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/decision-log.md#build-and-test)). The numbered steps are the
 working plan for carrying it out.
 
 Protocol, Core, and the SDK, with their simulations, form the built first version.
