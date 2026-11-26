@@ -34,7 +34,7 @@ const schemas = Object.fromEntries(await Promise.all(files.map(async file => [
 const properties = Object.fromEntries([...protocolNames(files)]
   .map(([name, file]) => [name, { $ref: `#/$defs/${keys.get(file)}` }])
   .sort(([a], [b]) => a.localeCompare(b, 'en')));
-const declaration = await compile({
+const records = await compile({
   type: 'object', properties, required: Object.keys(properties), additionalProperties: false, $defs: schemas,
 }, 'ProtocolTypes', {
   bannerComment: '/* Generated from definitions/. Run npm run types to update. */',
@@ -42,6 +42,9 @@ const declaration = await compile({
   ignoreMinAndMaxItems: true,
   unknownAny: true,
 });
+const eventKinds = Object.entries(index.eventKinds).map(([kind, spec]) =>
+  `  readonly ${JSON.stringify(kind)}: { readonly record: ${JSON.stringify(spec.record)}${spec.many ? '; readonly many: true' : ''} };`);
+const declaration = `${records}\nexport interface EventKinds {\n${eventKinds.join('\n')}\n}\n`;
 if (process.argv.includes('--check')) {
   if (await readFile(output, 'utf8') !== declaration) {
     console.error('types.d.ts is stale. Run npm run types and commit the result.');

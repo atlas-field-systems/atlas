@@ -42,6 +42,10 @@
     },
     "./types": {
       "types": "./types.d.ts"
+    },
+    "./event-kinds": {
+      "types": "./lib/event-kinds.d.ts",
+      "default": "./lib/event-kinds.mjs"
     }
   },
   "version": "0.1.0"

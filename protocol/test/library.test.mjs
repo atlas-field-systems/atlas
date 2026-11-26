@@ -79,3 +79,25 @@ test('README Use the library: an unknown kind is one problem that lists the kind
 test('README Use the library: the definition files must include index.json', async () => {
   await assert.rejects(loadProtocol(new Map()), /index\.json/);
 });
+
+test('a report in a batch reports only problems with its own type', () => {
+  const report = { type: 'report.battery', time: 1, asset_id: 'A1' };
+  assert.deepEqual(protocol.check('requests.reports', { reports: [report] }), {
+    ok: false, problems: [{ path: '/reports/0/battery_percent', message: 'is required' }],
+  });
+  for (const type of ['unknown', undefined]) {
+    const result = protocol.check('requests.reports', { reports: [{ ...report, type }] });
+    assert.deepEqual(result.problems.map((problem) => problem.path), ['/reports/0/type']);
+  }
+});
+
+test('a position carries at most one altitude per reference', () => {
+  const report = { type: 'report.telemetry', time: 1, asset_id: 'A1', position: {
+    latitude: 1, longitude: 1, altitudes: [
+      { altitude_reference: 'launch', altitude_m: 20 }, { altitude_reference: 'launch', altitude_m: 30 },
+    ],
+  } };
+  assert.equal(protocol.check('report.telemetry', report).ok, false);
+  report.position.altitudes[1].altitude_reference = 'msl';
+  assert.equal(protocol.check('report.telemetry', report).ok, true);
+});

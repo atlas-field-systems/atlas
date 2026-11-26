@@ -220,15 +220,12 @@ export async function plugin(
           })(),
     plugin_id: issued.plugin_id,
   });
-  const description: P["plugin.description"] = {
-    type: "plugin.description",
-    time: w.clock.now(),
-    plugin_id: issued.plugin_id,
+  const description: P["requests.plugin_description"] = {
     name: "Survey",
     actions: [{ action: "scan", label: "Scan", inputs: [] }],
   };
   const session = startPlugin(client, { description, onCall });
   w.onClose(() => session.stop());
-  await w.settle();
+  await w.until(() => w.events.some(e => e.kind === "plugin.contact" && e.record.plugin_id === issued.plugin_id && e.record.contact === "online"));
   return { client, session, plugin_id: issued.plugin_id };
 }

@@ -2,12 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/contact_lost.json",
   "title": "contact_lost",
-  "description": "The Asset has lost contact: it has had none for its link_loss_after_s setting.",
+  "description": "The time since the Asset last heard from its link has reached for_s seconds on its own clock.",
   "type": "object",
   "required": [
-    "kind"
+    "kind",
+    "for_s"
   ],
   "properties": {
+    "for_s": {
+      "$ref": "../../variables/for_s.json"
+    },
     "kind": {
       "$ref": "../../variables/kind.json",
       "const": "contact_lost"
@@ -15,7 +19,8 @@
   },
   "examples": [
     {
-      "kind": "contact_lost"
+      "kind": "contact_lost",
+      "for_s": 30
     }
   ]
 }

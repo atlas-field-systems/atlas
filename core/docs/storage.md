@@ -78,6 +78,10 @@ its ZIP failed, until the admin handles it by hand.
 - If an offline transition cannot be stored, the Asset snapshot shows offline
   with `contact_storage_pending: true`. Core retries the write, refuses new
   work for the expired Asset, and clears the flag once the event is committed.
+  During that failure, the whole-picture snapshot includes an opaque
+  `contact_storage_token`. Whole-picture streams carry the same token in a
+  `: contact-storage <token>` keepalive. A changed token, or an ordinary
+  `: alive` after a token, tells the live picture to read a fresh snapshot.
 
 Diagnostic loss counts are durable metadata, kept until the next Reset, in `data_directory/diagnostic-gaps/`.
 Core coalesces loss counts into one asynchronous, atomic ledger writer, separately

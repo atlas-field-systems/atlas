@@ -97,6 +97,15 @@ export async function startHarness(
     dataDir,
     call,
     admin,
+    async openEvents(key: string, after?: number) {
+      const controller = new AbortController();
+      const response = await fetch(core.url + "/events" + (after === undefined ? "" : `?after=${after}`), {
+        headers: { authorization: `Bearer ${key}`, "atlas-definitions": protocol.hash },
+        signal: controller.signal,
+      });
+      if (!response.ok || !response.body) throw new Error(`Opening event stream failed: ${response.status}`);
+      return { body: response.body, stop: () => controller.abort() };
+    },
     async close() {
       await stopCore(core, testClock);
       await rm(dataDir + "-archive", { recursive: true, force: true });

@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import * as objects from "./objects.ts";
-import { refuse, checkOrRefuse } from "../api/errors.ts";
+import { refuse } from "../api/errors.ts";
 import { nextGlobalId, nextRunSeq } from "../store/runs.ts";
 import { encodeShortId } from "../ids.ts";
 import {
+  appendReceivedReport,
   latestReport,
   historyPage,
   dropUnsettled,
@@ -236,25 +238,16 @@ export function removeAsset(
 export function storeReports(
   tx: Tx,
   asset_id: string,
-  reports: unknown[],
+  reports: ProtocolTypes["requests.reports"]["reports"],
 ): { stored: number } {
   requireAsset(tx, asset_id);
   noteHeard(tx, asset_id);
-  for (const [i, value] of reports.entries()) {
-    if (
-      !value ||
-      typeof value !== "object" ||
-      !("type" in value) ||
-      typeof value.type !== "string" ||
-      !reportKinds.includes(value.type as ReportKind)
-    )
-      refuse("invalid", `/reports/${i}/type: unknown report`);
-    const report = checkOrRefuse<Report>(tx.env.protocol, value.type, value);
+  for (const report of reports) {
     if (report.asset_id !== asset_id)
       refuse("forbidden", "Report Asset differs from path");
     const ahead = report.time > tx.now + tx.env.config.clock_ahead_s * 1000;
-    const event_id = tx.append(
-      report.type,
+    const event_id = appendReceivedReport(
+      tx,
       report,
       ahead ? { clock_ahead: true } : undefined,
     );
@@ -481,8 +474,15 @@ export function getGeofeature(
   if (!row) refuse("not_found", "No such geo feature");
   return { as_of: tx.asOf(), item: JSON.parse(row.record) };
 }
+// A storage failure can change visible contact without advancing the event cursor.
+export function contactStorageToken(pending: ReadonlyMap<string, number>): string | undefined {
+  if (!pending.size) return undefined;
+  return createHash("sha256").update(JSON.stringify([...pending])).digest("base64url");
+}
+
 export function picture(tx: ReadTx): {
   as_of: number;
+  contact_storage_token?: string;
   assets: AssetEntry[];
   gateways: Contact[];
   observations: Observation[];
@@ -494,6 +494,7 @@ export function picture(tx: ReadTx): {
     as_of,
     assets: items,
     gateways,
+    contact_storage_token: contactStorageToken(tx.env.pendingOffline),
     observations: listObservations(tx).items,
     tracks: listTracks(tx).items,
     geofeatures: listGeofeatures(tx).items,
@@ -752,8 +753,9 @@ function restart(tx: Tx, asset_id: string): void {
   tasks.dropUnfinished(tx, asset_id);
 }
 export function checkSettings(v: AdmissionView, settings: Settings): void {
-  if (v.gateway_id === null && settings.link_loss_after_s !== undefined && settings.link_loss_after_s <= v.streamKeepaliveS)
-    refuse("invalid_link_loss", "link_loss_after_s must exceed Core stream_keepalive_s");
+  if (v.gateway_id === null && settings.failsafe_policy?.some(rule => rule.conditions.some(
+    condition => condition.kind === "contact_lost" && condition.for_s <= v.streamKeepaliveS,
+  ))) refuse("invalid_link_loss", "contact_lost for_s must exceed Core stream_keepalive_s");
   for (const rule of settings.failsafe_policy ?? [])
     checkCommand(v.description, rule.response);
   for (const key of Object.keys(settings))
@@ -793,10 +795,8 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
     "run_state",
     "lights",
     "landing_gear",
-    "link_loss_after_s",
     "failsafe_policy",
     "home_position",
-    "telemetry_every_s",
   ] as const) {
     const e = latestReport(tx, {
       asset_id: row.asset_id,

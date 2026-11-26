@@ -8,7 +8,7 @@ import { unzipSync, strFromU8 } from "fflate";
 
 import { value } from "../src/world.ts";
 
-import type { FlightContext } from "./fixture.ts";
+import { linkLossSeconds, type FlightContext } from "./fixture.ts";
 
 export async function battery(ctx: FlightContext) {
   value(
@@ -69,7 +69,7 @@ export async function battery(ctx: FlightContext) {
     ctx.cutNextFrame = true;
     await ctx.until(() => ctx.abortedAt !== undefined);
     await delay(
-      ctx.config.initial_settings.link_loss_after_s! * 1000 +
+      linkLossSeconds * 1000 +
         ctx.config.control_tick_s * 2000,
     );
     ctx.linkController = new AbortController();
@@ -177,7 +177,7 @@ export async function battery(ctx: FlightContext) {
   if (ctx.scenario === "link")
     assert.ok(
       response.time >=
-        ctx.abortedAt! + ctx.config.initial_settings.link_loss_after_s! * 1000,
+        ctx.abortedAt! + linkLossSeconds * 1000,
       `LINK started too early at ${response.time - ctx.abortedAt!} ms`,
     );
   console.log(JSON.stringify({ scenario: ctx.scenario, archive }));

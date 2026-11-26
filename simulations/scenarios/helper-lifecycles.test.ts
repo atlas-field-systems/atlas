@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { startAsset, startPlugin, type Reply, type Report } from "@atlas/sdk";
 import { assetApp } from "../src/asset-app.ts";
 import { scenario } from "../src/scenario.ts";
-import { description } from "../src/actors.ts";
+import { description, plugin } from "../src/actors.ts";
 import { value, type World } from "../src/world.ts";
 
 function gate() {
@@ -177,9 +177,6 @@ for (const stage of ["connect", "description"] as const)
       );
       const s = startPlugin(c, {
         description: {
-          type: "plugin.description",
-          time: w.clock.now(),
-          plugin_id: key.plugin_id,
           name: "Survey",
           actions: [{ action: "scan", label: "Scan", inputs: [] }],
         },
@@ -238,9 +235,6 @@ scenario({
     );
     const session = startPlugin(client, {
       description: {
-        type: "plugin.description",
-        time: w.clock.now(),
-        plugin_id: issued.plugin_id,
         name: "Survey",
         actions: [{ action: "scan", label: "Scan", inputs: [] }],
       },
@@ -250,7 +244,7 @@ scenario({
     });
     w.onClose(() => session.stop());
     const p = { client, session, plugin_id: issued.plugin_id };
-    await w.until(() => w.events.some((e) => e.kind === "plugin.described"));
+    await w.until(() => w.events.some((e) => e.kind === "plugin.contact" && e.record.contact === "online"));
     const call = value(
       await w.complete(
         w.admin.call("callPlugin", {
@@ -261,11 +255,8 @@ scenario({
     );
     await w.until(() => !!reply);
     const body = {
-      type: "plugin.result" as const,
-      time: w.clock.now(),
-      plugin_id: p.plugin_id,
     };
-    await assert.rejects(async () => reply!.answer({ ...body, time: -1 }));
+    await assert.rejects(async () => reply!.answer({ ...body, explanation: "" }));
     const refused = await w.complete(
       reply!.answer({ ...body, geofeature_ids: ["G404"] }),
     );
@@ -282,7 +273,6 @@ scenario({
     const unknown = await w.complete(
       reply!.answer({
         ...body,
-        type: "plugin.failure",
         explanation: "Unable to scan",
       }),
     );
@@ -295,7 +285,7 @@ scenario({
       (t) =>
         t.caller === "plugin" &&
         t.path.endsWith("/answers") &&
-        JSON.stringify(t.body).includes("plugin.failure"),
+        JSON.stringify(t.body).includes("Unable to scan"),
     );
     assert.equal(new Set(attempts.map((t) => t.key)).size, 1);
   },
@@ -393,5 +383,24 @@ scenario({
     );
     history.release();
     await w.complete(s.outbox.flush());
+  },
+});
+
+scenario({
+  name: "A throwing Plugin handler settles its call with a fixed failure",
+  checks: ["sdk/docs/client.md#plugins"],
+  async run(w) {
+    const { plugin_id } = await plugin(w, () => { throw new Error("private details"); });
+    const { event_id } = value(await w.complete(w.admin.call("callPlugin", {
+      params: { plugin_id, action: "scan" },
+      body: { inputs: [] },
+    })));
+    await w.until(() => w.events.some(e => e.kind === "plugin.failed"));
+    const result = value(await w.complete(w.admin.call("pluginCall", {
+      params: { plugin_id, event_id },
+    })));
+    assert.equal(result.answer?.kind, "plugin.failed");
+    if (result.answer?.kind === "plugin.failed")
+      assert.equal(result.answer.record.explanation, "The Plugin handler failed.");
   },
 });

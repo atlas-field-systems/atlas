@@ -30,7 +30,7 @@ export type Principal = {
   asset_id: string | null;
   by: string;
   scope: string;
-  heard: Subject | null;
+  heard: Exclude<Subject, { plugin_id: string }> | null;
 };
 
 export function authorize(
@@ -102,10 +102,8 @@ export function authorize(
     heard:
       caller.kind === "gateway"
         ? { gateway_id: caller.gateway_id }
-        : caller.kind === "plugin"
-          ? { plugin_id: caller.plugin_id }
-          : asset_id
-            ? { asset_id }
-            : null,
+        : asset_id
+          ? { asset_id }
+          : null,
   };
 }

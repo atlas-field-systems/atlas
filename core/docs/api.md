@@ -66,7 +66,7 @@ Accounts may call every operator route.
 | `409 definitions_mismatch` | Missing or different definitions hash |
 | `409 asset_offline`, `plugin_offline` | Recipient is offline or unable to take commands |
 | `409 no_critical_battery_rule` | Flying Asset has no critical battery rule |
-| `409 invalid_link_loss` | An Asset link-loss setting does not exceed Core stream keepalive |
+| `409 invalid_link_loss` | A contact-loss condition on an IP Asset has a duration at or below Core stream keepalive |
 | `409 not_supported` | Command, setting, camera, or action is not declared |
 | `409 task_ended`, `call_settled` | Task ended or Plugin call was already answered or dropped |
 | `409 not_a_point`, `not_geotiff` | Place or file cannot serve the requested use |
@@ -195,7 +195,7 @@ incomplete event and resumes after its last fully handled `event_id`.
 
 ## Operator requests
 
-Core refuses an Asset on IP's `link_loss_after_s` settings request at or below its
+Core refuses an Asset on IP's policy when any `contact_lost.for_s` is at or below its
 configured `stream_keepalive_s` with `409 invalid_link_loss`, including a settings
 Task. Radio Assets carried by a gateway are exempt because their Fieldlink
 supplies contact timing.
@@ -455,8 +455,7 @@ keep the last-heard time.
   with its key. Core adds a
   `gateway.contact` event when its view changes.
 - **The Asset's view.** On IP, the Asset is in contact while its stream is open
-  and data or keepalives arrive. It loses contact after its `link_loss_after_s`
-  with neither. Core sends keepalive comments every `stream_keepalive_s`
+  and data or keepalives arrive. Each contact-loss rule measures its own duration since the last contact. Core sends keepalive comments every `stream_keepalive_s`
   ([configuration](../config.md)); the IP Asset loss threshold must exceed that
   interval. Through a Fieldlink, the Fieldlink supplies contact. Contact loss
   is an input to the Asset's [failsafe conditions](../../asset/docs/failsafes.md).
@@ -720,19 +719,10 @@ not call Plugins yet.
 ### A Plugin starts
 
 1. `GET /about` with its key, and compare the definitions hash.
-2. `PUT /plugins/{plugin_id}/description` with its `plugin.description`
-   record: its name and the actions it offers, as
-   [Plugins](../../atlas/plugins.md#actions) describes. Core checks the
-   description with Protocol's validator and refuses an invalid one with
-   `400 invalid`.
-3. On first start, open `/events?after=<event_id from the description answer>`.
-   On reconnect, use the last handled `event_id`. Its stream shows only
-   `plugin.called` events addressed to it.
+2. Send `requests.plugin_description` to `PUT /plugins/{plugin_id}/description` with the name and offered actions. Core assigns the Plugin ID, record type and time, and refuses repeated action names or repeated input names within one action.
+3. Open the addressed `/events` stream. Each connection receives every still-unanswered call for this Plugin, including calls before its cursor, followed by new calls. A replacement stream takes over open calls and ends the previous stream.
 
-A Plugin is online while Core has heard from it within `offline_after_s`
-([configuration](../config.md)). Every call it makes with its key counts; an
-open event stream does not. A Plugin calls `GET /about` often enough to stay
-online, including while it works on a long call.
+A Plugin is online while its addressed call stream is open. Reads and subscriptions to the whole picture do not establish Plugin contact.
 Core adds `plugin.contact` when its view changes, so operators see which Plugins
 they can use.
 
@@ -741,7 +731,7 @@ they can use.
 | Request | Body | Result |
 | --- | --- | --- |
 | `POST /plugins/{plugin_id}/actions/{action}` | `requests.plugin_call`: a value for each of the action's inputs | `202 {event_id}` |
-| `GET /plugins` | | Every Plugin: description, contact, and its unanswered calls, with `as_of` |
+| `GET /plugins` | | Every Plugin: description, contact, `removed`, and its unanswered calls, with `as_of` |
 | `GET /plugins/{plugin_id}/calls?cursor&limit` | | Its calls with their answers, newest first; at most 1000 per page, with `next_cursor` |
 | `GET /plugins/{plugin_id}/calls/{event_id}` | | One call and its answer, if any |
 
@@ -772,16 +762,16 @@ A Plugin supplies `request_id=<call event_id>` on `POST /objects` and
 that Plugin and keeps the creation's call identity. Concurrent calls therefore
 cannot claim each other's output.
 
-`POST /plugins/{plugin_id}/answers` takes one answer record, which names its
+`POST /plugins/{plugin_id}/answers` takes result or failure content. Core assigns the Plugin ID, record type and time. Each answer names its
 call with `request_id`, the call's `event_id`. Every action answers the same
 way:
 
-- **A result** (`plugin.result`): places it lists without storing them (point,
+- **A result** (`requests.plugin_result`): places it lists without storing them (point,
   line, or area; listed imagery is refused with `400 invalid`), short facts,
   and the IDs of the geo features (including imagery) and Objects it created,
   in any mix. An empty result means it found nothing. Core stores it as
   `plugin.result`.
-- **A failure** (`plugin.failure`): an `explanation`, and the IDs of anything
+- **A failure** (`requests.plugin_failure`): an `explanation`, and the IDs of anything
   it had already created. Core stores it as `plugin.failed`.
 - **No partial lists.** Each list in an answer holds at most 1000 items. A
   Plugin with more fails with an explanation, such as "Area too large", so a
@@ -800,7 +790,8 @@ When a Plugin goes offline or an admin removes it, Core ends every call it has
 not answered and adds `plugin.dropped` for each. Its stream skips dropped calls
 when it returns, so no old call runs late. Geo features and Objects it stored
 before it stopped stay, and still name the Plugin in `requested_by`. The call is
-marked not finished, and an operator who still wants it calls again.
+marked not finished, and an operator who still wants it calls again. Removed
+Plugins stay listed with their call history until Reset.
 
 ## Implementation gaps
 

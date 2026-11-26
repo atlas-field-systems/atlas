@@ -13,7 +13,7 @@ scenario({
     const p = await plugin(w, (_call, _reply, id) => {
       calls.push(id);
     });
-    await w.until(() => w.events.some((e) => e.kind === "plugin.described"));
+    await w.until(() => w.events.some((e) => e.kind === "plugin.contact" && e.record.contact === "online"));
     const params = { plugin_id: p.plugin_id, action: "scan" };
     const first = value(
       await w.complete(
@@ -22,9 +22,6 @@ scenario({
     );
     await w.until(() => calls.length === 1);
     const body = {
-      type: "plugin.result" as const,
-      time: w.clock.now(),
-      plugin_id: p.plugin_id,
       request_id: first.event_id,
     };
     value(await w.complete(p.client.call("answerPlugin", { params, body })));

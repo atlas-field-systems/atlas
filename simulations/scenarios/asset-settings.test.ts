@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -7,7 +8,7 @@ import { value, type World } from "../src/world.ts";
 import { assetApp, type SimulatedAssetApp } from "../src/asset-app.ts";
 
 const settingsReported = (w: World, change: object) =>
-  w.events.filter(e => e.kind === "report.settings" && Object.entries(change).every(([k, v]) => Reflect.get(e.record.settings, k) === v)).length;
+  w.events.filter(e => e.kind === "report.settings" && Object.entries(change).every(([k, v]) => isDeepStrictEqual(Reflect.get(e.record.settings, k), v))).length;
 
 async function runSettingsTask(w: World, app: SimulatedAssetApp, change: object) {
   await w.advance(1000);
@@ -17,7 +18,7 @@ async function runSettingsTask(w: World, app: SimulatedAssetApp, change: object)
   assert.equal(settingsReported(w, change), 1);
 }
 
-for (const change of [{ link_loss_after_s: 25 }, { run_state: "paused" as const }])
+for (const change of [{ home_position: { latitude: 25, longitude: 1 } }, { run_state: "paused" as const }])
   scenario({
     name: `queued settings Task reports ${JSON.stringify(change)} to Core`,
     checks: ["asset/docs/logging.md#record-decisions-and-observed-equipment-behavior"],
@@ -68,13 +69,13 @@ scenario({
 });
 
 scenario({
-  name: `settings-only Asset executes queued settings Task and reports {"link_loss_after_s":25} to Core`,
+  name: `settings-only Asset executes queued settings Task and reports its new home to Core`,
   checks: ["asset/docs/logging.md#record-decisions-and-observed-equipment-behavior"],
   async run(w) {
     const app = await assetApp(w, { name: "app", config: {
-      description: { commands: [], reports: ["settings", "status"], settings: ["link_loss_after_s"] },
-      initial_settings: { link_loss_after_s: 12 },
+      description: { commands: [], reports: ["settings", "status"], settings: ["home_position"] },
+      initial_settings: { home_position: { latitude: 12, longitude: 1 } },
     } });
-    await runSettingsTask(w, app, { link_loss_after_s: 25 });
+    await runSettingsTask(w, app, { home_position: { latitude: 25, longitude: 1 } });
   },
 });

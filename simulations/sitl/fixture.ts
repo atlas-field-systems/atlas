@@ -46,6 +46,8 @@ async function equipmentPorts() {
   );
   return ports;
 }
+export const linkLossSeconds = 12;
+
 export async function flightFixture(t: TestContext, scenario: Scenario) {
   const cleanup: Array<() => unknown | Promise<unknown>> = [];
   t.after(() => closeAll(cleanup));
@@ -425,11 +427,10 @@ export async function flightFixture(t: TestContext, scenario: Scenario) {
       response: { kind: "land" },
     });
   if (scenario === "link") {
-    config.initial_settings.link_loss_after_s = 12;
     config.initial_settings.failsafe_policy!.push({
       rule_id: "LINK",
       priority: 50,
-      conditions: [{ kind: "contact_lost" }, { kind: "airborne" }],
+      conditions: [{ kind: "contact_lost", for_s: linkLossSeconds }, { kind: "airborne" }],
       response: { kind: "land" },
     });
   }

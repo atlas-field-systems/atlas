@@ -35,7 +35,7 @@ scenario({
       ),
     );
     const p = await plugin(w, () => {});
-    await w.until(() => w.events.some((e) => e.kind === "plugin.described"));
+    await w.until(() => w.events.some((e) => e.kind === "plugin.contact" && e.record.contact === "online"));
     const call = value(
       await w.complete(
         w.admin.call("callPlugin", {

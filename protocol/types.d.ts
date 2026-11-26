@@ -30,14 +30,7 @@ export type VariablesEntityType =
 export type VariablesReport = "status" | "failsafe" | "telemetry" | "battery" | "settings" | "observation" | "gimbal";
 export type VariablesCommand =
   "takeoff" | "move_to" | "land" | "return_to_home" | "hold" | "point_at" | "failsafe" | "capture";
-export type VariablesSetting =
-  | "run_state"
-  | "lights"
-  | "landing_gear"
-  | "link_loss_after_s"
-  | "failsafe_policy"
-  | "home_position"
-  | "telemetry_every_s";
+export type VariablesSetting = "run_state" | "lights" | "landing_gear" | "failsafe_policy" | "home_position";
 export type VariablesSubsystemId = string;
 export type VariablesLabel = string;
 export type VariablesCameraId = string;
@@ -207,7 +200,6 @@ export type VariablesRangeUncertaintyM = number;
 export type VariablesRunState = "paused" | "running";
 export type VariablesLights = "on" | "off";
 export type VariablesLandingGear = "up" | "down";
-export type VariablesLinkLossAfterS = number;
 export type VariablesPriority = number;
 export type ComponentsFailsafeCondition = {
   kind: VariablesKind;
@@ -220,10 +212,9 @@ export type ComponentsFailsafeCondition1 =
   | ComponentsFailsafeConditionOutsideArea
   | ComponentsFailsafeConditionSubsystem
   | ComponentsFailsafeConditionCommanded;
-export type VariablesCritical = boolean;
 export type VariablesForS = number;
+export type VariablesCritical = boolean;
 export type VariablesMarginM = number;
-export type VariablesTelemetryEveryS = number;
 export type RecordsReportStatus = {
   type: "report.status";
   time: VariablesTime;
@@ -329,6 +320,9 @@ export interface ProtocolTypes {
   "requests.geofeature": RequestsGeofeature;
   "requests.login": RequestsLogin;
   "requests.plugin_call": RequestsPluginCall;
+  "requests.plugin_description": RequestsPluginDescription;
+  "requests.plugin_failure": RequestsPluginFailure;
+  "requests.plugin_result": RequestsPluginResult;
   "requests.radio": RequestsRadio;
   "requests.reports": RequestsReports;
   "requests.settings": RequestsSettings;
@@ -635,14 +629,12 @@ export interface ComponentsSettings {
   run_state?: VariablesRunState;
   lights?: VariablesLights;
   landing_gear?: VariablesLandingGear;
-  link_loss_after_s?: VariablesLinkLossAfterS;
   /**
    * @minItems 0
    * @maxItems 16
    */
   failsafe_policy?: ComponentsFailsafeRule[];
   home_position?: ComponentsPosition;
-  telemetry_every_s?: VariablesTelemetryEveryS;
 }
 export interface ComponentsFailsafeRule {
   rule_id: VariablesRuleId;
@@ -655,6 +647,7 @@ export interface ComponentsFailsafeRule {
   response: ComponentsFailsafeResponse;
 }
 export interface ComponentsFailsafeConditionContactLost {
+  for_s: VariablesForS;
   kind: "contact_lost";
 }
 export interface ComponentsFailsafeConditionBatteryBelow {
@@ -753,6 +746,51 @@ export interface RequestsPluginCall {
    */
   inputs: ComponentsInputValue[];
 }
+export interface RequestsPluginDescription {
+  name: VariablesName;
+  /**
+   * @minItems 1
+   * @maxItems 16
+   */
+  actions: ComponentsPluginAction[];
+}
+export interface RequestsPluginFailure {
+  request_id: VariablesRequestId;
+  explanation: VariablesExplanation;
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  geofeature_ids?: VariablesGeofeatureId[];
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  object_ids?: VariablesObjectId[];
+}
+export interface RequestsPluginResult {
+  request_id: VariablesRequestId;
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  places?: RequestsGeofeature[];
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  facts?: ComponentsFact[];
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  geofeature_ids?: VariablesGeofeatureId[];
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  object_ids?: VariablesObjectId[];
+}
 export interface RequestsRadio {
   definitions_hash: VariablesDefinitionsHash;
 }
@@ -795,4 +833,44 @@ export interface RecordsTrack {
 export interface ComponentsSource {
   asset_id: VariablesAssetId;
   observation_id: VariablesObservationId;
+}
+
+export interface EventKinds {
+  readonly "asset.registered": { readonly record: "registration" };
+  readonly "asset.removed": { readonly record: "registration" };
+  readonly "asset.described": { readonly record: "description" };
+  readonly "asset.contact": { readonly record: "contact" };
+  readonly "gateway.provisioned": { readonly record: "provisioning" };
+  readonly "gateway.removed": { readonly record: "provisioning" };
+  readonly "gateway.contact": { readonly record: "contact" };
+  readonly "plugin.provisioned": { readonly record: "provisioning" };
+  readonly "plugin.removed": { readonly record: "provisioning" };
+  readonly "plugin.described": { readonly record: "plugin.description" };
+  readonly "plugin.contact": { readonly record: "contact" };
+  readonly "plugin.called": { readonly record: "plugin.call" };
+  readonly "plugin.result": { readonly record: "plugin.result" };
+  readonly "plugin.failed": { readonly record: "plugin.failure" };
+  readonly "plugin.dropped": { readonly record: "drop" };
+  readonly "object.stored": { readonly record: "object" };
+  readonly "object.changed": { readonly record: "object" };
+  readonly "object.deleted": { readonly record: "deletion" };
+  readonly "definitions.refused": { readonly record: "refusal" };
+  readonly "tasks.requested": { readonly record: "task"; readonly many: true };
+  readonly "tasks.updated": { readonly record: "task"; readonly many: true };
+  readonly "settings.requested": { readonly record: "settings_change" };
+  readonly "cancel.requested": { readonly record: "cancel" };
+  readonly "task.dropped": { readonly record: "drop" };
+  readonly "request.dropped": { readonly record: "drop" };
+  readonly "report.status": { readonly record: "report.status" };
+  readonly "report.failsafe": { readonly record: "report.failsafe" };
+  readonly "report.telemetry": { readonly record: "report.telemetry" };
+  readonly "report.battery": { readonly record: "report.battery" };
+  readonly "report.gimbal": { readonly record: "report.gimbal" };
+  readonly "report.settings": { readonly record: "report.settings" };
+  readonly "report.observation": { readonly record: "report.observation" };
+  readonly "track.updated": { readonly record: "track" };
+  readonly "track.removed": { readonly record: "track" };
+  readonly "geofeature.created": { readonly record: "geofeature" };
+  readonly "geofeature.replaced": { readonly record: "geofeature" };
+  readonly "geofeature.deleted": { readonly record: "geofeature" };
 }

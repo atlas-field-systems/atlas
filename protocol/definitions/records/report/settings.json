@@ -36,8 +36,7 @@
       "asset_id": "A1",
       "settings": {
         "lights": "on",
-        "landing_gear": "down",
-        "telemetry_every_s": 1
+        "landing_gear": "down"
       }
     },
     {

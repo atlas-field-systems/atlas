@@ -488,13 +488,9 @@ export function createClient<C extends Credential>(options: ClientOptions<C>) {
     if (!route.who.includes(credential.kind))
       throw new Error("Credential cannot call this route");
     if (route.body) assertValid(route.body, args.body);
-    if (name === "sendReports") {
-      const body = args.body as P["requests.reports"];
-      for (const report of body.reports) assertValid(report.type, report);
-    }
     if (name === "answerPlugin") {
-      const answer = args.body as P["plugin.result"] | P["plugin.failure"];
-      assertValid(answer.type, answer);
+      const answer = args.body as P["requests.plugin_result"] | P["requests.plugin_failure"];
+      assertValid("explanation" in answer ? "requests.plugin_failure" : "requests.plugin_result", answer);
     }
     const path = route.path.replace(/:([a-z_]+)/g, (_, k: string) => {
       const value = args.params?.[k];

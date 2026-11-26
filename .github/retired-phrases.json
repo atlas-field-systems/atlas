@@ -587,5 +587,15 @@
     "phrase": "\\bthe fieldlink compares the radio's hash with the gateway's\\b|\\bthe gateway compares it with its own\\b",
     "why": "A Fieldlink passes the radio's definitions hash up through the gateway so Core refuses a mismatch and records definitions.refused.",
     "example": "The Fieldlink compares the radio's hash with the gateway's."
+  },
+  {
+    "phrase": "\\btelemetry_every_s\\b",
+    "why": "Telemetry uses available airtime. Contact proof sets the heartbeat floor.",
+    "example": "Set telemetry_every_s to the telemetry interval."
+  },
+  {
+    "phrase": "\\blink_loss_after_s\\b",
+    "why": "Each contact_lost condition specifies its own duration.",
+    "example": "The Asset uses its link_loss_after_s setting."
   }
 ]

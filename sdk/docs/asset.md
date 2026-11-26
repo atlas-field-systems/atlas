@@ -231,7 +231,7 @@ additions under the same bound and returns immediately without registering
 acknowledgement waits.
 
 After connecting and before registration, `startAsset` refuses an initial
-`link_loss_after_s` at or below Core's advertised `stream_keepalive_s`.
+policy whose `contact_lost.for_s` is at or below Core's advertised `stream_keepalive_s`.
 
 Report recording failures, including rejected asynchronous `onReports` callbacks,
 emit `reports.recording_failed` without stopping report delivery. Queue host

@@ -1,4 +1,4 @@
-import { defaultLinkLossAfterS, type Task, type QueueRequest } from "@atlas/sdk";
+import type { Task, QueueRequest } from "@atlas/sdk";
 import type {
   ComponentsSettings,
   ComponentsFailsafeRule,
@@ -283,11 +283,7 @@ export function reduce(
           holds = get(state.measurements.airborne) === true;
           break;
         case "contact_lost":
-          holds = (
-            now - state.lastHeard >=
-            (state.settings.link_loss_after_s ?? defaultLinkLossAfterS) * 1000
-          );
-          break;
+          return now - state.lastHeard >= c.for_s * 1000;
         case "idle":
           holds = !state.execution && !hasWork;
           break;
@@ -431,8 +427,13 @@ export function reduce(
                 matches(r, event.now, true),
             )
             .sort((a, b) => b.priority - a.priority)[0] ?? null;
+        const response = rule?.response ?? config.safe_action;
+        if (!response) {
+          effects.push({ kind: "task", task, status: "failed", explanation: "No failsafe response configured" });
+          break;
+        }
         effects.push({ kind: "task", task, status: "completed" });
-        activate(rule?.response ?? config.safe_action, rule, event.now);
+        activate(response, rule, event.now);
       } else {
         const current = state.execution;
         if (current) finish(current, "cancelled");

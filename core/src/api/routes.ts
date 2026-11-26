@@ -26,9 +26,8 @@ export type Reply = {
 export type CoreBodies = {
   login: ProtocolTypes["requests.login"];
   account: ProtocolTypes["requests.account"];
-  reports: ProtocolTypes["requests.reports"]; // each report is checked by its own `type` in storeReports
   attach: ProtocolTypes["requests.attach"];
-  answer: ProtocolTypes["plugin.result"] | ProtocolTypes["plugin.failure"]; // checked by its `type`
+  answer: ProtocolTypes["requests.plugin_result"] | ProtocolTypes["requests.plugin_failure"];
 };
 export type BodySpec =
   | { kind: "none" }
@@ -106,10 +105,9 @@ function parseBody(
       const { name } = spec;
       if (name !== "answer")
         return checkOrRefuse<CoreBodies[typeof name]>(protocol, `requests.${name}`, json);
-      const type = json && typeof json === "object" && "type" in json ? json.type : null;
-      if (type !== "plugin.result" && type !== "plugin.failure")
-        refuse("invalid", "Expected a Plugin answer");
-      return checkOrRefuse<ProtocolTypes[typeof type]>(protocol, type, json);
+      const schema = json && typeof json === "object" && "explanation" in json
+        ? "requests.plugin_failure" : "requests.plugin_result";
+      return checkOrRefuse<CoreBodies["answer"]>(protocol, schema, json);
     }
     case "none":
       if (json !== undefined && json !== null && JSON.stringify(json) !== "{}")
@@ -157,7 +155,6 @@ const P = <N extends keyof ProtocolTypes>(name: N) =>
 const passwordBodies = {
   login: true,
   account: true,
-  reports: false,
   attach: false,
   answer: false,
 } satisfies { [K in keyof CoreBodies]: "password" extends keyof CoreBodies[K] ? true : false };
@@ -386,7 +383,7 @@ export const ROUTES: readonly Route[] = [
     doc: "asset-and-gateway-calls",
     who: ["asset", "gateway"],
     actsFor: "path:asset_id",
-    body: C("reports"),
+    body: P("requests.reports"),
     commit: (tx, r) => ok(entities.storeReports(tx, a(r), r.body.reports)),
   }),
   change({
@@ -502,7 +499,7 @@ export const ROUTES: readonly Route[] = [
     doc: "a-plugin-starts",
     who: ["plugin"],
     actsFor: "path:plugin_id",
-    body: P("plugin.description"),
+    body: P("requests.plugin_description"),
     commit: (tx, r) => ok(plugins.describe(tx, r.params.plugin_id!, r.body)),
   }),
   change({

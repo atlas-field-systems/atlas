@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/plugin_result.json",
+  "title": "Plugin result request",
+  "description": "Plugin result content. Core stamps the record type, time and Plugin identity.",
+  "type": "object",
+  "required": [
+    "request_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "$ref": "../variables/request_id.json"
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "$ref": "../requests/geofeature.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "$ref": "../components/fact.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "geofeature_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../variables/geofeature_id.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "object_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../variables/object_id.json"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    }
+  },
+  "examples": [
+    {
+      "request_id": 121
+    }
+  ]
+}

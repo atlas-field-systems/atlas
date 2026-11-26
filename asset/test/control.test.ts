@@ -13,12 +13,11 @@ test("docs/failsafes.md: a closed stream cannot reset the local contact-loss dea
       ),
     ),
   );
-  config.initial_settings.link_loss_after_s = 12;
   config.initial_settings.failsafe_policy = [
     {
       rule_id: "LINK",
       priority: 50,
-      conditions: [{ kind: "contact_lost" }],
+      conditions: [{ kind: "contact_lost", for_s: 12 }],
       response: { kind: "land" },
     },
   ];
@@ -293,11 +292,10 @@ test("docs/failsafes.md: a new lower-priority condition interrupts a paused resp
     {
       rule_id: "LATER",
       priority: 1,
-      conditions: [{ kind: "contact_lost" }],
+      conditions: [{ kind: "contact_lost", for_s: 12 }],
       response: { kind: "hold" },
     },
   ];
-  start.settings.link_loss_after_s = 12;
   start.measurements.battery = { value: 20, source: "vehicle", time: 0 };
   let state = reduce(
     start,
@@ -350,11 +348,10 @@ test("docs/failsafes.md: critical fallback keeps its priority against a later lo
     {
       rule_id: "LOW",
       priority: 1,
-      conditions: [{ kind: "contact_lost" }],
+      conditions: [{ kind: "contact_lost", for_s: 12 }],
       response: { kind: "hold" },
     },
   ];
-  start.settings.link_loss_after_s = 12;
   start.measurements.battery = { value: 5, source: "vehicle", time: 0 };
   let state = reduce(
     start,
@@ -544,9 +541,8 @@ for (const condition of ["battery", "contact"] as const)
   test(`docs/failsafes.md: handback samples ${condition} before selecting rules and tracks Hold refusal`, async () => {
     const { config, state } = await setup();
     state.phase = "flight_controller";
-    state.settings.link_loss_after_s = 12;
     state.settings.failsafe_policy = [{ rule_id: "NEW", priority: 50,
-      conditions: condition === "battery" ? [{ kind: "battery_below", battery_percent: 30 }] : [{ kind: "contact_lost" }],
+      conditions: condition === "battery" ? [{ kind: "battery_below", battery_percent: 30 }] : [{ kind: "contact_lost", for_s: 12 }],
       response: { kind: "land" } }];
     state.measurements.in_control = { value: true, source: "vehicle", time: 12000 };
     state.measurements.position!.time = 12000;
@@ -773,7 +769,7 @@ for (const cancellation of ["cancel", "settings"] as const) test(`docs/runtime.m
   const active = reduce(start, { kind: "task", task: { ...hold, kind: "move_to", destination: { latitude: 2, longitude: 2 } }, now: 0 }, config).state;
   let result = reduce(active, cancellation === "cancel"
     ? { kind: "cancel", id: hold.task_id, now: 1 }
-    : { kind: "task", task: { ...hold, task_id: 2, kind: "settings", settings: { link_loss_after_s: 25 } }, now: 1 }, config);
+    : { kind: "task", task: { ...hold, task_id: 2, kind: "settings", settings: { home_position: { latitude: 2, longitude: 2 } } }, now: 1 }, config);
   assert.equal(result.state.execution, null);
   assert.equal(canPullTask(result.state), false);
   result = reduce(result.state, { kind: "command_failed", execution_id: result.state.commandId, explanation: "link interrupted", now: 2 }, config);
@@ -806,14 +802,19 @@ for (const source of ["operator", "critical"] as const) test(`docs/failsafes.md:
   assert.ok(result.effects.some(e => (e.kind === "task" || e.kind === "response") && e.status === "completed"));
 });
 
-test("docs/failsafes.md: contact loss without link_loss_after_s uses Protocol's 30 s default", async () => {
-  const { config, state: start } = await setup();
-  delete start.settings.link_loss_after_s;
-  start.settings.failsafe_policy = [{ rule_id: "LINK", priority: 50, conditions: [{ kind: "contact_lost" }], response: { kind: "hold" } }];
-  for (const m of [start.measurements.position!, start.measurements.armed!]) m.time = 30000;
-  assert.equal(reduce(start, { kind: "tick", now: 29999, hasWork: false }, config).state.phase, "ordinary");
-  const fired = reduce(start, { kind: "tick", now: 30000, hasWork: false }, config);
-  assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "LINK" && e.status === "active"));
+test("docs/failsafes.md: each contact-loss rule measures its own duration from the last contact", async () => {
+  const { config, state } = await setup();
+  state.settings.failsafe_policy = [
+    { rule_id: "SOON", priority: 50, conditions: [{ kind: "contact_lost", for_s: 15 }], response: { kind: "hold" } },
+    { rule_id: "LATE", priority: 80, conditions: [{ kind: "contact_lost", for_s: 60 }], response: { kind: "hold" } },
+  ];
+  let current = state;
+  for (const [now, expected] of [[14999, []], [15000, ["SOON"]], [59999, []], [60000, ["LATE"]]] as const) {
+    for (const m of [current.measurements.position!, current.measurements.armed!]) m.time = now;
+    const tick = reduce(current, { kind: "tick", now, hasWork: false }, config);
+    current = tick.state;
+    assert.deepEqual(tick.effects.flatMap(e => e.kind === "response" && e.status === "active" ? [e.rule?.rule_id] : []), expected);
+  }
 });
 
 for (const failure of ["refusal", "timeout"] as const)
@@ -852,9 +853,8 @@ for (const path of [[25, 4], [4]] as const)
 test("docs/failsafes.md: losing contact during a critical landing keeps the landing active", async () => {
   const { config, state } = await setup();
   state.settings.home_position = { latitude: 2, longitude: 2 };
-  state.settings.link_loss_after_s = 1;
   state.settings.failsafe_policy = [
-    { rule_id: "LINK", priority: 90, conditions: [{ kind: "contact_lost" }], response: { kind: "return_to_home" } },
+    { rule_id: "LINK", priority: 90, conditions: [{ kind: "contact_lost", for_s: 1 }], response: { kind: "return_to_home" } },
     { rule_id: "CB", priority: 10, conditions: [{ kind: "battery_below", battery_percent: 5, critical: true }], response: { kind: "land" } },
   ];
   state.measurements.battery = { value: 4, source: "vehicle", time: 0 };

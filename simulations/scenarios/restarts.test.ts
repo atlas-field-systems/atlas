@@ -9,7 +9,7 @@ scenario({
     "core/docs/api.md#asset-and-gateway-calls",
   ],
   async run(w) {
-    const asset = await assetApp(w, { config: { safe_action: { kind: "hold" }, description: { entity_type: "ground_vehicle", commands: ["hold"], reports: ["status", "settings"], settings: ["run_state", "link_loss_after_s", "failsafe_policy"] }, initial_settings: { run_state: "paused", link_loss_after_s: 12, failsafe_policy: [] } } });
+    const asset = await assetApp(w, { config: { safe_action: { kind: "hold" }, description: { entity_type: "ground_vehicle", commands: ["hold"], reports: ["status", "settings"], settings: ["run_state", "failsafe_policy"] }, initial_settings: { run_state: "paused", failsafe_policy: [] } } });
     const asset_id = asset.asset_id;
     value(
       await w.complete(

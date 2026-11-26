@@ -13,7 +13,7 @@ const errors = [];
 const onlyReferences = (d) => {
   const keys = Object.keys(d).sort().join();
   if (keys === '$ref' || keys === '$ref,const') return true;
-  const list = Object.keys(d).filter((k) => !['minItems', 'maxItems'].includes(k)).sort().join();
+  const list = Object.keys(d).filter((k) => !['minItems', 'maxItems', 'uniqueBy'].includes(k)).sort().join();
   return d.type === 'array' && list === 'items,type' && Object.keys(d.items).join() === '$ref';
 };
 const files = Object.keys(schemas).sort();

@@ -1,5 +1,5 @@
 import { internal } from "./internal.ts";
-import { EVENT_KINDS } from "@atlas/core/event-kinds";
+import { EVENT_KINDS } from "@atlas/protocol/event-kinds";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { Client } from "./client.ts";
 import { backoffDelay, defaultBackoff, type Timer } from "./clock.ts";
@@ -53,11 +53,13 @@ export function follow(
     asset_id?: string;
     everything?: boolean;
     beforeOpen?(): Promise<void>;
+    onContactStorage?(token?: string): void;
     onContact?(contact: { open: boolean; last_heard: number | null }): void;
   },
   handler: (event: AtlasEvent) => void | Promise<void>,
 ): Follow {
   const { clock, protocol } = internal(client).options;
+  const pluginStream = internal(client).options.credential.kind === "plugin" && !options.everything;
   let cursor = options.after,
     stale = true,
     stopped = false,
@@ -119,6 +121,7 @@ export function follow(
             } else if (!response.body)
               return { reason: "invalid_event", error: "Missing stream body" };
             else {
+              if (pluginStream) cursor = 0;
               stale = false;
               attempts = 0;
               internal(client).emit("stream.open");
@@ -159,8 +162,13 @@ export function follow(
                       };
                     const line = buffer.slice(0, index).replace(/\r$/, "");
                     buffer = buffer.slice(index + 1);
+                    if (pluginStream && line === "event: plugin.stream_replaced")
+                      return { reason: "stopped" };
                     if (line === "") frameLength = 0;
                     if (line.startsWith(":")) {
+                      if (line.startsWith(": contact-storage "))
+                        options.onContactStorage?.(line.slice(": contact-storage ".length));
+                      else if (line === ": alive") options.onContactStorage?.();
                       internal(client).emit("stream.alive");
                       heard();
                     } else if (line.startsWith("data:"))

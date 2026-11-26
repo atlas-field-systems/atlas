@@ -22,6 +22,12 @@ function shared<T>(
 const positive = z.number().finite().positive();
 const nonnegative = z.number().finite().nonnegative();
 const command = z.enum(Object.keys(commands).filter(isCommand));
+const commandTimeouts = { takeoff: 60, move_to: 120, land: 120, hold: 10, return_to_home: 180 } satisfies Record<keyof typeof commands, number>;
+const tolerance = z.strictObject({
+  horizontal_m: nonnegative.default(2),
+  altitude_m: nonnegative.default(0.5),
+  stopped_mps: nonnegative.default(0.3),
+});
 const schema = z
   .strictObject({
     asset_key: z.string().min(1),
@@ -35,7 +41,7 @@ const schema = z
         host: z.string().min(1),
         port: z.int().min(1).max(65535),
         system_id: z.int().min(1).max(255),
-        heartbeat_s: positive,
+        heartbeat_s: positive.default(1),
         stream_rate_hz: z.int().min(1).max(65535).default(5),
         extended_state_interval_us: z.int().min(1).max(2147483647).default(200000),
         subsystems: z.strictObject({ gps: z.string().optional(), flight_controller: z.string().optional() }).optional(),
@@ -44,8 +50,8 @@ const schema = z
         kind: z.enum(["peripheral", "gpsd"]),
         host: z.string().min(1),
         port: z.int().min(1).max(65535),
-        max_message_bytes: z.int().positive(),
-        reconnect_s: positive,
+        max_message_bytes: z.int().positive().default(65536),
+        reconnect_s: positive.default(1),
       }),
       z.strictObject({
         kind: z.literal("simulated"),
@@ -75,34 +81,41 @@ const schema = z
         task_state: "active",
         response,
       }),
-    ),
-    completion_tolerances: z.partialRecord(
-      command,
-      z.strictObject({
-        horizontal_m: nonnegative,
-        altitude_m: nonnegative,
-        stopped_mps: nonnegative,
-      }),
-    ).default({}),
+    ).optional(),
+    completion_tolerances: z.partialRecord(command, tolerance).default({}),
     command_timeouts: z.partialRecord(command, positive).default({}),
     default_ground_speed_mps: nonnegative.optional(),
     max_ground_speed_mps: positive.optional(),
-    measurement_stale_after_s: positive,
-    final_report_wait_s: nonnegative,
-    control_tick_s: positive,
-    reporting: z.strictObject({ heartbeat_s: positive }),
-    log_level: z.enum(["error", "warn", "info", "debug", "trace"]),
-    log_directory: z.string().min(1),
-    log_message_content: z.boolean(),
-    log_queue_limit: z.int().positive(),
-    log_file_limit_bytes: z.int().positive(),
-    log_total_limit_bytes: z.int().positive(),
-    archive_directory: z.string().min(1),
+    measurement_stale_after_s: positive.default(5),
+    final_report_wait_s: nonnegative.default(30),
+    control_tick_s: positive.default(0.1),
+    reporting: z.strictObject({ heartbeat_s: positive.default(5) }).prefault({}),
+    log_level: z.enum(["error", "warn", "info", "debug", "trace"]).default("trace"),
+    log_directory: z.string().min(1).default("./asset-logs"),
+    log_message_content: z.boolean().default(true),
+    log_queue_limit: z.int().positive().default(4096),
+    log_file_limit_bytes: z.int().positive().default(67108864),
+    log_total_limit_bytes: z.int().positive().default(2147483648),
+    archive_directory: z.string().min(1).default("./asset-archives"),
   })
   .transform((c, ctx) => {
     if (c.initial_settings === undefined &&
       (c.description.commands.length || c.description.settings?.length)) {
       ctx.addIssue({ code: "custom", path: ["initial_settings"], message: "required for control-capable equipment" });
+    }
+    const movement = c.description.commands.filter(isCommand);
+    const reachable = new Set(movement);
+    if (movement.length) reachable.add("hold");
+    if (c.initial_settings?.failsafe_policy?.some(rule =>
+      rule.conditions.some(condition => condition.kind === "battery_below" && condition.critical)))
+      reachable.add("return_to_home");
+    for (const kind of reachable) {
+      c.completion_tolerances[kind] ??= tolerance.parse({});
+      c.command_timeouts[kind] ??= commandTimeouts[kind];
+    }
+    if (movement.length) {
+      c.default_ground_speed_mps ??= 3;
+      c.max_ground_speed_mps ??= 8;
     }
     return { ...c, initial_settings: c.initial_settings ?? {} };
   })
@@ -128,21 +141,8 @@ const schema = z
     for (const kind of c.description.commands)
       if (kind !== "failsafe" && !isCommand(kind))
         fail(["description", "commands"], `unsupported command ${kind}`);
-    const reachable = new Set(movement);
-    if (movement.length) reachable.add("hold");
-    if ((c.initial_settings.failsafe_policy ?? []).some(rule =>
-      rule.conditions.some(condition => condition.kind === "battery_below" && condition.critical)))
-      reachable.add("return_to_home");
-    for (const kind of reachable) {
-      if (!c.completion_tolerances[kind]) fail(["completion_tolerances", kind], "required for reachable movement");
-      if (!c.command_timeouts[kind]) fail(["command_timeouts", kind], "required for reachable movement");
-    }
-    if (movement.length) {
-      if (c.equipment.kind === "gpsd" || c.equipment.kind === "peripheral")
-        fail(["description", "commands"], "acquisition-only equipment cannot execute movement");
-      if (c.default_ground_speed_mps === undefined) fail(["default_ground_speed_mps"], "required for movement");
-      if (c.max_ground_speed_mps === undefined) fail(["max_ground_speed_mps"], "required for movement");
-    }
+    if (movement.length && (c.equipment.kind === "gpsd" || c.equipment.kind === "peripheral"))
+      fail(["description", "commands"], "acquisition-only equipment cannot execute movement");
     if (c.equipment.kind === "ardupilot") {
       const ids = Object.values(c.equipment.subsystems ?? {});
       if (new Set(ids).size !== ids.length) fail(["equipment", "subsystems"], "duplicate subsystem mapping");
@@ -163,6 +163,10 @@ const schema = z
           fail(["initial_settings", "failsafe_policy"], `undeclared subsystem ${condition.subsystem_id}`);
     }
     if (!c.description.commands.length) return;
+    if (!c.safe_action) {
+      fail(["safe_action"], "required for command-capable equipment");
+      return;
+    }
     for (const response of [
       c.safe_action,
       ...(c.initial_settings.failsafe_policy ?? []).map((r) => r.response),
