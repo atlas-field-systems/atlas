@@ -41,7 +41,7 @@ Propose changes to the owner rather than making them quietly. See
 - Want how a Fieldlink carries Atlas across a field link? Go to `fieldlink/`.
 - Want how the parts are tested together end to end? Go to `simulations/`.
 - Want a ready setup for one kind of equipment, such as SiK? Go to `tools/`.
-- Want what the owner decided and why? Read the ADRs: [docs/adr/](docs/adr/) for
+- Want what the owner decided and why? Read the ADRs: [docs/adr/](docs/adr/README.md) for
   decisions that span parts, and `<part>/docs/adr/` for decisions one part owns.
 - Want what a run is and how Assets get their IDs? Go to
   [runs and identity](atlas/runs-and-identity.md).
@@ -53,7 +53,7 @@ Each topic has one home. Other pages link to it.
 
 | Topic | Home |
 | --- | --- |
-| The owner's decisions, dated and scoped, with why | [docs/adr/](docs/adr/) and `<part>/docs/adr/` ([layout](docs/agents/domain.md)) |
+| The owner's decisions, dated and scoped, with why | [docs/adr/](docs/adr/README.md) and `<part>/docs/adr/` ([layout](docs/agents/domain.md)) |
 | Ideas no part owns yet | [docs/drawer/](docs/drawer/README.md) |
 | Runs, Reset, what carries over, registration, IDs, keys, gateway changes | [atlas/runs-and-identity.md](atlas/runs-and-identity.md) |
 | Who Atlas is for, what it is not, and how to tell it works | [atlas/goal.md](atlas/goal.md) |
