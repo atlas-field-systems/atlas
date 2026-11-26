@@ -71,7 +71,7 @@ controller. The simulation reads these parameters back from the pinned build.
 ### Fixed camera turret
 
 A turret reports Observations produced by its own detection software; Atlas does
-not implement computer vision. An operator aims it with Point At: a latitude
+not implement computer vision. An operator aims it with [Point At](../../protocol/definitions/records/task/point_at.json), giving a latitude
 and longitude, and optionally an altitude, to look at. Atlas says only where to
 look. The turret works out how to aim there from its own position, installation
 orientation, and calibration; how it does that is
