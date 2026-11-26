@@ -848,3 +848,20 @@ for (const path of [[25, 4], [4]] as const)
     assert.ok(effects.some(e => e.kind === "response" && e.rule?.rule_id === "CB" && e.status === "active"));
     assert.equal(state.execution?.rule?.rule_id, "CB");
   });
+
+test("docs/failsafes.md: the operator's Fail-safe replaces an unconfirmed stop, but not a flight-controller takeover", async () => {
+  const { config, state: start } = await setup();
+  start.settings.home_position = { latitude: 2, longitude: 2 };
+  const failsafe = { ...hold, task_id: 11, kind: "failsafe" } as const;
+  const moving = reduce(start, { kind: "task", task: { ...hold, kind: "move_to", destination: { latitude: 2, longitude: 2 } }, now: 0 }, config).state;
+  const stopping = reduce(moving, { kind: "cancel", id: hold.task_id, now: 1 }, config).state;
+  assert.ok(stopping.safeStop, "the cancel leaves a Hold that the equipment has not confirmed");
+  const fired = reduce(stopping, { kind: "task", task: failsafe, now: 2 }, config);
+  assert.ok(fired.effects.some(e => e.kind === "task" && e.task.task_id === 11 && e.status === "completed"));
+  assert.ok(fired.effects.some(e => e.kind === "response" && e.status === "active"));
+  assert.equal(fired.state.phase, "failsafe");
+  const takenOver = reduce(stopping, { kind: "measurements", measurements: { in_control: { value: false, source: "vehicle", time: 2 } } }, config).state;
+  const refused = reduce(takenOver, { kind: "task", task: failsafe, now: 3 }, config);
+  assert.ok(refused.effects.some(e => e.kind === "task" && e.status === "failed" && e.explanation === "flight controller is in control"));
+  assert.equal(refused.state.phase, "flight_controller");
+});

@@ -94,7 +94,9 @@ export type Effect =
   | { kind: "diagnostic"; explanation: string };
 export function refusal(state: State, request: QueueRequest): string | undefined {
   if (state.phase === "flight_controller") return "flight controller is in control";
-  if (state.safeStop && request.kind === "task" && !(request.task.now && isOverride(request.task.kind))) return "equipment stop is pending";
+  // An override or the operator's Fail-safe replaces a pending stop.
+  if (state.safeStop && request.kind === "task" &&
+    !(request.task.now && (isOverride(request.task.kind) || request.task.kind === "failsafe"))) return "equipment stop is pending";
   if (state.phase === "ordinary") return;
   if (request.kind === "task" && request.task.now && isOverride(request.task.kind)) return;
   return "failsafe locks ordinary work";
