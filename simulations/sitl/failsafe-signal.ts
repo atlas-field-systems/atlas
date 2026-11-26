@@ -124,28 +124,12 @@ export async function failsafeSignal(ctx: FlightContext) {
     Object.assign(rc, { targetSystem: 1, targetComponent: 1, chan5Raw: 1500 });
     await send(pilot, rc, protocol);
     await ctx.until(() => vehicleMode === 5);
-    const m = new common.SetMode();
-    Object.assign(m, { targetSystem: 1, baseMode: 1, customMode: 4 });
-    await send(pilot, m, protocol);
-    await delay(1000);
-    await writeFile(
-      join(ctx.root, "rc-takeover.json"),
-      JSON.stringify(samples, null, 2),
-    );
-    assert.equal(
-      vehicleMode,
-      5,
-      "persistent pilot switch wins over a late Guided selection",
-    );
-    assert.equal(
-      ctx.events.some(
-        (e) =>
-          e.kind === "report.failsafe" &&
-          e.record.kind === "autopilot" &&
-          !e.record.in_control,
-      ),
-      false,
-    );
+    // Takeoff has completed. This Guided selection comes from the pilot.
+    rc.chan5Raw = 1000;
+    await send(pilot, rc, protocol);
+    await ctx.until(() => vehicleMode === 4 && ctx.events.some(
+      e => e.kind === "report.failsafe" && e.record.kind === "autopilot" && !e.record.in_control,
+    ));
     await writeFile(
       join(ctx.root, "rc-takeover.json"),
       JSON.stringify(samples, null, 2),

@@ -187,8 +187,10 @@ test("docs/README.md: now work completes while paused and repeating running sett
     config,
   );
   assert.equal(repeated.effects.filter((e) => e.kind === "vehicle").length, 0);
+  state = reduce(repeated.state, { kind: "command_accepted", execution_id: repeated.state.commandId, now: 2 }, config).state;
+  state.measurements.speed = { value: 0, source: "vehicle", time: 3 };
   const done = reduce(
-    repeated.state,
+    state,
     { kind: "tick", now: 3, hasWork: false },
     config,
   );
@@ -235,8 +237,10 @@ test("docs/failsafes.md: commanded activation overrides pause and selects the co
     ),
   );
   assert.equal(activated.state.settings.run_state, "running");
+  state = reduce(activated.state, { kind: "command_accepted", execution_id: activated.state.commandId, now: 1 }, config).state;
+  state.measurements.speed = { value: 0, source: "vehicle", time: 2 };
   const done = reduce(
-    activated.state,
+    state,
     { kind: "tick", now: 2, hasWork: false },
     config,
   );
@@ -392,7 +396,12 @@ test("docs/README.md: a now Task can complete without resuming the paused queue"
     config,
   ).state;
   state = reduce(state, { kind: "task", task: hold, now: 1 }, config).state;
-  const done = reduce(state, { kind: "tick", now: 2, hasWork: true }, config);
+  const tick = (now: number) => reduce(state, { kind: "tick", now, hasWork: true }, config);
+  assert.ok(tick(2).state.execution);
+  state = reduce(state, { kind: "command_accepted", execution_id: state.commandId, now: 2 }, config).state;
+  assert.ok(tick(3).state.execution);
+  state.measurements.speed = { value: 0, source: "vehicle", time: 4 };
+  const done = tick(4);
   assert.ok(
     done.effects.some((e) => e.kind === "task" && e.status === "completed"),
   );
@@ -744,6 +753,8 @@ test("docs/failsafes.md: a Task completing on its first tick starts a fresh idle
     speed: { value: 0, source: "vehicle", time: 4000 },
   };
   state = reduce(state, { kind: "task", task: hold, now: 4000 }, config).state;
+  state = reduce(state, { kind: "command_accepted", execution_id: state.commandId, now: 4001 }, config).state;
+  state.measurements.speed = { value: 0, source: "vehicle", time: 4100 };
   const done = reduce(state, { kind: "tick", now: 4100, hasWork: false }, config);
   assert.ok(done.effects.some(e => e.kind === "task" && e.status === "completed"));
   state = reduce(done.state, { kind: "tick", now: 5000, hasWork: false }, config).state;
@@ -880,4 +891,19 @@ test("docs/failsafes.md: the operator's Fail-safe replaces an unconfirmed stop, 
   const refused = reduce(takenOver, { kind: "task", task: failsafe, now: 3 }, config);
   assert.ok(refused.effects.some(e => e.kind === "task" && e.status === "failed" && e.explanation === "flight controller is in control"));
   assert.equal(refused.state.phase, "flight_controller");
+});
+
+test("docs/README.md: pause retries an unconfirmed Hold and preserves the interrupted Task", async () => {
+  const { config, state: start } = await setup();
+  let state = reduce(start, { kind: "task", task: hold, now: 0 }, config).state;
+  state = reduce(state, { kind: "settings", settings: { run_state: "paused" }, now: 1 }, config).state;
+  const now = 2 + config.command_timeouts.hold! * 1000;
+  state = reduce(state, { kind: "tick", now, hasWork: false }, config).state;
+  state.measurements.position!.time = now;
+  state.measurements.armed!.time = now;
+  state.measurements.connected = { value: true, source: "vehicle", time: now };
+  const retry = reduce(state, { kind: "tick", now: now + 1, hasWork: false }, config);
+  assert.ok(retry.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
+  state = reduce(retry.state, { kind: "command_failed", execution_id: retry.state.commandId, explanation: "refused", now: now + 2 }, config).state;
+  assert.equal(state.execution?.task?.task_id, hold.task_id);
 });

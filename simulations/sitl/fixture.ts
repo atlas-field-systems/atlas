@@ -56,7 +56,7 @@ export async function flightFixture(t: TestContext, scenario: Scenario) {
   );
   await writeFile(
     join(root, "flight.parm"),
-    `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\n${scenario === "rc-late-guided" ? "FLTMODE1 4\nFLTMODE4 5\n" : ""}${["subsystem", "takeover", "takeover-response"].includes(scenario) ? "FS_EKF_THRESH 0\n" : ""}FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nMAV_GCS_SYSID 255\nFS_OPTIONS 0\nBATT_CAPACITY ${scenario === "battery" ? 100 : scenario === "battery-layers" ? 1000 : 3300}\nBATT_LOW_MAH ${scenario === "battery" ? 15 : scenario === "battery-layers" ? 150 : 495}\nBATT_CRT_MAH ${scenario === "battery" ? 10 : scenario === "battery-layers" ? 100 : 330}\nBATT_LOW_VOLT 0\nBATT_CRT_VOLT 0\nBATT_FS_LOW_ACT 2\nBATT_FS_CRT_ACT 1\n`,
+    `DISARM_DELAY ${scenario === "armed-startup" ? 0 : 10}\n${scenario === "rc-handback" ? "FLTMODE1 4\nFLTMODE4 5\n" : ""}${["subsystem", "takeover", "takeover-response"].includes(scenario) ? "FS_EKF_THRESH 0\n" : ""}FS_GCS_ENABLE 1\nFS_GCS_TIMEOUT 5\nMAV_GCS_SYSID 255\nFS_OPTIONS 0\nBATT_CAPACITY ${scenario === "battery" ? 100 : scenario === "battery-layers" ? 1000 : 3300}\nBATT_LOW_MAH ${scenario === "battery" ? 15 : scenario === "battery-layers" ? 150 : 495}\nBATT_CRT_MAH ${scenario === "battery" ? 10 : scenario === "battery-layers" ? 100 : 330}\nBATT_LOW_VOLT 0\nBATT_CRT_VOLT 0\nBATT_FS_LOW_ACT 2\nBATT_FS_CRT_ACT 1\n`,
   );
   const [equipment, pilotPort] = await equipmentPorts();
   const sitl = spawn(
@@ -643,7 +643,7 @@ export type Scenario =
   | "requests"
   | "crash"
   | "failsafe-signal"
-  | "rc-late-guided"
+  | "rc-handback"
   | "takeover"
   | "takeover-response"
   | "land-position"
