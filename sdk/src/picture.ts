@@ -11,6 +11,7 @@ export type AssetView = {
   contact: P["contact"];
   contact_storage_pending?: true;
   reports: Record<string, P["requests.reports"]["reports"][number]>;
+  failsafes: Partial<Record<P["report.failsafe"]["kind"], P["report.failsafe"]>>;
   settings: Record<string, { value: unknown; time: number }>;
   subsystems: Record<string, P["report.status"]>;
   gimbals: Record<string, P["report.gimbal"]>;
@@ -91,11 +92,8 @@ export function createLivePicture(
     for (const a of snapshot.assets) {
       if (options.asset_id && a.asset_id !== options.asset_id) continue;
       assets.set(a.asset_id, a);
-      for (const [key, value] of Object.entries(a.settings))
-        latest.set(`setting:${a.asset_id}:${key}`, [
-          value.time,
-          snapshot.as_of,
-        ]);
+      for (const [key, value] of Object.entries(a.failsafes))
+        latest.set(`failsafe:${a.asset_id}:${key}`, [value.time, snapshot.as_of]);
       for (const [key, value] of Object.entries(a.subsystems))
         latest.set(`subsystem:${a.asset_id}:${key}`, [
           value.time,
@@ -166,6 +164,7 @@ export function createLivePicture(
             contact: { time: e.time, asset_id: id, contact: "online" },
             reports: {},
             settings: {},
+            failsafes: {},
             subsystems: {},
             gimbals: {},
           });
@@ -216,16 +215,12 @@ export function createLivePicture(
           ) {
             const a = assets.get(e.record.asset_id!);
             if (!a) break;
-            if (e.kind === "report.settings") {
+            if (e.kind === "report.failsafe") {
+              if (newer(`failsafe:${a.asset_id}:${e.record.kind}`, e.record.time, e.event_id))
+                a.failsafes[e.record.kind] = e.record;
+            } else if (e.kind === "report.settings") {
               for (const [key, value] of Object.entries(e.record.settings))
-                if (
-                  newer(
-                    `setting:${a.asset_id}:${key}`,
-                    e.record.time,
-                    e.event_id,
-                  )
-                )
-                  a.settings[key] = { value, time: e.record.time };
+                a.settings[key] = { value, time: e.record.time };
             } else if (
               e.kind === "report.status" &&
               e.record.kind === "subsystem"
@@ -260,6 +255,7 @@ export function createLivePicture(
               e.kind !== "report.gimbal" &&
               e.kind.startsWith("report.") &&
               "type" in e.record &&
+              e.kind !== "report.failsafe" && e.kind !== "report.status" && e.kind !== "report.settings" &&
               newer(`report:${a.asset_id}:${e.kind}`, e.record.time, e.event_id)
             )
               a.reports[e.kind] =

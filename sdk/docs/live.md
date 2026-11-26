@@ -81,10 +81,9 @@ picture.onChange(cb);
 - **Readiness is explicit.** Reads return `{ready, stale, items}`. Until loading
   finishes, `ready` is false; a read never returns an empty list as if it were true.
 - **Per-setting latest values.** A `report.settings` changes only the settings it
-  contains. Each setting keeps its own latest value and the report it came from,
-  ordered by report time and then `event_id`, so a retained report received
-  after a gap never replaces a newer value. A subsystem report works the same
-  way: each declared subsystem keeps its own latest condition. A new description
+  contains. Each setting shows its most recently received eligible value since
+  sign-up. Each declared subsystem keeps its latest condition by report time
+  and then `event_id`. A new description
   removes subsystem and gimbal entries it no longer declares; later reports for
   undeclared equipment do not restore those entries.
 - **Observations and geo features.** Each item is the record the event

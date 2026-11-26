@@ -301,6 +301,8 @@ test("9. quiet or removed gateway takes radios offline at their own last-heard t
       key: g.key,
       body: { time: c.now(), asset_id: id, contact: "online" },
     });
+    const gatewayPicture = (await h.call("GET", "/entities", { cookie: h.admin })).body;
+    assert.equal(gatewayPicture.gateways[0].gateway_id, g.gateway_id);
     const heardAt = c.now();
     assert.equal((await task(h, id)).status, 202);
     c.advance(10000);
@@ -381,6 +383,17 @@ test("15. clock-ahead evidence is marked and settles requests without becoming l
     ).body.items;
     assert.equal(history.length, 2);
     assert.equal(history[1].clock_ahead, true);
+    const path = `/history?asset_id=${a.id}&report=telemetry&limit=1`;
+    const auth = { cookie: h.admin };
+    const first = (await h.call("GET", path, auth)).body;
+    await report(h, a, [{
+      type: "report.telemetry", asset_id: a.id, time: c.now() + 1,
+      position: { latitude: 5, longitude: 6 },
+    }]);
+    const second = (await h.call("GET", path + "&cursor=" + first.next_cursor, auth)).body;
+    assert.equal(second.as_of, first.as_of);
+    assert.deepEqual(second.items, [history[1]]);
+    assert.equal(second.next_cursor, null);
     c.advance(30000);
     const fresh = await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin });
     assert.equal(fresh.body.items[0].state, "completed");
@@ -770,3 +783,47 @@ for (const transport of ["ip", "radio"] as const)
         }
       } finally { await h.close(); }
     });
+
+test("a removed Asset retains its detail and filtered Observation history", async () => {
+  const h = await startHarness();
+  try {
+    const a = await asset(h);
+    const auth = { cookie: h.admin };
+    await report(h, a, ["O1", "O2"].map(observation_id => ({
+      type: "report.observation", asset_id: a.id, time: Date.now(), kind: "bearing",
+      observation_id, origin: { latitude: 1, longitude: 2 }, bearing_deg: 10,
+    })));
+    const path = "/entities/assets/" + a.id;
+    const original = (await h.call("GET", path, auth)).body.item;
+    assert.equal((await h.call("DELETE", "/administration/assets/" + a.id, auth)).status, 200);
+    const detail = (await h.call("GET", path, auth)).body;
+    assert.deepEqual(detail.item, original);
+    assert.equal(detail.removal.requested_by, "ADM");
+    assert.equal((await h.call("GET", "/entities/assets", auth)).body.items.length, 0);
+    const history = (await h.call("GET", "/history?asset_id=" + a.id + "&observation_id=O2", auth)).body;
+    assert.deepEqual(history.items.map((e: { record: { observation_id: string } }) => e.record.observation_id), ["O2"]);
+  } finally {
+    await h.close();
+  }
+});
+
+test("each failsafe kind keeps its latest report until the Asset signs up again", async () => {
+  const h = await startHarness();
+  try {
+    const a = await asset(h);
+    const base = { type: "report.failsafe", time: 1, asset_id: a.id };
+    await report(h, a, [
+      { ...base, kind: "autopilot", in_control: true },
+      { ...base, kind: "response", response: { kind: "hold" }, task_state: "active" },
+      { ...base, kind: "override", request_id: 1 },
+    ]);
+    const read = () => h.call("GET", "/entities/assets/" + a.id, { cookie: h.admin });
+    const before = (await read()).body.item;
+    assert.deepEqual(Object.keys(before.failsafes).sort(), ["autopilot", "override", "response"]);
+    assert.equal(before.reports["report.failsafe"], undefined);
+    assert.equal((await h.call("POST", "/entities/assets", { key: a.key, body: description })).status, 201);
+    assert.deepEqual((await read()).body.item.failsafes, {});
+  } finally {
+    await h.close();
+  }
+});

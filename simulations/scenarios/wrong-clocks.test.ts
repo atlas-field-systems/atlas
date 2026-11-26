@@ -1,6 +1,7 @@
 import { createLivePicture } from "@atlas/sdk";
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
+import { radioAsset } from "../src/actors.ts";
 import { assetApp } from "../src/asset-app.ts";
 import { value } from "../src/world.ts";
 scenario({
@@ -28,11 +29,10 @@ scenario({
       ),
     );
     const picture = value(await w.complete(w.admin.call("asset", { params })));
-    assert.equal(picture.item.settings.run_state.value, "paused");
+    assert.equal(picture.item.settings.run_state, undefined);
     assert.equal(
-      live.assets().items.find((a) => a.asset_id === asset_id)?.settings.run_state
-        .value,
-      "paused",
+      live.assets().items.find((a) => a.asset_id === asset_id)?.settings.run_state,
+      undefined,
     );
     const history = [];
     const pages = w.admin
@@ -54,5 +54,27 @@ scenario({
       1,
       "future evidence is retained",
     );
+  },
+});
+
+
+scenario({
+  name: "settings follow arrival when a radio Asset corrects its clock",
+  checks: ["core/docs/api.md#reads"],
+  async run(w) {
+    const radio = await radioAsset(w);
+    const params = { asset_id: radio.asset_id };
+    const live = createLivePicture(w.admin);
+    w.onClose(() => live.stop());
+    await w.until(() => live.assets().ready);
+    const now = w.clock.now();
+    for (const [time, lights] of [[now, "on"], [now - 1000, "off"]] as const) {
+      value(await w.complete(radio.client.call("sendReports", {
+        params, body: { reports: [{ type: "report.settings", ...params, time, settings: { lights } }] },
+      })));
+      await w.until(() => live.assets().items.find(a => a.asset_id === radio.asset_id)?.settings.lights?.value === lights);
+      const snapshot = value(await w.complete(w.admin.call("asset", { params })));
+      assert.deepEqual(snapshot.item.settings.lights, { value: lights, time });
+    }
   },
 });

@@ -380,7 +380,8 @@ export type AssetEntry = {
   description: Description | null;
   contact: Contact;
   contact_storage_pending?: true;
-  reports: Partial<Record<Exclude<ReportKind, "report.observation" | "report.gimbal">, Report>>;
+  reports: Partial<Record<Exclude<ReportKind, "report.observation" | "report.gimbal" | "report.status" | "report.settings" | "report.failsafe">, Report>>;
+  failsafes: Partial<Record<ProtocolTypes["report.failsafe"]["kind"], ProtocolTypes["report.failsafe"]>>;
   settings: Partial<{
     [K in keyof Settings]: { value: Settings[K]; time: number };
   }>;
@@ -407,8 +408,15 @@ export function listAssets(tx: ReadTx): {
 export function getAsset(
   tx: ReadTx,
   asset_id: string,
-): { as_of: number; item: AssetEntry } {
-  return { as_of: tx.asOf(), item: assetEntry(tx, requireAsset(tx, asset_id)) };
+): { as_of: number; item: AssetEntry; removal?: ProtocolTypes["registration"] } {
+  const row = tx.get<AssetRow & { removed: number }>(
+    "SELECT * FROM assets WHERE run_id=? AND asset_id=?", tx.runId, asset_id,
+  );
+  if (!row) refuse("not_found", "No such Asset");
+  const removal = row.removed && tx.get<{ record: string }>(
+    "SELECT record FROM events WHERE run_id=? AND asset_id=? AND kind='asset.removed'", tx.runId, asset_id,
+  );
+  return { as_of: tx.asOf(), item: assetEntry(tx, row), ...(removal && { removal: JSON.parse(removal.record) }) };
 }
 export function listObservations(tx: ReadTx): {
   as_of: number;
@@ -476,13 +484,16 @@ export function getGeofeature(
 export function picture(tx: ReadTx): {
   as_of: number;
   assets: AssetEntry[];
+  gateways: Contact[];
   observations: Observation[];
   tracks: Track[];
   geofeatures: Geofeature[];
 } {
+  const { as_of, items, gateways } = listAssets(tx);
   return {
-    as_of: tx.asOf(),
-    assets: listAssets(tx).items,
+    as_of,
+    assets: items,
+    gateways,
     observations: listObservations(tx).items,
     tracks: listTracks(tx).items,
     geofeatures: listGeofeatures(tx).items,
@@ -511,7 +522,7 @@ export function history(
       const pair = JSON.parse(Buffer.from(cursor, "base64url").toString());
       if (
         !Array.isArray(pair) ||
-        pair.length !== 2 ||
+        (pair.length !== 2 && pair.length !== 3) ||
         !pair.every((n) => Number.isSafeInteger(n) && n >= 0)
       )
         throw Error();
@@ -536,6 +547,7 @@ export function history(
         ...common,
         ...(query.has("asset_id") ? { asset_id: query.get("asset_id")! } : {}),
         ...(kind ? { report: kind as ReportKind } : {}),
+        ...(query.has("observation_id") ? { observation_id: query.get("observation_id")! } : {}),
       },
       cursor,
       limit,
@@ -767,10 +779,15 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
     : null;
   const reports: AssetEntry["reports"] = {};
   for (const kind of reportKinds)
-    if (kind !== "report.observation" && kind !== "report.gimbal") {
+    if (kind !== "report.observation" && kind !== "report.gimbal" && kind !== "report.status" && kind !== "report.settings" && kind !== "report.failsafe") {
       const e = latestReport(tx, { asset_id: row.asset_id, kind });
       if (e) reports[kind] = e.record;
     }
+  const failsafes: AssetEntry["failsafes"] = {};
+  for (const sub_kind of ["autopilot", "response", "override"] as const) {
+    const e = latestReport(tx, { asset_id: row.asset_id, kind: "report.failsafe", sub_kind });
+    if (e?.kind === "report.failsafe") failsafes[sub_kind] = e.record;
+  }
   const settings: AssetEntry["settings"] = {};
   for (const name of [
     "run_state",
@@ -818,6 +835,7 @@ function assetEntry(tx: ReadTx, row: AssetRow): AssetEntry {
         } as const
       : { contact: JSON.parse(row.contact) }),
     reports,
+    failsafes,
     settings,
     subsystems,
     gimbals,

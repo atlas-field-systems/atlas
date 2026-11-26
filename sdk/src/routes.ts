@@ -236,12 +236,13 @@ type Responses = {
   entities: {
     as_of: number;
     assets: AssetView[];
+    gateways: P["contact"][];
     observations: P["report.observation"][];
     tracks: P["track"][];
     geofeatures: P["geofeature"][];
   };
   assets: Cut<AssetView> & { gateways: P["contact"][] };
-  asset: { as_of: number; item: AssetView };
+  asset: { as_of: number; item: AssetView; removal?: P["registration"] };
   tasks: Cut<TaskView> & { held: number[] };
   sendTasks: EventAck & { task_ids: number[] };
   changeSettings: EventAck;
