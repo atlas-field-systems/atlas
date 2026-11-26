@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/action.json",
+  "title": "action",
+  "description": "One action a Plugin offers, named by that Plugin in its description, such as \"find_buildings\". It is unique within the Plugin. Protocol does not list actions.",
+  "type": "string",
+  "pattern": "^[a-z_]+$",
+  "minLength": 1,
+  "maxLength": 32,
+  "examples": [
+    "find_buildings"
+  ]
+}
