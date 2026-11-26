@@ -100,16 +100,9 @@ export function answer(
   for (const id of record.geofeature_ids ?? [])
     if (!entities.createdFor(tx, id, record.request_id))
       refuse("invalid", "Geo feature was not created by this call");
-  const ids = [...(record.object_ids ?? [])];
-  if (record.type === "plugin.result")
-    for (const place of record.places ?? [])
-      if (place.kind === "imagery") ids.push(place.object_id);
-  for (const id of ids)
+  for (const id of record.object_ids ?? [])
     if (!objects.createdFor(tx, id, record.request_id))
       refuse("invalid", "Object was not created by this call");
-  if (record.type === "plugin.result")
-    for (const place of record.places ?? [])
-      if (place.kind === "imagery") objects.objectForImagery(tx, place.object_id);
   return {
     event_id:
       record.type === "plugin.result"

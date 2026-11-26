@@ -60,6 +60,8 @@ export type RecordsGeofeature = {
   kind: VariablesKind;
   geofeature_id: VariablesGeofeatureId;
   name?: VariablesName;
+  requested_by?: VariablesRequestedBy;
+  request_id?: VariablesRequestId;
 } & RecordsGeofeature1;
 export type VariablesKind = string;
 export type VariablesGeofeatureId = string;
@@ -117,12 +119,11 @@ export type VariablesOptional = boolean;
 export type VariablesInMenu = boolean;
 export type VariablesShowOnMap = boolean;
 export type VariablesExplanation = string;
-export type RequestsGeofeature = {
+export type ComponentsListedPlace = {
   kind: VariablesKind;
   name?: VariablesName;
-} & RequestsGeofeature1;
-export type RequestsGeofeature1 =
-  RecordsGeofeaturePoint | RecordsGeofeatureLine | RecordsGeofeatureArea | RecordsGeofeatureImagery;
+} & ComponentsListedPlace1;
+export type ComponentsListedPlace1 = RecordsGeofeaturePoint | RecordsGeofeatureLine | RecordsGeofeatureArea;
 export type RecordsProvisioning = {} & {
   time: VariablesTime;
   gateway_id?: VariablesGatewayId;
@@ -249,6 +250,12 @@ export type VariablesOperatorId = string;
 export type VariablesPassword = string;
 export type VariablesAdmin = boolean;
 export type VariablesAttachment = VariablesGeofeatureId | null;
+export type RequestsGeofeature = {
+  kind: VariablesKind;
+  name?: VariablesName;
+} & RequestsGeofeature1;
+export type RequestsGeofeature1 =
+  RecordsGeofeaturePoint | RecordsGeofeatureLine | RecordsGeofeatureArea | RecordsGeofeatureImagery;
 export type VariablesAssetReport =
   | RecordsReportStatus
   | RecordsReportFailsafe
@@ -521,7 +528,7 @@ export interface RecordsPluginResult {
    * @minItems 1
    * @maxItems 1000
    */
-  places?: RequestsGeofeature[];
+  places?: ComponentsListedPlace[];
   /**
    * @minItems 1
    * @maxItems 1000
@@ -698,6 +705,10 @@ export interface RecordsReportStatusQueue {
    */
   task_ids: VariablesTaskId[];
   request_id?: VariablesRequestId;
+  /**
+   * @maxItems 9999
+   */
+  updated_task_ids?: VariablesTaskId[];
 }
 export interface RecordsReportTelemetry {
   type: "report.telemetry";

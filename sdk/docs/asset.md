@@ -44,8 +44,7 @@ unlimited room and asks whenever `onWaiting` fires.
 `storeFile` [uploads a file the Asset captured](../../core/docs/api.md#objects).
 `AssetFile` holds its `name`, `contentType`, bytes, an optional `place` (a
 `requests.geofeature` body), and an optional `taskId` when the file came from a
-Task. With a place, the link creates that geo feature first and attaches the
-file to it; with `taskId`, Core links the stored Object to that Task. A link
+Task. With a place, Core creates the place and its attached Object in one save; with `taskId`, Core links the stored Object to that Task. A link
 that cannot carry files, such as a narrow radio link, rejects the call, and the
 file stays in the Asset's
 [Reset ZIP](../../asset/docs/logging.md#export-the-assets-reset-zip).

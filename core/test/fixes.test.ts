@@ -1358,7 +1358,7 @@ test("R3-8 default listen starts on loopback without TLS [config.md#defaults]", 
   }
 });
 
-test("Plugin inline imagery requires GeoTIFF and leaves refused calls open [api.md#objects]", async () => {
+test("Plugin inline imagery is refused and leaves refused calls open [api.md#objects]", async () => {
   const c = simulatedClock(),
     h = await startHarness(c);
   try {
@@ -1408,8 +1408,8 @@ test("Plugin inline imagery requires GeoTIFF and leaves refused calls open [api.
         },
       });
     const refused = await answer(text);
-    assert.equal(refused.status, 409);
-    assert.equal(refused.body.error, "not_geotiff");
+    assert.equal(refused.status, 400);
+    assert.equal(refused.body.error, "invalid");
     assert.equal(
       (
         await h.call("GET", `/plugins/${p.plugin_id}/calls/${request_id}`, {
@@ -1418,7 +1418,7 @@ test("Plugin inline imagery requires GeoTIFF and leaves refused calls open [api.
       ).body.answer,
       null,
     );
-    assert.equal((await answer(good)).status, 200);
+    assert.equal((await answer(good)).status, 400);
   } finally {
     await h.close();
   }

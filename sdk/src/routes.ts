@@ -206,6 +206,7 @@ export type Params = Record<string, string | number>;
 export type Query = Record<string, string | number | boolean | undefined>;
 
 export type TaskView = {
+  place_update?: "pending" | "accepted" | "failed" | "dropped";
   task: P["task"];
   state:
     | "sent"

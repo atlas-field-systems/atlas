@@ -143,7 +143,7 @@ Core adds one event for every accepted domain request and stored report, in the 
 transaction as the change it records ([storage](storage.md)). Each event is
 `{event_id, time, kind, record}`: a rising integer, Core's receive time in
 milliseconds, one of the kinds below, and its record. Geo feature events also
-carry `requested_by`, because their record names no author. A report event that
+carry `requested_by` for the caller who made that change. A report event that
 Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 `clock_ahead: true`.
 
@@ -577,8 +577,7 @@ are [history](#reads). An Observation changes only when its Asset reports.
   with its key ([Plugins](#plugins)). So may an Asset, to place a file it
   [uploads](#objects): an Asset on IP with its key, or a gateway for a radio
   Asset it carries. Any other replace or delete by them gets `403`.
-- The event names who asked with `requested_by`, because the geo feature record
-  names no author. A geo feature a Plugin or Asset creates names it.
+- The record keeps its original creator in `requested_by` and its originating Plugin call in `request_id`, when applicable.
 - **A Task keeps a copy of its place.** `move_to` and `land` may name a point
   geo feature by `geofeature_id` instead of a position. When it accepts the
   Task, Core refuses a `geofeature_id` that does not exist with `404` and
@@ -602,8 +601,9 @@ are [history](#reads). An Observation changes only when its Asset reports.
   As for any request, only an online Asset gets it: Tasks of an offline Asset
   are not updated, and the answer lists them in `not_updated_task_ids`. A
   `move_to` or `land` Task whose place is no longer a point keeps its copy and
-  is listed there too; the edit itself still goes through. The
-  Asset answers with a queue report naming the event, and an update it has not
+  is listed there too; the edit itself still goes through.
+  Task entries with a place update expose `place_update` as `pending`, `accepted`, `failed`, or `dropped`. Each Task shows the most recent copy the Asset accepted.
+  The Asset answers with a queue report naming the event and listing the accepted `updated_task_ids`, and an update it has not
   answered when it goes offline is dropped like any other request. Without
   `update_tasks=true` the Tasks keep their copies. The
   [Command Interface](../../command-interface/docs/README.md#area-and-place-inputs)
@@ -636,6 +636,8 @@ Operators, Plugins, and Assets store Objects. Reading Objects follows
 | `GET /objects/{object_id}/file` | [Readers](#reads) | The file, with its `content_type` |
 | `PATCH /objects/{object_id}` | Account | `{"geofeature_id": <id or null>}` attaches, moves, or detaches it; `200 {event_id}` |
 | `DELETE /objects/{object_id}` | Account | Deletes the Object: hides it and its file until the next Reset; `200 {event_id}` |
+
+On upload, `place` may contain a URL-encoded JSON geo feature request. Core creates the place and attaches the file in one transaction. Supply either `place` or `geofeature_id`. Deleting the place detaches its Objects.
 
 All files, including photos and clips, are Objects
 ([ADR-0014](../../docs/adr/0014-every-file-is-an-object-and-goes-through-core.md)).
@@ -809,7 +811,5 @@ These recent decisions are not yet implemented in the built Core, Protocol, and 
 - Dropped Tasks still use the old state instead of outcome unknown until #119.
 - Core and the SDK queue still enforce the old queue limit until #120.
 - An Asset on IP whose command stream is down while reports arrive still shows online and accepts work until #121.
-- A place edit with `update_tasks=true` still changes Core's shown Task point before the Asset accepts it until #131.
 - The SDK outbox does not yet separate deadline priority tiers or mark Task-started reports and contact-proof heartbeats `must_arrive` until #155.
 - Core, Protocol, and the SDK still link Task files through `object_ids` on the completed Task report instead of `task_id` on `POST /objects` until #160.
-- Core and Protocol still allow imagery in a Plugin's listed `places` until #169.

@@ -9,6 +9,7 @@ scenario({
     const tooLarge = await w.complete(
       w.admin.uploadObject(new Uint8Array(27), "application/octet-stream", {
         name: "large",
+        place: JSON.stringify({ kind: "point", position: { latitude: 1, longitude: 2 } }),
       }),
     );
     assert.ok(!tooLarge.ok && tooLarge.status === 413);
@@ -16,6 +17,7 @@ scenario({
       value(await w.complete(w.admin.call("objects"))).items.length,
       0,
     );
+    assert.equal(value(await w.complete(w.admin.call("geofeatures"))).items.length, 0);
     const tiff = new Uint8Array(26);
     const bytes = new DataView(tiff.buffer);
     tiff.set([73, 73]);
@@ -36,6 +38,9 @@ scenario({
       ),
     );
     const params = { object_id: stored.object_id };
+    value(await w.complete(w.admin.call("attachObject", { params,
+      body: { geofeature_id: imagery.geofeature.geofeature_id },
+    })));
     const refused = await w.complete(w.admin.call("deleteObject", { params }));
     assert.ok(!refused.ok && refused.status === 409);
     value(
@@ -45,6 +50,7 @@ scenario({
         }),
       ),
     );
+    assert.equal(value(await w.complete(w.admin.call("object", { params }))).geofeature_id, undefined);
     value(await w.complete(w.admin.call("deleteObject", { params })));
     for (const result of [
       await w.complete(w.admin.call("object", { params })),

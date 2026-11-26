@@ -462,7 +462,8 @@ test("place copies, optional updates, imagery kind rules and Fusion freshness [a
       { asset_id: a.id, task_id: 1 },
     ]);
     read = (await h.call("GET", `/tasks/${a.id}`, { cookie: h.admin })).body;
-    assert.equal(read.items[0].task.destination.latitude, 5);
+    assert.equal(read.items[0].task.destination.latitude, 1);
+    assert.equal(read.items[0].place_update, "pending");
     const line = {
       kind: "line",
       line: [

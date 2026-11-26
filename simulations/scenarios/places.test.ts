@@ -35,8 +35,6 @@ scenario({
       );
     for (const asset of [online, offline])
       await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.asset_id === asset.asset_id && e.record.kind === "queue" && e.record.task_ids.includes(1)));
-    w.network.cut("offline");
-    for (let second = 0; second < 31; second++) await w.advance(1000);
     const params = { geofeature_id };
     const body = {
       kind: "point" as const,
@@ -58,6 +56,17 @@ scenario({
         "edit alone keeps original copy",
       );
     }
+    w.network.cut("offline");
+    const attempted = value(await w.complete(w.admin.call("replaceGeofeature", {
+      params, body, query: { update_tasks: true },
+    })));
+    assert.ok(attempted.updated_task_ids?.some(id => id.asset_id === offline.asset_id));
+    for (let second = 0; second < 31; second++) await w.advance(1000);
+    const dropped = value(await w.complete(w.admin.call("tasks", {
+      params: { asset_id: offline.asset_id },
+    }))).items[0];
+    assert.equal(dropped.place_update, "dropped");
+    assert.ok(dropped.task.kind === "move_to" && dropped.task.destination?.latitude === 1);
     const edit = value(
       await w.complete(
         w.admin.call("replaceGeofeature", {
@@ -73,6 +82,8 @@ scenario({
     assert.deepEqual(edit.not_updated_task_ids, [
       { asset_id: offline.asset_id, task_id: 1 },
     ]);
+    await w.until(() => w.events.some(e => e.kind === "report.status" &&
+      e.record.kind === "queue" && e.record.updated_task_ids?.includes(1)));
     value(await w.complete(w.admin.call("deleteGeofeature", { params })));
     const task = value(
       await w.complete(

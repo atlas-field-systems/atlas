@@ -56,7 +56,7 @@ disagree, fix one of them.
 - **Observation reports are whole.** Each carries everything the Asset knows about the target, so a field left out is not known. Protocol never merges partial reports and has no `null` to clear a fact. Fieldlinks may avoid resending unchanged fields in their own encoding.
 - **The Asset chooses `observation_id`**, unique for that Asset until the next Reset, and keeps it while it keeps seeing the same target. Core assigns `geofeature_id`. *[Owner decision](../../docs/adr/0006-core-assigns-asset-ids-fresh-after-each-reset.md).*
 - **A `coordinates` Observation** says where the target is, with an optional uncertainty. **A `bearing` Observation** says which way it is from where the sensor was, with optional elevation and range.
-- **A `geofeature` is a point, line, area, or imagery, with an optional name**, and nothing else. A change replaces it whole. It names no author; the event that stores it carries `requested_by`.
+- **A `geofeature` is a point, line, area, or imagery, with an optional name**. A replacement preserves the original creator and originating Plugin call.
 - **Imagery names one GeoTIFF Object** by `object_id`. Its map position comes from the file, so the record carries no outline. A replacement may change only its name. *[Owner decision](../../atlas/archive/decision-log.md#places-and-tasks).*
 - No record carries a stale flag. Every record keeps its `time`, and readers show its age. *[Owner decision](../../atlas/archive/decision-log.md#the-picture-and-plugins).*
 

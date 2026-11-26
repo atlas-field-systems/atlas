@@ -263,7 +263,15 @@ export function createLivePicture(
           }
       }
     }
-    if (e.kind === "tasks.requested" || e.kind === "tasks.updated") {
+    if (e.kind === "tasks.updated" || e.kind === "request.dropped" ||
+      (e.kind === "report.status" && e.record.kind === "queue" && e.record.updated_task_ids)) {
+      const asset = e.kind === "tasks.updated" ? e.record[0]?.asset_id : e.record.asset_id;
+      if (asset && (!options.asset_id || asset === options.asset_id) && e.event_id > (marks.get(asset) ?? 0)) {
+        void load();
+        return;
+      }
+    }
+    if (e.kind === "tasks.requested") {
       for (const task of e.record) {
         if (options.asset_id && task.asset_id !== options.asset_id) continue;
         if (e.event_id <= (marks.get(task.asset_id) ?? 0)) continue;

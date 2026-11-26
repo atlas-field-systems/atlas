@@ -37,5 +37,5 @@ export type {
   ReportSource,
   Room,
 } from "./asset.ts";
-export { startPlugin } from "./plugin.ts";
+export { listedPlacesForOperator, startPlugin } from "./plugin.ts";
 export type { Reply } from "./plugin.ts";

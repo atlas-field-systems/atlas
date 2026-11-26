@@ -1,3 +1,4 @@
+import { settlement } from "../store/events.ts";
 import * as entities from "./entities.ts";
 import { refuse } from "../api/errors.ts";
 import type { ProtocolTypes } from "@atlas/protocol/types";
@@ -29,7 +30,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   run_id        INTEGER NOT NULL,
   asset_id      TEXT    NOT NULL,
   task_id       INTEGER NOT NULL,          -- 1, 2, 3 ... per Asset per run; next = MAX+1 (rows never deleted in a run)
-  body          TEXT    NOT NULL,          -- the task record as last sent (tasks.updated replaces it)
+  body          TEXT    NOT NULL,          -- the Task as originally requested
   requested_by  TEXT    NOT NULL,
   request_event INTEGER NOT NULL,          -- event_id of its tasks.requested
   state         TEXT    NOT NULL CHECK (state IN ('sent','queued','active','completed','failed','cancelled','dropped')),
@@ -255,13 +256,6 @@ export function updatePlace(
     }
     const task: TaskRecord = JSON.parse(row.body);
     const updated = { ...task, ...placeCopy(tx, task), time: tx.now };
-    tx.run(
-      "UPDATE tasks SET body=? WHERE run_id=? AND asset_id=? AND task_id=?",
-      JSON.stringify(updated),
-      tx.runId,
-      row.asset_id,
-      row.task_id,
-    );
     const group = groups.get(row.asset_id) ?? [];
     group.push(updated);
     groups.set(row.asset_id, group);
@@ -273,6 +267,7 @@ export function updatePlace(
 
 export type TaskEntry = {
   task: TaskRecord;
+  place_update?: "pending" | "accepted" | "failed" | "dropped";
   state: TaskState;
   state_time: number;
   object_ids?: string[];
@@ -282,11 +277,27 @@ export function readTasks(
   asset_id: string,
 ): { as_of: number; items: TaskEntry[]; held: number[] } {
   entities.requireAsset(tx, asset_id);
+  const updates = new Map<number, { accepted?: TaskRecord; state: NonNullable<TaskEntry["place_update"]> }>();
+  for (const row of tx.all<{ event_id: number; record: string }>(
+    "SELECT event_id,record FROM events WHERE run_id=? AND asset_id=? AND kind='tasks.updated' ORDER BY event_id",
+    tx.runId, asset_id,
+  )) {
+    const outcome = settlement(tx, row.event_id);
+    for (const task of JSON.parse(row.record) as TaskRecord[]) {
+      const accepted = outcome.state === "answered" && outcome.by.kind === "report.status"
+        && outcome.by.record.kind === "queue" && outcome.by.record.updated_task_ids?.includes(task.task_id);
+      updates.set(task.task_id, {
+        accepted: accepted ? task : updates.get(task.task_id)?.accepted,
+        state: accepted ? "accepted" : outcome.state === "unsettled" ? "pending" : outcome.state === "dropped" ? "dropped" : "failed",
+      });
+    }
+  }
   return {
     as_of: tx.asOf(),
     held: latestQueue(tx, asset_id),
     items: tx
       .all<{
+        task_id: number;
         body: string;
         state: TaskState;
         state_time: number;
@@ -297,7 +308,8 @@ export function readTasks(
         asset_id,
       )
       .map((r) => ({
-        task: JSON.parse(r.body),
+        task: updates.get(r.task_id)?.accepted ?? JSON.parse(r.body),
+        ...(updates.has(r.task_id) ? { place_update: updates.get(r.task_id)!.state } : {}),
         state: r.state,
         state_time: r.state_time,
         ...(r.object_ids ? { object_ids: JSON.parse(r.object_ids) } : {}),
