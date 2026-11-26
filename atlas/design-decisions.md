@@ -223,7 +223,7 @@ Command Interface ([Build order](build-order.md)).
   use. A mismatch is refused with an explanation.
 - Protocol stays unpublished during the first development run. Other parts use
   it from this repository; it will be public later
-  ([decision log](archive/decision-log.md#build-and-test)).
+  ([decision log](https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/decision-log.md#build-and-test)).
 - Any change to Protocol files, wording included, is a new version. Wording
   fixes wait for the next real release, and every part updates together
   ([Protocol ADR-0001](https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/adr/0001-any-change-to-protocol-is-a-new-version.md)).
