@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/input.json",
+  "title": "input",
+  "description": "One input of a Plugin action, named by the Plugin in its description, such as \"box\". It is unique within the action.",
+  "type": "string",
+  "pattern": "^[a-z_]+$",
+  "minLength": 1,
+  "maxLength": 32,
+  "examples": [
+    "box"
+  ]
+}
