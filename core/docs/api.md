@@ -45,8 +45,8 @@ Accounts may call every operator route.
 - **Since the last Reset.** Every read, history page, and event stream covers
   only what Core holds since the last Reset.
   [Reset and identity](../../atlas/reset-and-identity.md) owns what Reset does,
-  what carries over, and which IDs start again. `run_id` on `GET /about` is the
-  built name of the counter that changes at each Reset.
+  what carries over, and which IDs start again. `run_id` on `GET /about` is an
+  opaque number identifying the current picture. Compare it for equality.
 - **A Reset discards what a caller held.** A caller that finds a new `run_id` on
   `GET /about` throws away everything it held from before, including its
   cursors and links, and starts again from a fresh read. A link names its

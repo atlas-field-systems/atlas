@@ -175,7 +175,7 @@ An accepted answer prevents another answer through that reply.
 
 ## Reset and idle contact
 
-A connection binds one `run_id`, the counter Core changes at each Reset.
+A connection binds one `run_id`, an opaque identifier for the current picture.
 After a transport failure, the client checks `/about` before resending. A new
 `run_id` fences every old retry and returns `run_ended` without sending. Call
 `connect()` to bind the new `run_id` after discarding the old state. An invalid response returns `invalid_response`.

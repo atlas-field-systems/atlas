@@ -200,7 +200,7 @@ test("F4 diagnostics obey total limit including gaps [logging.md#when-logging-ca
       await h.call("GET", "/about");
       await (await fetch(h.core.debugUrl!)).text();
     }
-    const dir = join(h.dataDir, "diagnostics/run-1");
+    const dir = join(h.dataDir, "diagnostics", `run-${h.core.runId}`);
     const bytes = (
       await Promise.all((await readdir(dir)).map((n) => readFile(join(dir, n))))
     ).reduce((n, b) => n + b.length, 0);

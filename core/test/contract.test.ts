@@ -506,9 +506,9 @@ test("11. deliberate stop checks ZIP, clears sessions, preserves accounts and gl
       );
     assert.deepEqual(await readdir(join(h.dataDir, "diagnostics")), []);
     next = await startCore({ clock, config: h.config });
-    assert.equal(
+    assert.notEqual(
       (await (await fetch(next.url + "/about")).json()).run_id,
-      h.core.runId + 1,
+      h.core.runId,
     );
     const headers = {
       "atlas-definitions": protocol.hash,
@@ -584,7 +584,7 @@ test("12. an unwritable archive clears nothing and next start is new [reset.md#w
     );
     await chmod(h.dataDir + "-archive", 0o700);
     next = await startCore({ clock, config: h.config });
-    assert.equal(next.runId, h.core.runId + 1);
+    assert.notEqual(next.runId, h.core.runId);
   } finally {
     await chmod(h.dataDir + "-archive", 0o700);
     next && (await stopCore(next));
@@ -674,7 +674,7 @@ test("13b. final ZIP finishes an interrupted clear; a corrupt ZIP resumes withou
       for (const name of ["core.sqlite", "core.sqlite-wal"])
         await copyFile(join(snapshot, name), join(h.dataDir, name));
       resumed = await startCore({ clock, config: h.config });
-      assert.equal(resumed.runId, h.core.runId + (corrupt ? 0 : 1));
+      assert.equal(resumed.runId === h.core.runId, corrupt);
       const response = await fetch(resumed.url + "/administration/me", {
         headers: { "atlas-definitions": protocol.hash, cookie: h.admin },
       });

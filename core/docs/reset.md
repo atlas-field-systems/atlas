@@ -12,9 +12,8 @@ says what Core records before a Reset.
 The user starts and stops Core on Core's own computer. A host shutdown or a
 container stop is a stop too.
 
-- **Starting Core** begins an empty picture with the next `run_id`, unless
+- **Starting Core** begins an empty picture with a fresh `run_id`, unless
   Core was never stopped: then Core [keeps the picture](#when-core-stops-unexpectedly).
-  `run_id` is the built name of the counter that changes at each Reset.
 - **Stopping Core** is Reset. Core stops accepting requests, writes its Reset
   ZIP, checks it, clears the picture, and exits.
 - **Shut the Assets down first.** Core does not check. An Asset left running
@@ -34,7 +33,7 @@ sequenceDiagram
     Core->>Folder: Read it back and check every file
     Note over Core: Clear the picture, then exit
     User->>Core: Start Core
-    Note over Core: Empty picture, next run_id
+    Note over Core: Empty picture, fresh run_id
 ```
 
 Requests already in progress when the stop begins may finish within a

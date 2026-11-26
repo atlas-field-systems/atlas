@@ -22,7 +22,6 @@ scenario({
     await w.until(
       () => picture.assets().ready && picture.assets().items.length === 2,
     );
-    const oldRun = w.core.runId;
     w.network.always("admin", "/entities/geofeatures", {
       kind: "loseResponse",
     });
@@ -52,7 +51,7 @@ scenario({
     await w.until(
       () =>
         p.client.status.phase === "connected" &&
-        p.client.status.run_id === oldRun + 1,
+        p.client.status.run_id === w.core.runId,
     );
     assert.ok(
       !w.network.traffic
