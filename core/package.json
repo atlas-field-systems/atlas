@@ -15,6 +15,7 @@
   },
   "exports": {
     ".": "./src/core.ts",
+    "./event-frame": "./src/api/event-frame.ts",
     "./event-kinds": "./src/api/event-kinds.ts"
   }
 }

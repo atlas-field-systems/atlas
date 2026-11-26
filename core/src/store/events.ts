@@ -1,3 +1,5 @@
+import { eventFrame, MAX_EVENT_FRAME_BYTES } from "../api/event-frame.ts";
+import { refuse } from "../api/errors.ts";
 import { EVENT_KINDS as KINDS } from "../api/event-kinds.ts";
 import type { ProtocolTypes } from "@atlas/protocol/types";
 import type { ReadTx, TableDef, Tx } from "./db.ts";
@@ -214,6 +216,9 @@ export function appendEvent<K extends EventKind>(
     extra?.requested_by ?? null,
     extra?.clock_ahead ? 1 : 0,
   )!.id;
+  const envelope = { event_id, time: tx.now, kind, record, ...extra };
+  if (Buffer.byteLength(eventFrame(envelope)) > MAX_EVENT_FRAME_BYTES)
+    refuse("too_large", "Event stream frame exceeds 16 MiB");
   if (
     kind.endsWith(".contact") ||
     kind.startsWith("track.") ||

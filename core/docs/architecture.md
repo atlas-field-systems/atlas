@@ -10,6 +10,7 @@
 | `main.ts`, `core.ts` | Configuration, boot order, composition, signals |
 | `clock.ts`, `config.ts`, `ids.ts`, `log.ts` | Injected time, local configuration, short ID encoding, diagnostics |
 | `store/db.ts` | SQLite connection, synchronous transactions, commit notifications |
+| `api/event-frame.ts` | SSE encoding and the byte limit shared with the SDK |
 | `api/event-kinds.ts` | Public event kind-to-record data |
 | `store/events.ts` | Event audience and request rules, append validation, settlement, filtering, pages |
 | `store/idempotency.ts`, `store/runs.ts` | Retry responses, recovery, counters |

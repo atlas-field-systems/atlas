@@ -109,7 +109,4 @@ picture.onChange(cb);
 It does not claim a definitions mismatch. The host decides whether to start
 another follow.
 
-An SSE frame, including an incomplete line, is limited to 16 MiB plus 1 KiB
-for SSE framing and the event envelope, based on Core's
-[JSON body limit](../../core/docs/api.md#basics). Exceeding it ends the follow
-with `invalid_event`.
+A frame that exceeds the [Core API frame limit](../../core/docs/api.md#the-event-log-and-live-stream), even on an incomplete line, ends the follow with `invalid_event`.

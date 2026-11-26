@@ -74,7 +74,7 @@ Accounts may call every operator route.
 | `409 id_taken`, `idempotency_conflict` | Identity is in use or retry key names another body |
 | `503 stopping` | Core is stopping |
 | `410 deleted` | The Object was deleted since the last Reset; the body adds its `deletion` record, which says who deleted it and when |
-| `413 too_large` | The JSON body exceeds 16 MiB, or the file is larger than `max_object_bytes` ([configuration](../config.md)) |
+| `413 too_large` | The JSON body or a resulting event-stream frame exceeds 16 MiB, or the file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
 ## Root paths
@@ -186,6 +186,7 @@ incomplete event and resumes after its last fully handled `event_id`.
 - **Snapshots resume cleanly.** Every read returns `as_of`, the last `event_id` it
   includes. A page loads a snapshot, then follows `/events?after=<as_of>`. This is
   how a page recovers after a refresh or in a new tab.
+- A complete SSE frame, including its final blank line, may use up to 16 MiB of UTF-8. Core refuses the whole write before commit if any resulting frame exceeds this limit.
 - Core streams from the `events` table. When a reader cannot keep up, Core closes
   its stream and the reader resumes from its last `event_id`. Event and keepalive
   writes both stop on transport backpressure. A drain resumes output; without a

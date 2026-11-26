@@ -1,3 +1,4 @@
+import { eventFrame } from "./event-frame.ts";
 import * as entities from "../pillars/entities.ts";
 import { pageAfter } from "../store/events.ts";
 import type { ServerResponse } from "node:http";
@@ -87,14 +88,8 @@ export function startStreams(
               pageAfter(tx, audience, cursor, 256),
             );
             for (const event of page) {
-              const writable = res.write(
-                `id: ${event.event_id}\nevent: ${event.kind}\ndata: ${JSON.stringify(event)}\n\n`,
-              );
+              const writable = res.write(eventFrame(event));
               cursor = event.event_id;
-              if (res.writableLength > 1024 * 1024) {
-                close();
-                return;
-              }
               if (!writable) {
                 blocked = true;
                 deadline = clock.after(30000, close);

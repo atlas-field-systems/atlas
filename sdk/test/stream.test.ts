@@ -255,3 +255,29 @@ test("a source that refuses cancellation after an invalid frame is reported [sdk
   await new Promise<void>(resolve => setImmediate(resolve));
   assert.ok(names.includes("stream.reader_cancel_failed"));
 });
+
+test("follow accepts a 16 MiB frame and refuses one extra byte [core/docs/api.md#the-event-log-and-live-stream]", async t => {
+  const protocol = await loadPackagedProtocol();
+  const frame = (id: number, size: number) => {
+    const envelope = { event_id: id, time: 0, kind: "plugin.result",
+      record: { type: "plugin.result", time: 0, plugin_id: "P1", request_id: 1 } };
+    const data = "\ndata: " + JSON.stringify(envelope) + "\n\n";
+    const padding = size - Buffer.byteLength(":" + data);
+    return ":" + "é".repeat(Math.floor(padding / 2)) + " ".repeat(padding % 2) + data;
+  };
+  const limit = 16 * 1024 * 1024;
+  const client = createClient({
+    protocol, credential: { kind: "account" }, clock, baseUrl: "http://localhost",
+    async fetch(input) {
+      if (new URL(String(input)).pathname === "/about")
+        return Response.json({ run_id: 1, definitions_hash: protocol.hash, core_version: "test", protocol_version: "test" });
+      return new Response(frame(1, limit) + frame(2, limit + 1));
+    },
+  });
+  t.after(() => client.close());
+  assert.ok((await client.connect()).ok);
+  const seen: number[] = [];
+  const stream = follow(client, { after: 0 }, event => { seen.push(event.event_id); });
+  assert.equal((await stream.done).reason, "invalid_event");
+  assert.deepEqual(seen, [1]);
+});
