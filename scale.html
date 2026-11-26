@@ -10,12 +10,12 @@ Design so Atlas works well at these sizes and does not break just past them.</p>
 </ul>
 <h2 id="setup">Setup</h2>
 <ul>
-<li>A Core may run several gateways at once, as long as their radio links cannot clash: gateways in different areas, such as two gateways 20 miles apart, or gateways in one area on different bands, such as an FLRC gateway beside a Meshtastic gateway. Each radio network has exactly one gateway, and the network is a mesh of Assets. An Asset always uses exactly one gateway. Different gateways may use different designs (<a href="environment.html">Environment</a>).</li>
+<li>A Core may run several gateways at once, as long as their radio links cannot clash: gateways in different areas, such as two gateways 20 miles apart, or gateways in one area on different bands, such as an FLRC gateway beside a Meshtastic gateway. Each radio network has exactly one gateway, and the network is a mesh of Assets. An Asset always uses one link and at most one gateway. Different gateways may use different designs (<a href="environment.html">Environment</a>).</li>
 <li>In practice, one operator runs Atlas at a time.</li>
 </ul>
 <h2 id="radio">Radio</h2>
 <ul>
-<li>Links start with pure LoRa, then move to a multi-layer mesh with FLRC between Assets wherever FLRC is viable (<a href="environment.html#connectivity-evolves">Environment</a>).</li>
+<li>Links start with pure LoRa, then move to a multi-layer mesh inside one Fieldlink, with FLRC between Assets wherever FLRC is viable (<a href="environment.html#connectivity-evolves">Environment</a>).</li>
 <li>Each Fieldlink sets its own size limit and splits records into chunks if it needs to. Protocol records have no size cap and no chunking.</li>
 <li>Expect a few Tasks or settings changes per minute per Asset.</li>
 </ul>
