@@ -803,3 +803,13 @@ for (const source of ["operator", "critical"] as const) test(`docs/failsafes.md:
   result = reduce(result.state, { kind: "tick", now: 1, hasWork: false }, config);
   assert.ok(result.effects.some(e => (e.kind === "task" || e.kind === "response") && e.status === "completed"));
 });
+
+test("docs/failsafes.md: contact loss without link_loss_after_s uses Protocol's 30 s default", async () => {
+  const { config, state: start } = await setup();
+  delete start.settings.link_loss_after_s;
+  start.settings.failsafe_policy = [{ rule_id: "LINK", priority: 50, conditions: [{ kind: "contact_lost" }], response: { kind: "hold" } }];
+  for (const m of [start.measurements.position!, start.measurements.armed!]) m.time = 30000;
+  assert.equal(reduce(start, { kind: "tick", now: 29999, hasWork: false }, config).state.phase, "ordinary");
+  const fired = reduce(start, { kind: "tick", now: 30000, hasWork: false }, config);
+  assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "LINK" && e.status === "active"));
+});

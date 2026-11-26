@@ -19,6 +19,8 @@ import {
   type Execution,
 } from "./commands.ts";
 import { fresh, type Measurements, type VehicleCommand } from "./vehicle.ts";
+// Protocol's documented default for the link_loss_after_s setting.
+const LINK_LOSS_AFTER_S_DEFAULT = 30;
 type Work = {
   execution: Execution;
   pausedAt: number | null;
@@ -270,7 +272,7 @@ export function reduce(
         case "contact_lost":
           holds = (
             now - state.lastHeard >=
-            (state.settings.link_loss_after_s ?? Infinity) * 1000
+            (state.settings.link_loss_after_s ?? LINK_LOSS_AFTER_S_DEFAULT) * 1000
           );
           break;
         case "idle":
