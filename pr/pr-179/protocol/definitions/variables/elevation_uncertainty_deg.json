@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/elevation_uncertainty_deg.json",
+  "title": "elevation_uncertainty_deg",
+  "description": "How far off elevation_deg may be, in degrees either way. A 95% bound.",
+  "type": "number",
+  "exclusiveMinimum": 0,
+  "maximum": 90,
+  "examples": [
+    3
+  ]
+}
