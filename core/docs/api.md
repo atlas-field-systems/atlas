@@ -806,7 +806,6 @@ marked not finished, and an operator who still wants it calls again.
 These recent decisions are not yet implemented in the built Core, Protocol, and SDK code:
 
 - The built code still contains placeholder Fusion, Track records, Track endpoints, and Track events until #130.
-- A `failsafe` Task for a flying Asset with no critical battery rule is still refused until #117.
 - Dropped Tasks still use the old state instead of outcome unknown until #119.
 - Core and the SDK queue still enforce the old queue limit until #120.
 - An Asset on IP whose command stream is down while reports arrive still shows online and accepts work until #121.

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { scenario } from "../src/scenario.ts";
 import { assetApp } from "../src/asset-app.ts";
+import { sdkAssetCaller } from "../src/actors.ts";
 import type { World } from "../src/world.ts";
 
 async function pausedAsset(w: World) {
@@ -142,5 +143,26 @@ scenario({
           e.record.task_ids.length <= 64,
       ),
     );
+  },
+});
+
+// The real app refuses to start a flying configuration with no critical battery
+// rule, so another program on IP, a contract caller, reports one.
+scenario({
+  name: "a flying Asset with no critical battery rule still takes Fail-safe",
+  checks: ["core/docs/api.md#operator-requests", "asset/docs/failsafes.md#an-operator-can-fire-the-failsafe"],
+  async run(w) {
+    const asset = await sdkAssetCaller(w, "asset", w.clock, {
+      entity_type: "drone",
+      commands: ["takeoff", "hold", "failsafe"],
+      reports: ["status", "settings"],
+      settings: ["failsafe_policy"],
+    }, { failsafe_policy: [] });
+    const asset_id = asset.session.asset_id;
+    await w.until(() => w.events.some(e => e.kind === "report.settings" && e.record.asset_id === asset_id));
+    const ordinary = await w.complete(w.admin.call("sendTasks", { params: { asset_id }, body: { tasks: [{ kind: "hold" }] } }));
+    assert.ok(!ordinary.ok && ordinary.error === "no_critical_battery_rule" && ordinary.status === 409);
+    const fired = value(await w.complete(w.admin.call("sendTasks", { params: { asset_id }, body: { tasks: [{ kind: "failsafe" }], now: true } })));
+    await w.until(() => asset.starts.includes(fired.task_ids[0]));
   },
 });
