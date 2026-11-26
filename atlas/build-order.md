@@ -14,7 +14,7 @@ Assets, Tasks, settings, reports, history, accounts, geo features, Objects,
 Observations, Tracks, Fusion, and Plugins. Throwaway prototypes test the design first.
 
 The build then goes one part at a time, in order, and each part is built whole
-([ADR-0003](../docs/adr/0003-build-each-part-whole-one-part-at-a-time.md)).
+([ADR-0003](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0003-build-each-part-whole-one-part-at-a-time.md)).
 The first version was Protocol, then Core, then the SDK, with the
 [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md)
 that test them together. Building one part finds problems that change how the
@@ -55,7 +55,7 @@ see later, so the gateway app and the simulated radio link are shaped by it.
 SiK is not a Fieldlink: first flight uses the
 [SiK tool](https://github.com/atlas-field-systems/atlas/blob/main/tools/sik/README.md),
 which runs the Asset app over IP and needs no gateway
-([ADR-0018](../docs/adr/0018-sik-is-equipment-used-through-an-atlas-tool-not-a-fieldlink.md)).
+([ADR-0018](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0018-sik-is-equipment-used-through-an-atlas-tool-not-a-fieldlink.md)).
 
 The [Meshtastic folder](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md) owns its sketch and bench plan.
 

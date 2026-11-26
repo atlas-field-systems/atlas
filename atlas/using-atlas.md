@@ -28,7 +28,7 @@ flowchart LR
 ```
 
 The city is laid out in rings
-([ADR-0020](../docs/adr/0020-atlas-is-a-walled-city.md), proposed):
+([ADR-0020](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0020-atlas-is-a-walled-city.md), proposed):
 
 - **Inside the inner wall.** Core and Fusion run in one process. Core is built
   from [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md)

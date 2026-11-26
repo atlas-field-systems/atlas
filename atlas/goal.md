@@ -1,7 +1,7 @@
 # The goal
 
 Who Atlas is for, the problem it solves, what it does and does not do, and how
-to tell it works. [ADR-0001](../docs/adr/0001-atlas-is-an-experiment-platform-for-one-field-tester.md)
+to tell it works. [ADR-0001](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0001-atlas-is-an-experiment-platform-for-one-field-tester.md)
 records the decision.
 
 ## Who it is for
@@ -57,7 +57,7 @@ other part of Atlas exists to serve those three.
 - **Not for every vehicle.** Quadcopters come first. Other vehicles come later,
   each as its own kind of Asset.
 - **Not a mission planner.** Work is single Tasks, with no multi-step Plans
-  ([ADR-0015](../docs/adr/0015-work-is-individual-tasks-there-are-no-plans.md)).
+  ([ADR-0015](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0015-work-is-individual-tasks-there-are-no-plans.md)).
 - **Not a long-term archive.** A run's data leaves Core at
   [Reset](runs-and-identity.md#a-run-and-reset).
 - **Not dependable yet.** Atlas is for experiments and makes no promise to
@@ -65,7 +65,7 @@ other part of Atlas exists to serve those three.
 
 ## Kept in mind for later
 
-Ideas the owner wants one day are in the [drawer](../docs/drawer/README.md).
+Ideas the owner wants one day are in the [drawer](https://github.com/atlas-field-systems/atlas/blob/main/docs/drawer/README.md).
 Today's work must not rule out the ones marked Keep room, and must not grow to
 make room for them.
 

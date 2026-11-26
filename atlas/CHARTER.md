@@ -12,7 +12,7 @@ are welcome. Nothing is locked. When something has a problem, consider reworking
 from the ground up before patching it.
 
 Draft does not mean quiet change. Propose the change and its reason; the owner decides.
-The owner's current decisions are the accepted [ADRs](../docs/adr/README.md). A
+The owner's current decisions are the accepted [ADRs](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md). A
 reversal updates every page that still teaches the old rule.
 
 ## Keep Atlas understandable
@@ -135,7 +135,23 @@ an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.
 
-An accepted [ADR](../docs/adr/README.md) beats every other page. How-it-works docs,
+<<<<<<< HEAD
+An accepted [ADR](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) beats every other page. How-it-works docs,
+=======
+Protocol's published package version is its only version. Definitions and records
+carry no protocol version. Package dependencies select the definitions a program
+uses. The Core API and each Fieldlink report the hash of the definitions they use,
+and a mismatch is refused with an explanation. Never silently reinterpret
+unsupported records or conceal incompatible behavior. Do not invent record fields
+for attribution or routing that Core or a gateway already owns.
+
+Protocol is the spec and owns the one validator. Core implements the Core API and
+keeps the business rules. The SDK is the client for that API, and gateways run
+Fieldlinks. No program builds a second validator.
+See [design-decisions.md](design-decisions.md).
+
+An accepted [ADR](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) beats every other page. How-it-works docs,
+>>>>>>> origin/t3/plan-agentic-docs-migration
 laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose, in a pull request the owner approves; do not
 quietly diverge in code.
 
@@ -160,7 +176,7 @@ supports the claim.
 Tests exist to catch bugs. Count the bugs a test could catch, not the tests
 written. AI agents write most of Atlas's code, and they overproduce tests that
 check nothing, so these rules guard against that first.
-[ADR-0019](../docs/adr/0019-simulations-prove-atlas-works-and-deep-modules-get-focused-tests.md)
+[ADR-0019](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0019-simulations-prove-atlas-works-and-deep-modules-get-focused-tests.md)
 records the owner's decision.
 
 - **The docs are the answer key.** A test checks a rule that a page states, and
