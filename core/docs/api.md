@@ -551,7 +551,7 @@ Objects are not Entities.
 ### Observations
 
 An Observation is the latest `report.observation` for one `asset_id` and
-`observation_id`, ordered by report time and then `event_id`, as settings are.
+`observation_id`, ordered by report time and then `event_id`.
 A report marked `clock_ahead` never becomes the latest. The Asset chooses
 `observation_id` and posts its reports through
 [`POST /entities/assets/{asset_id}/reports`](#asset-and-gateway-calls). Each
