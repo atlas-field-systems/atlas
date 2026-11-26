@@ -12,22 +12,19 @@ happened.</p>
     subgraph City[Atlas deployment]
         subgraph Inner[Inner wall]
             C[Core: API, event log, Tasks, storage]
-            F[Fusion]
         end
         P[Plugins]
     end
-    F &#60;--&#62;|Shared state| C
     P &#60;--&#62;|Plugin interface| C
     UI[Command Interface] &#60;--&#62;|Core API| C
     D[Direct-IP Asset] &#60;--&#62;|Core API| C
     G[Gateway] &#60;--&#62;|Core API| C
     G &#60;--&#62;|Fieldlink| A[Radio Asset]</pre><p>The city is laid out in rings
-(<a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0020-atlas-is-a-walled-city.md">ADR-0020</a>, proposed):</p>
+(<a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0020-atlas-is-a-walled-city.md">ADR-0020</a>):</p>
 <ul>
-<li><strong>Inside the inner wall.</strong> Core and Fusion run in one process. Core is built
-from <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md">pillars</a>
-over shared storage and the event log. Fusion works on Core&#39;s state
-directly, never through the public API.</li>
+<li><strong>Inside the inner wall.</strong> Core runs in one process, built from
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md">pillars</a>
+over shared storage and the event log.</li>
 <li><strong>The second ring.</strong> Each Plugin is its own program. It connects out to Core
 with its own key and reaches Core only through the Plugin interface, never
 its storage. Core never calls a Plugin and never runs one in its own process.
@@ -71,10 +68,6 @@ though it is not aboard it.</p>
 <tr>
 <td>Core</td>
 <td>The shared picture, the event log, its <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md">pillars</a>, and the Core API</td>
-</tr>
-<tr>
-<td>Fusion</td>
-<td>Combining evidence into the shared picture, inside Core</td>
 </tr>
 <tr>
 <td><a href="plugins.html">Plugins</a></td>
@@ -125,9 +118,8 @@ retains its last known position and the reported GPS condition. The tracker does
 not send the old position as a new fix.</p>
 <h3 id="observe-an-aircraft">Observe an aircraft</h3>
 <p>An ADS-B receiver is an Asset. It reports Observations about a passing aircraft.
-Atlas uses those Observations as evidence to maintain a shared Track of the
-aircraft for the operator to follow. The operator does not need to control that
-aircraft to observe it through Atlas.</p>
+Core keeps those Observations in the shared picture for the operator to watch.
+The operator does not need to control that aircraft to observe it through Atlas.</p>
 <h3 id="research-a-place">Research a place</h3>
 <p>An operator selects a building or area and runs a Plugin action on it. The Plugin
 returns a list, or creates geo features and stores files as Objects. Every

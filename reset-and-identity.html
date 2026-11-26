@@ -5,7 +5,7 @@
 page owns those rules. The <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#asset-and-gateway-calls">Core API</a>
 has the calls behind them, <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Core Reset</a> the ZIP, and
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md">Gateway</a> what every Fieldlink provides. The
-<a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md">ADRs</a> from 0004 to 0008 record the decisions and why.</p>
+<a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md">ADRs</a> 0004 to 0006, 0008, and 0024 record the decisions and why.</p>
 <h2 id="the-picture-and-reset">The picture and Reset</h2>
 <p>Starting, stopping, resetting and updating Atlas are the user&#39;s job. Atlas
 manages no sessions of its own and keeps nothing by session.</p>
@@ -33,7 +33,7 @@ no export or retry feature for it.</li>
 does not pin or check versions across a restart.</li>
 <li><strong>Everyone signs in again</strong> after Reset. Every session ends at Reset; a crash
 ends none.</li>
-<li><strong>Operator state starts fresh.</strong> Shared links, hidden Tracks and other view
+<li><strong>Operator state starts fresh.</strong> Shared links, hidden Observations and other view
 filters, drafts, and result overlays end at Reset. A link made before a
 Reset never opens an item made after it.</li>
 <li><strong>Each part writes its own ZIP:</strong> <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Core</a>,
@@ -53,11 +53,11 @@ expires, and neither a dropped link nor a crash of Core ends anything.</p>
 </thead>
 <tbody><tr>
 <td>Accounts</td>
-<td>Asset IDs, and every other ID Core assigns: Task, Track, geo feature, and Object</td>
+<td>Asset IDs, and every other ID Core assigns: Task, geo feature, and Object</td>
 </tr>
 <tr>
 <td>Connection keys: for Assets on IP, gateways, and Plugins</td>
-<td>The picture: Assets, Observations, Tracks, places, and Objects, and their history</td>
+<td>The picture: Assets, Observations, places, and Objects, and their history</td>
 </tr>
 <tr>
 <td>Installed Plugin setup</td>
@@ -84,7 +84,7 @@ console and in its diagnostic log so the admin sees it, and adds no Asset. It
 never reuses an old ID to make room.</li>
 <li><strong>Assets choose <code>observation_id</code></strong>, unique for that Asset until the next
 Reset.</li>
-<li><strong>Core assigns the other IDs:</strong> <code>task_id</code>, <code>track_id</code>, <code>geofeature_id</code>, and
+<li><strong>Core assigns the other IDs:</strong> <code>task_id</code>, <code>geofeature_id</code>, and
 <code>object_id</code>. Unlike <code>asset_id</code>, they start again after each Reset, so the
 same ID can name a different item after it.</li>
 </ul>
@@ -106,7 +106,7 @@ and comes back as the same Asset, with the same <code>asset_id</code>. This hold
 if it forgot its ID: the key proves which Asset it is. It still never picks
 or configures its own ID.</li>
 <li><strong>Work does not resume after a restart.</strong> A restarted app drops its queued
-Tasks: operators see them marked not done and send again whatever still
+Tasks: operators see them as outcome unknown and send again whatever still
 matters. Nothing resumes on its own. When the app signs up again, Core drops
 each of its Tasks with no final report, claiming no outcome
 (<a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests">Core API</a>).
