@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { appendEvent } from "./events.ts";
 import { refuse } from "../api/errors.ts";
+import type { DiagRecord } from "../log.ts";
 import type { Env } from "../core.ts";
 import type { EventKind, EventExtra, RecordOf } from "./events.ts";
 
@@ -18,6 +19,7 @@ export interface ReadTx {
 }
 
 export interface Tx extends ReadTx {
+  logAfterCommit(record: DiagRecord): void;
   run(sql: string, ...params: SqlValue[]): { changes: number };
   append<K extends EventKind>(
     kind: K,
@@ -85,7 +87,8 @@ export function openStore(env: Env, tables: readonly TableDef[]): Store {
     }
     return s;
   };
-  const handle = (): Tx => ({
+  const handle = (records: DiagRecord[] = []): Tx => ({
+    logAfterCommit(record) { records.push(record); },
     env,
     runId,
     now: env.clock.now(),
@@ -120,10 +123,12 @@ export function openStore(env: Env, tables: readonly TableDef[]): Store {
     write(fn) {
       try {
         db.exec("BEGIN IMMEDIATE");
-        const tx = handle();
+        const records: DiagRecord[] = [];
+        const tx = handle(records);
         const value = fn(tx);
         if (value instanceof Promise) throw new Error("async transaction");
         db.exec("COMMIT");
+        for (const record of records) env.log.record(record);
         setImmediate(() => {
           for (const listener of listeners) listener(tx.asOf());
         });

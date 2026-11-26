@@ -2,9 +2,9 @@ import * as administration from "../pillars/administration.ts";
 import * as entities from "../pillars/entities.ts";
 import * as taskPillar from "../pillars/tasks.ts";
 import * as objects from "../pillars/objects.ts";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { access, open, readdir, rename, rm } from "node:fs/promises";
+import { access, open, readdir, rename, rm, stat } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { createZip, readZip } from "./zip.ts";
 import { redactConfig } from "../config.ts";
@@ -86,6 +86,7 @@ export async function recoverReset(
     tx.get<Run>("SELECT * FROM runs WHERE ended_at IS NULL"),
   );
   if (!run) return;
+  await rm(env.paths.zipPartial(run.run_id, run.started_at), { force: true });
   const final = env.paths.zipFinal(run.run_id, run.started_at);
   try {
     await access(final);
@@ -94,14 +95,19 @@ export async function recoverReset(
       return;
     throw error;
   }
-  const checked = await checkZip(final, run.run_id);
+  const checked = await checkZip(final, run.run_id, await inventory(env, store, tables, run.run_id));
   if (checked.ok) {
     clearRun(store, tables, run.run_id, basename(final));
     await clearFiles(env, run.run_id);
-  } else
+  } else {
+    const rejected = final + ".rejected-" + randomUUID();
+    await rename(final, rejected);
+    const directory = await open(env.config.archive_directory, "r");
+    try { await directory.sync(); } finally { await directory.close(); }
     process.stderr.write(
-      `Reset ZIP check failed; resuming run ${run.run_id}: ${checked.why}\n`,
+      `Reset ZIP check failed; saved at ${rejected}; resuming run ${run.run_id}: ${checked.why}\n`,
     );
+  }
 }
 
 export async function stopRun(
@@ -238,7 +244,7 @@ export async function stopRun(
       }),
     );
     await writer.finish();
-    const checked = await checkZip(partial, run.run_id);
+    const checked = await checkZip(partial, run.run_id, await inventory(env, store, tables, run.run_id));
     if (!checked.ok) throw new Error(checked.why);
     await rename(partial, final);
     published = true;
@@ -252,7 +258,7 @@ export async function stopRun(
     await clearFiles(env, run.run_id);
     return { archived: true, zip: final };
   } catch (error) {
-    const explanation = error instanceof Error ? error.message : String(error);
+    let explanation = error instanceof Error ? error.message : String(error);
     if (!published) {
       if (writer) {
         try {
@@ -270,13 +276,18 @@ export async function stopRun(
         explanation,
       });
       await env.log.flush();
-      store.write((tx) =>
-        tx.run(
-          "UPDATE runs SET ended_at=?,outcome='archive_failed' WHERE run_id=?",
-          tx.now,
-          run.run_id,
-        ),
-      );
+      try {
+        store.write((tx) =>
+          tx.run(
+            "UPDATE runs SET ended_at=?,outcome='archive_failed' WHERE run_id=?",
+            tx.now,
+            run.run_id,
+          ),
+        );
+        explanation += ". Core recorded the failed Reset. The next start opens an empty picture.";
+      } catch (recordError) {
+        explanation += `. Core could not record the failed Reset (${String(recordError)}). The next start resumes the existing picture.`;
+      }
     }
     process.stderr.write(`Reset failed: ${explanation}\n`);
     return { archived: false, explanation };
@@ -285,9 +296,40 @@ export async function stopRun(
   }
 }
 
+type SourceFile = { rows: number } | { size: number; sha256?: string };
+
+async function inventory(env: Env, store: Store, tables: readonly TableDef[], runId: number) {
+  const required = new Map<string, SourceFile>();
+  store.read(tx => {
+    for (const table of tables) {
+      const column = table.runScoped ? "run_id" : table.archiveRunColumn;
+      if (!column) continue;
+      const name = table.name === "events" ? "events.jsonl" : `state/${table.name}.jsonl`;
+      const { rows } = tx.get<{ rows: number }>(
+        `SELECT COUNT(*) AS rows FROM "${table.name}" WHERE ${column}=?`, runId,
+      )!;
+      required.set(name, { rows });
+    }
+    let after = "";
+    for (;;) {
+      const page = objects.archiveFiles(tx, runId, after);
+      for (const object of page) {
+        required.set(`objects/${object.object_id}`, { size: object.size_bytes, sha256: object.sha256 });
+        after = object.object_id;
+      }
+      if (page.length < 256) break;
+    }
+  });
+  const dir = env.paths.logDir(runId);
+  for (const name of await readdir(dir))
+    required.set(`diagnostics/${name}`, { size: (await stat(join(dir, name))).size });
+  return required;
+}
+
 export async function checkZip(
   path: string,
   runId?: number,
+  sources?: ReadonlyMap<string, SourceFile>,
 ): Promise<{ ok: true } | { ok: false; why: string }> {
   try {
     const entries = await readZip(path);
@@ -313,14 +355,29 @@ export async function checkZip(
     ])
       if (!Object.hasOwn(manifest.files, required))
         throw new Error(`Missing ${required}`);
+    const names = new Set(entries.map(entry => entry.name));
+    if (names.size !== entries.length) throw new Error("Duplicate ZIP entry");
+    for (const name of sources?.keys() ?? [])
+      if (!names.has(name)) throw new Error(`Missing frozen data: ${name}`);
     for (const entry of entries) {
       if (entry === manifestEntry) continue;
       const expected = manifest.files[entry.name];
       if (!expected || expected.size !== entry.size)
         throw new Error(`Size mismatch: ${entry.name}`);
       const hash = createHash("sha256");
-      for await (const chunk of entry.open()) hash.update(chunk);
-      if (hash.digest("hex") !== expected.sha256)
+      const source = sources?.get(entry.name);
+      let rows = 0;
+      for await (const chunk of entry.open()) {
+        hash.update(chunk);
+        if (source && "rows" in source) {
+          for (let i = chunk.indexOf(10); i !== -1; i = chunk.indexOf(10, i + 1)) rows++;
+        }
+      }
+      const digest = hash.digest("hex");
+      if (source && ("rows" in source ? rows !== source.rows :
+        source.size !== entry.size || (source.sha256 && source.sha256 !== digest)))
+        throw new Error(`Frozen data mismatch: ${entry.name}`);
+      if (digest !== expected.sha256)
         throw new Error(`SHA-256 mismatch: ${entry.name}`);
     }
     return { ok: true };

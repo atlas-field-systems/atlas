@@ -9,7 +9,7 @@ import { Refusal } from "./api/errors.ts";
  * Entities.applyContact, Administration.setGatewayContact, and
  * Administration.setPluginContact, each in a transaction with its event.
  *
- * Deadlines restart on resume. Actual arrival times are persisted by
+ * Deadlines are measured from the actual arrival times persisted by
  * the owning pillars separately so Reset can report them after a crash.
  *
  * One timer, on the injected clock, set for the earliest deadline
@@ -40,7 +40,7 @@ export interface Contact {
    * request's own change, so its event comes first.
    */
   heard(who: Subject): void;
-  /** Restart deadlines without changing stored last-heard evidence. */
+  /** Apply overdue deadlines before accepting requests. */
   resume(): void;
   stop(): void;
   lastHeard(asset_id: string): number | undefined;
@@ -50,6 +50,7 @@ export function startContact(
   store: Store,
   clock: Clock,
   offlineAfterMs: number,
+  pendingOffline: Map<string, number>,
 ): Contact {
   const heard = new Map<
     string,
@@ -99,36 +100,46 @@ export function startContact(
     const deadline = Math.min(
       ...Array.from(heard.values(), (v) => v.retryAt ?? v.at + offlineAfterMs),
     );
-    timer = clock.after(Math.max(1, deadline - clock.now()), () => {
-      for (const [id, v] of heard)
-        if ((v.retryAt ?? v.at + offlineAfterMs) <= clock.now()) {
-          try {
-            transition(v.who, "offline", v.at);
+    timer = clock.after(Math.max(1, deadline - clock.now()), expire);
+  }
+  function expire(): void {
+    for (const [id, v] of heard)
+      if ((v.retryAt ?? v.at + offlineAfterMs) <= clock.now()) {
+        try {
+          transition(v.who, "offline", v.at);
+          heard.delete(id);
+          pendingOffline.delete(id);
+        } catch (error) {
+          if (error instanceof Refusal && error.code === "not_found") {
             heard.delete(id);
-          } catch (error) {
-            if (error instanceof Refusal && error.code === "not_found")
-              heard.delete(id);
-            else {
-              store.read((tx) =>
-                tx.env.log.record({
-                  level: "error",
-                  area: "contact",
-                  msg: "Offline transition failed",
-                  error: String(error),
-                }),
-              );
-              v.retryAt = clock.now() + Math.min(1000, offlineAfterMs);
-            }
+            pendingOffline.delete(id);
+          } else {
+            pendingOffline.set(id, v.at);
+            store.read((tx) =>
+              tx.env.log.record({
+                level: "error",
+                area: "contact",
+                msg: "Offline transition failed",
+                error: String(error),
+              }),
+            );
+            v.retryAt = clock.now() + Math.min(1000, offlineAfterMs);
           }
         }
-      schedule();
-    });
+      }
+    schedule();
   }
   return {
     heard(who) {
       if (stopped) return;
+      const id = key(who);
+      const expiredAt = pendingOffline.get(id);
+      if (expiredAt !== undefined) {
+        transition(who, "offline", expiredAt);
+        pendingOffline.delete(id);
+      }
       transition(who, "online", clock.now());
-      heard.set(key(who), { who, at: clock.now() });
+      heard.set(id, { who, at: clock.now() });
       schedule();
     },
     resume() {
@@ -151,10 +162,9 @@ export function startContact(
         heard.set(key(who), {
           who,
           at: at ?? clock.now(),
-          retryAt: clock.now() + offlineAfterMs,
         });
       }
-      schedule();
+      expire();
     },
     lastHeard(asset_id) {
       return store.read((tx) => entities.lastHeard(tx, asset_id));

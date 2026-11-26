@@ -9,6 +9,7 @@ export type AssetView = {
   gateway_id: string | null;
   description: P["description"] | null;
   contact: P["contact"];
+  contact_storage_pending?: true;
   reports: Record<string, P["requests.reports"]["reports"][number]>;
   settings: Record<string, { value: unknown; time: number }>;
   subsystems: Record<string, P["report.status"]>;
@@ -180,7 +181,10 @@ export function createLivePicture(
           return;
         case "asset.contact": {
           const a = assets.get(e.record.asset_id!);
-          if (a) a.contact = e.record;
+          if (a) {
+            a.contact = e.record;
+            delete a.contact_storage_pending;
+          }
           break;
         }
         case "report.observation": {

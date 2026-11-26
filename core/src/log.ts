@@ -21,9 +21,9 @@ export interface DiagnosticLog {
   openRun(runId: number): Promise<void>;
   readAfter(n: number, limit: number): Promise<string[]>;
   gaps(): {
-    lost: number;
-    from_n: number;
-    to_n: number;
+    lost?: number;
+    from_n?: number;
+    to_n?: number;
     at: number;
     why: string;
   }[];
@@ -37,7 +37,6 @@ export function startLog(
     directory: string;
     gapDirectory: string;
     level: Level;
-    content: boolean;
     fileLimit: number;
     totalLimit: number;
   },
@@ -66,6 +65,13 @@ export function startLog(
     readdirSync(dir)
       .filter((name) => /^core-\d+\.jsonl$/.test(name))
       .sort((a, b) => Number(a.match(/\d+/)![0]) - Number(b.match(/\d+/)![0]));
+  const recoveryGaps = new Map<string, { at: number; why: string }>();
+  function recoveryGap(path: string, error: unknown) {
+    if (recoveryGaps.has(path)) return;
+    const why = `Could not recover diagnostics from ${path}: ${String(error)}`;
+    process.stderr.write(why + "\n");
+    recoveryGaps.set(path, { at: clock.now(), why });
+  }
   function* lines(id: number): Generator<string> {
     const dir = join(options.directory, `run-${id}`);
     let names: string[];
@@ -76,9 +82,14 @@ export function startLog(
         process.stderr.write(`Core could not list diagnostics for run ${id}: ${String(error)}\n`);
       return;
     }
-    for (const name of names)
-      for (const line of readFileSync(join(dir, name), "utf8").split("\n"))
-        if (line) yield line;
+    for (const name of names) {
+      try {
+        for (const line of readFileSync(join(dir, name), "utf8").split("\n"))
+          if (line) yield line;
+      } catch (error) {
+        recoveryGap(join(dir, name), error);
+      }
+    }
   }
   const gap = (number: number, why: string) => {
     gapVersion++;
@@ -177,6 +188,7 @@ export function startLog(
     });
     return writing;
   };
+  let cursor: { after: number; name: string; offset: number } | undefined;
   return {
     record(r) {
       if (levels.indexOf(r.level) > levels.indexOf(options.level)) return;
@@ -213,20 +225,25 @@ export function startLog(
       gapFile = join(options.gapDirectory, `run-${id}.json`);
       try {
         const saved = JSON.parse(readFileSync(gapFile, "utf8"));
-        gaps.splice(0, gaps.length, ...saved);
+        if (!Array.isArray(saved) || !saved.every(g => g && Number.isSafeInteger(g.to_n)
+          && Number.isSafeInteger(g.from_n) && Number.isSafeInteger(g.lost)
+          && Number.isFinite(g.at) && typeof g.why === "string"))
+          throw new Error("Invalid diagnostic loss ledger");
+        gaps.length = 0;
+        for (const g of saved) gaps.push(g);
       } catch (error) {
         if (
           !(error instanceof Error && Reflect.get(error, "code") === "ENOENT")
-        )
-          throw error;
+        ) recoveryGap(gapFile, error);
       }
-      n = Math.max(n, ...gaps.map((g) => g.to_n));
+      for (const g of gaps) n = Math.max(n, g.to_n);
       atLimit = gaps.some((g) => g.why === "total limit");
       const names = files(directory);
-      total = names.reduce(
-        (sum, name) => sum + statSync(join(directory, name)).size,
-        0,
-      );
+      for (const name of names) {
+        const path = join(directory, name);
+        try { total += statSync(path).size; }
+        catch (error) { recoveryGap(path, error); }
+      }
       file = names.length
         ? Math.max(...names.map((name) => Number(name.match(/\d+/)![0]))) + 1
         : 0;
@@ -236,18 +253,31 @@ export function startLog(
       await drain();
       await persistGaps();
       const result: string[] = [];
-      for (const name of files(directory)) {
-        const input = createReadStream(join(directory, name));
+      const names = files(directory);
+      const resume = cursor?.after === after ? cursor : undefined;
+      const start = resume ? Math.max(0, names.indexOf(resume.name)) : 0;
+      let last = after;
+      for (const name of names.slice(start)) {
+        let offset = name === resume?.name ? resume.offset : 0;
+        const input = createReadStream(join(directory, name), { start: offset });
         const reader = createInterface({ input, crlfDelay: Infinity });
         try {
           for await (const line of reader) {
             try {
-              if (JSON.parse(line).n > after) result.push(line);
+              const number = JSON.parse(line).n;
+              if (number > after) {
+                result.push(line);
+                last = number;
+              }
             } catch {
               process.stderr.write("Core skipped a malformed diagnostic record during debug read\n");
             }
+            offset += Buffer.byteLength(line) + 1;
+            cursor = { after: last, name, offset };
             if (result.length >= limit) return result;
           }
+        } catch (error) {
+          recoveryGap(join(directory, name), error);
         } finally {
           reader.close();
           input.destroy();
@@ -256,7 +286,7 @@ export function startLog(
       return result;
     },
     gaps() {
-      return gaps;
+      return [...gaps, ...recoveryGaps.values()];
     },
     async flush() {
       await drain();
