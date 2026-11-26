@@ -135,23 +135,7 @@ an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.
 
-<<<<<<< HEAD
 An accepted [ADR](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) beats every other page. How-it-works docs,
-=======
-Protocol's published package version is its only version. Definitions and records
-carry no protocol version. Package dependencies select the definitions a program
-uses. The Core API and each Fieldlink report the hash of the definitions they use,
-and a mismatch is refused with an explanation. Never silently reinterpret
-unsupported records or conceal incompatible behavior. Do not invent record fields
-for attribution or routing that Core or a gateway already owns.
-
-Protocol is the spec and owns the one validator. Core implements the Core API and
-keeps the business rules. The SDK is the client for that API, and gateways run
-Fieldlinks. No program builds a second validator.
-See [design-decisions.md](design-decisions.md).
-
-An accepted [ADR](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) beats every other page. How-it-works docs,
->>>>>>> origin/t3/plan-agentic-docs-migration
 laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose, in a pull request the owner approves; do not
 quietly diverge in code.
 
