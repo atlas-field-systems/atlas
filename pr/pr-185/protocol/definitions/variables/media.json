@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/media.json",
+  "title": "media",
+  "description": "The file to capture: a photo or a video clip.",
+  "enum": [
+    "photo",
+    "clip"
+  ],
+  "examples": [
+    "photo",
+    "clip"
+  ]
+}
