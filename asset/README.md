@@ -9,9 +9,8 @@ live settings.
 Reporting-only acquisition runs against real Core with simulated peripherals.
 Hardware verification remains open. The planned first field setup uses a
 Raspberry Pi on the ground as the companion computer for an ArduPilot quadcopter over
-a SiK radio. The Pi is the gateway, running the
-[SiK Fieldlink](../fieldlink/sik/README.md), and runs the Asset app for
-the vehicle.
+a SiK radio. The Pi runs the Asset app for the vehicle over IP, through the
+[SiK tool](../tools/sik/README.md); there is no gateway.
 The [first-flight story](../atlas/first-flight.md) describes the workflow.
 
 - [Behavior](docs/README.md): startup, work, link loss, and shutdown.
@@ -34,7 +33,8 @@ From `asset/`, inspect a configuration with
 `node src/main.ts inspect examples/copter.json`, then start it with
 `node src/main.ts run <config.json>`. Provision its key in Core first.
 The copter equipment connection is MAVLink 2 over TCP. A radio connection
-requires an external serial-to-TCP transport and has not been checked.
+requires an external serial-to-TCP transport and has not been checked; the
+[SiK tool](../tools/sik/README.md) plans one.
 
 The initial runtime executes Takeoff, Move To, Guided Hold, pause/resume, and
 Land at a resolved position, and Return to the Atlas home. Equipment commands supersede earlier operations and report

@@ -20,14 +20,15 @@ Propose changes to the owner rather than making them quietly. See
 
 | Folder | What lives there | Status |
 |---|---|---|
-| [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide design decisions, and [runs and identity](atlas/runs-and-identity.md) | Active |
+| [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide principles, and [runs and identity](atlas/runs-and-identity.md) | Active |
 | [protocol/](protocol/) | The spec: shared domain records as definitions, laws, examples and docs, plus the one validator. Component configuration and diagnostic logs live with their owners. When published, its package version is its only version; definitions and records carry no protocol version | Draft, unpublished |
 | [sdk/](sdk/) | The SDK: the client for the Core API, used by operator applications, Assets on IP, gateways and Plugins. Loads Protocol's definitions; defines no record itself. Runtime code is built | Built |
 | [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is built | Built |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | IP runtime, crash lifecycle and Reset ZIP verified in SITL |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
 | [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Planning |
-| [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink package, holding both ends of its field link, released on its own | Planning; SiK and Meshtastic are sketched |
+| [fieldlink/](fieldlink/) | Atlas Fieldlink: each Fieldlink package, holding both ends of its field link, released on its own | Planning; Meshtastic is sketched |
+| [tools/](tools/) | Atlas Tools: ready setups that package existing parts and the glue for one kind of equipment, such as the SiK tool for first flight. No part depends on one | Planning; SiK is sketched |
 | [simulations/](simulations/) | Atlas Simulations: the real parts run together in a simulated world, as end-to-end tests and evals. Each part's own unit tests stay in its folder | Built for Core, SDK, and initial Asset IP runtime |
 
 - Want to know why Atlas exists, how it is used, or a project-wide rule? Go to `atlas/`.
@@ -39,6 +40,7 @@ Propose changes to the owner rather than making them quietly. See
 - Want how a gateway connects to Core and installs Fieldlinks? Go to `gateway/`.
 - Want how a Fieldlink carries Atlas across a field link? Go to `fieldlink/`.
 - Want how the parts are tested together end to end? Go to `simulations/`.
+- Want a ready setup for one kind of equipment, such as SiK? Go to `tools/`.
 - Want what the owner decided and why? Read the ADRs: [docs/adr/](docs/adr/README.md) for
   decisions that span parts, and `<part>/docs/adr/` for decisions one part owns.
 - Want what a run is and how Assets get their IDs? Go to
@@ -55,7 +57,10 @@ Each topic has one home. Other pages link to it.
 | Ideas no part owns yet | [docs/drawer/](docs/drawer/README.md) |
 | Runs, Reset, what carries over, registration, IDs, keys, gateway changes | [atlas/runs-and-identity.md](atlas/runs-and-identity.md) |
 | Who Atlas is for, what it is not, and how to tell it works | [atlas/goal.md](atlas/goal.md) |
-| Project-wide principles and architecture | [atlas/CHARTER.md](atlas/CHARTER.md), [atlas/design-decisions.md](atlas/design-decisions.md) |
+| Project-wide principles | [atlas/CHARTER.md](atlas/CHARTER.md) |
+| The walled city: how the parts fit together | [atlas/using-atlas.md](atlas/using-atlas.md#the-walled-city) |
+| The build order, and designing the whole product first | [atlas/build-order.md](atlas/build-order.md) |
+| The stack: languages, runtime, storage, containers | [README.md](README.md#stack) |
 | Terms | [GLOSSARY.md](GLOSSARY.md) |
 | Record shapes and the working choices behind them | [protocol/definitions/](protocol/definitions/), [protocol/docs/decisions.md](protocol/docs/decisions.md) |
 | Endpoints, events, admission, the Task cap, contact, places, Objects, Plugin calls | [core/docs/api.md](core/docs/api.md) |
@@ -67,6 +72,7 @@ Each topic has one home. Other pages link to it.
 | The gateway app, installing Fieldlinks, the gateway interface, the gateway's Reset ZIP | [gateway/README.md](gateway/README.md) |
 | What every Fieldlink is and provides, and where a Fieldlink stops and the Asset starts | [fieldlink/README.md](fieldlink/README.md) |
 | One Fieldlink's radio, behavior, and security | `fieldlink/<name>/README.md` |
+| What an Atlas Tool is, and each Tool's setup | [tools/README.md](tools/README.md), `tools/<name>/README.md` |
 | Operator screens and workflows | [command-interface/docs/](command-interface/docs/README.md) |
 | The client library | [sdk/](sdk/README.md) |
 | End-to-end simulations, scenarios, fault runs, and what each part takes from outside to be simulated | [simulations/](simulations/README.md) |
@@ -80,9 +86,8 @@ the file at `<path>` in this repository.
 
 ## Charter first
 
-Before changing code or docs, read [the charter](atlas/CHARTER.md) and
-[design decisions](atlas/design-decisions.md). Shared fundamentals of coding across
-Atlas live there — always uphold them. Folder rules add local detail; they do not
+Before changing code or docs, read [the charter](atlas/CHARTER.md). Shared
+fundamentals of coding across Atlas live there; always uphold them. Folder rules add local detail; they do not
 replace the Charter.
 
 - **Bloat is the enemy, but good organization is not bloat.** Keep data, docs and code lean, and define nothing twice. For example, the same command kinds listed under two message types is bloat. Grouping things clearly is not.
@@ -121,7 +126,7 @@ replace the Charter.
 
 When you direct a subagent, hand off a slice, or spawn parallel work, give a
 **compact brief**: the task and scope; links to the authoritative documents
-(Charter, design decisions, the ADRs that touch the task, and the affected folders' `AGENTS.md`) for the revision in
+(the Charter, the ADRs that touch the task, and the affected folders' `AGENTS.md`) for the revision in
 use; the few constraints that materially affect this task; the expected result and
 how it will be checked. Do not paste the entire Charter. Do not assume the subagent
 already knows the fundamentals.
@@ -139,8 +144,8 @@ just changed.
   package publishing is not configured yet. Its package version will be its only
   version (see `protocol/AGENTS.md`).
 - No release workflow is configured yet; one is added when a part has code to release.
-- Later, a push to `prod` will also update a read-only copy of each folder in its own
-  repository. That is not built yet.
+- Planned, near the end: a push to `prod` will also update a read-only copy of each
+  folder in its own repository. That is not built yet.
 
 ## Working rules
 

@@ -19,9 +19,10 @@ detailed design as the hardware evolves.
 Field links carry Atlas through [Fieldlinks](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md),
 each holding both ends of its link.
 A Fieldlink sends compact frames in a proven existing encoding, not a custom
-one. First flight uses [SiK](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md), the LoRa
-phase builds on [Meshtastic](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md),
-and FLRC gets its own Fieldlink. Each Fieldlink's docs own its mechanisms, once
+one. The LoRa phase builds on [Meshtastic](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md),
+and FLRC gets its own Fieldlink. First flight needs no field link: its ground
+Pi reaches Core over IP and flies the vehicle over a SiK radio, through the
+[SiK tool](https://github.com/atlas-field-systems/atlas/blob/main/tools/sik/README.md). Each Fieldlink's docs own its mechanisms, once
 written.
 
 ## IP mainly connects the supporting systems
@@ -57,8 +58,8 @@ is not required. Large clock errors are outside the current design.
 ## Hosting is flexible
 
 Core usually runs on an internet-hosted server. It can also run on a computer with
-the field team, alongside a gateway. Nearby operators need local access when that
-field computer loses internet.
+the field team, alongside a gateway, even on one laptop with no internet
+([offline command station](https://github.com/atlas-field-systems/atlas/blob/main/command-interface/docs/README.md#operators-and-connectivity)).
 
 The deployment chooses how to expose Core. Cloudflare Tunnel is one example used
 by the owner. It is not a built-in requirement for Atlas.

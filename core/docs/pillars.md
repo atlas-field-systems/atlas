@@ -3,7 +3,7 @@
 **Built.** Core is built from pillars. Each pillar owns one part of Core's state behind a
 small interface, so one can be rebuilt without rebuilding the others. All of them
 run in Core's one process, inside the
-[inner wall](../../atlas/design-decisions.md#a-walled-city).
+[inner wall](../../atlas/using-atlas.md#the-walled-city).
 
 | Pillar | Owns |
 | --- | --- |

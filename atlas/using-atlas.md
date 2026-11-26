@@ -27,22 +27,34 @@ flowchart LR
     G <-->|Fieldlink| A[Radio Asset]
 ```
 
-Core and Fusion sit inside the inner wall. Plugins sit in the second ring.
-Everything else sits outside the city and reaches
-Core only through the [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md).
-[Design decisions](design-decisions.md#a-walled-city) has the layout.
+The city is laid out in rings
+([ADR-0020](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0020-atlas-is-a-walled-city.md), proposed):
+
+- **Inside the inner wall.** Core and Fusion run in one process. Core is built
+  from [pillars](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/pillars.md)
+  over shared storage and the event log. Fusion works on Core's state
+  directly, never through the public API.
+- **The second ring.** Each Plugin is its own program. It connects out to Core
+  with its own key and reaches Core only through the Plugin interface, never
+  its storage. Core never calls a Plugin and never runs one in its own process.
+  The Plugin interface is the Core API calls a Plugin's key may use, not a
+  second protocol.
+- **Outside the city.** Gateways, Assets, and operator applications reach Core
+  only through the public
+  [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md).
 
 Most physical Assets use the gateway path, through the gateway's one
-[Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md#two-kinds-of-fieldlink). A direct-IP Asset, often a digital
-one, calls the Core API itself. A Core may run several gateways, each on its own radio network
+[Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/README.md). A direct-IP Asset calls the
+Core API itself. A Core may run several gateways, each on its own radio network
 ([Scale](scale.md#setup)), and the
 gateway design can change as [connectivity evolves](environment.md#connectivity-evolves). The diagram shows
 responsibilities, not a required network topology.
 
-The [first-flight setup](first-flight.md) uses a ground Raspberry Pi as a
-gateway with the [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md). It runs the Asset
-app for the ArduPilot vehicle and talks to it over a SiK radio. The app
-represents the vehicle even though it is not aboard it.
+The [first-flight setup](first-flight.md) is a direct-IP Asset. A ground
+Raspberry Pi runs the Asset app for the ArduPilot vehicle, through the
+[SiK tool](https://github.com/atlas-field-systems/atlas/blob/main/tools/sik/README.md),
+and talks to the vehicle over a SiK radio. The app represents the vehicle even
+though it is not aboard it.
 
 ## What the parts do
 
@@ -57,6 +69,7 @@ represents the vehicle even though it is not aboard it.
 | [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md) | Uplinking to the Core API and running Fieldlinks |
 | Fieldlink | Carrying Atlas across one kind of field link |
 | [Asset app](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md) | Equipment control, local execution, failsafes, and reports of its effects |
+| [Atlas Tools](https://github.com/atlas-field-systems/atlas/blob/main/tools/README.md) | Ready setups that package these parts for one kind of equipment |
 
 ## An operation runs without planned restarts
 

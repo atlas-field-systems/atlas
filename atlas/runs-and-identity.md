@@ -115,8 +115,7 @@ new one.
 - **One gateway for each network.** Each radio network has one gateway, and a
   Core may run several networks ([Scale](scale.md#setup)). On a mesh
   Fieldlink, Assets talk to each other and to their network's gateway, and
-  every radio Asset on the network rides on it; the
-  [SiK Fieldlink](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/sik/README.md) carries one drone.
+  every radio Asset on the network rides on it.
   No Asset uses two gateways. Two gateways in one network, and moving a
   radio Asset to another gateway while it keeps its ID, are out of scope.
 

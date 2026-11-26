@@ -53,7 +53,7 @@ Component-local commands still work. CI uses these same focused checks.
 
 | I want to… | Start here |
 | --- | --- |
-| Understand the purpose and boundaries | [Goal](atlas/goal.md), [Charter](atlas/CHARTER.md), [design decisions](atlas/design-decisions.md) |
+| Understand the purpose and boundaries | [Goal](atlas/goal.md), [Charter](atlas/CHARTER.md), [Using Atlas](atlas/using-atlas.md) |
 | Find an owner decision or the next milestone | [ADRs](docs/adr/README.md), [build order](atlas/build-order.md) |
 | Change a shared record or its validation | [Protocol](protocol/README.md) |
 | Change server behavior or understand an endpoint | [Core](core/README.md), [Core API](core/docs/api.md) |
@@ -62,11 +62,23 @@ Component-local commands still work. CI uses these same focused checks.
 | Add or replay an end-to-end scenario | [Simulations](simulations/README.md) |
 | Work on the operator application | [Command Interface](command-interface/README.md) |
 | Work on a gateway or radio transport | [Gateway](gateway/README.md), [Fieldlinks](fieldlink/README.md) |
+| Set up equipment such as the first-flight SiK radio | [Atlas Tools](tools/README.md) |
 
 Each component's README owns its implementation status and links to its gaps
 and verification evidence. Intended behavior in a design page is not proof
 that it is implemented. [Historical plans](atlas/archive/README.md) are not
 current requirements.
+
+## Stack
+
+- Core, the SDK, gateways, Fieldlinks, the Asset app, and the Command Interface
+  use TypeScript. Node 24 runs `.ts` directly, so Node programs have no build
+  step.
+- Storage uses SQLite.
+- Today every part runs as Node from this repository. Docker is planned near
+  the end: Core and Fusion in one container running one process, and each
+  Plugin in its own container if it needs one. Gateways run on their own
+  computers.
 
 ## Find local output
 
