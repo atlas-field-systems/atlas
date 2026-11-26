@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { readFile, mkdir, writeFile, cp } from "node:fs/promises";
+import { readFile, mkdir, writeFile, cp, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createWorld, type World } from "./world.ts";
@@ -17,22 +17,24 @@ export function scenario(spec: {
     const world = await createWorld(spec.config);
     const evidence = spec.demo ? process.env.ATLAS_DEMO_OUTPUT : undefined;
     let failure: unknown;
+    let failureDirectory: string | undefined;
     try {
       await spec.run(world);
     } catch (error) {
       failure = error;
-      await recordFailure(
+      failureDirectory = await recordFailure(
         spec.name,
         spec.checks,
         error,
         world.root,
         world.trace,
         spec.seed,
+        evidence,
       );
       throw error;
     } finally {
       try {
-        await world.close(evidence);
+        await world.close(failureDirectory ?? evidence);
       } catch (error) {
         failure = error;
         await recordFailure(
@@ -42,6 +44,7 @@ export function scenario(spec: {
           world.root,
           world.trace,
           spec.seed,
+          evidence,
         );
         throw error;
       } finally {
@@ -113,8 +116,9 @@ export async function recordFailure(
   sourceRoot: string,
   trace: unknown,
   seed?: number,
+  evidenceDirectory?: string,
 ) {
-  const folder = resolve(
+  const folder = evidenceDirectory ?? resolve(
     root,
     "simulations/.runs",
     seed === undefined
@@ -122,9 +126,12 @@ export async function recordFailure(
       : name.replace(/[^a-z0-9-]/gi, "-"),
   );
   await mkdir(folder, { recursive: true });
-  await cp(resolve(sourceRoot, "logs"), resolve(folder, "logs"), {
-    recursive: true,
-  });
+  for (const entry of await readdir(sourceRoot, { withFileTypes: true })) {
+    if (entry.isDirectory() && (entry.name === "logs" || entry.name.endsWith("-logs") ||
+        entry.name === "archives" || entry.name.endsWith("-archives"))) {
+      await cp(resolve(sourceRoot, entry.name), resolve(folder, entry.name), { recursive: true });
+    }
+  }
   await writeFile(
     resolve(folder, "failure.json"),
     JSON.stringify(
@@ -146,4 +153,5 @@ export async function recordFailure(
       2,
     ),
   );
+  return folder;
 }

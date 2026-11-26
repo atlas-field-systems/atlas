@@ -5,12 +5,14 @@
   },
   "description": {
     "reports": [
-      "telemetry"
+      "telemetry", "status"
     ],
-    "commands": []
+    "commands": [],
+    "subsystems": [{ "subsystem_id": "GPS", "label": "GPS receiver" }]
   },
   "equipment": {
     "kind": "gpsd",
+    "subsystems": { "gps": "GPS" },
     "host": "127.0.0.1",
     "port": 2947,
     "max_message_bytes": 65536,

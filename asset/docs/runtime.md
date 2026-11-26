@@ -187,11 +187,6 @@ controller's own GCS failsafe remains enabled and may take over while the
 equipment link is down. On return, the existing mode-ownership handling observes
 that takeover; it does not claim that Atlas performed the vehicle's response.
 
-Peripheral reconnects retain every unfinished connection reader, including a
-reader awaiting a captured-file write after its socket closes. Shutdown destroys
-the current socket and awaits all retained readers before sealing operation
-evidence. A later connection cannot replace an earlier capture owner.
-
 ## Reporting-only equipment
 
 A reporting-only configuration lists no commands and omits supported settings.
@@ -201,6 +196,10 @@ when it advertises no commands. Automatic home acquisition
 runs only when the description advertises home. The stationary driver publishes
 the configured installation position on each control tick while the installation
 remains configured.
+
+Peripheral file writes run in order while position and Observation input continues.
+Up to eight files can await or undergo a write. Further files are dropped with
+a `peripheral_file_dropped` diagnostic.
 
 The `peripheral` acquisition driver connects to a configured TCP host and port.
 An equipment adapter supplies newline-delimited UTF-8 JSON. This local driver
@@ -223,8 +222,7 @@ format is not a Protocol record or a Fieldlink. It supports these inputs:
 
 `max_message_bytes` bounds one input line. Invalid or oversized input closes the
 connection with a diagnostic. `reconnect_s` controls the next connection attempt
-from the control tick. Socket backpressure bounds acquisition during local file
-writes. Uploads run separately from acquisition and control, one file at a time.
+from the control tick. Uploads run separately from acquisition and control, one file at a time.
 Waiting files stay on disk until the uploader reads them. Stopping closes the
 socket and waits for local capture writes before sealing the archive. The app
 closes the Core client before waiting for outstanding uploads, so retries do not

@@ -62,18 +62,18 @@ scenario({
         const address = server.address();
         assert.ok(address && typeof address !== "string");
         const config = parseConfig({ ...raw, asset_key: key.key, link: { core_url: w.core.url },
-          description: { reports: detector ? ["telemetry", "observation"] : ["telemetry"], commands: [] }, initial_settings: {},
-          equipment: { kind: detector ? "peripheral" : "gpsd", host: "127.0.0.1", port: address.port, max_message_bytes: 65536, reconnect_s: 1 },
-          log_directory: join(w.root, `peripheral-${detector}`), archive_directory: join(w.root, "archives") });
+          description: { reports: detector ? ["telemetry", "observation"] : ["telemetry", "status"], commands: [], ...(detector ? {} : { subsystems: [{ subsystem_id: "GPS", label: "GPS receiver" }] }) }, initial_settings: {},
+          equipment: { kind: detector ? "peripheral" : "gpsd", host: "127.0.0.1", port: address.port, max_message_bytes: 65536, reconnect_s: 1, ...(detector ? { installation_position: { latitude: 3, longitude: 4 } } : { subsystems: { gps: "GPS" } }) },
+          log_directory: join(w.root, `peripheral-${detector}-logs`), archive_directory: join(w.root, "archives") });
         const app = await w.complete(startApp(config, { clock: w.clock, fetch: w.network.fetchFor(`peripheral-${detector}`) }));
         apps.push(app);
         await w.until(() => send !== undefined && (detector || watched));
-        send!(detector ? { kind: "position", time: w.clock.now(), source: "GPS", valid: true, position: { latitude: 3, longitude: 4 } }
-          : { class: "TPV", device: "/dev/gps", mode: 2, time: new Date(w.clock.now()).toISOString(), lat: 3, lon: 4 });
+        if (!detector) send!({ class: "TPV", device: "/dev/gps", mode: 2, time: new Date(w.clock.now()).toISOString(), lat: 3, lon: 4 });
         await w.until(() => w.events.some(e => e.kind === "report.telemetry" && e.record.asset_id === app.asset_id));
         if (!detector) {
           const positionTime = w.clock.now();
           send!({ class: "TPV", device: "/dev/gps", mode: 1, time: new Date(positionTime).toISOString(), lat: 9, lon: 9 });
+          await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.kind === "subsystem" && e.record.condition === "faulted" && e.record.asset_id === app.asset_id));
           await w.advance(config.measurement_stale_after_s * 1000 + 1);
           assert.equal(w.events.some(e => e.kind === "report.telemetry" && e.record.asset_id === app.asset_id &&
             e.record.position.latitude === 9), false);

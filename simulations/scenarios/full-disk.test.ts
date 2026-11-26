@@ -32,6 +32,7 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
     t.skip(`tmpfs unavailable: ${String(error)}`);
     return;
   }
+  let failureDirectory: string | undefined;
   let w: Awaited<ReturnType<typeof createWorld>> | undefined;
   let filler: Awaited<ReturnType<typeof open>> | undefined;
   try {
@@ -89,7 +90,7 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
       0,
     );
   } catch (error) {
-    if (w) await recordFailure("full-disk", checks, error, w.root, w.trace);
+    if (w) failureDirectory = await recordFailure("full-disk", checks, error, w.root, w.trace);
     throw error;
   } finally {
     try {
@@ -99,7 +100,7 @@ test("full disk refuses a change without a partial event [core/docs/storage.md#m
         try {
           await rm(join(mount, "fill"), { force: true });
         } finally {
-          await w?.close();
+          await w?.close(failureDirectory);
         }
       }
     } finally {

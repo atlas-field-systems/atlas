@@ -34,6 +34,13 @@ export function peripheral(
   let stopped = false;
   let retryAt = 0;
   const readers = new Set<Promise<void>>();
+  let writes = Promise.resolve();
+  let queued = 0;
+  function fixedPosition() {
+    if (config.kind === "peripheral" && config.installation_position) observe({ position: {
+      value: config.installation_position, source: "configuration", time: clock.now(),
+    } });
+  }
   function connect() {
     const connection = createConnection({ host: config.host, port: config.port });
     socket = connection;
@@ -56,8 +63,13 @@ export function peripheral(
             const header = z.object({ class: z.string() }).parse(decoded);
             if (header.class !== "TPV") continue;
             const fix = gps.parse(decoded);
-            observe({ position: fix.mode >= 2 && fix.lat !== undefined && fix.lon !== undefined ? {
-              value: { latitude: fix.lat, longitude: fix.lon,
+            const { lat, lon } = fix;
+            const valid = fix.mode >= 2 && lat !== undefined && lon !== undefined;
+            const id = config.subsystems?.gps;
+            observe({ subsystems: id ? { [id]: { value: valid ? { condition: "healthy" } : { condition: "faulted", explanation: "GPS has no fix" },
+              time: clock.now(), source: fix.device ?? null } } : undefined,
+              position: valid ? {
+              value: { latitude: lat, longitude: lon,
                 ...(fix.mode === 3 && fix.altMSL !== undefined ? { altitudes: [{ altitude_m: fix.altMSL, altitude_reference: "msl" as const }] } : {}) },
               source: fix.device ?? null, time: fix.time ? Date.parse(fix.time) : null,
             } : undefined });
@@ -66,10 +78,21 @@ export function peripheral(
           const event = input.parse(decoded);
           switch (event.kind) {
             case "position":
+              if (config.installation_position) break;
               observe({ position: event.valid && event.position ? { value: event.position, source: event.source, time: event.time } : undefined });
               break;
             case "observation": output.observation(event.observation, event.source); break;
-            case "file": await output.file({ name: event.name, contentType: event.contentType, bytes: Buffer.from(event.base64, "base64"), place: event.place }); break;
+            case "file":
+              if (queued >= 8) {
+                output.diagnostic({ kind: "peripheral_file_dropped", name: event.name, time: clock.now() });
+                break;
+              }
+              queued++;
+              writes = writes.then(() => output.file({ name: event.name, contentType: event.contentType,
+                bytes: Buffer.from(event.base64, "base64"), place: event.place }))
+                .catch(error => output.diagnostic({ kind: "peripheral_file_failed", name: event.name, explanation: String(error) }))
+                .finally(() => { queued--; });
+              break;
           }
         }
         if (pending.length > config.max_message_bytes) throw new Error("peripheral message exceeds configured limit");
@@ -81,10 +104,10 @@ export function peripheral(
     readers.add(reading);
   }
   return {
-    start(callback) { observe = callback; connect(); },
-    tick(now) { if (!stopped && !socket && now >= retryAt) connect(); },
+    start(callback) { observe = callback; fixedPosition(); connect(); },
+    tick(now) { fixedPosition(); if (!stopped && !socket && now >= retryAt) connect(); },
     async command() { throw new Error("acquisition equipment does not move"); },
     abortCommand() {},
-    async stop() { stopped = true; socket?.destroy(); await Promise.all(readers); },
+    async stop() { stopped = true; socket?.destroy(); await Promise.all(readers); await writes; },
   };
 }
