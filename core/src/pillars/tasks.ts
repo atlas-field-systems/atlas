@@ -72,7 +72,9 @@ export function requestTasks(
     )
   )
     refuse("invalid", "Failsafe must be the only Task and use now");
-  if (v.flying && !v.hasCriticalBatteryRule)
+  // Fail-safe is the operator's way out when the rule is missing, so it is
+  // never held back by it (asset ADR-0004).
+  if (v.flying && !v.hasCriticalBatteryRule && body.tasks[0]?.kind !== "failsafe")
     refuse(
       "no_critical_battery_rule",
       "Report a critical battery rule before sending Tasks",

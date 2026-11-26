@@ -70,7 +70,8 @@ caller remain, and neither stands in for the Asset app:
 - **Contract callers** (`sdkAssetCaller`, and raw Core calls) check a contract
   the app cannot reach: the SDK's public Asset helpers, which any program on IP
   may use (a caller-supplied diagnostic observer, retry backoff, synchronous
-  queue transitions, explicit report lanes, a gimbal declaration), and Core's
+  queue transitions, explicit report lanes, a gimbal declaration, a flying
+  policy with no critical battery rule), and Core's
   refusal of traffic the app never sends (a wrong definitions hash, a late
   report contradicting a final Task state, a changed body on a replayed
   request).
@@ -79,7 +80,7 @@ Names under `scenarios/` end in `.test.ts`.
 
 | Suite | Asset in the scenario |
 | --- | --- |
-| `admission` | Real app; paused settings Tasks fill the queue and Run now completes through the app. |
+| `admission` | Real app; paused settings Tasks fill the queue and Run now completes through the app. An SDK contract caller reports a flying policy with no critical battery rule, which the app refuses to start with, and takes Fail-safe. |
 | `asset-rejoin` | Real app; settings Task completion and a lost-response retry keep final reports unchanged. |
 | `client-fences` | Real IP app and radio Asset. Its wrong-hash registration is a raw caller. |
 | `current-state` | Real app with a TCP reporting peripheral; a change reports once, then the heartbeat. |
