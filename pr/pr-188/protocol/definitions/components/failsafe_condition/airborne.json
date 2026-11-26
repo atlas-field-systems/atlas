@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/components/failsafe_condition/airborne.json",
+  "title": "airborne",
+  "description": "The Asset is in the air.",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "airborne"
+    }
+  },
+  "examples": [
+    {
+      "kind": "airborne"
+    }
+  ]
+}

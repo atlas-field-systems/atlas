@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/records/task/settings.json",
+  "title": "settings",
+  "description": "Change settings when this Task runs, each to an explicit end state, for example raising the landing gear after a move_to. To change settings now, use a settings_change instead.",
+  "type": "object",
+  "required": [
+    "kind",
+    "settings"
+  ],
+  "properties": {
+    "kind": {
+      "$ref": "../../variables/kind.json",
+      "const": "settings"
+    },
+    "settings": {
+      "$ref": "../../components/settings.json"
+    }
+  },
+  "examples": [
+    {
+      "kind": "settings",
+      "settings": {
+        "landing_gear": "up"
+      }
+    }
+  ]
+}
