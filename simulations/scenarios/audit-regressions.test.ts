@@ -6,7 +6,7 @@ import { createLivePicture } from "@atlas/sdk";
 
 for (const verificationFailure of [undefined, 503]) scenario({
   name: `a storage-refusal retry cannot write into a new run (verification ${verificationFailure ?? "available"})`,
-  checks: ["sdk/docs/client.md#run-changes-and-idle-contact"],
+  checks: ["sdk/docs/client.md#reset-and-idle-contact"],
   async run(w) {
     const issued = value(await w.complete(w.admin.call("provisionGateway")));
     assert.ok("key" in issued);

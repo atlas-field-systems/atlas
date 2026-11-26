@@ -945,7 +945,7 @@ test("PR53-4 account retries protect passwords with salted scrypt [api.md#caller
   }
 });
 
-test("PR53-6 prepared login cannot commit after stop grace [api.md#basics, reset.md#stopping-core-ends-the-run]", async () => {
+test("PR53-6 prepared login cannot commit after stop grace [api.md#basics, reset.md#stopping-core-is-reset]", async () => {
   const { createHook } = await import("node:async_hooks");
   const h = await startHarness();
   let hashes = 0;

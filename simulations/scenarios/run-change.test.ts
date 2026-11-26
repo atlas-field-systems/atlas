@@ -7,8 +7,8 @@ import { value } from "../src/world.ts";
 scenario({
   name: "Reset fences old attempts clears live picture and rebinds Plugin",
   checks: [
-    "core/docs/reset.md#stopping-core-ends-the-run",
-    "sdk/docs/client.md#run-changes-and-idle-contact",
+    "core/docs/reset.md#stopping-core-is-reset",
+    "sdk/docs/client.md#reset-and-idle-contact",
     "sdk/docs/live.md#live-picture",
   ],
   async run(w) {

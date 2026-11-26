@@ -133,7 +133,7 @@ scenario({
 });
 scenario({
   name: "verification cannot release an old mutation into a newly connected run",
-  checks: ["sdk/docs/client.md#run-changes-and-idle-contact"],
+  checks: ["sdk/docs/client.md#reset-and-idle-contact"],
   async run(w) {
     const hold = gate();
     w.onClose(hold.release);
