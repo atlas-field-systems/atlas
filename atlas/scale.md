@@ -19,7 +19,7 @@ Design so Atlas works well at these sizes and does not break just past them.
 ### Operator deadlines come first
 
 An operator sees a command start, and sees an Asset go offline, within about
-10 s and never more than 15 s ([ADR-0021](../docs/adr/0021-operator-deadlines-come-first-then-fill-the-link.md)).
+10 s and never more than 15 s ([ADR-0021](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0021-operator-deadlines-come-first-then-fill-the-link.md)).
 On a slow link such as LoRa, airtime is scarce, and these deadlines decide how
 it is spent.
 

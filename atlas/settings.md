@@ -16,7 +16,7 @@ It does not wait in the queue or go through a Task's steps.
 - Pause is a setting, not a Task. An Asset is set to "paused" or "running",
   always as an explicit end state. Pause keeps the Task underway so the
   operator can continue it. Hold is a command, like Land, and drops it
-  ([ADR-0016](../docs/adr/0016-pause-is-a-setting-hold-is-a-command.md)). The Asset owns
+  ([ADR-0016](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0016-pause-is-a-setting-hold-is-a-command.md)). The Asset owns
   [how pause works](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause).
 - A settings Task can pause an Asset inside a queue. It waits there until
   someone resumes it, for example: fly here, pause, wait for the operator, continue.

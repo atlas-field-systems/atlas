@@ -25,7 +25,7 @@ Do not silently adopt old behavior or claim intended behavior is implemented.
 ## Changes
 
 Keep selected direction, proposals, and open questions distinct. An
-[ADR](../docs/adr/README.md) is `accepted` only when the owner decided it, dated and
+[ADR](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) is `accepted` only when the owner decided it, dated and
 scoped; a recommendation the owner did not decide stays `proposed`. Superseded plans
 go to [archive/](https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/README.md) with a banner. Preserve the owner's testing
 simplifications. Do not turn a review suggestion into a scheduler,

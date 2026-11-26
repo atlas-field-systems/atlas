@@ -4,7 +4,7 @@ What Reset does, what carries over, and how Assets get and keep their IDs. This
 page owns those rules. The [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#asset-and-gateway-calls)
 has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md) the ZIP, and
 [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md) what every Fieldlink provides. The
-[ADRs](../docs/adr/README.md) from 0004 to 0008 record the decisions and why.
+[ADRs](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) from 0004 to 0008 record the decisions and why.
 
 ## The picture and Reset
 

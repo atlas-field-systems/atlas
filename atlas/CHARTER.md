@@ -12,7 +12,7 @@ are welcome. Nothing is locked. When something has a problem, consider reworking
 from the ground up before patching it.
 
 Draft does not mean quiet change. Propose the change and its reason; the owner decides.
-The owner's current decisions are the accepted [ADRs](../docs/adr/README.md). A
+The owner's current decisions are the accepted [ADRs](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md). A
 reversal updates every page that still teaches the old rule.
 
 ## Keep Atlas understandable
@@ -135,7 +135,7 @@ an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.
 
-An accepted [ADR](../docs/adr/README.md) beats every other page. How-it-works docs,
+An accepted [ADR](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) beats every other page. How-it-works docs,
 laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose, in a pull request the owner approves; do not
 quietly diverge in code.
 
@@ -160,7 +160,7 @@ supports the claim.
 Tests exist to catch bugs. Count the bugs a test could catch, not the tests
 written. AI agents write most of Atlas's code, and they overproduce tests that
 check nothing, so these rules guard against that first.
-[ADR-0019](../docs/adr/0019-simulations-prove-atlas-works-and-deep-modules-get-focused-tests.md)
+[ADR-0019](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0019-simulations-prove-atlas-works-and-deep-modules-get-focused-tests.md)
 records the owner's decision.
 
 - **The docs are the answer key.** A test checks a rule that a page states, and
