@@ -13,5 +13,5 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
   and [logging](docs/logging.md).
 - The client programs use to call the API lives in `sdk/`.
 - The owner asked for Core's runtime on 2026-11-13. It is built whole, all
-  pillars together ([decision log](../atlas/decision-log.md#build-and-test)).
+  pillars together ([ADR-0003](../docs/adr/0003-build-each-part-whole-one-part-at-a-time.md)).
 - Do not merge without the developer's approval.

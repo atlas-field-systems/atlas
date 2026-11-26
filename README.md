@@ -54,7 +54,7 @@ Component-local commands still work. CI uses these same focused checks.
 | I want to… | Start here |
 | --- | --- |
 | Understand the purpose and boundaries | [Goal](atlas/goal.md), [Charter](atlas/CHARTER.md), [design decisions](atlas/design-decisions.md) |
-| Find an owner decision or the next milestone | [Decision log](atlas/decision-log.md), [build order](atlas/build-order.md) |
+| Find an owner decision or the next milestone | [ADRs](docs/adr/README.md), [build order](atlas/build-order.md) |
 | Change a shared record or its validation | [Protocol](protocol/README.md) |
 | Change server behavior or understand an endpoint | [Core](core/README.md), [Core API](core/docs/api.md) |
 | Call Core from a program | [SDK](sdk/README.md) |

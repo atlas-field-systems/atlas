@@ -1,7 +1,7 @@
 # Build order after the first version
 
 The owner decided this order on 2026-11-14
-([decision log](decision-log.md#build-and-test)). The numbered steps are the
+([decision log](https://github.com/atlas-field-systems/atlas/blob/main/atlas/archive/decision-log.md#build-and-test)). The numbered steps are the
 working plan for carrying it out.
 
 Protocol, Core, and the SDK, with their simulations, form the built first version
@@ -19,7 +19,8 @@ as soon as possible.
 ## Decided: the parts the full simulation needs come first
 
 After the first version, the Asset app, the gateway app, and the Fieldlinks
-are built before the Command Interface.
+are built before the Command Interface. The order among those three is the
+working plan below, not an owner decision.
 
 The cost is that nobody can use Atlas by hand until the Command Interface is
 built. Until then the owner judges Atlas from simulation results.
@@ -41,18 +42,18 @@ see later, so the gateway app and the simulated radio link are shaped by it.
 Building for SiK first would shape them around SiK's one-drone,
 point-to-point link.
 
-The [Meshtastic folder](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md) owns its sketch, potential concepts, and bench plan.
+The [Meshtastic folder](https://github.com/atlas-field-systems/atlas/blob/main/fieldlink/meshtastic/README.md) owns its sketch and bench plan.
 
 ## New failsafe and radio decisions wait
 
 No new failsafe or radio decision is made until the Asset app has run against
-simulated ArduPilot and the radio is measured. The decisions already in the
-log stay in force. After the results, they are reviewed against what was
+simulated ArduPilot and the radio is measured. Decisions already made
+stay in force. After the results, they are reviewed against what was
 found.
 
 ## The steps
 
-1. **The Asset app, built whole.** The IP runtime and initial ArduPilot SITL
+1. **The Asset app, built whole**, with no throwaway prototype first. The IP runtime and initial ArduPilot SITL
    scenarios are built; [implementation gaps](https://github.com/atlas-field-systems/atlas/blob/main/asset/README.md#implementation-gaps)
    remain. [Simulations](https://github.com/atlas-field-systems/atlas/blob/main/simulations/README.md#simulated-assets) now use the
    real app for IP Asset work.

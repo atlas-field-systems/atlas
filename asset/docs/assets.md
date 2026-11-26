@@ -214,7 +214,7 @@ work.
 [Runtime](runtime.md#movement-execution) owns the ArduPilot driver details.
 
 Copters share one command family. Fixed-wing aircraft are not part of the
-current design ([decision log](../../atlas/decision-log.md#operations-and-setup)).
+current design ([decision log](../../atlas/archive/decision-log.md#operations-and-setup)).
 They will need their own family, because takeoff, travel, and landing mean
 different things and succeed differently, and a profile never silently
 reinterprets copter commands. ArduRover ground vehicles, ArduPlane aircraft, and

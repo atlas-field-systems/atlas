@@ -16,7 +16,7 @@ export type TaskState =
   | "failed"
   | "cancelled"
   | "dropped";
-export const CAP = 64; // decision log 2026-11-10
+export const CAP = 64; // Core ADR-0001
 export const MAX_TASK_ID = 9999; // Protocol law 10
 
 export const TABLES: TableDef[] = [
