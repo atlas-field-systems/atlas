@@ -65,7 +65,6 @@ operator apps. Any caller may load it, because every caller
 const picture = createLivePicture(atlas, { asset_id }); // asset_id optional
 picture.assets(); // { ready, stale, items }
 picture.observations(); // { ready, stale, items }
-picture.tracks(); // { ready, stale, items }
 picture.geofeatures(); // { ready, stale, items }
 picture.tasks(asset_id); // { ready, stale, items }
 picture.onChange(cb);
@@ -77,7 +76,7 @@ picture.onChange(cb);
   from the smallest `as_of`. Recoverable snapshot failures retry with the configured
   backoff. If an Asset disappears between reads, loading starts again.
   It follows with `everything: true`, so the follow is unfiltered for every
-  caller: `asset_id` narrows only Asset entries and Tasks on the client. Places, Tracks, and every Observation stay live.
+  caller: `asset_id` narrows only Asset entries and Tasks on the client. Places and every Observation stay live.
   For each part, it skips events at or below the `as_of` of the read that loaded it.
 - **Readiness is explicit.** Reads return `{ready, stale, items}`. Until loading
   finishes, `ready` is false; a read never returns an empty list as if it were true.
@@ -88,12 +87,12 @@ picture.onChange(cb);
   way: each declared subsystem keeps its own latest condition. A new description
   removes subsystem and gimbal entries it no longer declares; later reports for
   undeclared equipment do not restore those entries.
-- **Observations, Tracks, and geo features.** Each item is the record the event
+- **Observations and geo features.** Each item is the record the event
   stream carries ([Entities](../../core/docs/api.md#entities)). A
   `report.observation` replaces its Observation only when it is newer by report
-  time and then `event_id`, and its event is not marked `clock_ahead`. `track.updated` and `geofeature.created` or
-  `geofeature.replaced` replace the item; `track.removed` and
-  `geofeature.deleted` remove it. The picture adds no stale flag; each item
+  time and then `event_id`, and its event is not marked `clock_ahead`.
+  `geofeature.created` and `geofeature.replaced` replace the item;
+  `geofeature.deleted` removes it. The picture adds no stale flag; each item
   keeps its `time`.
 - **Evidence stays separate.** Requests show as requested until reports arrive.
   Contact comes from `asset.contact` events. Neither stream state nor picture

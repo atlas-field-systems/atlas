@@ -23,7 +23,7 @@ Propose changes to the owner rather than making them quietly. See
 | [atlas/](atlas/) | The Charter: what Atlas is for, how it is used, project-wide principles, and [reset and identity](atlas/reset-and-identity.md) | Active |
 | [protocol/](protocol/) | The spec: shared domain records as definitions, laws, examples and docs, plus the one validator. Component configuration and diagnostic logs live with their owners. When published, its package version is its only version; definitions and records carry no protocol version | Draft, unpublished |
 | [sdk/](sdk/) | The SDK: the client for the Core API, used by operator applications, Assets on IP, gateways and Plugins. Loads Protocol's definitions; defines no record itself. Runtime code is built | Built |
-| [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, serves the [Core API](core/docs/api.md), and runs Fusion. Runtime code is built | Built |
+| [core/](core/) | Atlas Core: the server that keeps the shared picture and the event log, and serves the [Core API](core/docs/api.md). Runtime code is built | Built |
 | [asset/](asset/) | Atlas Asset: the software on an Asset (a drone or other equipment) and how it behaves, from start-up to shutdown | IP runtime, crash lifecycle and Reset ZIP verified in SITL |
 | [command-interface/](command-interface/) | Atlas Command Interface: the operator interface a person uses to watch Assets and request work | Planning |
 | [gateway/](gateway/) | Atlas Gateway: the gateway app, a framework that installs and runs one Fieldlink at a time and gives it the gateway interface | Planning |
@@ -63,7 +63,7 @@ Each topic has one home. Other pages link to it.
 | The stack: languages, runtime, storage, containers | [README.md](README.md#stack) |
 | Terms | [GLOSSARY.md](GLOSSARY.md) |
 | Record shapes and the working choices behind them | [protocol/definitions/](protocol/definitions/), [protocol/docs/decisions.md](protocol/docs/decisions.md) |
-| Endpoints, events, admission, the Task cap, contact, places, Objects, Plugin calls | [core/docs/api.md](core/docs/api.md) |
+| Endpoints, events, admission, contact, places, Objects, Plugin calls | [core/docs/api.md](core/docs/api.md) |
 | Core's Reset ZIP, storage, logging | [core/docs/reset.md](core/docs/reset.md), [storage.md](core/docs/storage.md), [logging.md](core/docs/logging.md) |
 | Asset behavior: the queue, pause, cancel, places in Tasks | [asset/docs/README.md](asset/docs/README.md) |
 | Failsafes and their overrides | [asset/docs/failsafes.md](asset/docs/failsafes.md) |

@@ -5,13 +5,10 @@ belong to [Protocol](../../protocol/README.md); this page says where Core puts t
 
 ## Tables hold current state
 
-`fusion_cursor` belongs to Fusion and stores its last processed event ID per
-`run_id`. Fusion commits the cursor with its Track changes.
-
-The `runs` row holds the last Track, geo feature, and Object sequence numbers.
+The `runs` row holds the last geo feature and Object sequence numbers.
 Deleting a current row never makes its ID available again before the next Reset.
 The `queues` table is a deliberate copy of the latest eligible queue report,
-written in the report's transaction for admission.
+written in the report's transaction.
 
 Core keeps one SQLite database in its `data_directory` ([configuration](../config.md)).
 Core reads and changes current state in ordinary tables with plain SQL.
@@ -32,8 +29,7 @@ Each table belongs to one [pillar](pillars.md), or is shared by all of them.
 | `objects` | Objects | Each Object record, a deleted one marked deleted. The files sit in the `data_directory` beside the database, deleted ones included |
 | `assets` | Entities | Each Asset registered since the last Reset: `asset_id`, the Asset key or gateway that registered it, the gateway carrying a radio Asset, latest description, and contact. A removed Asset keeps its row, marked removed and not listed |
 | `tasks` | Tasks | Each Task's body, `requested_by`, and latest state |
-| `queues` | Tasks | Each Asset's latest reported queue, which the 64-Task cap counts ([operator requests](api.md#operator-requests)) |
-| `tracks` | Entities | Each current Track, as Fusion last wrote it ([Tracks](api.md#tracks)) |
+| `queues` | Tasks | Each Asset's latest reported queue ([operator requests](api.md#operator-requests)) |
 | `geofeatures` | Entities | Each current geo feature ([Geo features](api.md#geo-features)) |
 
 Observations have no table. They are Asset reports, so each Observation is an
@@ -57,10 +53,10 @@ kept twice, except the queue copy described above.
 [Reset](reset.md). A start after a stop adds a row to `runs` with the next
 `run_id`, a rising integer never reused. A start after a crash finds a `run_id`
 with no end and [keeps the picture](reset.md#when-core-stops-unexpectedly)
-instead. Every row in `assets`, `tasks`, `queues`, `tracks`, `geofeatures`,
+instead. Every row in `assets`, `tasks`, `queues`, `geofeatures`,
 `objects`, `sessions`, `idempotency_keys`, and `events` carries its `run_id`,
 and each Object's file is kept under it. Rules that hold until the next Reset,
-such as unique `asset_id`s, `task_id`s, `track_id`s, `geofeature_id`s, and
+such as unique `asset_id`s, `task_id`s, `geofeature_id`s, and
 idempotency keys, hold within one `run_id`. `event_id` keeps rising across
 Resets and is never reused.
 

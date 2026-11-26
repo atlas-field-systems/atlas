@@ -14,7 +14,7 @@
 | `store/events.ts` | Event audience and request rules, append validation, settlement, filtering, pages |
 | `store/idempotency.ts`, `store/runs.ts` | Retry responses, recovery, counters |
 | `api/routes.ts`, `server.ts`, `auth.ts`, `errors.ts`, `stream.ts` | Route table, pipeline, authorization, refusals, SSE |
-| `pillars/` | Entities, Tasks, Objects, Administration, Fusion |
+| `pillars/` | Entities, Tasks, Objects, Administration |
 | `contact.ts`, `plugins.ts`, `reset/` | Contact deadlines, Plugin interface, archives |
 
 ## Decisions that shape the code
@@ -32,8 +32,7 @@ requires both to match as well as `request_id`. There is no second requests tabl
 Streams read pages from disk and keep only a cursor, never a backlog.
 
 Global short IDs use a persistent sequence that skips account IDs. Counters that start again at each Reset
-survive deletion. Fusion is a pure function plus an event follower,
-with its cursor committed alongside Track changes. Contact deadlines use the
+survive deletion. Contact deadlines use the
 injected clock; persistent consequences belong to the offline transaction.
 
 ## Schema ownership
@@ -44,4 +43,4 @@ tables and [pillars](pillars.md#rules) defines access across owners.
 
 All pillars and the Plugin interface are implemented.
 [Reset](reset.md) writes and checks the archive before clearing the picture.
-Contact stops and Fusion drains before Reset exports state.
+Contact stops before Reset exports state.

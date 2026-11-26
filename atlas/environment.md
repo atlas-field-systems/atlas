@@ -70,7 +70,7 @@ The immediate use is trusted testing and flights lasting a few hours.
 Keeping every record until Reset is therefore acceptable. That duration describes
 current use, not a permanent limit on Atlas.
 
-Edge Assets normally need current information. Interfaces and fusion may need
+Edge Assets normally need current information. Operator interfaces may need
 history. Historical transfers must respect the live field traffic.
 Observations can come from radios, cameras, radar, and external data services.
 Accepting that variety of evidence is a separate problem from processing it.

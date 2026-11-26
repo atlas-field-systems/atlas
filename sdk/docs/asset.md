@@ -116,8 +116,6 @@ it. The helper holds the Asset's Tasks and hands them to the app.
 - **Orders by `task_id`.** Tasks may arrive in any order and more than once. The
   helper hands out the lowest held Task, and only when every lower `task_id` has
   ended and every Task through that Task's `send_last` is held or has ended.
-- **Refuses a full queue.** Holding 64 unstarted Tasks, it reports each
-  further Task `cancelled`, unless `now` is set.
 - **Skips dropped Tasks.** A `task.dropped` event counts its `task_id` as ended;
   a held Task it names is removed without running. For a running Task, it calls
   `QueueHost.stop(task_id, "dropped")` and releases the slot. A later `finish`

@@ -56,7 +56,7 @@ several ZIPs into one is a separate process.
 | `summary.md` | The plain readable summary below |
 | `manifest.json` | Every file with its size and SHA-256, each unexpected stop Core resumed from, and every known gap |
 | `events.jsonl` | The [event log](api.md#the-event-log-and-live-stream) since the last Reset, one event per line in `event_id` order: every accepted domain request and stored report |
-| `state/` | The current-state rows at the stop, one JSON Lines file per table: Tasks, queues, Tracks, geo features, Objects, and the Assets, gateways, and Plugins seen |
+| `state/` | The current-state rows at the stop, one JSON Lines file per table: Tasks, queues, geo features, Objects, and the Assets, gateways, and Plugins seen |
 | `objects/` | Each Object's file, named by its `object_id`, including Objects deleted since the last Reset; `state/` marks those deleted |
 | `diagnostics/` | Core's [diagnostic log](logging.md) since the last Reset, as written |
 | `config.json` | The resolved configuration, with secrets removed |
@@ -89,7 +89,7 @@ final name and has passed the check, the Reset is done
 ([ADR-0005](../../docs/adr/0005-the-reset-zip-is-the-only-copy.md)).
 
 Clearing removes everything held since the last Reset: events, Assets, Tasks,
-queues, Tracks, geo features, Objects and their files, idempotency keys,
+queues, geo features, Objects and their files, idempotency keys,
 sessions, and diagnostic files. Accounts and keys stay
 ([what carries over](../../atlas/reset-and-identity.md#what-carries-over)).
 Operator applications drop what they held when they see the new `run_id`

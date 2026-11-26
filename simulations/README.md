@@ -104,8 +104,8 @@ Names under `scenarios/` end in `.test.ts`.
 
 ## Two kinds of eval
 
-- **Scenarios.** A scripted story with an expected outcome, such as "64 Tasks
-  queued, and Run now still runs". Each scenario names the rule it checks and
+- **Scenarios.** A scripted story with an expected outcome, such as "Tasks
+  queued while paused, and Run now still runs". Each scenario names the rule it checks and
   links to the page that owns it. The owning page states the rule; the scenario
   only checks it.
 - **Seeded fault runs.** Many runs with random faults, each repeatable from its

@@ -3,12 +3,14 @@
 **Built.** Core implements the admission rules below.
 
 Core rejects requests it knows are invalid before they reach a field link. It
-validates request bodies with Protocol's validator, then checks the
-caller's session or key, the Asset's contact, the commands and settings its
-description lists, Task identities, and the 64-Task cap against the Asset's
-latest queue report. The [operator request rules](api.md#operator-requests)
-own the cap and the `now` exception.
-Refusals follow the
+validates request bodies with Protocol's validator, then checks the caller's
+session or key, the Asset's contact (including an open command stream for an
+Asset on IP), the commands and settings its description lists, Task identities,
+and the critical battery rule for flying Assets. There is no Task queue cap
+([ADR-0023](../../docs/adr/0023-no-task-queue-limit.md)); Task IDs stay limited
+to 9999 per Asset between Resets. The
+[operator request rules](api.md#operator-requests) own admission, the critical
+battery rule (including admitting `failsafe`), and `now`. Refusals follow the
 [Core API's errors](api.md#basics).
 
 Core retains requested work in its event log and passes accepted requests to the
@@ -20,29 +22,3 @@ automatically gate commands. Configured [failsafes](../../asset/docs/failsafes.m
 remain with the Asset runtime, including while disconnected from Core.
 This follows
 [decisions near their source](../../atlas/CHARTER.md#keep-the-systems-replaceable).
-
-## Scenario: paused work at capacity
-
-Core tests check these admission outcomes through HTTP.
-
-1. An online Asset is paused, and its latest queue report lists 63 held Tasks.
-   An operator sends one Task. Core accepts it.
-2. Once the Asset's queue report lists 64, another ordinary request is refused
-   whole with `409 queue_full`. Core assigns no Task ID and sends nothing.
-3. The operator cancels one Task. When the Asset's next queue report lists 63,
-   a new request for one Task is accepted again.
-4. Two requests for one Task each, sent before the Asset reports either, are
-   both accepted. The Asset holds 64 after the first, so it reports the second
-   Task `cancelled`, with a full queue as its explanation. No queue report
-   lists more than 64.
-
-## Scenario: now at capacity
-
-[Operator requests](api.md#operator-requests) also owns the critical battery
-rule required before accepting Tasks.
-
-1. The Asset's latest queue report lists 64 held Tasks. An ordinary request for
-   one more is refused with `409 queue_full`.
-2. The operator sends one Task with `now`, such as Land or Return to home. Core
-   accepts it. It runs at once and cancels every lower `task_id`, so the next
-   queue report lists none of them.

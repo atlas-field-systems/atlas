@@ -4,7 +4,7 @@ Protocol defines Atlas's shared records, their laws, and the one validator every
 program uses.
 
 A record is a piece of shared data: an Asset's description, a Task, a
-settings change, a cancel, a report, a Track, or a geo feature. Core, the SDK, gateways, and Assets all
+settings change, a cancel, a report, or a geo feature. Core, the SDK, gateways, and Assets all
 build, check, and store the same records from these plain JSON files. Protocol
 does not define how programs talk. The [Core API](../core/docs/api.md) carries
 records over IP, and Fieldlinks carry them across field links. Local configuration
@@ -32,7 +32,6 @@ Definitions and records carry none.
 | `report.settings` | Its settings' values | Asset |
 | `report.failsafe` | A failsafe Task's state, an operator override, or a flight-controller takeover | Asset |
 | `report.observation` | Something the Asset sees: where it is, or which way | Asset |
-| `track` | Fusion's conclusion about one target, and the Observations it rests on | Core's Fusion |
 | `geofeature` | A place on the map: a point, line, area, or GeoTIFF imagery, with an optional name | Core, for an account, Plugin, or Asset |
 | `object` | A file Core holds: its name, type, size, and geo feature | Core, for an account, Plugin, or Asset |
 | `deletion` | An Object was deleted | Core, for an operator |

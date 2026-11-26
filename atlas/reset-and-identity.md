@@ -4,7 +4,7 @@ What Reset does, what carries over, and how Assets get and keep their IDs. This
 page owns those rules. The [Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#asset-and-gateway-calls)
 has the calls behind them, [Core Reset](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md) the ZIP, and
 [Gateway](https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md) what every Fieldlink provides. The
-[ADRs](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) from 0004 to 0008 record the decisions and why.
+[ADRs](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.md) 0004 to 0006, 0008, and 0024 record the decisions and why.
 
 ## The picture and Reset
 
@@ -34,7 +34,7 @@ manages no sessions of its own and keeps nothing by session.
   does not pin or check versions across a restart.
 - **Everyone signs in again** after Reset. Every session ends at Reset; a crash
   ends none.
-- **Operator state starts fresh.** Shared links, hidden Tracks and other view
+- **Operator state starts fresh.** Shared links, hidden Observations and other view
   filters, drafts, and result overlays end at Reset. A link made before a
   Reset never opens an item made after it.
 - **Each part writes its own ZIP:** [Core](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md),
@@ -49,8 +49,8 @@ expires, and neither a dropped link nor a crash of Core ends anything.
 
 | Carried across a Reset | Not carried |
 | --- | --- |
-| Accounts | Asset IDs, and every other ID Core assigns: Task, Track, geo feature, and Object |
-| Connection keys: for Assets on IP, gateways, and Plugins | The picture: Assets, Observations, Tracks, places, and Objects, and their history |
+| Accounts | Asset IDs, and every other ID Core assigns: Task, geo feature, and Object |
+| Connection keys: for Assets on IP, gateways, and Plugins | The picture: Assets, Observations, places, and Objects, and their history |
 | Installed Plugin setup | Operator state: sessions, links, and view filters |
 
 `event_id` keeps rising across Resets, so an old cursor never matches a new
@@ -74,7 +74,7 @@ event. Core also keeps the last `asset_id` it assigned, so it never reuses an
   never reuses an old ID to make room.
 - **Assets choose `observation_id`**, unique for that Asset until the next
   Reset.
-- **Core assigns the other IDs:** `task_id`, `track_id`, `geofeature_id`, and
+- **Core assigns the other IDs:** `task_id`, `geofeature_id`, and
   `object_id`. Unlike `asset_id`, they start again after each Reset, so the
   same ID can name a different item after it.
 
@@ -97,7 +97,7 @@ after the Reset it gets a new one.
   if it forgot its ID: the key proves which Asset it is. It still never picks
   or configures its own ID.
 - **Work does not resume after a restart.** A restarted app drops its queued
-  Tasks: operators see them marked not done and send again whatever still
+  Tasks: operators see them as outcome unknown and send again whatever still
   matters. Nothing resumes on its own. When the app signs up again, Core drops
   each of its Tasks with no final report, claiming no outcome
   ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#operator-requests)).

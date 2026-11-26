@@ -60,14 +60,13 @@ Accounts may call every operator route.
 | `400 invalid` | The body fails Protocol's validator; `explanation` lists the paths |
 | `401 unauthenticated` | No valid session or key |
 | `403 forbidden` | The caller may not do this, such as an Asset sending Tasks |
-| `404 not_found` | No such Asset, Task, account, Track, geo feature, Plugin, Plugin call, or Object |
+| `404 not_found` | No such Asset, Task, account, geo feature, Plugin, Plugin call, or Object |
 | `405 method_not_allowed` | The path exists but does not accept this method |
 | `409 asset_ids_exhausted`, `task_ids_exhausted` | No ID remains in the applicable sequence |
 | `409 definitions_mismatch` | Missing or different definitions hash |
-| `409 asset_offline`, `plugin_offline` | Recipient is offline |
+| `409 asset_offline`, `plugin_offline` | Recipient is offline or unable to take commands |
 | `409 no_critical_battery_rule` | Flying Asset has no critical battery rule |
 | `409 invalid_link_loss` | An Asset link-loss setting does not exceed Core stream keepalive |
-| `409 queue_full` | The request exceeds the reported queue cap |
 | `409 not_supported` | Command, setting, camera, or action is not declared |
 | `409 task_ended`, `call_settled` | Task ended or Plugin call was already answered or dropped |
 | `409 not_a_point`, `not_geotiff` | Place or file cannot serve the requested use |
@@ -82,13 +81,12 @@ Accounts may call every operator route.
 
 Each Core pillar has a root path, and the kinds that pillar owns live under it.
 Plugins are not a pillar; their interface still has a root path, so every
-outside system is reached the same way. Fusion has no root path: it works on
-Core's state directly, never through this API. `/about`, `/events`, `/history`,
+outside system is reached the same way. `/about`, `/events`, `/history`,
 and `/debug` belong to no pillar and stay at the top level.
 
 | Root | Owns |
 | --- | --- |
-| `/entities` | The shared picture. `GET /entities` returns it. Assets, Observations, Tracks, and geo features live under this root |
+| `/entities` | The shared picture. `GET /entities` returns it. Assets, Observations, and geo features live under this root |
 | `/tasks` | Tasks, queues, and cancels |
 | `/objects` | Files Core holds ([Objects](#objects)) |
 | `/plugins` | Plugin descriptions, contact, calls, and answers ([Plugins](#plugins)) |
@@ -141,8 +139,7 @@ By default a program's stream carries what it must act on. Any caller may add
 
 ## The event log and live stream
 
-Core adds one event for every accepted domain request, stored report, and Fusion
-change to a Track, in the same
+Core adds one event for every accepted domain request and stored report, in the same
 transaction as the change it records ([storage](storage.md)). Each event is
 `{event_id, time, kind, record}`: a rising integer, Core's receive time in
 milliseconds, one of the kinds below, and its record. Geo feature events also
@@ -160,7 +157,7 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `plugin.called` | An operator calls a Plugin action | `plugin.call` |
 | `plugin.result`, `plugin.failed` | A Plugin answers a call | `plugin.result` or `plugin.failure` |
 | `plugin.dropped` | Core ends a call the Plugin did not answer before it went offline or was removed | `drop`: `plugin_id`, `request_id` |
-| `object.stored` | An operator or a Plugin stores a file | `object` |
+| `object.stored` | An operator, a Plugin, or an Asset stores a file | `object` |
 | `object.changed` | An operator attaches an Object to a geo feature, moves it, or detaches it | `object` |
 | `object.deleted` | An operator deletes an Object | `deletion`: `object_id`, `requested_by` |
 | `asset.described` | The Asset sends its description | Its description record |
@@ -174,8 +171,6 @@ Core [marks](#asset-and-gateway-calls) as ahead of its clock carries
 | `settings.requested` | An operator changes settings | `asset_id`, `settings`, `requested_by` |
 | `cancel.requested` | An operator cancels a Task | `asset_id`, `task_id`, `requested_by` |
 | `report.<name>` | Core stores an Asset report, including `report.observation` | The report record |
-| `track.updated` | Fusion creates or changes a Track | `track` |
-| `track.removed` | Fusion removes a Track | The `track` as it last stood |
 | `geofeature.created`, `geofeature.replaced` | A caller creates or replaces a geo feature | `geofeature`, and the event carries `requested_by` |
 | `geofeature.deleted` | A caller deletes a geo feature | The `geofeature` as it last stood, and the event carries `requested_by` |
 
@@ -208,8 +203,9 @@ supplies contact timing.
 Until the next Reset, the next Task after 9999 is refused with `409 task_ids_exhausted`.
 Cancel for an unknown Task is `404 not_found`; cancel for an ended Task is
 `409 task_ended`. A cancel to an offline Asset is refused as other requests are.
-A flying Asset without a critical battery rule is refused a Tasks request even
-when it includes a settings Task. Send the rule as a settings change first.
+A flying Asset without a critical battery rule is refused an ordinary Tasks request even
+when it includes a settings Task. Send the rule as a settings change first. The
+`failsafe` command is still admitted.
 
 | Request | Body | Result |
 | --- | --- | --- |
@@ -217,51 +213,54 @@ when it includes a settings Task. Send the rule as a settings change first.
 | `PATCH /entities/assets/{asset_id}/settings` | `requests.settings`: `settings`, as end states | `202 {event_id}` |
 | `POST /tasks/{asset_id}/{task_id}/cancel` | Nothing | `202 {event_id}` |
 
-- Core validates the body, checks that the Asset is online and that its
+- Core validates the body, checks that the Asset is online (and for an Asset on
+  IP, that its command stream is open; see [Contact](#contact)) and that its
   description lists every command and setting in it, and accepts or refuses the
   request whole. An unlisted command or setting is refused with `409`. Core
-  refuses commands to an offline Asset and holds nothing, Fail-safe included.
+  refuses commands to an offline Asset, or to an Asset on IP that cannot take
+  commands, and holds nothing, Fail-safe included.
 - **Capture names a declared camera.** Core refuses a `capture` Task with
   `409` when `camera_id` is not in the Asset's description.
   [Protocol Task kinds](../../protocol/definitions/records/task.json) define
   the accepted kinds, including Capture.
 - **A flying Asset needs a critical battery rule.** An Asset whose description
-  lists `takeoff` is a flying Asset. Core refuses Tasks to it with
+  lists `takeoff` is a flying Asset. Core refuses ordinary Tasks to it with
   `409 no_critical_battery_rule` while its latest reported `failsafe_policy`
   has no rule with a critical battery condition, and refuses a settings change
   that would replace its policy with one that has none
   ([Failsafes](../../asset/docs/failsafes.md#no-rules-are-enabled-by-default)).
+  Core still admits a `failsafe` Task for an online Asset that declares it, even
+  with no critical battery rule
+  ([Asset ADR-0004](../../asset/docs/adr/0004-operators-fire-the-failsafe-instead-of-offline-exemptions.md)).
 - **Fail-safe runs now.** A `failsafe` Task is sent alone with `now`; Core
   refuses it otherwise with `400 invalid`. The Asset treats it as if its
   failsafe had fired ([Failsafes](../../asset/docs/failsafes.md#an-operator-can-fire-the-failsafe)).
-- **At most 64 ordinary Tasks per Asset.** Core counts the Tasks that the
-  Asset's latest queue report lists. It refuses an ordinary request that would
-  take that count over 64 with `409 queue_full`, whole, without assigning Task
-  IDs. A `now` request is one Task that runs at once and cancels every lower
-  `task_id`, so Core admits it even at 64. Core does not count Tasks still
-  crossing the link, so two requests close together can overfill the queue: an
-  Asset that already holds 64 unstarted Tasks reports each further ordinary
-  Task `cancelled`, with a full queue as its explanation.
+- **No Task queue limit.** Core imposes no cap on an Asset's queue, and an Asset
+  keeps every Task it receives ([ADR-0023](../../docs/adr/0023-no-task-queue-limit.md)).
+  Task IDs stay limited to 9999 per Asset between Resets.
 - **Tasks are numbered.** Core gives each Task the next `task_id` for its Asset:
   1 for the Asset's first Task after a Reset, then 2, then 3. A `task_id` never
   changes and is never reused. The Asset runs its Tasks in `task_id` order, so
   the order never depends on when a Task arrives.
 - **Core sends every Task as soon as it accepts it.** Each accepted request is
-  one `tasks.requested` event on the Asset's stream. Core never holds a Task
-  back, whatever the Asset is doing. Sending is not receiving: the Asset holds a
-  Task only once it arrives, and keeps the Tasks it holds if contact ends.
-- **Tasks sent together start together.** Each Task of a request carries
-  `send_last`, the `task_id` of the request's last Task. The Asset starts none of
-  them until it has received all of them. A Task that was cancelled counts as
-  received. An operator who wants a whole mission aboard
-  before it starts sends the mission in one request.
+  one `tasks.requested` event on the Asset's stream. On radio the gateway's
+  Fieldlink delivers and retries; on IP the Asset reads Core directly. Core
+  never holds a Task back, whatever the Asset is doing. Sending is not
+  receiving: the Asset holds a Task only once it arrives, and keeps the Tasks it
+  holds if contact ends.
+- **Tasks sent together start together.** When Core accepts a request, it stamps
+  `send_last`, the `task_id` of the request's last Task, on each Task of the
+  request. On radio the Fieldlink only carries it. The Asset starts none of them
+  until it has received all of them, and runs Tasks in `task_id` order. A Task
+  that was cancelled counts as received. An operator who wants a whole mission
+  aboard before it starts sends the mission in one request.
 - **A failure clears the queue.** A failed Task
   [clears the Asset's queue](../../asset/docs/failsafes.md#a-failed-command-cancels-the-remaining-tasks).
   Tasks that arrive after the clear run normally; an operator cancels any that
   no longer make sense.
 - With `now`, a request carries one Task. The Task runs at once, even while the
   Asset is [paused](../../asset/docs/README.md#pause), and cancels every Task
-  with a lower `task_id`. Core admits it even at the 64 cap. A settings Task is
+  with a lower `task_id`. A settings Task is
   never sent with `now` ([Settings](../../atlas/settings.md)); Core does not
   refuse one yet.
 - The Asset answers a Task request with a queue report that names the request
@@ -270,8 +269,8 @@ when it includes a settings Task. Send the rule as a settings change first.
 - **Unanswered requests end when the Asset goes offline.** Core stops delivering
   every request the Asset has not answered: Tasks, settings changes, and cancels.
   Core adds `request.dropped` for each, and `task.dropped` for each Task the
-  Asset never reported holding. Operators see them as not done and send again
-  whatever still matters. When the Asset returns, its stream skips the dropped
+  Asset never reported holding. Operators see them as outcome unknown and send again
+  whatever still matters ([ADR-0024](../../docs/adr/0024-dropped-work-shows-outcome-unknown-never-resumed-or-reconciled.md)). When the Asset returns, its stream skips the dropped
   requests but carries the `task.dropped` events. The Asset counts each dropped
   `task_id` as ended and never runs it, so no old request runs late and no
   dropped `task_id` blocks the Tasks after it.
@@ -279,7 +278,7 @@ when it includes a settings Task. Send the rule as a settings change first.
   already registered has started again and
   [dropped its queued Tasks](../../atlas/reset-and-identity.md#keys-and-registration).
   Core adds `task.dropped` for each of its Tasks with no final report. It also drops unanswered settings and cancel requests, and adds no new `asset.registered`. A drop
-  claims no outcome: operators see the Task as not done and send again what
+  claims no outcome: operators see the Task as outcome unknown and send again what
   still matters. Results the app had not reported before the restart are lost.
   The registration answer's `last_task_id` is the highest `task_id` Core has
   given the Asset since the last Reset, or 0. The app counts every `task_id` up to it as
@@ -315,22 +314,16 @@ the earlier queue.
 | `GET /entities/assets/{asset_id}` | One Asset, the same way |
 | `GET /tasks/{asset_id}` | Task bodies, latest states, and the Tasks the Asset reports holding |
 | `GET /history?asset_id&report&since&until&cursor&limit` | Stored reports ordered by report time, then `event_id`; at most 1000 per page, with `next_cursor` |
-| `GET /history/tracks?track_id&since&until&cursor&limit` | Stored `track.updated` and `track.removed` events, ordered by the Track's `time`, then `event_id`, paged the same way |
 | `GET /history/geofeatures?geofeature_id&since&until&cursor&limit` | Stored geo feature events in `event_id` order, paged the same way |
 
-Track and geo feature history is what review replays: a Track's past path, and
-each geo feature as it stood at the time being replayed, including ones deleted
-later. A Track's past path follows its sighting times, as an Asset's trail
-follows report times, so `since` and `until` compare with the Track's `time`;
-a `track.removed` event sorts at the event's own `time`. For geo features they
-compare with the event's `time`. The rest of the picture is under
-[Entities](#entities).
+Geo feature history is what review replays: each geo feature as it stood at the
+time being replayed, including ones deleted later. `since` and `until` compare
+with the event's `time`. The rest of the picture is under [Entities](#entities).
 
 ## Asset and gateway calls
 
 A clock-ahead report still answers its request and moves Task state forward.
-It never becomes latest, and a clock-ahead queue report does not count toward
-the Task cap.
+It never becomes latest.
 
 Core assigns each Asset's `asset_id` when it registers
 ([Reset and identity](../../atlas/reset-and-identity.md#ids)). An Asset on IP
@@ -371,10 +364,9 @@ starts in this order, and on reconnect repeats it from step 3:
   every Task through the Task's `send_last` is held or has ended. A `task_id` the Asset has
   not received blocks the Tasks after it until it arrives, is cancelled, or is
   dropped.
-- The Asset reports a Task `cancelled` without running it in three cases: a
-  cancel for the Task arrived before the Task, a `now` Task with a higher
-  `task_id` has run, or the Asset already holds 64 unstarted Tasks and `now` is
-  not set.
+- The Asset reports a Task `cancelled` without running it in two cases: a
+  cancel for the Task arrived before the Task, or a `now` Task with a higher
+  `task_id` has run.
 - Settings requests apply in event order. [Asset behavior](../../asset/docs/README.md)
   owns execution, failsafes, and the overrides allowed during a failsafe.
 - Core compares each report's `time` with its own clock. Core stores a report
@@ -451,6 +443,10 @@ keep the last-heard time.
   `offline_after_s`. An open event stream is not evidence of contact. An
   Asset with nothing to report posts an empty report batch often enough to stay
   online. Core adds an `asset.contact` event when its view changes.
+- **Command stream down on IP.** An Asset on IP whose reports still arrive
+  within `offline_after_s` but whose command event stream is down is shown as
+  unable to take commands, and Core refuses new work for it as it does for an
+  offline Asset.
 - **A gateway's contact.** A gateway is online while Core has heard from it
   within `offline_after_s`. Every request it makes with its key counts, but an
   open event stream does not; with nothing else to send, it calls `GET /about`
@@ -511,8 +507,8 @@ These are requirements to test when Core is built; the Administration contract t
 
 ## Entities
 
-Entities is the shared picture: Assets, Observations, Tracks, and geo features.
-`GET /entities` returns one consistent cut of all four, with `as_of`. The event
+Entities is the shared picture: Assets, Observations, and geo features.
+`GET /entities` returns one consistent cut of all three, with `as_of`. The event
 stream updates it. The Command Interface draws the map from this read.
 
 Each kind lives under the `/entities` root, because each is written and used
@@ -521,9 +517,8 @@ differently.
 | Path | Role |
 | --- | --- |
 | `/entities/assets` | The actor surface, already specified above: registration, description, contact, settings, and reports. Observations an Asset reports arrive here as reports. Keys are under `/administration`. Tasks are under `/tasks`. |
-| `/entities/observations` | Evidence in the picture, separate from Tracks. Callers read Observations here. They do not create them. Assets write them only as reports. |
-| `/entities/tracks` | Conclusions Fusion produced. Callers read Tracks here. They do not create them. Fusion writes Tracks through the Entities pillar's functions, never this API. |
-| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins create. A Task that names a place by `geofeature_id` carries a copy of it ([Geo features](#geo-features)). |
+| `/entities/observations` | Evidence in the picture. Callers read Observations here. They do not create them. Assets write them only as reports. |
+| `/entities/geofeatures` | Places operators create, edit, and delete, and Plugins and Assets create. A Task that names a place by `geofeature_id` carries a copy of it ([Geo features](#geo-features)). |
 
 Objects are not Entities.
 
@@ -531,16 +526,14 @@ Objects are not Entities.
 
 | Request | Returns |
 | --- | --- |
-| `GET /entities` | `{as_of, assets, observations, tracks, geofeatures}`: one consistent cut of the whole picture |
+| `GET /entities` | `{as_of, assets, observations, geofeatures}`: one consistent cut of the whole picture |
 | `GET /entities/observations` | `{as_of, items}`: every Observation |
-| `GET /entities/tracks` | `{as_of, items}`: every Track |
-| `GET /entities/tracks/{track_id}` | `{as_of, item}`: one Track |
 | `GET /entities/geofeatures` | `{as_of, items}`: every geo feature |
 | `GET /entities/geofeatures/{geofeature_id}` | `{as_of, item}`: one geo feature |
 
-- **A read and an event look the same.** Each Observation, Track, and geo feature
+- **A read and an event look the same.** Each Observation and geo feature
   item is exactly the Protocol record the event stream carries for it:
-  `report.observation`, `track`, or `geofeature`. A reader applies a read and a
+  `report.observation` or `geofeature`. A reader applies a read and a
   later event the same way. Asset entries keep the shape of
   [`GET /entities/assets`](#reads).
 - **No filters or paging.** At Atlas's [scale](../../atlas/scale.md) the whole
@@ -548,7 +541,7 @@ Objects are not Entities.
 - **Every caller reads the picture.** An Asset, a gateway, or a Plugin uses this
   same API with its own key ([Reads](#reads)).
 - **Nothing expires between Resets.** Observations stay in the picture until
-  the next Reset, and a Track stays until Fusion removes it. Core adds no stale
+  the next Reset. Core adds no stale
   status. Every record keeps its `time`, and readers show its age. A status
   that changed only because time passed would have no event, so a reader could
   not follow it from a snapshot.
@@ -562,14 +555,6 @@ A report marked `clock_ahead` never becomes the latest. The Asset chooses
 [`POST /entities/assets/{asset_id}/reports`](#asset-and-gateway-calls). Each
 report is whole, so the latest report is the whole Observation. Earlier reports
 are [history](#reads). An Observation changes only when its Asset reports.
-
-### Tracks
-
-Only [Fusion](fusion.md) creates, changes, or removes a Track, through the
-Entities pillar's functions. Core assigns its `track_id` and never reuses it before
-the next Reset. No caller writes, moves, renames, or deletes a Track; an operator who
-disagrees with one hides it in their own view. Each change adds `track.updated`,
-and a removal adds `track.removed`.
 
 ### Geo features
 
@@ -606,10 +591,13 @@ and a removal adds `track.removed`.
   unfinished Tasks name it. Core does not refuse the change and does not cancel
   any Task. Deleting a place changes no Task already sent.
 - **An edit updates Tasks only when asked.** A Task is unfinished until its
-  final Asset report is stored. With `update_tasks=true`, Core makes a new copy
-  of the place for each unfinished Task that names it and adds one
-  `tasks.updated` event per Asset, each Task keeping its `task_id`, so the Asset
+  final Asset report is stored. With `update_tasks=true`, Core sends one
+  `tasks.updated` event per Asset for each unfinished Task that names the place,
+  each Task keeping its `task_id` and carrying the new copy, so the Asset
   [uses the new copy](../../asset/docs/README.md#carry-out-work-and-report-its-result).
+  Each Task keeps showing the old point until the Asset accepts the update, and
+  says so if the update fails or is dropped
+  ([Core ADR-0004](adr/0004-a-task-copies-its-place-and-keeps-showing-it-until-accepted.md)).
   As for any request, only an online Asset gets it: Tasks of an offline Asset
   are not updated, and the answer lists them in `not_updated_task_ids`. A
   `move_to` or `land` Task whose place is no longer a point keeps its copy and
@@ -801,3 +789,14 @@ not answered and adds `plugin.dropped` for each. Its stream skips dropped calls
 when it returns, so no old call runs late. Geo features and Objects it stored
 before it stopped stay, and still name the Plugin in `requested_by`. The call is
 marked not finished, and an operator who still wants it calls again.
+
+## Implementation gaps
+
+These recent decisions are not yet implemented in the built Core, Protocol, and SDK code:
+
+- The built code still contains placeholder Fusion, Track records, Track endpoints, and Track events until #130.
+- A `failsafe` Task for a flying Asset with no critical battery rule is still refused until #117.
+- Dropped Tasks still use the old state instead of outcome unknown until #119.
+- Core and the SDK queue still enforce the old queue limit until #120.
+- An Asset on IP whose command stream is down while reports arrive still shows online and accepts work until #121.
+- A place edit with `update_tasks=true` still changes Core's shown Task point before the Asset accepts it until #131.

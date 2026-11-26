@@ -101,7 +101,10 @@ place or an unsupported altitude reference fails with an explanation.
 
 ### The queue
 
-The Asset holds its own queue: the Tasks it has received and not started. Core
+The Asset holds its own queue: the Tasks it has received and not started. It
+keeps every Task it receives, with no queue cap
+([ADR-0023](../../docs/adr/0023-no-task-queue-limit.md)); Task IDs stay limited
+to 9999 per Asset between Resets. Core
 [numbers each Task](../../core/docs/api.md#operator-requests) with its `task_id`,
 and the Asset runs its Tasks in that order, whatever order they arrive in.
 
@@ -173,9 +176,7 @@ continues when the Asset is set running again. The settings report showing
 `run_state` paused is the evidence of the pause. A Task that cannot continue after
 the pause fails with an explanation, like any failed Task. Pause never cancels
 work the way `now` does. Configured failsafes override
-pause. Paused work still counts toward Core's
-[64-Task cap](../../core/docs/api.md#operator-requests), which Core reads from
-the queue report. The Asset reports its
+pause. The Asset reports its
 complete held, unstarted queue, without truncation or windows.
 
 Pause is not Hold. Hold is a command, like Land: it stops the Asset, completes,

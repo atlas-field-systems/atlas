@@ -24,7 +24,7 @@ A radio's own identity, established by its field link's cryptography and kept by
 _Avoid_: Core key for a radio's identity
 
 **Contact**:
-Core's view of whether an **Asset** or **Gateway** is online or offline, along with when Core last heard from it. It measures incoming communication only. [Contact](core/docs/api.md#contact)
+Core's view of whether an **Asset** or **Gateway** is online or offline, when Core last heard from it, and for an **Asset** on IP whether its command stream can accept commands. [Contact](core/docs/api.md#contact)
 
 ### The picture
 
@@ -32,14 +32,11 @@ Core's view of whether an **Asset** or **Gateway** is online or offline, along w
 Core's append-only log of accepted requests and **Asset** reports in order. Readers use it for live updates and history. [Core storage](core/docs/storage.md)
 
 **Shared picture**:
-The field state held by the Entities **Pillar** and shown on the Command Interface map, including **Assets**, **Observations**, **Tracks**, and **Geo features**. Entries stay until changed or removed, or until the next **Reset**. [Entities](core/docs/api.md#entities)
+The field state held by the Entities **Pillar** and shown on the Command Interface map, including **Assets**, **Observations**, and **Geo features**. Entries stay until changed or removed, or until the next **Reset**. [Entities](core/docs/api.md#entities)
 
 **Observation**:
-One **Asset**'s latest report of what it sees of one target, identified by that Asset and the observation ID it chose. It is evidence for conclusions such as **Tracks**. [Observations](core/docs/api.md#observations)
+One **Asset**'s latest report of what it sees of one target, identified by that Asset and the observation ID it chose. [Observations](core/docs/api.md#observations)
 _Avoid_: Sighting (operator-facing label)
-
-**Track**:
-Fusion's conclusion about one target, based on one or more **Observations**. Fusion alone creates, changes, or removes a **Track**. [Tracks](core/docs/api.md#tracks)
 
 **Geo feature**:
 A point, line, area, or **Imagery** on the map, with an optional name. Operators and admins can create, change, and delete **Geo features**, and **Plugins** and **Assets** can create them. [Geo features](core/docs/api.md#geo-features)
@@ -49,7 +46,7 @@ _Avoid_: Place (operator-facing label)
 A **Geo feature** that shows one GeoTIFF **Object** at the location the file specifies. Only its name can be edited. [Geo features](core/docs/api.md#geo-features)
 
 **View filter**:
-An operator's choice to hide items from their own view, such as old **Observations** or a **Track** they disagree with. It is private to one browser, ends at **Reset**, and leaves the **Shared picture** unchanged. [View filters](command-interface/docs/README.md#hide-items-in-your-own-view)
+An operator's choice to hide items from their own view, such as old **Observations**. It is private to one browser, ends at **Reset**, and leaves the **Shared picture** unchanged. [View filters](command-interface/docs/README.md#hide-items-in-your-own-view)
 
 ### Work
 
@@ -58,6 +55,10 @@ A request to perform a supported action, such as Takeoff or Land.
 
 **Task**:
 One piece of requested work with a reported outcome.
+
+**Outcome unknown**:
+The state shown for a dropped **Task** or unanswered request when contact ends or an **Asset** restarts, because the work may have run before contact ended. Resending is the operator's choice. [ADR-0024](docs/adr/0024-dropped-work-shows-outcome-unknown-never-resumed-or-reconciled.md)
+_Avoid_: Not done (for a dropped Task)
 
 **Request body**:
 What an operator sends to Core to ask for work or a settings change. Core uses it to make a record. [Protocol laws](protocol/docs/laws.md)
