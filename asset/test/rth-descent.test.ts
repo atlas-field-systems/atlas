@@ -28,6 +28,7 @@ test("docs/failsafes.md: critical Return to home timeout during Land-mode descen
   r = reduce(state, { kind: "tick", now: 2, hasWork: false }, config);
   state = r.state;
   assert.ok(r.effects.some(e => e.kind === "vehicle" && e.command.kind === "land"));
+  state = reduce(state, { kind: "command_accepted", execution_id: state.commandId, now: 2 }, config).state;
   const timeout = config.command_timeouts.return_to_home;
   assert.ok(timeout);
   const t = timeout * 1000 + 1;

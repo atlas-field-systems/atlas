@@ -9,7 +9,8 @@ command timeout. Repeating the current `run_state` does not reissue movement. A
 critical fallback keeps the failed response's rule and priority and is marked
 as a fallback, so a later failure cannot start another return. Command failure
 and timeout share one failure path. Land and Return to home failures
-during their Land-mode descent never insert Hold; the
+during their Land-mode descent, once the flight controller confirms Land mode,
+never insert Hold; the
 existing critical fallback still applies. Other failures insert Hold unless the
 critical fallback starts.
 
@@ -370,7 +371,8 @@ after equipment accepts the Hold shows the configured stopped tolerance. The con
 timeout permits another attempt when confirmation does not arrive. This stops
 the old movement without retrying the failed Task. Flight-controller takeover
 clears this intent because the controller owns motion. Land and Return to home
-failures in their descent step leave descent running.
+failures after the flight controller confirms Land mode leave descent running;
+a failure before that confirmation is a failure before descent.
 
 ## Local evidence and archive verification
 

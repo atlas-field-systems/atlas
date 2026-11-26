@@ -668,6 +668,7 @@ for (const failure of ["refusal", "timeout"] as const)
   test(`docs/failsafes.md: Land descent ${failure} never commands Hold`, async () => {
     const { config, state: start } = await setup();
     let state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
+    state = reduce(state, { kind: "command_accepted", execution_id: state.commandId, now: 0 }, config).state;
     const result = reduce(state, failure === "refusal"
       ? { kind: "command_failed", execution_id: state.commandId, explanation: "Land refused", now: 1 }
       : { kind: "tick", now: config.command_timeouts.land! * 1000 + 1, hasWork: false }, config);
@@ -721,6 +722,7 @@ for (const stage of ["climb", "transit", "descend"] as const) for (const reason 
   test(`docs/failsafes.md: Land ${reason} during ${stage} stops only before descent`, async () => {
     const { config, state: start } = await setup();
     let state = reduce(start, { kind: "task", task: { ...hold, kind: "land", landing_position: { latitude: 2, longitude: 2 }, transit_altitude: { altitude_m: 10, altitude_reference: "launch" } }, now: 0 }, config).state;
+    state = reduce(state, { kind: "command_accepted", execution_id: state.commandId, now: 0 }, config).state;
     assert.ok(state.execution);
     state.execution.execution.stage = stage;
     const now = reason === "timeout" ? 120001 : 1;
@@ -813,3 +815,17 @@ test("docs/failsafes.md: contact loss without link_loss_after_s uses Protocol's 
   const fired = reduce(start, { kind: "tick", now: 30000, hasWork: false }, config);
   assert.ok(fired.effects.some(e => e.kind === "response" && e.rule?.rule_id === "LINK" && e.status === "active"));
 });
+
+for (const failure of ["refusal", "timeout"] as const)
+  test(`docs/failsafes.md: Land ${failure} before the flight controller confirms Land mode hovers`, async () => {
+    const { config, state: start } = await setup();
+    const state = reduce(start, { kind: "task", task: { ...hold, kind: "land" }, now: 0 }, config).state;
+    const now = config.command_timeouts.land! * 1000 + 1;
+    for (const m of Object.values(state.measurements)) if (m && "time" in m) m.time = now;
+    const result = reduce(state, failure === "refusal"
+      ? { kind: "command_failed", execution_id: state.commandId, explanation: "Land mode refused", now }
+      : { kind: "tick", now, hasWork: false }, config);
+    assert.ok(result.effects.some(e => e.kind === "task" && e.status === "failed"));
+    assert.ok(result.effects.some(e => e.kind === "clear"));
+    assert.ok(result.effects.some(e => e.kind === "vehicle" && e.command.kind === "hold"));
+  });
