@@ -7,8 +7,10 @@ and how it reaches Core.
 **Every behavior value is configurable per Asset.** Tolerances, timeouts, waits,
 and limits that shape how an Asset behaves are set in that Asset's
 configuration, never fixed in the app, because Assets set up differently respond
-differently ([Asset ADR-0007](docs/adr/0007-behavior-values-live-in-each-assets-configuration.md)). A
-default here is only a starting point.
+differently ([Asset ADR-0007](docs/adr/0007-behavior-values-live-in-each-assets-configuration.md)).
+Atlas ships sensible defaults, and an Asset's configuration lists only what
+differs from them. Inspection still shows every value in use. The built app
+does not have these defaults yet: it requires each behavior value to be set.
 
 ## Startup configuration and live settings
 
@@ -17,6 +19,8 @@ commands, startup behavior, connection to Core, and diagnostic storage. Live
 settings are shared operating values, such as lights, home, pause, or
 `link_loss_after_s`; Protocol defines them and operators change them through
 Core. Editing a configuration file is not another way to send commands.
+Configuration changes need a restart; anything tuned during an operation is a
+live setting.
 
 The app validates its configuration before connecting. A local inspection
 command shows the effective configuration with secrets removed: modules,
@@ -102,5 +106,4 @@ Equipment-specific options belong with their equipment driver or module.
 ## Open
 
 - Secret storage and editing tools.
-- Whether any configuration can change during an operation.
 - How movement profiles are selected and switched.

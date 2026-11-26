@@ -13,6 +13,6 @@ Everything here is a [draft](../atlas/CHARTER.md#everything-is-a-draft).
   with each Fieldlink.
 - Shared records live in `protocol/`, how a gateway talks to Core lives in
   the [Core API](../core/docs/api.md), and how radio Assets register and keep
-  their IDs lives in [Runs and identity](../atlas/runs-and-identity.md). Link to
+  their IDs lives in [Reset and identity](../atlas/reset-and-identity.md). Link to
   those rules; do not copy them.
 - Planning only: no code until the owner asks. Do not merge without the developer's approval.

@@ -115,7 +115,7 @@ Names under `scenarios/` end in `.test.ts`.
   stored without its event. Fault runs find failures; a scenario pins each one
   down.
 
-Every run is repeatable. A failure keeps its seed, inputs, expected and
+Every simulation is repeatable. A failure keeps its seed, inputs, expected and
 observed results, and each part's diagnostics, so it reproduces on any
 computer.
 
@@ -176,11 +176,11 @@ Fault runs count Task starts: each real app's active Holds reaching its
 simulated equipment, and the radio Asset's pulled Tasks and Run now callbacks. Every fault seed checks that seeded decisions cut both readers and lost
 responses on at least two routes. The traffic log records whether each fault
 came from a seed or an explicit scenario rule. Seeded runs place no faults by hand. Reader event IDs are compared with Core's
-`events.jsonl` from the Reset ZIP after the run stops, using each reader's audience.
+`events.jsonl` from the Reset ZIP after the scenario stops, using each reader's audience.
 
 The clock fires timers in deadline order and preserves insertion order on ties.
 World waits fail after ten wall-clock seconds with the in-flight request list.
-A run cannot advance more than 24 simulated hours. `settle()` waits for eight
+A scenario cannot advance more than 24 simulated hours. `settle()` waits for eight
 quiet event-loop turns with no request in flight. Open stream reads are excluded.
 Arriving chunks and SDK diagnostics count as activity. Delayed requests remain
 abortable, so SDK timeouts cancel the simulated delay.

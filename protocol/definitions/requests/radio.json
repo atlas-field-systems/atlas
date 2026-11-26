@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/radio.json",
   "title": "Radio request",
-  "description": "The body of POST /entities/assets/radios, which a gateway sends when it hears a radio that has no asset_id in this run: the definitions hash the radio uses. Core assigns the radio Asset's asset_id and answers with it, or refuses a different hash. Core keeps nothing about the radio itself.",
+  "description": "The body of POST /entities/assets/radios, which a gateway sends when it hears a radio that has no asset_id since the last Reset: the definitions hash the radio uses. Core assigns the radio Asset's asset_id and answers with it, or refuses a different hash. Core keeps nothing about the radio itself.",
   "type": "object",
   "required": [
     "definitions_hash"

@@ -9,21 +9,15 @@ It does not wait in the queue or go through a Task's steps.
 - A settings change always names the end state, such as "lights on" or "gear
   down", never "switch the gear". Applying the same end state twice changes
   nothing.
-- The Asset applies immediate changes in the order it receives them, alongside
-  its own local changes. It does not compare the operator's clock with its own.
-  A delayed change can therefore override a local change made after the operator
-  sent it.
-- A repeated request carries the same idempotency key, so Core records it once
-  ([Core API](https://github.com/atlas-field-systems/atlas/blob/main/core/docs/api.md#basics)).
 - A settings Task puts a change in the queue, for example: fly here, lights on,
   fly there. It applies when that Task runs, regardless of when it was sent or
-  received.
+  received. A settings Task is never sent "now", because an immediate settings
+  change already does that.
 - Pause is a setting, not a Task. An Asset is set to "paused" or "running",
-  always as an explicit end state. Hold is different: it is a command, like
-  Land, and keeps no earlier Task to resume.
-- Pause affects movement already underway. The Asset owns the
-  [platform-specific response](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause).
-  The Task underway stays active while held and continues on resume.
+  always as an explicit end state. Pause keeps the Task underway so the
+  operator can continue it. Hold is a command, like Land, and drops it
+  ([ADR-0016](https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/0016-pause-is-a-setting-hold-is-a-command.md)). The Asset owns
+  [how pause works](https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/README.md#pause).
 - A settings Task can pause an Asset inside a queue. It waits there until
   someone resumes it, for example: fly here, pause, wait for the operator, continue.
 - The failsafe rules are one setting, the failsafe policy, always replaced

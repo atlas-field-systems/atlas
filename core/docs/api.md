@@ -12,10 +12,10 @@ Core serves HTTPS when both TLS files are configured. Without them it serves
 plain HTTP only on loopback. [Configuration](../config.md) owns TLS setup.
 
 A keyed `GET /about` with another definitions hash records at most one
-`definitions.refused` per registered Asset, gateway, or Plugin and hash per run. The gateway itself and its radios count separately. It still counts as contact.
+`definitions.refused` per registered Asset, gateway, or Plugin and hash until the next Reset. The gateway itself and its radios count separately. It still counts as contact.
 For an Asset key that has not registered, Core instead records its `key_id` and
 the differing hash on the console and in diagnostics, at most once per key and
-hash per run. It adds no event because the key has no Asset.
+hash until the next Reset. It adds no event because the key has no Asset.
 Accounts may call every operator route.
 
 - HTTPS and JSON. Event bodies are Protocol records. Operator request bodies
@@ -35,23 +35,24 @@ Accounts may call every operator route.
   that hash differs, Core records the mismatch as described above.
 - **Retries are safe.** Every request that changes state carries an
   `Idempotency-Key` of up to 64 characters. Core keeps each key's non-secret
-  response for the run when it succeeds (2xx) or its transaction changed something.
+  response until the next Reset when it succeeds (2xx) or its transaction changed something.
   A refusal that changed nothing is not kept. A repeat returns that response and changes nothing; the
   same key with a different body returns `409`. Credential issuance and login
   return secrets only in the first response. Their retained response is a
   non-secret acknowledgment, as [credentials](#callers-and-credentials) defines.
 - **Stopping.** Requests already in preparation may commit during the five-second
   stop grace. When grace ends, Core refuses their commits with `503 stopping`.
-- **Runs.** Every read, history page, and event stream covers only the current
-  run. [Runs and identity](../../atlas/runs-and-identity.md) owns what a run is,
-  what carries over, and which IDs start again. `GET /about` names the run with
-  `run_id`.
-- **A new run discards the old one.** A caller that finds a new `run_id` on
-  `GET /about` throws away everything it held from the earlier run, including
-  its cursors and links, and starts again from a fresh read. A link names its
-  run. For an ended run, the caller never looks the item up in Core, because the
-  same ID may now name something else; it says the item's record is in that
-  run's Reset ZIP.
+- **Since the last Reset.** Every read, history page, and event stream covers
+  only what Core holds since the last Reset.
+  [Reset and identity](../../atlas/reset-and-identity.md) owns what Reset does,
+  what carries over, and which IDs start again. `run_id` on `GET /about` is the
+  built name of the counter that changes at each Reset.
+- **A Reset discards what a caller held.** A caller that finds a new `run_id` on
+  `GET /about` throws away everything it held from before, including its
+  cursors and links, and starts again from a fresh read. A link names its
+  `run_id`. For a link made before the last Reset, the caller never looks the
+  item up in Core, because the same ID may now name something else; it says
+  the item's record is in the Reset ZIP for that `run_id`.
 - **Errors** are a status and `{"error": "<code>", "explanation": "<text>"}`.
 
 | Status | Meaning |
@@ -73,7 +74,7 @@ Accounts may call every operator route.
 | `409 imagery_fixed`, `object_shown` | Imagery change is forbidden or imagery still shows the Object |
 | `409 id_taken`, `idempotency_conflict` | Identity is in use or retry key names another body |
 | `503 stopping` | Core is stopping |
-| `410 deleted` | The Object was deleted in this run; the body adds its `deletion` record, which says who deleted it and when |
+| `410 deleted` | The Object was deleted since the last Reset; the body adds its `deletion` record, which says who deleted it and when |
 | `413 too_large` | The JSON body exceeds 16 MiB, or the file is larger than `max_object_bytes` ([configuration](../config.md)) |
 | `507 storage_full` | Core could not store the change, so it accepted nothing ([storage](storage.md#memory-and-full-disks)) |
 
@@ -111,7 +112,7 @@ By default a program's stream carries what it must act on. Any caller may add
   [Objects](#objects), so other sites cannot send them.
 - Asset, gateway, and Plugin keys are 16 random bytes as 22 characters of base64url. Core
   stores only their hashes and shows a key once, when an admin creates or replaces it.
-  Keys belong to no run. An Asset key names no Asset: an Asset on IP uses it to
+  Keys carry across a Reset. An Asset key names no Asset: an Asset on IP uses it to
   [register](#asset-and-gateway-calls).
 - A successful issuance retry with the same idempotency key returns an
   acknowledgment identifying the Asset key, gateway, or Plugin and confirming issuance. It
@@ -204,7 +205,7 @@ configured `stream_keepalive_s` with `409 invalid_link_loss`, including a settin
 Task. Radio Assets carried by a gateway are exempt because their Fieldlink
 supplies contact timing.
 
-Within a run, the next Task after 9999 is refused with `409 task_ids_exhausted`.
+Until the next Reset, the next Task after 9999 is refused with `409 task_ids_exhausted`.
 Cancel for an unknown Task is `404 not_found`; cancel for an ended Task is
 `409 task_ended`. A cancel to an offline Asset is refused as other requests are.
 A flying Asset without a critical battery rule is refused a Tasks request even
@@ -242,7 +243,7 @@ when it includes a settings Task. Send the rule as a settings change first.
   Asset that already holds 64 unstarted Tasks reports each further ordinary
   Task `cancelled`, with a full queue as its explanation.
 - **Tasks are numbered.** Core gives each Task the next `task_id` for its Asset:
-  1 for the Asset's first Task of the run, then 2, then 3. A `task_id` never
+  1 for the Asset's first Task after a Reset, then 2, then 3. A `task_id` never
   changes and is never reused. The Asset runs its Tasks in `task_id` order, so
   the order never depends on when a Task arrives.
 - **Core sends every Task as soon as it accepts it.** Each accepted request is
@@ -259,8 +260,10 @@ when it includes a settings Task. Send the rule as a settings change first.
   Tasks that arrive after the clear run normally; an operator cancels any that
   no longer make sense.
 - With `now`, a request carries one Task. The Task runs at once, even while the
-  Asset is paused, and cancels every Task with a lower `task_id`. Core admits
-  it even at the 64 cap.
+  Asset is [paused](../../asset/docs/README.md#pause), and cancels every Task
+  with a lower `task_id`. Core admits it even at the 64 cap. A settings Task is
+  never sent with `now` ([Settings](../../atlas/settings.md)); Core does not
+  refuse one yet.
 - The Asset answers a Task request with a queue report that names the request
   and lists the Tasks the Asset holds.
 - Late reports stay in history without reconciling a dropped Task.
@@ -274,12 +277,12 @@ when it includes a settings Task. Send the rule as a settings change first.
   dropped `task_id` blocks the Tasks after it.
 - **A restarted app holds nothing.** An Asset that signs up again while
   already registered has started again and
-  [dropped its queued Tasks](../../atlas/runs-and-identity.md#keys-and-registration).
+  [dropped its queued Tasks](../../atlas/reset-and-identity.md#keys-and-registration).
   Core adds `task.dropped` for each of its Tasks with no final report. It also drops unanswered settings and cancel requests, and adds no new `asset.registered`. A drop
   claims no outcome: operators see the Task as not done and send again what
   still matters. Results the app had not reported before the restart are lost.
   The registration answer's `last_task_id` is the highest `task_id` Core has
-  given the Asset in the run, or 0. The app counts every `task_id` up to it as
+  given the Asset since the last Reset, or 0. The app counts every `task_id` up to it as
   ended, so no forgotten Task blocks new work.
 - A dropped request may have reached the Asset before contact ended. The Asset's
   later reports say what it did. `request.dropped` does not prove the request
@@ -330,8 +333,8 @@ It never becomes latest, and a clock-ahead queue report does not count toward
 the Task cap.
 
 Core assigns each Asset's `asset_id` when it registers
-([Runs and identity](../../atlas/runs-and-identity.md#ids)). An Asset on IP
-starts in this order, and on reconnect within the run repeats it from step 3:
+([Reset and identity](../../atlas/reset-and-identity.md#ids)). An Asset on IP
+starts in this order, and on reconnect repeats it from step 3:
 
 1. `GET /about` with its Asset key, and compare the definitions hash.
 2. On start, `POST /entities/assets` with `requests.asset`: its description
@@ -339,12 +342,12 @@ starts in this order, and on reconnect within the run repeats it from step 3:
    used before, stamps `time` and the ID to make the description record, adds
    `asset.registered` and `asset.described`, and answers
    `201 {asset_id, last_task_id, as_of}` ([restarts](#operator-requests)).
-   The Asset uses that ID for the rest of the run. Registering again with the
-   same key in the run returns the same `asset_id`, even for an app that
+   The Asset uses that ID until the next Reset. Registering again with the
+   same key before then returns the same `asset_id`, even for an app that
    restarted and forgot its ID, unless an admin removed that Asset; then it
    becomes a new Asset with a new ID. A key registers at most one Asset at a
    time. With no Asset ID left, Core refuses with `409 asset_ids_exhausted` and
-   tells the admin ([Runs and identity](../../atlas/runs-and-identity.md#ids)).
+   tells the admin ([Reset and identity](../../atlas/reset-and-identity.md#ids)).
    Only a start signs up: an app that started again registers, even if it
    remembers its ID, and a reconnect skips this step.
 3. `POST /entities/assets/{asset_id}/reports` with its known settings, its queue if it has
@@ -401,11 +404,11 @@ order, because the Asset orders them by `task_id`.
 When a gateway reconnects to Core, it sends contact for every Asset it carries,
 even if its Fieldlink's view did not change.
 
-[Runs and identity](../../atlas/runs-and-identity.md#radio-assets) owns the
+[Reset and identity](../../atlas/reset-and-identity.md#radio-assets) owns the
 results; these are the calls behind them. The gateway matches each radio to its
 Asset on its own side and speaks to Core only by `asset_id`.
 
-- When the gateway hears a radio that has no `asset_id` in this run, it sends
+- When the gateway hears a radio that has no `asset_id` since the last Reset, it sends
   `POST /entities/assets/radios` with `requests.radio`: the radio's
   definitions hash. Core assigns the next `asset_id`, adds `asset.registered`
   with the gateway as `requested_by`, and answers `201 {asset_id, as_of}`. The gateway
@@ -415,9 +418,9 @@ Asset on its own side and speaks to Core only by `asset_id`.
   adds `definitions.refused`. The refusal adds no Asset.
 - **One gateway for each network.** A network's one gateway carries every radio
   Asset it registered, and no other gateway carries them. A radio whose app
-  restarted mid-run identifies itself to that gateway through the Fieldlink and
+  restarted identifies itself to that gateway through the Fieldlink and
   keeps its ID, but its work does not resume
-  ([Runs and identity](../../atlas/runs-and-identity.md#keys-and-registration)).
+  ([Reset and identity](../../atlas/reset-and-identity.md#keys-and-registration)).
   A radio Asset signs up through its gateway with
   `PUT /entities/assets/{asset_id}/description` and its description record:
   once after the gateway registers it, and again each time its app starts.
@@ -474,7 +477,7 @@ Only admins may use these calls, except login, logout, and `GET /administration/
 | `POST /administration/accounts`, `DELETE /administration/accounts/{operator_id}` | Add or remove an admin or operator account |
 | `POST /administration/asset-keys`, `DELETE /administration/asset-keys/{key_id}` | Create or remove an Asset key for an Asset on IP; creating returns its `key_id` and key once |
 | `POST /administration/asset-keys/{key_id}/key` | Replace an Asset key; returns the new key once |
-| `DELETE /administration/assets/{asset_id}` | Remove an Asset from the run. It may come back by registering again, as a new Asset |
+| `DELETE /administration/assets/{asset_id}` | Remove an Asset from the picture. It may come back by registering again, as a new Asset |
 | `POST /administration/gateways`, `DELETE /administration/gateways/{gateway_id}` | Provision or remove a gateway; provisioning returns its `gateway_id` and key once |
 | `POST /administration/gateways/{gateway_id}/key` | Replace a gateway key; returns the new key once |
 | `POST /administration/plugins`, `DELETE /administration/plugins/{plugin_id}` | Provision or remove a Plugin; provisioning returns its `plugin_id` and key once |
@@ -544,8 +547,8 @@ Objects are not Entities.
   picture stays small, so every read returns all of it.
 - **Every caller reads the picture.** An Asset, a gateway, or a Plugin uses this
   same API with its own key ([Reads](#reads)).
-- **Nothing expires during a run.** Observations stay in the picture for the
-  whole run, and a Track stays until Fusion removes it. Core adds no stale
+- **Nothing expires between Resets.** Observations stay in the picture until
+  the next Reset, and a Track stays until Fusion removes it. Core adds no stale
   status. Every record keeps its `time`, and readers show its age. A status
   that changed only because time passed would have no event, so a reader could
   not follow it from a snapshot.
@@ -563,8 +566,8 @@ are [history](#reads). An Observation changes only when its Asset reports.
 ### Tracks
 
 Only [Fusion](fusion.md) creates, changes, or removes a Track, through the
-Entities pillar's functions. Core assigns its `track_id` and never reuses it in
-the run. No caller writes, moves, renames, or deletes a Track; an operator who
+Entities pillar's functions. Core assigns its `track_id` and never reuses it before
+the next Reset. No caller writes, moves, renames, or deletes a Track; an operator who
 disagrees with one hides it in their own view. Each change adds `track.updated`,
 and a removal adds `track.removed`.
 
@@ -582,7 +585,7 @@ and a removal adds `track.removed`.
 - `POST` creates a geo feature, and Core assigns its `geofeature_id`. `PUT`
   replaces one whole, so a name left out is cleared and its shape may change
   kind, except imagery. `DELETE` removes it from the picture. Core never reuses a
-  `geofeature_id` in the run, and a deleted one returns `404`.
+  `geofeature_id` before the next Reset, and a deleted one returns `404`.
 - Any admin or operator may create, replace, or delete any geo feature,
   including one a Plugin or Asset made. A Plugin may only create geo features,
   with its key ([Plugins](#plugins)). So may an Asset, to place a file it
@@ -642,7 +645,7 @@ follows [Reads](#reads).
 | `GET /objects/{object_id}` | [Readers](#reads) | One Object record |
 | `GET /objects/{object_id}/file` | [Readers](#reads) | The file, with its `content_type` |
 | `PATCH /objects/{object_id}` | Account | `{"geofeature_id": <id or null>}` attaches, moves, or detaches it; `200 {event_id}` |
-| `DELETE /objects/{object_id}` | Account | Deletes the Object: hides it and its file for the rest of the run; `200 {event_id}` |
+| `DELETE /objects/{object_id}` | Account | Deletes the Object: hides it and its file until the next Reset; `200 {event_id}` |
 
 All files, including photos and clips, are Objects
 ([ADR-0014](../../docs/adr/0014-every-file-is-an-object-and-goes-through-core.md)).
@@ -665,7 +668,7 @@ All files, including photos and clips, are Objects
 - **Task output names its Objects.** A completed Task report carries the
   `object_ids` of files it made, as [Protocol defines](../../protocol/definitions/records/report/status/task.json).
   These are the IDs returned by upload, not file names.
-- **Core assigns `object_id`** and never reuses it in a run, even after a delete.
+- **Core assigns `object_id`** and never reuses it before the next Reset, even after a delete.
 - **Stored whole or not at all.** Core writes the file, then adds the Object's
   row and its `object.stored` event in one transaction. There is no half-stored
   Object. A file larger than `max_object_bytes` ([configuration](../config.md))
@@ -677,12 +680,12 @@ All files, including photos and clips, are Objects
 - **One geo feature at most.** An Object names at most one geo feature, and the
   link is kept only on the Object. A geo feature's Objects are those that name it.
   Deleting a geo feature leaves its Objects, which keep its ID as a record. This
-  relies on a `geofeature_id` never being reused in a run, which the
+  relies on a `geofeature_id` never being reused before the next Reset, which the
   [Entities](#entities) design must keep.
 - **Delete hides the Object; it destroys nothing.** After a delete, the Object
   and its file are gone from every read: lists leave it out, and its record
   and file return `410 deleted` with the `deletion` record, so a link to it can
-  say who deleted it and when. Core keeps both until the run ends, and the Reset ZIP
+  say who deleted it and when. Core keeps both until the next Reset, and the Reset ZIP
   holds them, marked deleted. The `object.stored` and `object.deleted` events
   stay in history, so the record of the upload and of who deleted it remains.
   Only an operator deletes an Object. Core refuses to delete an Object that an
@@ -690,10 +693,10 @@ All files, including photos and clips, are Objects
   first.
 - **Who stored it** is `requested_by` in the Object record: the account that
   uploaded it, or the Plugin or Asset that stored it. Core stamps it, as for Tasks.
-- **Objects belong to their run.** When the run ends, their files, deleted
+- **Objects end at Reset.** At Reset, their files, deleted
   ones included, go into Core's [Reset ZIP](reset.md#cores-reset-zip) and are
-  cleared from Core. The
-  next run starts with none.
+  cleared from Core. After
+  the Reset there are none.
 
 ## Plugins
 

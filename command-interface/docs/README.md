@@ -52,7 +52,7 @@ Tracks, and places (geo features).
 - **A target known only by direction** shows as a line from the sensor that saw
   it, drawn from its sightings.
 - **Every Track and sighting shows its age.** Core never marks them stale, and
-  they stay in the picture for the whole run. The operator can hide old ones as
+  they stay in the picture until the next Reset. The operator can hide old ones as
   a view filter.
 - **Operators cannot move, rename, or delete a Track.** Only Fusion changes
   Tracks. An operator who disagrees with one hides it in their own view.
@@ -64,7 +64,7 @@ Tracks, and places (geo features).
 ### Hide items in your own view
 
 Hiding a Track and hiding old Tracks and sightings are view filters. A view
-filter belongs to one browser and one [run](#links-and-choices-belong-to-one-run):
+filter belongs to one browser and ends at [Reset](#links-and-choices-end-at-reset):
 it survives a refresh and carries into new tabs, but it does not follow the
 operator to another computer, and other operators never see it. The map and list always show how many items are hidden, with a
 **Show all** button, so a hidden item is never silently lost.
@@ -86,28 +86,29 @@ the panel, and the map around it.
 | Object | See [Objects](plugins-and-objects.md#objects). |
 | Plugin call | See [Run a Plugin](plugins-and-objects.md#run-a-plugin). |
 
-A page for something that is gone during the run says what happened. It shows
+A page for something that is gone since the last Reset says what happened. It shows
 when the item went and who removed it, shows the item as it last stood, and
 offers to open it in history. A Track Fusion removed and a deleted place come
 from [Track and geo feature history](../../core/docs/api.md#reads). A page never
 just says "not found".
 
-### Links and choices belong to one run
+### Links and choices end at Reset
 
-Each run starts with an empty picture and new IDs, so an ID from one run may
-name something else in the next
-([Runs and identity](../../atlas/runs-and-identity.md)). Every page address
-names its run, and every view filter is kept for one run.
+After each Reset the picture is empty and IDs start again, so an ID from before
+a Reset may name something else after it
+([Reset and identity](../../atlas/reset-and-identity.md)). Every page address
+names Core's `run_id`, which changes at each Reset, and every view filter ends
+at Reset.
 
-- **Stopping Core ends every session.** Everyone signs in again in the new run.
-- **A new run discards the old run's state.** When the tab finds that Core's run
-  has changed, it drops everything it held from the earlier run: the picture,
-  drafts, view filters, result overlays, and open pages. Nothing from that run
-  lingers in the interface.
-- **An old link never opens a new item.** A link from an earlier run opens a
-  page that says its run has ended and that the run's record is in that run's
-  Reset ZIP, not in Core. It never opens an item of the new run that has the
-  same ID, and it offers no history, because Core no longer holds that run.
+- **Stopping Core ends every session.** Everyone signs in again after the Reset.
+- **A Reset discards what the tab held.** When the tab finds that Core's
+  `run_id` has changed, it drops everything it held from before: the picture,
+  drafts, view filters, result overlays, and open pages. Nothing from before the
+  Reset lingers in the interface.
+- **An old link never opens a new item.** A link made before a Reset opens a
+  page that says Core was reset since and that the item's record is in that
+  Reset ZIP, not in Core. It never opens a new item that has the same ID, and
+  it offers no history, because Core no longer holds it.
 
 [Draft Tasks](#draft-tasks-on-the-map-then-send-them) stay in memory while the
 operator visits other pages. For example, opening another Asset's page to check
@@ -184,8 +185,8 @@ For example, the operator drafts Takeoff, Move To, and Land, then presses
 takes off. A single action is one draft and one press.
 
 Sent Tasks join the end of the queue. **Run now** sends one draft with `now`: it
-runs at once, even while the Asset is paused, and cancels every Task sent before
-it, so the confirmation lists the Tasks it will cancel.
+runs at once, even while the Asset is paused, which then shows running, and
+cancels every Task sent before it, so the confirmation lists the Tasks it will cancel.
 
 - **Cancel** names one Task; the rest of the queue stays.
 - **Change the order** of sent Tasks by cancelling them and sending new ones.
@@ -199,7 +200,7 @@ it, so the confirmation lists the Tasks it will cancel.
   While paused, the active Task shows as held, not ended, and it continues on
   Resume. Pause is offered only when the Asset lists it as a supported setting.
 - **Settings changes** are end states, applied at once or queued as a settings
-  change Task.
+  change Task. A settings Task has no Run now.
 
 If a request's response is lost, the interface retries it with the same
 idempotency key, so it [never takes effect twice](../../core/docs/api.md#basics).

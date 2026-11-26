@@ -67,7 +67,7 @@ by the owner. It is not a built-in requirement for Atlas.
 ## Current use keeps some demands modest
 
 The immediate use is trusted testing and flights lasting a few hours.
-Keeping a run's records until Reset is therefore acceptable. That duration describes
+Keeping every record until Reset is therefore acceptable. That duration describes
 current use, not a permanent limit on Atlas.
 
 Edge Assets normally need current information. Interfaces and fusion may need

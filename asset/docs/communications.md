@@ -13,7 +13,7 @@ reports back. The initial IP implementation runs; see its [implementation gaps](
   runs on the gateway, which makes the Core API calls for the Asset. The Asset holds no Core
   key and never calls the Core API. It authenticates to its gateway through its
   Fieldlink, as [every Fieldlink provides](../../fieldlink/README.md#what-every-fieldlink-provides),
-  and learns its `asset_id` for the run from the gateway.
+  and learns its `asset_id` from the gateway.
   The Fieldlink owns
   compact encoding, retries, duplicate handling, contact timing, and link
   security for its medium ([Fieldlink](../../fieldlink/README.md#the-fieldlink-moves-messages-the-asset-decides)).
@@ -51,9 +51,9 @@ Contact is not freshness. Hearing from Core proves nothing about measurements.
 
 Behavior modules and equipment drivers update the
 [Asset's local state](assets.md#local-state-and-data-flow). The communications
-module reads it and chooses which reports to send. On a slow link it fills the
-airtime it has with the most useful data, as
-[Scale](../../atlas/scale.md#use-slow-links-fully-and-efficiently) sets out.
+module reads it and chooses which reports to send. On a slow link the
+operator's deadlines come first and telemetry fills the airtime left over, as
+[Scale](../../atlas/scale.md#operator-deadlines-come-first) sets out.
 
 **The link asks.** Whenever the link has room to send, it asks the Asset for up
 to that much. The Asset answers with its most important waiting reports that
@@ -66,12 +66,14 @@ the link asks for everything at once.
 - **Current state is read when the link asks.** Position, battery, each
   subsystem, and each Observation are built from local state at the moment the
   link asks, so the link never carries data that is already out of date.
-- **Most important first.** Task outcomes and answers to requests go first and
-  must arrive. Then changes that matter, such as a failsafe, a fault, or a new
+- **Most important first.** What the operator's deadlines need goes first:
+  the Task-started report, Task outcomes, answers to requests, and contact
+  proof. Then changes that matter, such as a failsafe, a fault, or a new
   or moved Observation. Then current telemetry. Retained history goes last,
   only when nothing live is waiting.
-- **As often as the link allows.** There is no fixed reporting rate on a slow
-  link. A quiet link carries telemetry often and a busy one less often. On a
+- **Telemetry fills what is left.** There is no fixed reporting rate on a slow
+  link. A quiet link carries telemetry often and a busy one less often, and
+  telemetry never makes a deadline wait. On a
   fast link such as IP, the Asset reports on change.
 
 Sending fewer measurements never drops a Task outcome or presents an old

@@ -21,7 +21,7 @@ Definitions and records carry none.
 | `task` | One Task's body, including Capture, or a settings change | Core, for an operator |
 | `settings_change` | Settings to change now | Core, for an operator |
 | `cancel` | Cancel one Task | Core, for an operator |
-| `registration` | An Asset registered in the run or was removed from it | Core, for the Asset, its gateway, or an admin |
+| `registration` | An Asset registered or was removed | Core, for the Asset, its gateway, or an admin |
 | `provisioning` | An admin provisioned or removed a gateway or Plugin | Core, for an admin |
 | `contact` | Whether an Asset, gateway, or Plugin is in contact, and when it was last heard | Core, or a gateway for the Assets it carries |
 | `drop` | A Task, request, or Plugin call Core stopped waiting on | Core |
@@ -105,7 +105,7 @@ use it from this repository under the [release policy](#release-policy).
 - Any change to Protocol files, wording included, is a new version. Wording
   fixes wait for the next real release, and every part updates together
   ([Protocol ADR-0001](docs/adr/0001-any-change-to-protocol-is-a-new-version.md)).
-- Protocol stays unpublished during the first development run. Other parts use
+- Protocol stays unpublished during the first development phase. Other parts use
   it from this repository; it will be public later. Release goes through `prod`
   ([branches and releases](../AGENTS.md#branches-and-releases)).
 

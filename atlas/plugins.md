@@ -84,7 +84,7 @@ feature, for example.
 
 - A file never changes. An operator can move an Object to another geo feature
   or detach it, and can delete it. A deleted Object is hidden from operators
-  for the rest of the run but not destroyed: the run's Reset ZIP keeps it,
+  until the next Reset but not destroyed: the Reset ZIP keeps it,
   marked deleted. History keeps the record that it was stored and who deleted
   it.
 - An Object belongs to at most one geo feature. Deleting the geo feature leaves

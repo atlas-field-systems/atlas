@@ -110,7 +110,7 @@ The queue helper is optional. A reporting-only Asset with no queue does not use
 it. The helper holds the Asset's Tasks and hands them to the app.
 
 - **Holds the Tasks.** It keeps every Task it has received and not started, and
-  every `task_id` that has started, ended, or been dropped this run. After a
+  every `task_id` that has started, ended, or been dropped since the last Reset. After a
   restart it counts every `task_id` up to the registration's `last_task_id` as
   ended.
 - **Orders by `task_id`.** Tasks may arrive in any order and more than once. The
@@ -164,7 +164,7 @@ Settings requests are not Tasks unless they arrive as one. The helper passes
 `settings.requested` events to the app in event order; the app applies them and
 sends `report.settings` with the request's `request_id`.
 
-State is in memory for the run. A restarted app holds no Tasks and starts again
+State is in memory until the app stops. A restarted app holds no Tasks and starts again
 from [registration](../../core/docs/api.md#operator-requests).
 
 ## On a radio Asset
@@ -188,7 +188,7 @@ and `stop()`. Stopping releases an idle event read, calls the iterator's
 `return()`, discards an event awaiting consumption, and settles `done` without
 delivering another event. An asynchronous settings handler completes before the
 next event is consumed. On IP, this also holds the stream cursor and backpressure
-until consumption finishes. Closing the client or ending its run stops the helper.
+until consumption finishes. Closing the client or a Reset of Core stops the helper.
 A consumer error, including a throw from `current`, rejects `done` and stops the
 stream, outbox, and report retries.
 The IP wrapper is `startAsset(client, options)`. It sends the

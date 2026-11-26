@@ -44,8 +44,8 @@ sends over the radio only what each Asset does not already have.
 
 **A proposal, not a decision.** It answers the compact-encoding question in
 [Open engineering questions](#open-engineering-questions) with one approach:
-carry Atlas records over the radio as binary, not JSON. This helps Atlas
-[use slow links fully and efficiently](../../atlas/scale.md#use-slow-links-fully-and-efficiently).
+carry Atlas records over the radio as binary, not JSON. This leaves more
+airtime after the [operator deadlines](../../atlas/scale.md#operator-deadlines-come-first) are met.
 The encoding does not depend on Meshtastic, so a later Fieldlink can reuse it.
 
 ### Why binary works here

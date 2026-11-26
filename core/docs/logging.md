@@ -1,14 +1,14 @@
 # Core logging
 
-**Built.** Core records diagnostics from startup through Reset so a run can be
-reconstructed from its archive.
+**Built.** Core records diagnostics from startup through Reset so what happened can be
+reconstructed from the archive.
 
 ## Keep diagnostics beside the event log
 
 The [event log](api.md#the-event-log-and-live-stream) records which requests Core
 accepted and which reports it stored. A diagnostic log explains the requests,
 refusals, decisions, and errors around it. Core keeps both. The
-diagnostic record is append-only during a run, even when a request changes nothing.
+diagnostic record is append-only until the next Reset, even when a request changes nothing.
 
 There is no Protocol logging process and no API call that writes a log entry. Diagnostic
 logs and local configuration are Core's own records, separate from Protocol's
@@ -38,8 +38,8 @@ correlation fields to Protocol. Detail and destination controls are proposed in
 
 ## Include the evidence in Reset
 
-Each run has its own diagnostic files. When the run ends, they go into Core's
-[Reset ZIP](reset.md#cores-reset-zip) with the run's events and state, the
+Diagnostic files last until the next Reset. At Reset, they go into Core's
+[Reset ZIP](reset.md#cores-reset-zip) with the events and state, the
 configuration with secrets removed, and the readable summary. Core clears them
 only after the ZIP is checked. Asset and gateway ZIPs remain separate evidence.
 [Reset](reset.md) owns the procedure, the file layout, and the summary.
@@ -51,7 +51,7 @@ Each diagnostic record carries a rising local number. With `debug_endpoint` on
 and prints the full URL. `GET /debug/<segment>/log?after=<number>` returns the
 records after that number, oldest first, one per line. A reader repeats the call
 with the last number it received to follow the log as Core writes it. An AI agent
-that is given the URL can then read a run while it happens.
+that is given the URL can then read what Core does while it happens.
 
 The call needs no credential and no definitions hash, so the URL is all a reader
 needs. The random segment stops someone who can reach Core, but was not given the
@@ -75,9 +75,9 @@ Logging never blocks request handling and never grows memory without limit.
 - Core hands each diagnostic record to a writer through a fixed-size queue.
   When the queue is full, Core drops the new record and counts it.
 - Core rotates diagnostic files at `log_file_limit_bytes` and keeps every file
-  of the run. When the run's files reach `log_total_limit_bytes`, or the disk is
+  until the next Reset. When the files reach `log_total_limit_bytes`, or the disk is
   full, Core stops writing and counts what it drops.
-- When writing works again, and at the end of the run, Core writes one gap
+- When writing works again, and at Reset, Core writes one gap
   record: how many records were lost, between which local numbers, when, and
   why. The ZIP's `manifest.json` and `summary.md` list every gap.
 
@@ -87,5 +87,5 @@ truncated, or filtered evidence is always visible in the archive; Core never
 claims a complete record it does not have.
 
 The total byte limit includes gap records. Once a record would exceed it, Core
-stops diagnostic writes for that run and keeps subsequent loss counts for the ZIP.
+stops diagnostic writes until the next Reset and keeps subsequent loss counts for the ZIP.
 Gap records written before that point contain only losses not previously written.

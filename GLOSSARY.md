@@ -4,23 +4,20 @@ Atlas helps operators understand field systems, request work, and retain evidenc
 
 ## Language
 
-### Runs and identity
+### Reset and identity
 
-**Run**:
-The period from when Core starts to its next deliberate stop. A Core crash resumes the same **Run**. [Runs and identity](atlas/runs-and-identity.md)
+**Reset**:
+Stopping Core. Core writes its **Reset ZIP**, checks it, and clears the **Shared picture**. A Core crash is not a **Reset**. [The picture and Reset](atlas/reset-and-identity.md#the-picture-and-reset)
 
 **Registration**:
-An **Asset** joining the current **Run** and receiving its Asset ID from Core. [Keys and registration](atlas/runs-and-identity.md#keys-and-registration)
+An **Asset** joining the **Shared picture** and receiving its Asset ID from Core. [Keys and registration](atlas/reset-and-identity.md#keys-and-registration)
 _Avoid_: Sign-up
 
 **Provisioning**:
-Admin setup that carries across **Runs**, including adding or removing accounts and connection keys for **Assets** on IP, **Gateways**, and **Plugins**. [What carries over](atlas/runs-and-identity.md#what-carries-over)
-
-**Reset**:
-A deliberate stop of Core that ends the **Run**. [Run and Reset](atlas/runs-and-identity.md#a-run-and-reset)
+Admin setup that carries across a **Reset**, including adding or removing accounts and connection keys for **Assets** on IP, **Gateways**, and **Plugins**. [What carries over](atlas/reset-and-identity.md#what-carries-over)
 
 **Reset ZIP**:
-One part's archive of a **Run** or operation for people and AI agents to investigate. Core, each **Asset**, and each **Gateway** write their own. [Core Reset](core/docs/reset.md)
+One part's file dump, written at **Reset** or at the end of an operation, for people and AI agents to investigate. Core, each **Asset**, and each **Gateway** write their own. [Core Reset](core/docs/reset.md)
 
 **Radio identity**:
 A radio's own identity, established by its field link's cryptography and kept by its **Gateway** and **Fieldlink**. [What every Fieldlink provides](fieldlink/README.md#what-every-fieldlink-provides)
@@ -35,7 +32,7 @@ Core's view of whether an **Asset** or **Gateway** is online or offline, along w
 Core's append-only log of accepted requests and **Asset** reports in order. Readers use it for live updates and history. [Core storage](core/docs/storage.md)
 
 **Shared picture**:
-The field state held by the Entities **Pillar** and shown on the Command Interface map, including **Assets**, **Observations**, **Tracks**, and **Geo features**. Entries stay until changed or removed, or until the **Run** ends. [Entities](core/docs/api.md#entities)
+The field state held by the Entities **Pillar** and shown on the Command Interface map, including **Assets**, **Observations**, **Tracks**, and **Geo features**. Entries stay until changed or removed, or until the next **Reset**. [Entities](core/docs/api.md#entities)
 
 **Observation**:
 One **Asset**'s latest report of what it sees of one target, identified by that Asset and the observation ID it chose. It is evidence for conclusions such as **Tracks**. [Observations](core/docs/api.md#observations)
@@ -52,7 +49,7 @@ _Avoid_: Place (operator-facing label)
 A **Geo feature** that shows one GeoTIFF **Object** at the location the file specifies. Only its name can be edited. [Geo features](core/docs/api.md#geo-features)
 
 **View filter**:
-An operator's choice to hide items from their own view, such as old **Observations** or a **Track** they disagree with. It is private to one browser and **Run** and leaves the **Shared picture** unchanged. [View filters](command-interface/docs/README.md#hide-items-in-your-own-view)
+An operator's choice to hide items from their own view, such as old **Observations** or a **Track** they disagree with. It is private to one browser, ends at **Reset**, and leaves the **Shared picture** unchanged. [View filters](command-interface/docs/README.md#hide-items-in-your-own-view)
 
 ### Work
 
@@ -98,7 +95,7 @@ A rule identified by its rule ID, with **Failsafe conditions**, a priority, and 
 A supported **Command** with its parameters, run once each time its **Failsafe rule** fires. The response always stops ordinary work. [Failsafe responses](asset/docs/failsafes.md#a-failsafe-activates-a-configured-task)
 
 **Failsafe task**:
-One local run of a **Failsafe response** using the ordinary **Task** path. Its **Failsafe rule** and start time identify it. [Failsafe tasks](asset/docs/failsafes.md#a-failsafe-activates-a-configured-task)
+One local execution of a **Failsafe response** using the ordinary **Task** path. Its **Failsafe rule** and start time identify it. [Failsafe tasks](asset/docs/failsafes.md#a-failsafe-activates-a-configured-task)
 
 **Failsafe state**:
 An **Asset**'s lock on ordinary work for the rest of its operation. A **Failsafe rule**, the operator's Fail-safe **Command**, or the flight controller taking over starts it. [Lock ordinary work](asset/docs/failsafes.md#lock-ordinary-work-for-the-rest-of-the-operation)
@@ -118,7 +115,7 @@ The part of the Core API available to a **Plugin** through its key. [Plugins](co
 One thing a **Plugin** offers to do, such as finding the buildings in an area. The **Plugin** describes the action and its inputs using Protocol's common pieces. [Plugins](atlas/plugins.md)
 
 **Plugin call**:
-One run of a **Plugin action** with its inputs. It ends with a result or failure, or is dropped if the **Plugin** goes offline or is removed first. [Plugins](core/docs/api.md#plugins)
+One execution of a **Plugin action** with its inputs. It ends with a result or failure, or is dropped if the **Plugin** goes offline or is removed first. [Plugins](core/docs/api.md#plugins)
 
 **Result overlay**:
 A **Plugin**'s listed results drawn privately on one operator's map. The operator can share an item by saving it as a **Geo feature**. [Plugin results](command-interface/docs/plugins-and-objects.md#run-a-plugin)

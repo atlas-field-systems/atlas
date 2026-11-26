@@ -164,7 +164,7 @@ test("F2 ahead queues confirm Tasks without affecting cap [api.md#asset-and-gate
   }
 });
 test(
-  "F3 stop bounds stalled HTTP requests [reset.md#stopping-core-ends-the-run]",
+  "F3 stop bounds stalled HTTP requests [reset.md#stopping-core-is-reset]",
   { timeout: 10000 },
   async () => {
     const { connect } = await import("node:net");
@@ -816,7 +816,7 @@ test("R2-3 summary uses recipient and answer-kind settlement [reset.md#cores-res
 });
 
 test(
-  "R2-9 uploads admitted before stop finish in grace [reset.md#stopping-core-ends-the-run]",
+  "R2-9 uploads admitted before stop finish in grace [reset.md#stopping-core-is-reset]",
   { timeout: 10000 },
   async () => {
     const { connect } = await import("node:net");
@@ -1205,7 +1205,7 @@ test("R3-3 diagnostics cover versions, contact, downloads, Tracks and drops [log
   }
 });
 
-test("R3-4 fresh connections get stopping throughout grace [reset.md#stopping-core-ends-the-run]", async () => {
+test("R3-4 fresh connections get stopping throughout grace [reset.md#stopping-core-is-reset]", async () => {
   const { request } = await import("node:http");
   const c = simulatedClock(),
     h = await startHarness(c);

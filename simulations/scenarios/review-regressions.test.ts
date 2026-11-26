@@ -85,7 +85,7 @@ scenario({
   name: "stopped follow discards buffered events and same run connect preserves follow",
   checks: [
     "sdk/docs/live.md#follow-completion",
-    "sdk/docs/client.md#run-changes-and-idle-contact",
+    "sdk/docs/client.md#reset-and-idle-contact",
   ],
   async run(w) {
     for (let i = 0; i < 5; i++)
@@ -134,7 +134,7 @@ scenario({
 });
 scenario({
   name: "contact heartbeat follows the last send deadline",
-  checks: ["sdk/docs/client.md#run-changes-and-idle-contact"],
+  checks: ["sdk/docs/client.md#reset-and-idle-contact"],
   async run(w) {
     const issued = value(await w.complete(w.admin.call("provisionGateway")));
     if (!("key" in issued)) throw new Error("Missing key");
@@ -466,7 +466,7 @@ scenario({
 });
 scenario({
   name: "same run connect preserves stream epoch",
-  checks: ["sdk/docs/client.md#run-changes-and-idle-contact"],
+  checks: ["sdk/docs/client.md#reset-and-idle-contact"],
   async run(w) {
     const stream = follow(w.admin, { after: 0 }, () => {});
     w.onClose(() => stream.stop());
