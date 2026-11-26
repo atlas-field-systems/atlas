@@ -9,7 +9,7 @@ This folder explains what Atlas is for and the environment its parts work in.
 
 1. [The charter](CHARTER.md) defines purpose, scope, and document ownership.
 2. [The goal](goal.md) says who Atlas is for, what it is not, and how to tell it works.
-3. [ADRs](../docs/adr/) record the owner's decisions, dated and scoped, with why. Accepted ADRs are authoritative. Decisions one part owns are in that part's `docs/adr/`.
+3. [ADRs](../docs/adr/README.md) record the owner's decisions, dated and scoped, with why. Accepted ADRs are authoritative. Decisions one part owns are in that part's `docs/adr/`.
 4. [Operating environment](environment.md) explains field links and current assumptions.
 5. [Using Atlas](using-atlas.md) shows the parts and their responsibilities in the walled city.
 6. [Runs and identity](runs-and-identity.md) explains runs, Reset, what carries over, and how Assets get their IDs.

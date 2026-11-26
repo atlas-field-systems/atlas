@@ -4,7 +4,7 @@ Project-wide choices that every Atlas part follows.
 
 Coding judgment (root cause vs patch-as-feature, docs vs plans, accepted vs done, and related rules) lives in [Keep judgment sharp](CHARTER.md#keep-judgment-sharp).
 
-The owner's dated product decisions are the accepted [ADRs](../docs/adr/),
+The owner's dated product decisions are the accepted [ADRs](../docs/adr/README.md),
 which win over this page.
 
 ## Two layers of documentation
