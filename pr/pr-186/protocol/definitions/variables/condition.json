@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/condition.json",
+  "title": "condition",
+  "description": "One subsystem's health, as the Asset maps its equipment's diagnostics: unknown (not enough current evidence to tell, including during startup), healthy (operating normally), degraded (operating with a known limitation), or faulted (unable to perform its intended function). There is no overall Asset condition.",
+  "enum": [
+    "unknown",
+    "healthy",
+    "degraded",
+    "faulted"
+  ],
+  "examples": [
+    "healthy"
+  ]
+}

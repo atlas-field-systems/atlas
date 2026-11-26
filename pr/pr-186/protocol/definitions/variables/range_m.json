@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atlas-field-systems.github.io/protocol/definitions/variables/range_m.json",
+  "title": "range_m",
+  "description": "Straight-line distance from the origin to the target, in metres.",
+  "type": "number",
+  "exclusiveMinimum": 0,
+  "examples": [
+    180
+  ]
+}
