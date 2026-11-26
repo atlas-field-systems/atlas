@@ -19,17 +19,27 @@ test("docs/runtime.md: shutdown waits for a capture from a disconnected peripher
   const capture = Promise.withResolvers<void>();
   const started = Promise.withResolvers<void>();
   const disconnected = Promise.withResolvers<void>();
+  const dropped: unknown[] = [];
   const driver = peripheral({ kind: "peripheral", host: "127.0.0.1", port: address.port, max_message_bytes: 1024, reconnect_s: 0.001 }, systemClock, {
     observation() {},
     async file() { started.resolve(); await capture.promise; },
-    diagnostic(value) { if (value && typeof value === "object" && "kind" in value && value.kind === "peripheral_error") disconnected.resolve(); },
+    diagnostic(value) {
+      if (value && typeof value === "object" && "kind" in value && value.kind === "peripheral_file_dropped") dropped.push(value);
+      if (value && typeof value === "object" && "kind" in value && value.kind === "peripheral_error") disconnected.resolve(); },
   });
   t.after(async () => { capture.resolve(); await driver.stop(); });
   const first = once(server, "connection");
-  driver.start(() => {});
+  const position = Promise.withResolvers<void>();
+  driver.start(sample => { if (sample.position) position.resolve(); });
   const [peer] = await first;
   peer.write(JSON.stringify({ kind: "file", name: "capture", contentType: "text/plain", base64: "YQ==" }) + "\n");
   await started.promise;
+  for (let i = 1; i <= 8; i++) {
+    peer.write(JSON.stringify({ kind: "file", name: String(i), contentType: "text/plain", base64: "YQ==" }) + "\n");
+  }
+  peer.write(JSON.stringify({ kind: "position", source: "GPS", valid: true, time: 1, position: { latitude: 0, longitude: 0 } }) + "\n");
+  await position.promise;
+  assert.equal(dropped.length, 1);
   peer.resetAndDestroy();
   await disconnected.promise;
   await new Promise<void>(resolve => setTimeout(resolve, 10));

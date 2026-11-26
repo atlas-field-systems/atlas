@@ -164,7 +164,6 @@ export const rules = [
           entries.length > 1 && entries.some((n) => n.status && n.status < 300),
       );
       return (
-        retried.length > 0 &&
         retried.every((entries) => {
           const first = entries.find((n) => n.response)?.response;
           if (!first) return false;

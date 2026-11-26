@@ -163,7 +163,7 @@ cannot mount it, the test reports a skip with the mount error. The crash and sto
 scenario uses a separate Core process and the real clock. ZIP checks require `unzip`.
 
 Scenarios check their documentation anchors before running. A failed run writes
-its trace, seed, assertion or cleanup error, and Core `logs/` under `.runs/`.
+its trace, seed, assertion or cleanup error, and available Core and Asset logs and archives under `.runs/`.
 SITL cleanup attempts every registered resource in reverse order and reports collected
 failures after all callbacks finish. A failed final Reset preserves the temporary
 world directory and reports Core's

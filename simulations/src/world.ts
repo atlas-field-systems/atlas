@@ -186,7 +186,7 @@ export async function createWorld(config: Partial<CoreConfig> = {}) {
       if (errors.length) throw new AggregateError(errors, "Cleanup failed; world retained at " + root);
       if (evidenceDirectory) {
         for (const entry of await readdir(root, { withFileTypes: true })) {
-          if (entry.isDirectory() && (entry.name === "archive" || entry.name.endsWith("-archives")))
+          if (entry.isDirectory() && (entry.name === "archive" || entry.name === "archives" || entry.name.endsWith("-archives")))
             await cp(join(root, entry.name), join(evidenceDirectory, entry.name), { recursive: true });
         }
       }

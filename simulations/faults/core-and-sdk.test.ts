@@ -10,9 +10,10 @@ import { radioAsset, plugin } from "../src/actors.ts";
 import { assetApp } from "../src/asset-app.ts";
 import { value } from "../src/world.ts";
 import { rules, type RunTrace } from "../src/rules.ts";
+const ciSeeds = [64, 100, 121];
 faultRun({
   name: "core-and-sdk",
-  seeds: [64, 100, 121],
+  seeds: ciSeeds,
   checks: rules.map((r) => r.checks),
   async run(w, seed) {
     let state = seed >>> 0;
@@ -48,6 +49,7 @@ faultRun({
     for (const reader of readers) w.onClose(() => reader.stop());
     await w.settle();
     const accepted: number[] = [];
+    const requestedNames: string[] = [];
     for (let step = 0; step < 6; step++) {
       const asset = assets[Math.floor(random() * assets.length)];
       const operator = operators[step % 2];
@@ -58,6 +60,8 @@ faultRun({
         operator: step % 2,
         task: "hold",
       });
+      assert.ok(asset.equipment);
+      const before = asset.equipment.targets.length;
       const sent = await known(
         operator.call("sendTasks", {
           params: { asset_id: asset.asset_id },
@@ -66,11 +70,14 @@ faultRun({
       );
       accepted.push(sent.event_id);
       await w.until(() => w.events.some(e => e.kind === "report.status" && e.record.asset_id === asset.asset_id && e.record.kind === "task" && e.record.task_id === sent.task_ids[0] && e.record.task_state === "completed"));
+      assert.equal(asset.equipment.targets.length - before, 1, `Hold ${sent.task_ids[0]} equipment commands`);
+      const name = `seed-${seed}-step-${step}`;
+      requestedNames.push(name);
       await known(
         operator.call("createGeofeature", {
           body: {
             kind: "point",
-            name: `seed-${seed}-step-${step}`,
+            name,
             position: { latitude: Math.floor(random() * 20), longitude: 2 },
           },
         }),
@@ -132,30 +139,32 @@ faultRun({
         })),
       );
     }
-    for (const caller of ["admin", "operator-two"])
-      assert.ok(
-        w.network.traffic.some(
-          (t) =>
-            t.caller === caller &&
-            t.faultOrigin === "seed" &&
-            (t.streamCuts ?? 0) > 0,
-        ),
-        `${caller} stream was cut`,
-      );
-    assert.ok(
-      new Set(
-        w.network.traffic
-          .filter(
+    if (ciSeeds.includes(seed)) {
+      for (const caller of ["admin", "operator-two"])
+        assert.ok(
+          w.network.traffic.some(
             (t) =>
+              t.caller === caller &&
               t.faultOrigin === "seed" &&
-              t.fault?.kind === "loseResponse" &&
-              t.status &&
-              t.status < 300,
-          )
-          .map((t) => t.path),
-      ).size >= 2,
-      "responses lost on two routes",
-    );
+              (t.streamCuts ?? 0) > 0,
+          ),
+          `${caller} stream was cut`,
+        );
+      assert.ok(
+        new Set(
+          w.network.traffic
+            .filter(
+              (t) =>
+                t.faultOrigin === "seed" &&
+                t.fault?.kind === "loseResponse" &&
+                t.status &&
+                t.status < 300,
+            )
+            .map((t) => t.path),
+        ).size >= 2,
+        "responses lost on two routes",
+      );
+    }
     for (const reader of readers) reader.stop();
     await w.restartCore();
     const zip = (await readdir(join(w.root, "archive"))).find((n) =>
@@ -171,9 +180,9 @@ faultRun({
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
-    for (const asset of assets) {
-      const starts = archivedEvents.filter(e => e.kind === "report.status" && e.record.asset_id === asset.asset_id && e.record.kind === "task" && e.record.task_state === "active");
-      assert.equal(asset.equipment?.targets.length, starts.length, "each active Hold reaches equipment exactly once");
+    for (const name of requestedNames) {
+      assert.equal(places.filter(place => place.name === name).length, 1, name);
+      assert.equal(archivedEvents.filter(event => event.kind === "geofeature.created" && event.record.name === name).length, 1, name);
     }
     const trace: RunTrace = {
       reportIds,

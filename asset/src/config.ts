@@ -22,6 +22,15 @@ function shared<T>(
 const positive = z.number().finite().positive();
 const nonnegative = z.number().finite().nonnegative();
 const command = z.enum(Object.keys(commands).filter(isCommand));
+const positionSchema = shared<ComponentsPosition>("report.telemetry", position => ({
+  type: "report.telemetry", time: 0, asset_id: "A", position,
+}));
+const sensorConnection = {
+  host: z.string().min(1),
+  port: z.int().min(1).max(65535),
+  max_message_bytes: z.int().positive(),
+  reconnect_s: positive,
+};
 const schema = z
   .strictObject({
     asset_key: z.string().min(1),
@@ -41,23 +50,18 @@ const schema = z
         subsystems: z.strictObject({ gps: z.string().optional(), flight_controller: z.string().optional() }).optional(),
       }),
       z.strictObject({
-        kind: z.enum(["peripheral", "gpsd"]),
-        host: z.string().min(1),
-        port: z.int().min(1).max(65535),
-        max_message_bytes: z.int().positive(),
-        reconnect_s: positive,
+        kind: z.literal("peripheral"),
+        ...sensorConnection,
+        installation_position: positionSchema.optional(),
+      }),
+      z.strictObject({
+        kind: z.literal("gpsd"),
+        ...sensorConnection,
+        subsystems: z.strictObject({ gps: z.string().optional() }).optional(),
       }),
       z.strictObject({
         kind: z.literal("simulated"),
-        position: shared<ComponentsPosition>(
-          "report.telemetry",
-          (position) => ({
-            type: "report.telemetry",
-            time: 0,
-            asset_id: "A",
-            position,
-          }),
-        ),
+        position: positionSchema,
       }),
     ]),
     initial_settings: z.custom<ComponentsSettings>(
@@ -143,7 +147,7 @@ const schema = z
       if (c.default_ground_speed_mps === undefined) fail(["default_ground_speed_mps"], "required for movement");
       if (c.max_ground_speed_mps === undefined) fail(["max_ground_speed_mps"], "required for movement");
     }
-    if (c.equipment.kind === "ardupilot") {
+    if (c.equipment.kind === "ardupilot" || c.equipment.kind === "gpsd") {
       const ids = Object.values(c.equipment.subsystems ?? {});
       if (new Set(ids).size !== ids.length) fail(["equipment", "subsystems"], "duplicate subsystem mapping");
       for (const id of ids)

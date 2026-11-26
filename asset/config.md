@@ -48,6 +48,7 @@ explicit behavior values. Its values are provisional until verified in SITL.
 `equipment.kind` selects `ardupilot` with a TCP host, port, heartbeat interval in
 seconds, and GCS system ID, `simulated` with a stationary position, or
 `peripheral` or `gpsd` with a TCP host, port, `max_message_bytes`, and `reconnect_s`.
+A fixed peripheral can set `installation_position`. A gpsd tracker maps `subsystems.gps` to its declared GPS subsystem.
 The [peripheral interface](docs/runtime.md#reporting-only-equipment) carries GPS
 samples, detector Observations, and captured files.
 `safe_action` is the built-in failsafe response. `control_tick_s` sets the
