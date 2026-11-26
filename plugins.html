@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Plugins</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html" class="on">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="plugins">Plugins</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="reset-and-identity.html">Reset and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html" class="on">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="plugins">Plugins</h1>
 <p>This page records the owner&#39;s intended use. The <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/README.md">Core Plugin interface</a>
 and <a href="https://github.com/atlas-field-systems/atlas/blob/main/sdk/README.md">SDK client</a> are built. Simulations use scripted Plugins;
 no operational Plugin exists yet.</p>
@@ -79,7 +79,7 @@ feature, for example.</p>
 <ul>
 <li>A file never changes. An operator can move an Object to another geo feature
 or detach it, and can delete it. A deleted Object is hidden from operators
-for the rest of the run but not destroyed: the run&#39;s Reset ZIP keeps it,
+until the next Reset but not destroyed: the Reset ZIP keeps it,
 marked deleted. History keeps the record that it was stored and who deleted
 it.</li>
 <li>An Object belongs to at most one geo feature. Deleting the geo feature leaves

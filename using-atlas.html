@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Using Atlas</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html" class="on">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="using-atlas">Using Atlas</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html" class="on">Using Atlas</a><a href="reset-and-identity.html">Reset and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="using-atlas">Using Atlas</h1>
 <p>This page describes the intended operation. See the <a href="https://github.com/atlas-field-systems/atlas/blob/main/README.md">repository overview</a>
 for what is built and what remains planned.</p>
 <p>An operator uses the Command Interface to watch Assets and request work.
@@ -99,20 +99,20 @@ though it is not aboard it.</p>
 </tbody></table>
 <h2 id="an-operation-runs-without-planned-restarts">An operation runs without planned restarts</h2>
 <p>Core starts before any other part of an operation and stops after all of them.
-Each start of Core begins a new, empty run, and stopping Core on purpose ends it
-(<a href="runs-and-identity.html">Runs and identity</a>). Nobody restarts Core during an
-operation. If it crashes, it resumes the same run when it starts again, and
-everyone reconnects. Gateways and Assets stay running too.
+Each start of Core after a stop begins an empty picture, and stopping Core is
+the Reset (<a href="reset-and-identity.html">Reset and identity</a>). Nobody restarts Core
+during an operation. If it crashes, it keeps the same picture when it starts
+again, and everyone reconnects. Gateways and Assets stay running too.
 Links can drop and reconnect while those processes keep their state, and a
 refreshed Command Interface recovers from Core&#39;s event log.</p>
 <p>An Asset whose app stops shows offline in Core, and the other Assets keep
 working. Nothing restarts the app on its own. If it fails in flight, the flight
 controller returns the vehicle home without Atlas, and the vehicle is inspected
-before its next flight. An app started again on the ground in the same run
+before its next flight. An app started again on the ground before the next Reset
 rejoins as the same Asset with the same ID, because its key proves which Asset
 it is, but its work does not resume
-(<a href="runs-and-identity.html#keys-and-registration">Runs and identity</a>). An Asset keeps nothing from an
-earlier run. A dropped link is not a stop: the app keeps its state and
+(<a href="reset-and-identity.html#keys-and-registration">Reset and identity</a>). An Asset keeps nothing from
+before a Reset. A dropped link is not a stop: the app keeps its state and
 reconnects as the same Asset.</p>
 <p>An Asset&#39;s <a href="settings.html">settings</a> are its current configuration, kept in its entry.</p>
 <h2 id="information-focused-stories">Information-focused stories</h2>

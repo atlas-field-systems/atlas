@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://atlas-field-systems.github.io/protocol/definitions/requests/asset.json",
   "title": "Asset request",
-  "description": "The body of POST /entities/assets, which an Asset on IP sends to register: its description without time and asset_id. It takes exactly the description record's other fields. Core assigns the asset_id, or returns the same one when the key already registered an Asset in this run, and stamps time to make the description record.",
+  "description": "The body of POST /entities/assets, which an Asset on IP sends to register: its description without time and asset_id. It takes exactly the description record's other fields. Core assigns the asset_id, or returns the same one when the key already registered an Asset since the last Reset, and stamps time to make the description record.",
   "type": "object",
   "required": [
     "reports",

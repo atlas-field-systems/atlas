@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>The Atlas charter</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html" class="on">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="reset-and-identity.html">Reset and identity</a><a href="first-flight.html">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="the-atlas-charter">The Atlas charter</h1>
 <p>Atlas helps operators understand field systems, request work, and retain evidence.
 Read the <a href="environment.html">operating environment</a> before designing a subsystem.</p>
 <h2 id="everything-is-a-draft">Everything is a draft</h2>
@@ -66,7 +66,7 @@ record has a field for who requested or reported it.</li>
 <li>Counters are ordinary numbers, not long numbers written as text.</li>
 <li>IDs that people read or that cross a field link are 1 to 4 letters or digits.
 Event IDs are integers. Assets choose <code>observation_id</code>; Core assigns the
-others, <code>asset_id</code> included (<a href="runs-and-identity.html#ids">Runs and identity</a>).</li>
+others, <code>asset_id</code> included (<a href="reset-and-identity.html#ids">Reset and identity</a>).</li>
 <li>Records never carry credentials.</li>
 <li>Protocol&#39;s package version is its only version
 (<a href="https://github.com/atlas-field-systems/atlas/blob/main/protocol/docs/laws.md">law 14</a>).
@@ -117,7 +117,7 @@ laws, and the Core API doc beat an implementation plan when they conflict. Chang
 quietly diverge in code.</p>
 <p>Core, gateways, Assets, and the libraries they use provide detailed diagnostic
 logging from the start. Each program collects its own events and its libraries&#39;
-events for its run archive. Logging never blocks equipment control or request
+events for its Reset ZIP. Logging never blocks equipment control or request
 handling, and every gap is listed in the archive. Their owning docs define
 logging and configurable options; Protocol defines shared data, not a runtime
 logging service.</p>
@@ -144,7 +144,7 @@ only record shapes and the validator.</li>
 <li><strong>Simulations prove Atlas works.</strong> Behavior that crosses parts is tested by
 running the real parts together, through their public interfaces, in
 <a href="https://github.com/atlas-field-systems/atlas/tree/main/simulations">Simulations</a>.
-Every run can be repeated and leaves a record someone can check again.</li>
+Every simulation can be repeated and leaves a record someone can check again.</li>
 <li><strong>Focused tests for deep modules.</strong> Dense logic inside one part, such as
 failsafe rules, the Task queue, Protocol&#39;s validator, or storage and
 recovery, may have focused tests at that module&#39;s own interface, never its
@@ -172,7 +172,7 @@ checked that way, as Atlas already checks lint rules, links, and retired
 phrases. A written rule is the fallback.</li>
 <li><strong>No flaky tests.</strong> A test that sometimes fails with no change is a bug in the
 test or the part, fixed at once and never retried until it passes. Simulated
-time and recorded seeds make every run repeatable.</li>
+time and recorded seeds make every simulation repeatable.</li>
 <li><strong>Say what was verified.</strong> A result names what passed, what failed, and what
 was not checked. A simulated pass is labelled simulated and proves nothing
 about real flight or radios.</li>

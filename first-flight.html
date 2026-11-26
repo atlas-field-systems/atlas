@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>First flight</title>
-<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="runs-and-identity.html">Runs and identity</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="first-flight">First flight</h1>
+<link rel="stylesheet" href="style.css"></head><body><nav><a href="index.html">Home</a><a href="CHARTER.html">The charter</a><a href="goal.html">The goal</a><a href="https://github.com/atlas-field-systems/atlas/blob/main/docs/adr/README.html">ADRs</a><a href="environment.html">Operating environment</a><a href="using-atlas.html">Using Atlas</a><a href="reset-and-identity.html">Reset and identity</a><a href="first-flight.html" class="on">First flight</a><a href="settings.html">Settings</a><a href="plugins.html">Plugins</a><a href="scale.html">Scale</a></nav><main><h1 id="first-flight">First flight</h1>
 <p>The planned first field setup is the
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/tools/sik/README.md">SiK tool</a>.
 A Raspberry Pi on the ground runs the Asset app for an ArduPilot quadcopter.
@@ -108,24 +108,24 @@ the intended rules, including the
 and any battery response during an intentional wait.
 The Asset owns
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/failsafes.md">the trigger conditions, cancellation rule, overrides, and remaining decisions</a>.</p>
-<h2 id="keep-the-whole-run-for-debugging">Keep the whole run for debugging</h2>
+<h2 id="keep-everything-for-debugging">Keep everything for debugging</h2>
 <p>When the operator spins down the system, Core and each Asset write their own
 Reset ZIP, and so does each gateway when one is used. The operator shuts the Assets
 down first, and then the admin stops Core on its own computer. Stopping Core
-ends the run (<a href="runs-and-identity.html#a-run-and-reset">Runs and identity</a>).
+is the Reset (<a href="reset-and-identity.html#the-picture-and-reset">Reset and identity</a>).
 Core&#39;s ZIP holds:</p>
 <ul>
-<li>Its run&#39;s data, including the event log: every accepted domain request and every
+<li>Its data since the last Reset, including the event log: every accepted domain request and every
 stored report, in order.</li>
 <li>Its diagnostics, such as errors, link drops, and contact changes.</li>
 <li>Its configuration, without secrets.</li>
 <li>A plain readable summary: start and end, Assets, Tasks, and outcomes.</li>
 </ul>
-<p>Core checks its ZIP and then clears the run, so the next start of Core begins
+<p>Core checks its ZIP and then clears the picture, so the next start of Core begins
 with an empty map. Each ZIP lands in a folder on its own computer, and a person
 copies the ZIPs off by hand.</p>
 <p>After using the system, give the Reset ZIPs to an AI agent for full context on
-the run and any errors. Each system&#39;s documentation defines its own ZIP contents
+what happened and any errors. Each system&#39;s documentation defines its own ZIP contents
 and Reset procedure: <a href="https://github.com/atlas-field-systems/atlas/blob/main/core/docs/reset.md">Core</a>,
 <a href="https://github.com/atlas-field-systems/atlas/blob/main/asset/docs/logging.md#export-the-assets-reset-zip">Asset</a>,
 and <a href="https://github.com/atlas-field-systems/atlas/blob/main/gateway/README.md#the-gateways-reset-zip">gateway</a>.
