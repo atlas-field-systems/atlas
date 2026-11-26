@@ -12,7 +12,7 @@ are welcome. Nothing is locked. When something has a problem, consider reworking
 from the ground up before patching it.
 
 Draft does not mean quiet change. Propose the change and its reason; the owner decides.
-The owner's current decisions are the accepted [ADRs](../docs/adr/). A
+The owner's current decisions are the accepted [ADRs](../docs/adr/README.md). A
 reversal updates every page that still teaches the old rule.
 
 ## Keep Atlas understandable
@@ -135,7 +135,7 @@ an exact contract early only when postponing creates a specific, explainable
 obstacle. Do not let an imagined future architecture indefinitely delay first
 flight; do not let first-flight shortcuts define the whole architecture either.
 
-An accepted [ADR](../docs/adr/) beats every other page. How-it-works docs,
+An accepted [ADR](../docs/adr/README.md) beats every other page. How-it-works docs,
 laws, and the Core API doc beat an implementation plan when they conflict. Change them on purpose, in a pull request the owner approves; do not
 quietly diverge in code.
 

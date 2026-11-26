@@ -3,7 +3,7 @@
 Choices about the records that are not laws, made in design threads. They are
 not owner decisions: any of them may change with a stated reason, in the same
 pull request as the definitions. The owner's decisions are the accepted
-[ADRs](../../docs/adr/) and [Protocol's ADRs](adr/), which always win. A bullet marked
+[ADRs](../../docs/adr/README.md) and [Protocol's ADRs](adr/README.md), which always win. A bullet marked
 *Owner decision* carries one of them, linked to where it was decided: its rule is the owner's, and only how the
 records carry it is a working choice here. When a definition and this page
 disagree, fix one of them.
